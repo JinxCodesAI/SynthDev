@@ -158,27 +158,186 @@ Synth-Dev includes a comprehensive command system accessible via `/` prefix:
 | `/role <name>` | Switch to a specific role |
 | `/exit`, `/quit` | Exit the application |
 
-### Tool System
+## Tool System
 
-Synth-Dev includes a comprehensive set of tools for development tasks:
+Synth-Dev features a powerful, extensible tool system that provides AI with comprehensive capabilities for development tasks. The system is built on a modular architecture with standardized interfaces, automatic discovery, and role-based access control.
 
-#### File Operations
-- **read_file**: Safely read file contents with error handling
+### Architecture Overview
+
+The tool system follows a standardized structure:
+- **Auto-Discovery**: Tools are automatically loaded from the `tools/` directory
+- **Standardized Schema**: Each tool has a `definition.json` and `implementation.js`
+- **Category Organization**: Tools are organized by functionality (file, search, utility, etc.)
+- **Safety Features**: Built-in validation, sandboxing, and AI-powered safety assessment
+- **Role-Based Access**: Different AI roles have access to different tool sets
+
+### Tool Categories
+
+#### File Operations (`category: "file"`)
+Essential file system operations with safety validation and automatic backups:
+
+- **read_file**: Safely read file contents with encoding detection and error handling
+  - Supports Unicode filenames and cross-platform paths
+  - Automatic encoding detection (UTF-8, ASCII, etc.)
+  - Security validation to prevent directory traversal
+
 - **write_file**: Create or overwrite files with automatic directory creation
-- **edit_file**: Safely edit files by inserting/deleting content between boundaries
-- **list_directory**: Recursively list directory contents with metadata
+  - Atomic write operations with backup creation
+  - Automatic parent directory creation
+  - Content validation and encoding handling
 
-#### Code Analysis & Search
-- **exact_search**: Search for exact text patterns in files and directories
+- **edit_file**: Safely edit files using boundary-based replacement
+  - Non-destructive editing with automatic backups
+  - Boundary string validation to prevent accidental overwrites
+  - Supports complex multi-line replacements
+
+- **list_directory**: Recursively list directory contents with rich metadata
+  - Configurable depth control (1-10 levels)
+  - Hidden file inclusion options
+  - Smart exclusion lists (node_modules, .git, etc.)
+  - File type categorization and size information
+
+#### Search & Analysis (`category: "search"`)
+Powerful search capabilities for code exploration and analysis:
+
+- **exact_search**: Search for exact text patterns across the entire codebase
+  - Multi-file search with context lines (4 before/after matches)
+  - Respects exclusion lists to avoid searching irrelevant files
+  - Returns structured results with filename and context fragments
+  - Optimized for large codebases
+
+#### Code Intelligence (`category: "utility"`)
+AI-powered code understanding and explanation capabilities:
+
 - **explain_codebase**: AI-powered codebase explanations using indexed summaries
+  - Uses pre-generated AI summaries from the `/index` command
+  - Provides contextual answers about codebase structure and functionality
+  - Supports natural language queries about code architecture
+  - Leverages the complete codebase index for comprehensive understanding
 
-#### Execution & Scripting
-- **execute_script**: Run JavaScript code in sandboxed environment with AI safety assessment
+#### Execution & Scripting (`category: "command"`)
+Safe code execution with comprehensive safety measures:
+
+- **execute_script**: Run JavaScript code in sandboxed environment
+  - AI-powered safety assessment before execution
+  - Isolated process execution with timeout protection
+  - Comprehensive output capture (stdout, stderr, execution time)
+  - Safety confidence scoring and detailed reasoning
+
 - **execute_terminal**: Execute terminal commands with output capture
+  - Cross-platform command execution (Windows, Linux, macOS)
+  - Real-time output streaming and error handling
+  - Working directory and environment variable support
+  - Timeout protection and process management
 
-#### Utilities
-- **calculate**: Mathematical calculator with complex expression support
+#### Utilities (`category: "calculation"`)
+General-purpose computational and utility functions:
+
+- **calculate**: Advanced mathematical calculator with expression parsing
+  - Supports complex mathematical expressions
+  - Function support (sin, cos, log, sqrt, etc.)
+  - Variable assignment and reuse
+  - Error handling for invalid expressions
+
 - **get_time**: Comprehensive time/date operations and formatting
+  - Multiple timezone support
+  - Flexible date formatting options
+  - Relative time calculations
+  - ISO 8601 standard compliance
+
+### Codebase Indexing & Intelligence System
+
+One of Synth-Dev's most powerful features is its intelligent codebase indexing system, which enables AI-powered code understanding and explanation.
+
+#### The `/index` Command
+
+The `/index` command creates a comprehensive, AI-powered index of your entire codebase:
+
+**What it does:**
+1. **Scans** the entire project directory recursively
+2. **Analyzes** each file and directory for changes using checksums
+3. **Generates** AI-powered summaries for files and directories
+4. **Creates** a structured index in `.index/codebase-index.json`
+5. **Optimizes** by only processing changed files on subsequent runs
+
+**Usage:**
+```bash
+/index                    # Index with default settings
+/index --max-size 50000   # Set maximum file size (bytes)
+/index --include-hidden   # Include hidden files and directories
+```
+
+**Smart Features:**
+- **Incremental Updates**: Only processes files that have changed since last indexing
+- **Size Limits**: Configurable maximum file size to avoid processing huge files
+- **Exclusion Lists**: Automatically excludes common directories (node_modules, .git, build, etc.)
+- **Cost Tracking**: Monitors API usage and provides detailed cost breakdowns
+- **Progress Reporting**: Real-time progress updates during indexing
+
+#### The `explain_codebase` Tool
+
+This tool leverages the generated index to provide intelligent, contextual answers about your codebase:
+
+**How it works:**
+1. **Loads** the pre-generated codebase index (`.index/codebase-index.json`)
+2. **Extracts** relevant AI summaries for files and directories
+3. **Constructs** a comprehensive context prompt with all summaries
+4. **Processes** your natural language question using AI
+5. **Returns** detailed markdown explanations with contextual understanding
+
+**Example queries:**
+- "What tools are available in this codebase?"
+- "How is file editing handled?"
+- "Explain the architecture of the command system"
+- "What are the main components and how do they interact?"
+- "How does the AI safety assessment work?"
+
+**Key advantages:**
+- **Complete Context**: Uses summaries of the entire codebase, not just individual files
+- **Natural Language**: Ask questions in plain English
+- **Markdown Output**: Formatted, readable explanations
+- **Cost Efficient**: Uses pre-generated summaries instead of processing files repeatedly
+- **Always Current**: Index can be updated as code changes
+
+#### Index Structure
+
+The generated index contains:
+```json
+{
+  "metadata": {
+    "generated": "2024-01-15T10:30:00.000Z",
+    "version": "1.0.0",
+    "total_files": 45,
+    "total_directories": 12
+  },
+  "files": {
+    "path/to/file.js": {
+      "type": "file",
+      "ai_summary": "AI-generated summary of file purpose and functionality",
+      "checksum": "sha256-hash",
+      "size": 1024,
+      "last_modified": "2024-01-15T10:00:00.000Z"
+    }
+  },
+  "statistics": {
+    "processed": 45,
+    "summarized": 40,
+    "total_tokens_used": 15000,
+    "total_summary_size": 25000
+  }
+}
+```
+
+#### Why This System is Powerful
+
+1. **Comprehensive Understanding**: AI has access to summaries of your entire codebase, not just individual files
+2. **Efficient Processing**: Pre-generated summaries avoid repeated API calls for the same content
+3. **Incremental Updates**: Only changed files are reprocessed, making updates fast and cost-effective
+4. **Natural Interaction**: Ask questions about your code in natural language
+5. **Contextual Answers**: Responses consider the broader codebase structure and relationships
+6. **Cost Optimization**: Smart caching and reuse of summaries minimizes API costs
+
+This system transforms how you interact with and understand large codebases, making it easy to get comprehensive explanations and insights about your project's architecture and functionality.
 
 ### Verbosity Control System
 

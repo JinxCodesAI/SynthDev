@@ -27,11 +27,11 @@
           },
           "start_line": {
             "type": "integer",
-            "description": "Optional. The line number to start reading from the file (inclusive, 1-based). If omitted, reading starts from the beginning of the file."
+            "description": "Optional. The line number to start reading from the file (inclusive, 1-based). If omitted, reading starts from the beginning of the file. Use only when you know where the relevant content starts."
           },
           "end_line": {
             "type": "integer",
-            "description": "Optional. The line number to stop reading from the file (inclusive, 1-based). If omitted, reading continues to the end of the file."
+            "description": "Optional. The line number to stop reading from the file (inclusive, 1-based). If omitted, reading continues to the end of the file. Use only when you know where the relevant content ends."
           }
         },
         "required": ["file_path"]
