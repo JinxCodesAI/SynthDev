@@ -1,0 +1,24 @@
+{
+  "name": "synth-dev",
+  "version": "0.1.0",
+  "description": "Console based ai coding assistant",
+  "main": "app.js",
+  "type": "module",
+  "bin": {
+    "synth-dev": "./app.js"
+  },
+  "scripts": {
+    "start": "node app.js",
+    "dev": "node --watch app.js"
+  },
+  "keywords": ["ai", "console", "tools", "coding", "assistant"],
+  "license": "MIT",
+  "dependencies": {
+    "openai": "^4.67.3",
+    "readline": "^1.3.0",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0"
+  }
+} 

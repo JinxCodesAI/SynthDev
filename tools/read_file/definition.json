@@ -1,0 +1,44 @@
+{
+  "name": "read_file",
+  "description": "Read the contents of a file from the file system using a relative path",
+  "auto_run": true,
+  "requires_backup": false,
+  "backup_resource_path_property_name": "",
+  "category": "file",
+  "version": "2.0.0",
+  "tags": ["file", "read", "filesystem", "io"],
+  "schema": {
+    "type": "function",
+    "function": {
+      "name": "read_file",
+      "description": "A comprehensive file reading utility that safely reads the complete contents of text-based files from the file system using relative paths. Supports various file types including text files (.txt), configuration files (.json, .yaml, .xml), code files (.js, .py, .html, .css), documentation (.md, .rst), and log files. Provides detailed error handling for common file access issues like missing files, permission errors, or encoding problems. Returns the raw file content as a string while maintaining original formatting, line breaks, and character encoding. Includes file metadata such as size and modification time for additional context.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "file_path": {
+            "type": "string",
+            "description": "Relative path to the file, starting from the current working directory. Supports forward slashes (/) and backslashes (\\) as path separators for cross-platform compatibility. Path must be relative and cannot access files outside the project directory for security. Examples: 'config.json' (root file), 'src/main.js' (file in subdirectory), 'docs/readme.md' (nested path), '../parent-file.txt' (parent directory). Supports Unicode filenames and paths with spaces."
+          },
+          "encoding": {
+            "type": "string",
+            "description": "Character encoding to use when reading the file. Common options: 'utf8' for standard text files with Unicode support, 'ascii' for basic ASCII text, 'base64' for binary file representation, 'hex' for hexadecimal representation. Default 'utf8' handles most text files correctly including those with special characters, emojis, and international characters.",
+            "enum": ["utf8", "ascii", "base64", "hex", "latin1"],
+            "default": "utf8"
+          },
+          "start_line": {
+            "type": "integer",
+            "description": "Optional. The line number to start reading from the file (inclusive, 1-based). If omitted, reading starts from the beginning of the file."
+          },
+          "end_line": {
+            "type": "integer",
+            "description": "Optional. The line number to stop reading from the file (inclusive, 1-based). If omitted, reading continues to the end of the file."
+          }
+        },
+        "required": ["file_path"]
+      },
+      "response_format": {
+        "description": "Returns a JSON object with 'success' (boolean), 'timestamp' (ISO string), 'tool_name' (string), 'file_path' (requested path), 'content' (complete file contents as string), 'size' (file size in bytes), 'encoding' (encoding used), and 'modified' (last modification timestamp). Error responses include 'error' field with detailed message (file not found, permission denied, encoding error, etc.) and 'success: false'."
+      }
+    }
+  }
+} 

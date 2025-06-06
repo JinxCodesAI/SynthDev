@@ -1,0 +1,30 @@
+{
+  "name": "explain_codebase",
+  "description": "Provides AI-generated explanations in markdown format for natural language questions about the indexed codebase summaries from '.index/codebase-index.json'.",
+  "auto_run": true,
+  "requires_backup": false,
+  "backup_resource_path_property_name": "",
+  "category": "utility",
+  "version": "1.0.0",
+  "tags": ["codebase", "explanation", "ai", "markdown"],
+  "schema": {
+    "type": "function",
+    "function": {
+      "name": "explain_codebase",
+      "description": "Accepts a natural language question or request about the codebase. Uses indexed codebase summaries as context and returns an AI-generated markdown explanation.",
+      "parameters": {
+        "type": "object",
+        "properties": {
+          "question": {
+            "type": "string",
+            "description": "Natural language question or request about the codebase. Example: What tools are available? How is file editing handled?"
+          }
+        },
+        "required": ["question"]
+      },
+      "response_format": {
+        "description": "Returns a JSON object containing 'success', 'timestamp', 'tool_name', 'question', and 'markdown' fields. On error, includes 'success: false' and 'error' message."
+      }
+    }
+  }
+}
