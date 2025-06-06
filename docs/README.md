@@ -1,37 +1,62 @@
 # Synth-Dev Documentation
 
-A Node.js console application that provides an AI-powered coding assistant with support for custom tools and function calling. Compatible with OpenAI compatible AI providers and their APIs.
+**Synth-Dev** is a powerful Node.js console-based AI coding assistant with an extensible tool system and command interface. It provides comprehensive development tools, multi-model support, and sophisticated conversation management capabilities.
 
-## Features
+## What is Synth-Dev?
 
-- Integration with AI provider APIs with configurable models
-- **Verbosity Control**: 6-level verbosity system (0-5) for controlling console output detail
-- **Centralized Logging**: All output goes through a unified logging system
-- **Tool Execution Monitoring**: Detailed tool execution logging with argument compression
-- **HTTP Request Logging**: Complete API request/response logging at highest verbosity level
+Synth-Dev is an AI-powered development assistant that provides:
 
-## Verbosity Levels
+- **🛠️ Comprehensive Tool System**: File operations, code execution, terminal access, and analysis tools
+- **⚡ Command Interface**: Powerful `/` commands for managing conversations, costs, and application state
+- **🤖 Multi-Model Support**: Configure different AI models for different tasks (base, smart, fast)
+- **🔧 Extensible Architecture**: Easy to add new tools and commands
+- **📊 Advanced Features**: Conversation snapshots, codebase indexing, prompt enhancement, and cost tracking
 
-Control the amount of output with the `VERBOSITY_LEVEL` environment variable (0-5):
+## System Requirements
 
-- **Level 0**: Only user messages and errors
-- **Level 1**: + Status messages (🔄 Enhancing prompt..., 🧠 AI thinking...)
-- **Level 2**: + Compressed tool arguments (default)
-- **Level 3**: + Uncompressed tool arguments and debug messages
-- **Level 4**: + Tool execution results
-- **Level 5**: + Complete HTTP request/response logging
+- **Node.js**: Version 20.10.0 or higher (ES Modules support required)
+- **Operating System**: Tested on Windows, WSL and Linux docker container, never tested on macOS (Sorry *)
 
-Set in your `.env` file:
+## Installation & Setup
+
+### 1. Install Dependencies
+
+```bash
+npm install
+```
+
+### 2. Configure Environment
+
+Copy the example configuration file:
+```bash
+cp config.example.env .env
+```
+
+Edit `.env` with your API keys and preferences:
 ```env
+# Base Model Configuration (Required)
+API_KEY=your_api_key_here
+BASE_MODEL=gpt-4.1-mini
+BASE_URL=https://api.openai.com/v1
+
+# Smart Model (for Architect role)
+SMART_API_KEY=your_smart_api_key
+SMART_MODEL=gpt-4.1-mini
+SMART_BASE_URL=https://api.openai.com/v1
+
+# Fast Model (for quick tasks)
+FAST_API_KEY=your_fast_api_key
+FAST_MODEL=gpt-4.1-nano
+FAST_BASE_URL=https://api.openai.com/v1
+
+# Application Settings
+MAX_TOOL_CALLS=50
+ENABLE_PROMPT_ENHANCEMENT=false
 VERBOSITY_LEVEL=2
 ```
 
-3. **Get your API key:**
-   - Visit your AI provider's platform to obtain your API key.
+### 3. Start the Application
 
-## Usage
-
-Start the application:
 ```bash
 npm start
 ```
@@ -41,170 +66,240 @@ Or run in development mode with auto-reload:
 npm run dev
 ```
 
-## Safety Features
+## Main Functionalities
 
-The application includes built-in safety mechanisms to prevent infinite loops and excessive resource usage:
+### Command System
 
-- **Tool Call Limits**: Each user interaction is limited to a maximum number of tool calls (default: 50, configurable via `MAX_TOOL_CALLS` environment variable)
-- **Automatic Reset**: The tool call counter resets at the start of each new user interaction
-- **Clear Error Messages**: If the limit is exceeded, the application provides a clear error message explaining the issue
+Synth-Dev includes a comprehensive command system accessible via `/` prefix:
 
-This ensures that complex multi-round tool calling scenarios can execute safely without running indefinitely.
+| Command | Description |
+|---------|-------------|
+| `/help` | Show available commands and usage |
+| `/tools` | List all available tools |
+| `/cost` | Display API usage costs |
+| `/review` | Show last API call details |
+| `/clear` | Clear conversation history |
+| `/snapshots` | Manage conversation snapshots |
+| `/index` | Index codebase for analysis |
+| `/roles` | Show available AI roles |
+| `/role <name>` | Switch to a specific role |
+| `/exit`, `/quit` | Exit the application |
 
-## User Prompt Enhancement
+### Tool System
 
-The application includes an optional **User Prompt Enhancement** feature that can improve your prompts before they are processed by the AI. This feature uses a fast AI model to make your prompts more clear, specific, and effective while preserving your original intent.
+Synth-Dev includes a comprehensive set of tools for development tasks:
 
-### How It Works
+#### File Operations
+- **read_file**: Safely read file contents with error handling
+- **write_file**: Create or overwrite files with automatic directory creation
+- **edit_file**: Safely edit files by inserting/deleting content between boundaries
+- **list_directory**: Recursively list directory contents with metadata
 
-1. **Type your prompt** and press ENTER
-2. If enhancement is enabled, the system shows "🔄 Enhancing prompt..."
-3. **Review the enhanced prompt** presented to you
-4. **Choose your action:**
-   - Press ENTER to use the enhanced prompt
-   - Type modifications and press ENTER to use your edited version
-   - Type "original" to use your original prompt instead
+#### Code Analysis & Search
+- **exact_search**: Search for exact text patterns in files and directories
+- **explain_codebase**: AI-powered codebase explanations using indexed summaries
 
-### Configuration
+#### Execution & Scripting
+- **execute_script**: Run JavaScript code in sandboxed environment with AI safety assessment
+- **execute_terminal**: Execute terminal commands with output capture
 
-Enable prompt enhancement by setting the environment variable:
+#### Utilities
+- **calculate**: Mathematical calculator with complex expression support
+- **get_time**: Comprehensive time/date operations and formatting
 
-```bash
+### Verbosity Control System
+
+Control output detail with the `VERBOSITY_LEVEL` environment variable (0-5):
+
+- **Level 0**: Only user messages and errors
+- **Level 1**: + Status messages (🔄 Enhancing prompt..., 🧠 AI thinking...)
+- **Level 2**: + Compressed tool arguments (default)
+- **Level 3**: + Uncompressed tool arguments and debug messages
+- **Level 4**: + Tool execution results
+- **Level 5**: + Complete HTTP request/response logging
+
+### Safety Features
+
+- **Tool Call Limits**: Maximum tool calls per interaction (default: 50)
+- **Automatic Reset**: Tool call counter resets per interaction
+- **Script Sandboxing**: JavaScript execution in isolated processes
+- **AI Safety Assessment**: Scripts analyzed for security risks before execution
+- **Timeout Protection**: Prevents infinite loops and long-running processes
+
+### User Prompt Enhancement
+
+Optional feature that improves user prompts using AI:
+
+**Enable in .env:**
+```env
 ENABLE_PROMPT_ENHANCEMENT=true
 ```
 
-**Default:** OFF (disabled) to maintain backward compatibility
+**How it works:**
+1. Type your prompt and press ENTER
+2. System shows "🔄 Enhancing prompt..."
+3. Review the enhanced version
+4. Choose: Use enhanced, modify, or use original
 
-### Benefits
+**Benefits:**
+- Makes vague requests more specific
+- Improves AI response quality
+- Educational tool for better prompting
+- Full user control over final prompt
 
-- **Clearer Communication:** Makes vague requests more specific
-- **Better Results:** Enhanced prompts typically produce more accurate AI responses
-- **Learning Tool:** See how your prompts can be improved over time
-- **Full Control:** You always have the final say on what gets processed
+## Configuration
 
-### Requirements
+The configuration uses the `.env` file shown in the setup section above. Key settings:
 
-- Requires a configured fast AI model (uses `FAST_MODEL` configuration)
-- Falls back to base model if fast model is not configured
-- Gracefully handles failures by using your original prompt
+- **Model Configuration**: Base, Smart, and Fast model settings for different tasks
+- **Safety Settings**: `MAX_TOOL_CALLS` limits tool usage per interaction
+- **Verbosity**: `VERBOSITY_LEVEL` controls output detail (0-5)
+- **Features**: `ENABLE_PROMPT_ENHANCEMENT` enables AI prompt improvement
 
-## Existing Tools
 
-This application includes the following existing tools in the `tools` directory:
 
-- **calculate**: A powerful mathematical calculator that evaluates complex mathematical expressions including arithmetic operations, trigonometric functions, logarithms, exponential functions, and more. Supports precision control and security validation.
-- **edit_file**: A tool to safely edit file content by inserting or deleting specified fragments between boundary strings within files. It validates boundaries before editing.
-- **get_time**: A comprehensive time and date utility that performs current time retrieval, timezone conversions, date formatting, arithmetic operations (add/subtract), and difference calculations with multiple output formats.
-- **get_weather**: Provides current weather conditions for any specified location worldwide with detailed weather data including temperature, humidity, and conditions. Supports Celsius and Fahrenheit units.
-- **list_directory**: Recursively lists directory contents with filtering and metadata collection including file types, sizes, timestamps, and hierarchical views.
-- **read_file**: Safely reads the complete contents of text-based files with error handling and supports various text file types.
-- **write_file**: Safely creates or overwrites files with text content, automatic directory creation, and supports various file types with detailed error handling.
+## Architecture
 
-These tools form the core of the application's extensible functionality for interacting with files, performing calculations, and retrieving external data.
+Synth-Dev follows a modular architecture with clear separation of concerns:
 
-## Creating New Tools
-
-To create a new custom tool for the AI Coder application, follow this comprehensive guide:
-
-### Tool Structure
-
-Each tool consists of two required files in its own directory:
+### Core Components
 
 ```
-tools/
-└── my_tool_name/
-    ├── definition.json     # Tool schema and metadata
-    └── implementation.js   # Tool logic and execution
+synth-dev/
+├── app.js                 # Main application entry point
+├── configManager.js       # Configuration management
+├── systemMessages.js      # AI role definitions and prompts
+├── aiAPIClient.js         # AI API communication
+├── toolManager.js         # Tool loading and execution
+├── commandHandler.js      # Command processing
+├── consoleInterface.js    # User interface and I/O
+├── promptEnhancer.js      # AI prompt improvement
+├── snapshotManager.js     # Conversation state management
+├── costsManager.js        # API cost tracking
+└── logger.js             # Centralized logging system
 ```
 
-### Step-by-Step Creation Process
+### Modular Systems
 
-#### 1. Create Tool Directory
+#### Commands System (`commands/`)
+- **Base Classes**: `BaseCommand`, `InteractiveCommand`, `CommandRegistry`
+- **Categories**: Conversation, Info, Role, System, Snapshots, Indexing
+- **Auto-Discovery**: Commands are automatically registered and validated
 
-Create a new directory within the `tools` folder. The directory name becomes your tool's identifier:
+#### Tools System (`tools/`)
+- **Structure**: Each tool has `definition.json` + `implementation.js`
+- **Auto-Loading**: Tools are discovered and loaded automatically
+- **Role-Based Access**: Tools filtered based on current AI role
+- **Common Utilities**: Shared functionality in `tools/common/`
 
-```bash
-mkdir tools/my_new_tool
+#### Configuration System
+- **Multi-Model Support**: Base, Smart, and Fast model configurations
+- **Environment-Based**: All settings via `.env` file
+- **CLI Override**: Command-line arguments override environment variables
+- **Validation**: Comprehensive configuration validation and prompting
+
+### Data Flow
+
+1. **User Input** → Console Interface
+2. **Command Detection** → Command Handler → Command Registry
+3. **AI Processing** → API Client → Model Selection (based on role)
+4. **Tool Execution** → Tool Manager → Individual Tools
+5. **Response** → Console Interface → User
+
+### Key Design Patterns
+
+- **Dependency Injection**: Components receive dependencies via constructor
+- **Observer Pattern**: Callbacks for AI processing events
+- **Strategy Pattern**: Different AI roles with different behaviors
+- **Factory Pattern**: Tool and command creation
+- **Singleton Pattern**: Configuration and cost managers
+
+## Contributing
+
+### Development Setup
+
+1. **Fork and Clone**
+   ```bash
+   git clone https://github.com/your-username/synth-dev.git
+   cd synth-dev
+   npm install
+   ```
+
+2. **Set Up Development Environment**
+   ```bash
+   cp config.example.env .env
+   # Edit .env with your API keys
+   ```
+
+3. **Run in Development Mode**
+   ```bash
+   npm run dev  # Auto-reload on changes
+   ```
+
+### Creating New Tools
+
+Tools are automatically discovered from the `tools/` directory. Each tool needs:
+
+#### 1. Tool Structure
+```
+tools/my_new_tool/
+├── definition.json      # Tool schema and metadata
+└── implementation.js    # Tool logic
 ```
 
-#### 2. Create definition.json
-
-This file defines the tool's interface, parameters, and behavior:
-
+#### 2. Definition File (`definition.json`)
 ```json
 {
   "name": "my_new_tool",
-  "description": "Brief description of what the tool does",
+  "description": "Brief description",
   "auto_run": false,
-  "requires_backup": true,
-  "backup_resource_path_property_name": "param_name",
+  "requires_backup": false,
   "schema": {
     "type": "function",
     "function": {
       "name": "my_new_tool",
-      "description": "Detailed description for the AI model explaining the tool's purpose, parameters, constraints, and expected behavior. Be very specific about parameter formats and expected values.",
+      "description": "Detailed description for AI",
       "parameters": {
         "type": "object",
         "properties": {
-          "param_name": {
+          "input": {
             "type": "string",
-            "description": "Clear description of this parameter including expected format, constraints, and examples"
+            "description": "Parameter description"
           }
         },
-        "required": ["param_name"]
-      },
-      "response_format": {
-        "description": "Describe the exact JSON structure returned by the tool, including success/error cases"
+        "required": ["input"]
       }
     }
   }
 }
 ```
 
-**Key Fields Explained:**
-- `auto_run`: If `true`, tool executes automatically; if `false`, requires user approval
-- `description` (function level): This is what the AI sees - be extremely detailed and specific
-- `parameters.properties`: Define each parameter with clear constraints and expected formats
-- `response_format`: Helps AI understand what to expect from the tool
-
-#### 3. Create implementation.js
-
-This file contains the actual tool logic:
-
+#### 3. Implementation File (`implementation.js`)
 ```javascript
-/**
- * Tool implementation
- * Detailed description of what this tool does
- */
-
-import { /* required imports */ } from 'module';
-
 export default async function myNewTool(params) {
-    // Extract and validate parameters
-    const { param_name } = params;
-    
-    // Validate inputs
-    if (!param_name || typeof param_name !== 'string') {
+    const { input } = params;
+
+    // Validate input
+    if (!input) {
         return {
-            error: 'param_name is required and must be a string',
+            error: 'Input is required',
             success: false,
             timestamp: new Date().toISOString()
         };
     }
-    
+
     try {
-        // Your tool logic here
-        const result = processData(param_name);
-        
+        // Tool logic here
+        const result = processInput(input);
+
         return {
             success: true,
             timestamp: new Date().toISOString(),
-            result: result,
-            // Include other relevant data
+            result: result
         };
     } catch (error) {
         return {
-            error: `Unexpected error: ${error.message}`,
+            error: error.message,
             success: false,
             timestamp: new Date().toISOString()
         };
@@ -212,110 +307,99 @@ export default async function myNewTool(params) {
 }
 ```
 
-### Execution Environment & Constraints
+### Creating New Commands
 
-#### Runtime Environment
-- **Node.js**: Tools run in the same Node.js process as the main application
-- **ES Modules**: Use ES6 import/export syntax
-- **Async/Await**: All tool functions must be async and return a Promise
-- **File System Access**: Limited to current working directory and subdirectories
-- **Network Access**: Available for HTTP/HTTPS requests
-- **Process Access**: Can spawn child processes but should be used carefully
+Commands are located in the `commands/` directory and automatically registered:
 
-#### Security Constraints
-- **Path Traversal**: Cannot access files outside the project directory (no `../` escaping)
-- **File Permissions**: Respect system file permissions
-- **Memory Usage**: Be mindful of memory consumption for large operations
-- **Timeout**: Long-running operations should include progress feedback
+#### 1. Simple Command
+```javascript
+import { BaseCommand } from '../base/BaseCommand.js';
 
-#### Parameter Guidelines
-- **Validation**: Always validate all input parameters
-- **Type Safety**: Check parameter types and ranges
-- **Error Handling**: Return consistent error objects with descriptive messages
-- **Documentation**: Parameter descriptions should include examples and constraints
+export class MyCommand extends BaseCommand {
+    constructor() {
+        super('mycommand', 'Description of command');
+    }
 
-#### Response Format Standards
-All tools should return consistent JSON objects:
+    getRequiredDependencies() {
+        return ['apiClient']; // Required context dependencies
+    }
 
-**Success Response:**
-```json
-{
-  "success": true,
-  "timestamp": "2025-01-01T12:00:00.000Z",
-  // ... tool-specific data
+    async implementation(args, context) {
+        const { apiClient } = context;
+        // Command logic here
+        console.log('Command executed!');
+        return true;
+    }
 }
 ```
 
-**Error Response:**
-```json
-{
-  "success": false,
-  "error": "Descriptive error message",
-  "timestamp": "2025-01-01T12:00:00.000Z"
+#### 2. Interactive Command
+```javascript
+import { InteractiveCommand } from '../base/BaseCommand.js';
+
+export class MyInteractiveCommand extends InteractiveCommand {
+    constructor() {
+        super('interactive', 'Interactive command');
+    }
+
+    async implementation(args, context) {
+        const input = await this.promptForInput('Enter value: ', context);
+        const confirmed = await this.promptForConfirmation('Proceed?', context);
+
+        if (confirmed) {
+            console.log(`Processing: ${input}`);
+        }
+
+        return true;
+    }
 }
 ```
 
-### Best Practices
+### Adding New AI Roles
 
-#### 1. Clear Parameter Descriptions
-Be extremely specific in parameter descriptions. The AI model relies on these to understand how to use your tool correctly:
-
-```json
-{
-  "file_path": {
-    "type": "string",
-    "description": "Relative path to the target file, starting from project root. Must use forward slashes (/). Example: 'src/components/Button.jsx' or 'config.json'. Cannot contain '..' or absolute paths for security."
-  }
-}
-```
-
-#### 2. Robust Error Handling
-Handle all possible error cases and provide actionable error messages:
+Roles are defined in `systemMessages.js`:
 
 ```javascript
-// Check file existence
-if (!existsSync(filePath)) {
-    return {
-        error: `File '${filePath}' does not exist. Please check the path and try again.`,
-        success: false,
-        timestamp: new Date().toISOString()
-    };
+newRole: {
+    level: 'base',  // 'base', 'smart', or 'fast'
+    systemMessage: `Your role description and instructions...`,
+    excludedTools: ['tool1', 'tool2'],  // Tools this role cannot use
+    reminder: `Additional behavior reminders...`
 }
 ```
 
-#### 3. Input Validation
-Validate all inputs thoroughly:
+### Code Style Guidelines
 
-```javascript
-// Validate required string parameter
-if (!param || typeof param !== 'string' || param.trim().length === 0) {
-    return {
-        error: 'Parameter must be a non-empty string',
-        success: false,
-        timestamp: new Date().toISOString()
-    };
-}
-```
+- **ES Modules**: Use `import/export` syntax
+- **Async/Await**: Prefer over Promises and callbacks
+- **Error Handling**: Always handle errors gracefully
+- **Documentation**: Include JSDoc comments for functions
+- **Validation**: Validate all inputs thoroughly
+- **Consistent Naming**: Use camelCase for variables, PascalCase for classes
 
-#### 4. Consistent Naming
-- Use snake_case for parameter names
-- Use descriptive, unambiguous names
-- Match parameter names between definition.json and implementation.js
+### Testing
 
-### Testing Your Tool
+1. **Manual Testing**: Use the application with your changes
+2. **Tool Testing**: Test tools with various inputs and edge cases
+3. **Command Testing**: Verify commands work in different contexts
+4. **Role Testing**: Test AI roles with different scenarios
 
-After creating your tool, test it thoroughly:
+### Pull Request Guidelines
 
-1. **Parameter Validation**: Test with invalid/missing parameters
-2. **Edge Cases**: Test boundary conditions and unusual inputs
-3. **Error Scenarios**: Verify error handling works correctly
-4. **Success Paths**: Ensure normal operation works as expected
+1. **Clear Description**: Explain what your changes do and why
+2. **Test Coverage**: Describe how you tested your changes
+3. **Documentation**: Update relevant documentation
+4. **Breaking Changes**: Clearly mark any breaking changes
+5. **Small Commits**: Keep commits focused and atomic
 
-### Auto-Discovery
+### Getting Help
 
-The application automatically discovers and loads all tools from the `tools` directory. Once you've created your tool files, restart the application to load the new tool.
+- **Issues**: Report bugs and request features via GitHub Issues
+- **Discussions**: Ask questions in GitHub Discussions
+- **Documentation**: Check existing docs in the `docs/` directory
+- **Examples**: Look at existing tools and commands for patterns
 
-### Example: Simple Calculator Tool
 
-See the `tools/calculate` directory for a complete example of a well-implemented tool with proper validation, error handling, and documentation.
 
+
+* - not really, figure of speech
