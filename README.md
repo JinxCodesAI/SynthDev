@@ -8,7 +8,9 @@ Deeply inspired by [Aider](https://github.com/Aider-AI/aider), [Cline](https://g
 
 Shamelessly vibe-coded with use of Cursor and Augument Code, blissfully in JavaScript, like [Dylan's Beattie's song](https://www.youtube.com/watch?v=jxi0ETwDvws&t=250s) never existed.
 
-For more serious documentation, see [docs/README.md](docs/README.md)
+Code tested with GPT-4.1-mini and GPT-4.1-nano (fast) and alternatively with Gemini Flash 2.5 with sensible results. 
+
+For more serious documentation, see [docs/README.md](docs/README.md) (AI generated obviously)
 
 ## Usage
 
@@ -27,7 +29,9 @@ npm start
 
 ## Support
 
-If you want to see this project continue, consider living a star, shouting out about it on X, 
+Download, run, test, create Issues, start discussion. 
+
+If you want to see this project continue, consider living a star, shouting out about it on X.com, 
 or maybe even supporting it on [GitHub Sponsors](https://github.com/sponsors/adamskrodzki).
 
 ## License
