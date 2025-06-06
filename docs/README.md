@@ -19,13 +19,15 @@ Synth-Dev is an AI-powered development assistant that provides:
 
 ## Installation & Setup
 
-### 1. Install Dependencies
+### Option 1: Native Installation
+
+#### 1. Install Dependencies
 
 ```bash
 npm install
 ```
 
-### 2. Configure Environment
+#### 2. Configure Environment
 
 Copy the example configuration file:
 ```bash
@@ -55,7 +57,7 @@ ENABLE_PROMPT_ENHANCEMENT=false
 VERBOSITY_LEVEL=2
 ```
 
-### 3. Start the Application
+#### 3. Start the Application
 
 ```bash
 npm start
@@ -65,6 +67,77 @@ Or run in development mode with auto-reload:
 ```bash
 npm run dev
 ```
+
+### Option 2: Docker Installation
+
+Docker provides an isolated environment and is the recommended way to run Synth-Dev, especially when working with different projects.
+
+#### Prerequisites
+- Docker Desktop installed and running
+- Git (to clone the repository)
+
+#### 1. Setup
+
+```bash
+# Clone the repository
+git clone https://github.com/JinxCodesAI/SynthDev.git
+cd SynthDev
+
+# Initial setup (creates .env file and builds Docker image)
+# Windows:
+./docker-run.bat setup
+# Linux/macOS:
+./docker-run.sh setup
+```
+
+#### 2. Configure Environment
+
+Edit the `.env` file with your API keys (same format as native installation above).
+
+#### 3. Run Synth-Dev
+
+**From Synth-Dev source directory:**
+```bash
+# Windows:
+./docker-run.bat run
+# Linux/macOS:
+./docker-run.sh run
+```
+
+**From any project directory:**
+```bash
+# Windows:
+./docker-run.bat run --path "C:\path\to\your\project"
+# Linux/macOS:
+./docker-run.sh run --path "/path/to/your/project"
+```
+
+#### Docker Commands
+
+| Command | Description |
+|---------|-------------|
+| `./docker-run.{bat\|sh} setup` | Initial setup and build |
+| `./docker-run.{bat\|sh} run` | Run interactively (recommended) |
+| `./docker-run.{bat\|sh} run --path "path"` | Run from custom directory |
+| `./docker-run.{bat\|sh} start` | Start in production mode |
+| `./docker-run.{bat\|sh} dev` | Start in development mode |
+| `./docker-run.{bat\|sh} stop` | Stop the application |
+| `./docker-run.{bat\|sh} logs` | View application logs |
+| `./docker-run.{bat\|sh} shell` | Open shell in container |
+| `./docker-run.{bat\|sh} clean` | Remove containers and volumes |
+| `./docker-run.{bat\|sh} status` | Show container status |
+
+> **Note**: Use `docker-run.bat` on Windows and `docker-run.sh` on Linux/macOS
+
+#### How Docker Mode Works
+
+When using `--path`, Synth-Dev:
+1. **Installs globally** in the container via `npm install -g .`
+2. **Mounts your directory** as the working directory
+3. **Loads environment variables** from the `.env` file automatically
+4. **Runs as CLI tool** from your project directory
+
+This allows you to use Synth-Dev with any project while keeping it containerized and isolated.
 
 ## Main Functionalities
 
@@ -402,4 +475,4 @@ newRole: {
 
 
 
-* - not really, figure of speech
+\* - not really, just a figure of speech
