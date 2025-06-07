@@ -347,10 +347,12 @@ class MultiAgentOrchestrator {
         };
     }
 }
+```
 
 ### Selective LangChain Integration for Advanced Workflows
 
 **Minimal LangChain Components for Workflow Orchestration**:
+
 ```javascript
 // Optional: Use LangGraph StateGraph for complex workflows
 import { StateGraph, END } from "@langchain/langgraph";
