@@ -258,7 +258,7 @@ class ToolManager {
 
         // Handle file backup if tool requires it
         if (toolDefinition && toolDefinition.requires_backup && snapshotManager) {
-            this._handleFileBackup(toolName, toolArgs, snapshotManager);
+            await this._handleFileBackup(toolName, toolArgs, snapshotManager);
         }
 
         const implementation = this.toolImplementations.get(toolName);
@@ -274,6 +274,11 @@ class ToolManager {
                 tool_name: toolName,
                 ...result
             };
+
+            // Handle Git commit if tool modifies files and we're in Git mode
+            if (toolDefinition && toolDefinition.requires_backup && snapshotManager) {
+                await this._handlePostExecutionGitCommit(toolName, toolArgs, snapshotManager);
+            }
 
             consoleInterface.showToolResult(standardizedResult);
 
@@ -307,18 +312,48 @@ class ToolManager {
      * @param {Object} toolArgs - Arguments passed to the tool
      * @param {SnapshotManager} snapshotManager - Snapshot manager instance
      */
-    _handleFileBackup(toolName, toolArgs, snapshotManager) {
+    async _handleFileBackup(toolName, toolArgs, snapshotManager) {
         const toolDefinition = this.toolDefinitions.get(toolName);
-        
+
         if (!toolDefinition || !toolDefinition.backup_resource_path_property_name) {
             return; // No backup property defined
         }
-        
+
         const pathPropertyName = toolDefinition.backup_resource_path_property_name;
         const filePath = toolArgs[pathPropertyName];
-        
+
         if (filePath) {
-            snapshotManager.backupFileIfNeeded(filePath);
+            await snapshotManager.backupFileIfNeeded(filePath);
+        }
+    }
+
+    /**
+     * Handles Git commit after tool execution if in Git mode
+     * @param {string} toolName - Name of the tool that was executed
+     * @param {Object} toolArgs - Arguments passed to the tool
+     * @param {SnapshotManager} snapshotManager - Snapshot manager instance
+     */
+    async _handlePostExecutionGitCommit(toolName, toolArgs, snapshotManager) {
+        const gitStatus = snapshotManager.getGitStatus();
+
+        // Only commit if we're in Git mode and have a current snapshot
+        if (!gitStatus.gitMode || !snapshotManager.getCurrentSnapshot()) {
+            return;
+        }
+
+        const currentSnapshot = snapshotManager.getCurrentSnapshot();
+        const modifiedFiles = Array.from(currentSnapshot.modifiedFiles);
+
+        // Only commit if there are modified files
+        if (modifiedFiles.length > 0) {
+            try {
+                const commitResult = await snapshotManager.commitChangesToGit(modifiedFiles);
+                if (!commitResult.success) {
+                    this.logger.warn(`Git commit failed: ${commitResult.error}`, 'Git auto-commit');
+                }
+            } catch (error) {
+                this.logger.warn(`Git commit error: ${error.message}`, 'Git auto-commit');
+            }
         }
     }
 }

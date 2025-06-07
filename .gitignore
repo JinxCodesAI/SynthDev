@@ -1,5 +1,6 @@
 # Dependencies
 node_modules/
+.refact
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

@@ -217,7 +217,7 @@ class AICoderConsole {
             }
 
             // Create snapshot for user instruction with the final prompt
-            this.snapshotManager.createSnapshot(finalPrompt);
+            await this.snapshotManager.createSnapshot(finalPrompt);
         }
 
         // Process user message through API client
