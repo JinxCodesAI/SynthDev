@@ -10,6 +10,8 @@ import { join, resolve } from 'path';
 import ConfigManager from '../../configManager.js';
 import { safeWriteFile, fileExists } from '../../tools/common/fs_utils.js';
 import { getLogger } from '../../logger.js';
+import AIAPIClient from '../../aiAPIClient.js';
+import SystemMessages from '../../systemMessages.js';
 
 export class IndexCommand extends InteractiveCommand {
     constructor() {
@@ -281,6 +283,15 @@ export class IndexCommand extends InteractiveCommand {
 
         this.logger.raw('\n📝 Processing files...');
 
+        let fileSummarizerClient = null;
+        if (hasAIConfig) {
+            const config = ConfigManager.getInstance();
+            const modelType = config.hasFastModelConfig() ? 'fast' : 'base';
+            const modelConfig = config.getModel(modelType);
+            fileSummarizerClient = new AIAPIClient(costsManager, modelConfig.apiKey, modelConfig.baseURL, modelConfig.model || modelConfig.baseModel);
+            await fileSummarizerClient.setSystemMessage(SystemMessages.getSystemMessage('file_summarizer'), 'file_summarizer');
+        }
+
         // Process each file using analysis results
         const allFilesToProcess = [
             ...analysisResult.newFiles,
@@ -303,7 +314,8 @@ export class IndexCommand extends InteractiveCommand {
                     fileData.needsSummary,
                     maxFileSize,
                     costsManager,
-                    fileData.existingInfo
+                    fileData.existingInfo,
+                    fileSummarizerClient
                 );
 
                 index.files[fileData.file.path] = fileInfo;
@@ -347,6 +359,15 @@ export class IndexCommand extends InteractiveCommand {
         // Process directories (after files are processed)
         this.logger.raw('\n📁 Processing directories...');
 
+        let directorySummarizerClient = null;
+        if (hasAIConfig) {
+            const config = ConfigManager.getInstance();
+            const modelType = config.hasDirectoryModelConfig() ? 'directory' : (config.hasSmartModelConfig() ? 'smart' : 'base');
+            const modelConfig = config.getModel(modelType);
+            directorySummarizerClient = new AIAPIClient(costsManager, modelConfig.apiKey, modelConfig.baseURL, modelConfig.model || modelConfig.baseModel);
+            await directorySummarizerClient.setSystemMessage(SystemMessages.getSystemMessage('directory_summarizer'), 'directory_summarizer');
+        }
+
         // Sort directories by level (deepest first) to ensure dependencies are processed correctly
         // Root directory (level 0) should be processed last to aggregate all other summaries
         const sortedDirectoriesToProcess = [
@@ -382,7 +403,8 @@ export class IndexCommand extends InteractiveCommand {
                     directoryData.needsSummary,
                     costsManager,
                     directoryData.existingInfo,
-                    allProcessedEntries
+                    allProcessedEntries,
+                    directorySummarizerClient
                 );
 
                 index.files[directoryData.directory.path] = directoryInfo;

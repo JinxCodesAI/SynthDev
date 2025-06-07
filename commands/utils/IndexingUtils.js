@@ -311,27 +311,14 @@ export class IndexingUtils {
      * @param {string} filePath - File path
      * @param {string} content - File content
      * @param {Object} costsManager - Costs manager instance
+     * @param {AIAPIClient} aiClient - Pre-configured AIAPIClient instance
      * @returns {Promise<Object>} Summary result
      */
-    static async generateAISummary(filePath, content, costsManager) {
+    static async generateAISummary(filePath, content, costsManager, aiClient) {
+        if (!aiClient) {
+            throw new Error('AI client is not available for summary generation.');
+        }
         try {
-            // Initialize AI client for file summarization
-            const config = ConfigManager.getInstance();
-            const modelConfig = config.hasFastModelConfig()
-                ? config.getModel('fast')
-                : config.getModel('base');
-
-            const aiClient = new AIAPIClient(
-                costsManager,
-                modelConfig.apiKey,
-                modelConfig.baseUrl,
-                modelConfig.model || modelConfig.baseModel
-            );
-
-            // Set the file_summarizer role
-            const systemMessage = SystemMessages.getSystemMessage('file_summarizer');
-            await aiClient.setSystemMessage(systemMessage, 'file_summarizer');
-
             // Construct user prompt
             const userPrompt = `Analyze this file and provide a concise summary (up to 150 words):
 
@@ -395,27 +382,14 @@ Summary:`;
      * @param {string} dirPath - Directory path
      * @param {string} contentSummaries - Content summaries
      * @param {Object} costsManager - Costs manager instance
+     * @param {AIAPIClient} aiClient - Pre-configured AIAPIClient instance
      * @returns {Promise<Object>} Summary result
      */
-    static async generateDirectorySummary(dirPath, contentSummaries, costsManager) {
+    static async generateDirectorySummary(dirPath, contentSummaries, costsManager, aiClient) {
+        if (!aiClient) {
+            throw new Error('AI client is not available for directory summary generation.');
+        }
         try {
-            // Initialize AI client for directory summarization
-            const config = ConfigManager.getInstance();
-            const modelConfig = config.hasFastModelConfig()
-                ? config.getModel('fast')
-                : config.getModel('base');
-
-            const aiClient = new AIAPIClient(
-                costsManager,
-                modelConfig.apiKey,
-                modelConfig.baseUrl,
-                modelConfig.model || modelConfig.baseModel
-            );
-
-            // Set the directory_summarizer role
-            const systemMessage = SystemMessages.getSystemMessage('directory_summarizer');
-            await aiClient.setSystemMessage(systemMessage, 'directory_summarizer');
-
             // Construct user prompt with special handling for root directory
             const isRootDirectory = dirPath === '.';
             const directoryDescription = isRootDirectory ? 'root directory (entire project)' : `directory: ${dirPath}`;
@@ -494,7 +468,7 @@ Directory Summary:`;
      * @param {Object} existingFileInfo - Existing file information
      * @returns {Promise<Object>} Processed file information
      */
-    static async processFileWithChecksum(file, checksum, needsSummary, maxFileSize, costsManager, existingFileInfo) {
+    static async processFileWithChecksum(file, checksum, needsSummary, maxFileSize, costsManager, existingFileInfo, aiClient) {
         const filePath = file.path;
         const metadata = getFileMetadata(filePath);
 
@@ -537,7 +511,7 @@ Directory Summary:`;
                     fileInfo.original_size = metadata.size;
                 }
 
-                const summaryResult = await this.generateAISummary(filePath, content, costsManager);
+                const summaryResult = await this.generateAISummary(filePath, content, costsManager, aiClient);
                 fileInfo.ai_summary = summaryResult.summary;
                 fileInfo.summary_size = Buffer.byteLength(summaryResult.summary, 'utf8');
                 fileInfo.tokens_used = summaryResult.tokensUsed;
@@ -562,7 +536,7 @@ Directory Summary:`;
      * @param {Array} allProcessedEntries - All processed entries (files and directories)
      * @returns {Promise<Object>} Processed directory information
      */
-    static async processDirectoryWithChecksum(directory, needsSummary, costsManager, existingDirectoryInfo, allProcessedEntries) {
+    static async processDirectoryWithChecksum(directory, needsSummary, costsManager, existingDirectoryInfo, allProcessedEntries, aiClient) {
         const dirPath = directory.path;
         const metadata = getFileMetadata(dirPath);
 
@@ -615,7 +589,7 @@ Directory Summary:`;
                     .join('\n\n');
 
                 if (contentSummaries) {
-                    const summaryResult = await this.generateDirectorySummary(dirPath, contentSummaries, costsManager);
+                    const summaryResult = await this.generateDirectorySummary(dirPath, contentSummaries, costsManager, aiClient);
                     directoryInfo.ai_summary = summaryResult.summary;
                     directoryInfo.summary_size = Buffer.byteLength(summaryResult.summary, 'utf8');
                     directoryInfo.tokens_used = summaryResult.tokensUsed;
