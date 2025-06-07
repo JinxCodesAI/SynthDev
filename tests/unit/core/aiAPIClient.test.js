@@ -1,6 +1,6 @@
 // tests/unit/core/aiAPIClient.test.js
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import AIAPIClient from '../../../aiAPIClient.js';
+import AIAPIClient from '../../../src/core/ai/aiAPIClient.js';
 import { createMockOpenAI } from '../../mocks/openai.js';
 
 // Mock dependencies
@@ -8,22 +8,25 @@ vi.mock('openai', () => ({
     OpenAI: vi.fn(),
 }));
 
-vi.mock('../../../configManager.js', () => ({
+vi.mock('../../../src/config/managers/configManager.js', () => ({
     default: {
         getInstance: vi.fn(),
     },
 }));
 
-vi.mock('../../../systemMessages.js', () => ({
+vi.mock('../../../src/core/ai/systemMessages.js', () => ({
     default: {
         getSystemMessage: vi.fn(),
         getLevel: vi.fn(),
         getExcludedTools: vi.fn(),
+        isToolExcluded: vi.fn(),
+        isToolIncluded: vi.fn(),
         getReminder: vi.fn(),
+        getParsingTools: vi.fn(),
     },
 }));
 
-vi.mock('../../../logger.js', () => ({
+vi.mock('../../../src/core/managers/logger.js', () => ({
     getLogger: vi.fn(),
 }));
 
@@ -59,29 +62,38 @@ describe('AIAPIClient', () => {
             hasSmartModelConfig: vi.fn().mockReturnValue(false),
             hasFastModelConfig: vi.fn().mockReturnValue(false),
             getMaxTokens: vi.fn().mockReturnValue(4000),
+            getModelParameters: vi.fn().mockReturnValue({}),
         };
 
         mockSystemMessages = {
             getSystemMessage: vi.fn().mockReturnValue('Test system message'),
             getLevel: vi.fn().mockReturnValue('base'),
             getExcludedTools: vi.fn().mockReturnValue([]),
+            isToolExcluded: vi.fn().mockReturnValue(false),
+            isToolIncluded: vi.fn().mockReturnValue(true),
             getReminder: vi.fn().mockReturnValue(null),
+            getParsingTools: vi.fn().mockReturnValue([]),
+            getExamples: vi.fn().mockReturnValue([]),
         };
 
         // Setup module mocks
         const { OpenAI } = await import('openai');
         OpenAI.mockImplementation(() => mockOpenAI);
 
-        const ConfigManager = await import('../../../configManager.js');
+        const ConfigManager = await import('../../../src/config/managers/configManager.js');
         ConfigManager.default.getInstance.mockReturnValue(mockConfig);
 
-        const SystemMessages = await import('../../../systemMessages.js');
+        const SystemMessages = await import('../../../src/core/ai/systemMessages.js');
         SystemMessages.default.getSystemMessage = mockSystemMessages.getSystemMessage;
         SystemMessages.default.getLevel = mockSystemMessages.getLevel;
         SystemMessages.default.getExcludedTools = mockSystemMessages.getExcludedTools;
+        SystemMessages.default.isToolExcluded = mockSystemMessages.isToolExcluded;
+        SystemMessages.default.isToolIncluded = mockSystemMessages.isToolIncluded;
         SystemMessages.default.getReminder = mockSystemMessages.getReminder;
+        SystemMessages.default.getParsingTools = mockSystemMessages.getParsingTools;
+        SystemMessages.default.getExamples = mockSystemMessages.getExamples;
 
-        const { getLogger } = await import('../../../logger.js');
+        const { getLogger } = await import('../../../src/core/managers/logger.js');
         getLogger.mockReturnValue(mockLogger);
 
         // Create AIAPIClient instance
@@ -125,6 +137,37 @@ describe('AIAPIClient', () => {
             expect(aiClient.onError).toBeNull();
             expect(aiClient.onContentDisplay).toBeNull();
         });
+
+        it('should initialize with toolManager when provided', () => {
+            const mockToolManager = {
+                executeToolCall: vi.fn(),
+                getTools: vi.fn(() => []),
+            };
+
+            const clientWithToolManager = new AIAPIClient(
+                mockCostsManager,
+                'test-api-key',
+                'https://api.openai.com/v1',
+                'test-model',
+                mockToolManager
+            );
+
+            expect(clientWithToolManager.toolManager).toBe(mockToolManager);
+            expect(clientWithToolManager.onToolExecution).toBeDefined();
+            expect(typeof clientWithToolManager.onToolExecution).toBe('function');
+        });
+
+        it('should not set default tool execution handler without toolManager', () => {
+            const clientWithoutToolManager = new AIAPIClient(
+                mockCostsManager,
+                'test-api-key',
+                'https://api.openai.com/v1',
+                'test-model'
+            );
+
+            expect(clientWithoutToolManager.toolManager).toBeNull();
+            expect(clientWithoutToolManager.onToolExecution).toBeNull();
+        });
     });
 
     describe('setCallbacks', () => {
@@ -166,6 +209,57 @@ describe('AIAPIClient', () => {
             expect(aiClient.onToolExecution).toBeNull();
             expect(aiClient.onContentDisplay).toBeNull();
         });
+
+        it('should preserve default tool execution handler when onToolExecution is null', () => {
+            const mockToolManager = {
+                executeToolCall: vi.fn(),
+                getTools: vi.fn(() => []),
+            };
+
+            const clientWithToolManager = new AIAPIClient(
+                mockCostsManager,
+                'test-api-key',
+                'https://api.openai.com/v1',
+                'test-model',
+                mockToolManager
+            );
+
+            const originalHandler = clientWithToolManager.onToolExecution;
+            expect(originalHandler).toBeDefined();
+
+            // Setting callbacks with onToolExecution as null should preserve default
+            clientWithToolManager.setCallbacks({
+                onResponse: vi.fn(),
+                onToolExecution: null,
+            });
+
+            expect(clientWithToolManager.onToolExecution).toBe(originalHandler);
+        });
+
+        it('should override default tool execution handler when onToolExecution is provided', () => {
+            const mockToolManager = {
+                executeToolCall: vi.fn(),
+                getTools: vi.fn(() => []),
+            };
+
+            const clientWithToolManager = new AIAPIClient(
+                mockCostsManager,
+                'test-api-key',
+                'https://api.openai.com/v1',
+                'test-model',
+                mockToolManager
+            );
+
+            const originalHandler = clientWithToolManager.onToolExecution;
+            const customHandler = vi.fn();
+
+            clientWithToolManager.setCallbacks({
+                onToolExecution: customHandler,
+            });
+
+            expect(clientWithToolManager.onToolExecution).toBe(customHandler);
+            expect(clientWithToolManager.onToolExecution).not.toBe(originalHandler);
+        });
     });
 
     describe('setTools', () => {
@@ -185,7 +279,9 @@ describe('AIAPIClient', () => {
                 { function: { name: 'excluded_tool' } },
             ];
 
-            mockSystemMessages.getExcludedTools.mockReturnValue(['excluded_tool']);
+            mockSystemMessages.isToolIncluded.mockImplementation(
+                (_role, toolName) => toolName !== 'excluded_tool'
+            );
             aiClient.role = 'test-role';
 
             aiClient.setTools(tools);
@@ -243,6 +339,132 @@ describe('AIAPIClient', () => {
 
             expect(mockLogger.info).toHaveBeenCalledWith(
                 expect.stringContaining('Switched to smart model')
+            );
+        });
+
+        it('should add examples when role has examples', async () => {
+            const mockExamples = [
+                { role: 'user', content: 'Example user message' },
+                { role: 'assistant', content: 'Example assistant response' },
+            ];
+            mockSystemMessages.getExamples.mockReturnValue(mockExamples);
+
+            await aiClient.setSystemMessage('Test system message', 'test-role');
+
+            expect(aiClient.messages).toHaveLength(3); // system + 2 examples
+            expect(aiClient.messages[0]).toEqual({
+                role: 'system',
+                content: 'Test system message',
+            });
+            expect(aiClient.messages[1]).toEqual({
+                role: 'user',
+                content: 'Example user message',
+            });
+            expect(aiClient.messages[2]).toEqual({
+                role: 'assistant',
+                content: 'Example assistant response',
+            });
+            expect(aiClient.exampleMessageCount).toBe(2);
+        });
+
+        it('should replace previous examples when switching roles', async () => {
+            // First role with examples
+            const firstExamples = [
+                { role: 'user', content: 'First example' },
+                { role: 'assistant', content: 'First response' },
+            ];
+            mockSystemMessages.getExamples.mockReturnValueOnce(firstExamples);
+
+            await aiClient.setSystemMessage('First system message', 'first-role');
+            expect(aiClient.messages).toHaveLength(3);
+            expect(aiClient.exampleMessageCount).toBe(2);
+
+            // Add a user message
+            aiClient.addUserMessage('User message');
+            expect(aiClient.messages).toHaveLength(4);
+
+            // Switch to second role with different examples
+            const secondExamples = [
+                { role: 'user', content: 'Second example' },
+                { role: 'function', name: 'test_function', content: 'Function result' },
+            ];
+            mockSystemMessages.getExamples.mockReturnValueOnce(secondExamples);
+
+            await aiClient.setSystemMessage('Second system message', 'second-role');
+
+            // Should have: system message + 2 new examples + user message
+            expect(aiClient.messages).toHaveLength(4);
+            expect(aiClient.messages[0]).toEqual({
+                role: 'system',
+                content: 'Second system message',
+            });
+            expect(aiClient.messages[1]).toEqual({
+                role: 'user',
+                content: 'Second example',
+            });
+            expect(aiClient.messages[2]).toEqual({
+                role: 'function',
+                name: 'test_function',
+                content: 'Function result',
+            });
+            expect(aiClient.messages[3]).toEqual({
+                role: 'user',
+                content: 'User message',
+            });
+            expect(aiClient.exampleMessageCount).toBe(2);
+        });
+
+        it('should handle function examples with arguments', async () => {
+            const mockExamples = [
+                { role: 'user', content: 'Test function call' },
+                {
+                    role: 'function',
+                    name: 'test_function',
+                    arguments: '{"param": "value"}',
+                    content: 'Function result',
+                },
+            ];
+            mockSystemMessages.getExamples.mockReturnValue(mockExamples);
+
+            await aiClient.setSystemMessage('Test system message', 'test-role');
+
+            expect(aiClient.messages).toHaveLength(3);
+            expect(aiClient.messages[2]).toEqual({
+                role: 'function',
+                name: 'test_function',
+                arguments: '{"param": "value"}',
+                content: 'Function result',
+            });
+        });
+
+        it('should handle roles without examples', async () => {
+            mockSystemMessages.getExamples.mockReturnValue([]);
+
+            await aiClient.setSystemMessage('Test system message', 'test-role');
+
+            expect(aiClient.messages).toHaveLength(1);
+            expect(aiClient.messages[0]).toEqual({
+                role: 'system',
+                content: 'Test system message',
+            });
+            expect(aiClient.exampleMessageCount).toBe(0);
+        });
+
+        it('should handle getExamples errors gracefully', async () => {
+            mockSystemMessages.getExamples.mockImplementation(() => {
+                throw new Error('Failed to get examples');
+            });
+
+            await aiClient.setSystemMessage('Test system message', 'test-role');
+
+            expect(aiClient.messages).toHaveLength(1);
+            expect(aiClient.messages[0]).toEqual({
+                role: 'system',
+                content: 'Test system message',
+            });
+            expect(aiClient.exampleMessageCount).toBe(0);
+            expect(mockLogger.warn).toHaveBeenCalledWith(
+                expect.stringContaining('Could not add examples for role')
             );
         });
     });
@@ -322,6 +544,49 @@ describe('AIAPIClient', () => {
                 content: 'Test system message',
             });
         });
+
+        it('should reset example message count', () => {
+            aiClient.exampleMessageCount = 3;
+            aiClient.messages = [
+                { role: 'user', content: 'User message' },
+                { role: 'assistant', content: 'Assistant message' },
+            ];
+
+            aiClient.clearConversation();
+
+            expect(aiClient.exampleMessageCount).toBe(0);
+        });
+
+        it('should restore system message and examples for current role', () => {
+            const mockExamples = [
+                { role: 'user', content: 'Example user message' },
+                { role: 'assistant', content: 'Example assistant response' },
+            ];
+            mockSystemMessages.getExamples.mockReturnValue(mockExamples);
+
+            aiClient.role = 'test-role';
+            aiClient.messages = [
+                { role: 'user', content: 'User message' },
+                { role: 'assistant', content: 'Assistant message' },
+            ];
+
+            aiClient.clearConversation();
+
+            expect(aiClient.messages).toHaveLength(3); // system + 2 examples
+            expect(aiClient.messages[0]).toEqual({
+                role: 'system',
+                content: 'Test system message',
+            });
+            expect(aiClient.messages[1]).toEqual({
+                role: 'user',
+                content: 'Example user message',
+            });
+            expect(aiClient.messages[2]).toEqual({
+                role: 'assistant',
+                content: 'Example assistant response',
+            });
+            expect(aiClient.exampleMessageCount).toBe(2);
+        });
     });
 
     describe('getters', () => {
@@ -365,6 +630,11 @@ describe('AIAPIClient', () => {
             aiClient.lastAPICall = mockAPICall;
 
             expect(aiClient.getLastAPICall()).toBe(mockAPICall);
+        });
+
+        it('should return example message count', () => {
+            aiClient.exampleMessageCount = 3;
+            expect(aiClient.getExampleMessageCount()).toBe(3);
         });
     });
 
@@ -560,7 +830,9 @@ describe('AIAPIClient', () => {
 
             aiClient.allTools = tools;
             aiClient.role = 'test-role';
-            mockSystemMessages.getExcludedTools.mockReturnValue(['excluded_tool']);
+            mockSystemMessages.isToolIncluded.mockImplementation(
+                (_role, toolName) => toolName !== 'excluded_tool'
+            );
 
             aiClient._applyToolFiltering();
 
@@ -576,7 +848,9 @@ describe('AIAPIClient', () => {
 
             aiClient.allTools = tools;
             aiClient.role = 'test-role';
-            mockSystemMessages.getExcludedTools.mockReturnValue(['tool1']);
+            mockSystemMessages.isToolIncluded.mockImplementation(
+                (_role, toolName) => toolName !== 'tool1'
+            );
 
             aiClient._applyToolFiltering();
 
@@ -602,7 +876,7 @@ describe('AIAPIClient', () => {
 
             aiClient.allTools = tools;
             aiClient.role = 'test-role';
-            mockSystemMessages.getExcludedTools.mockImplementation(() => {
+            mockSystemMessages.isToolIncluded.mockImplementation(() => {
                 throw new Error('SystemMessages error');
             });
 
@@ -612,6 +886,452 @@ describe('AIAPIClient', () => {
             expect(mockLogger.warn).toHaveBeenCalledWith(
                 expect.stringContaining('Could not apply tool filtering')
             );
+        });
+
+        it('should work with pattern matching exclusions', () => {
+            const tools = [
+                { function: { name: 'read_files' } },
+                { function: { name: 'write_file' } },
+                { function: { name: 'edit_file' } },
+                { function: { name: 'execute_command' } },
+                { function: { name: 'get_time' } },
+                { function: { name: 'calculate' } },
+            ];
+
+            aiClient.allTools = tools;
+            aiClient.role = 'test-role';
+
+            // Mock pattern matching: include only tools that don't end with '_file' and don't start with 'execute_'
+            mockSystemMessages.isToolIncluded.mockImplementation(
+                (_role, toolName) => !toolName.endsWith('_file') && !toolName.startsWith('execute_')
+            );
+
+            aiClient._applyToolFiltering();
+
+            expect(aiClient.tools).toHaveLength(3);
+            expect(aiClient.tools.map(t => t.function.name)).toEqual([
+                'read_files',
+                'get_time',
+                'calculate',
+            ]);
+        });
+    });
+
+    describe('default tool execution handler', () => {
+        it('should execute tools through toolManager when default handler is used', async () => {
+            const mockToolManager = {
+                executeToolCall: vi.fn().mockResolvedValue({
+                    role: 'tool',
+                    tool_call_id: 'call_123',
+                    content: 'Tool executed successfully',
+                }),
+                getTools: vi.fn(() => []),
+            };
+
+            const clientWithToolManager = new AIAPIClient(
+                mockCostsManager,
+                'test-api-key',
+                'https://api.openai.com/v1',
+                'test-model',
+                mockToolManager
+            );
+
+            const mockToolCall = {
+                id: 'call_123',
+                function: {
+                    name: 'test_tool',
+                    arguments: '{"arg1": "value1"}',
+                },
+            };
+
+            const result = await clientWithToolManager._defaultToolExecutionHandler(mockToolCall);
+
+            expect(mockToolManager.executeToolCall).toHaveBeenCalledWith(
+                mockToolCall,
+                expect.objectContaining({
+                    showToolExecution: expect.any(Function),
+                    showToolResult: expect.any(Function),
+                    showToolCancelled: expect.any(Function),
+                    promptForConfirmation: expect.any(Function),
+                }),
+                null, // No snapshot manager
+                expect.objectContaining({
+                    currentRole: null,
+                    currentAgentId: null,
+                    agentManager: null,
+                    costsManager: mockCostsManager,
+                    toolManager: mockToolManager,
+                    app: null,
+                })
+            );
+
+            expect(result).toEqual({
+                role: 'tool',
+                tool_call_id: 'call_123',
+                content: 'Tool executed successfully',
+            });
+        });
+
+        it('should throw error when no toolManager is available', async () => {
+            const clientWithoutToolManager = new AIAPIClient(
+                mockCostsManager,
+                'test-api-key',
+                'https://api.openai.com/v1',
+                'test-model'
+            );
+
+            const mockToolCall = {
+                id: 'call_123',
+                function: {
+                    name: 'test_tool',
+                    arguments: '{"arg1": "value1"}',
+                },
+            };
+
+            await expect(
+                clientWithoutToolManager._defaultToolExecutionHandler(mockToolCall)
+            ).rejects.toThrow('No tool manager available for tool execution');
+        });
+
+        it('should handle tool execution errors gracefully', async () => {
+            const mockToolManager = {
+                executeToolCall: vi.fn().mockRejectedValue(new Error('Tool execution failed')),
+                getTools: vi.fn(() => []),
+            };
+
+            const clientWithToolManager = new AIAPIClient(
+                mockCostsManager,
+                'test-api-key',
+                'https://api.openai.com/v1',
+                'test-model',
+                mockToolManager
+            );
+
+            const mockToolCall = {
+                id: 'call_123',
+                function: {
+                    name: 'test_tool',
+                    arguments: '{"arg1": "value1"}',
+                },
+            };
+
+            await expect(
+                clientWithToolManager._defaultToolExecutionHandler(mockToolCall)
+            ).rejects.toThrow('Tool execution failed');
+
+            expect(mockLogger.error).toHaveBeenCalledWith(
+                'Tool execution failed: Tool execution failed'
+            );
+        });
+    });
+
+    describe('multicall expansion', () => {
+        let mockToolManager;
+        let clientWithToolManager;
+
+        beforeEach(() => {
+            mockToolManager = {
+                executeToolCall: vi.fn(),
+                getTools: vi.fn(() => []),
+            };
+
+            clientWithToolManager = new AIAPIClient(
+                mockCostsManager,
+                'test-api-key',
+                'https://api.openai.com/v1',
+                'test-model',
+                mockToolManager
+            );
+        });
+
+        it('should expand multicall tools into individual tool calls', async () => {
+            const originalMessage = {
+                role: 'assistant',
+                content: 'I will use multiple tools',
+                tool_calls: [
+                    {
+                        id: 'call_multicall_123',
+                        type: 'function',
+                        function: {
+                            name: 'multicall',
+                            arguments: JSON.stringify({
+                                tool_calls: [
+                                    {
+                                        function_name: 'read_files',
+                                        arguments: JSON.stringify({ path: '/test/file.txt' }),
+                                    },
+                                    {
+                                        function_name: 'write_file',
+                                        arguments: JSON.stringify({
+                                            path: '/test/output.txt',
+                                            content: 'test',
+                                        }),
+                                    },
+                                ],
+                            }),
+                        },
+                    },
+                ],
+            };
+
+            // Mock multicall tool execution result
+            const multicallResult = {
+                role: 'tool',
+                tool_call_id: 'call_multicall_123',
+                content: JSON.stringify({
+                    success: true,
+                    expanded_tool_calls: [
+                        {
+                            id: 'call_read_123',
+                            type: 'function',
+                            function: {
+                                name: 'read_files',
+                                arguments: '{"path": "/test/file.txt"}',
+                            },
+                        },
+                        {
+                            id: 'call_write_456',
+                            type: 'function',
+                            function: {
+                                name: 'write_file',
+                                arguments: '{"path": "/test/output.txt", "content": "test"}',
+                            },
+                        },
+                    ],
+                }),
+            };
+
+            mockToolManager.executeToolCall.mockResolvedValueOnce(multicallResult);
+
+            const expandedMessage =
+                await clientWithToolManager._expandMulticallTools(originalMessage);
+
+            expect(expandedMessage.tool_calls).toHaveLength(2);
+            expect(expandedMessage.tool_calls[0]).toEqual({
+                id: 'call_read_123',
+                type: 'function',
+                function: {
+                    name: 'read_files',
+                    arguments: '{"path": "/test/file.txt"}',
+                },
+            });
+            expect(expandedMessage.tool_calls[1]).toEqual({
+                id: 'call_write_456',
+                type: 'function',
+                function: {
+                    name: 'write_file',
+                    arguments: '{"path": "/test/output.txt", "content": "test"}',
+                },
+            });
+
+            // Verify multicall tool was executed
+            expect(mockToolManager.executeToolCall).toHaveBeenCalledWith(
+                originalMessage.tool_calls[0],
+                expect.any(Object),
+                null,
+                expect.any(Object)
+            );
+        });
+
+        it('should preserve non-multicall tools alongside expanded multicall tools', async () => {
+            const originalMessage = {
+                role: 'assistant',
+                content: 'I will use multiple tools',
+                tool_calls: [
+                    {
+                        id: 'call_regular_123',
+                        type: 'function',
+                        function: {
+                            name: 'regular_tool',
+                            arguments: '{"param": "value"}',
+                        },
+                    },
+                    {
+                        id: 'call_multicall_456',
+                        type: 'function',
+                        function: {
+                            name: 'multicall',
+                            arguments: JSON.stringify({
+                                tool_calls: [
+                                    {
+                                        function_name: 'expanded_tool',
+                                        arguments: JSON.stringify({ test: 'data' }),
+                                    },
+                                ],
+                            }),
+                        },
+                    },
+                ],
+            };
+
+            // Mock multicall tool execution result
+            const multicallResult = {
+                role: 'tool',
+                tool_call_id: 'call_multicall_456',
+                content: JSON.stringify({
+                    success: true,
+                    expanded_tool_calls: [
+                        {
+                            id: 'call_expanded_789',
+                            type: 'function',
+                            function: {
+                                name: 'expanded_tool',
+                                arguments: '{"test": "data"}',
+                            },
+                        },
+                    ],
+                }),
+            };
+
+            mockToolManager.executeToolCall.mockResolvedValueOnce(multicallResult);
+
+            const expandedMessage =
+                await clientWithToolManager._expandMulticallTools(originalMessage);
+
+            expect(expandedMessage.tool_calls).toHaveLength(2);
+
+            // Should have the regular tool first
+            expect(expandedMessage.tool_calls[0]).toEqual({
+                id: 'call_regular_123',
+                type: 'function',
+                function: {
+                    name: 'regular_tool',
+                    arguments: '{"param": "value"}',
+                },
+            });
+
+            // Should have the expanded tool second
+            expect(expandedMessage.tool_calls[1]).toEqual({
+                id: 'call_expanded_789',
+                type: 'function',
+                function: {
+                    name: 'expanded_tool',
+                    arguments: '{"test": "data"}',
+                },
+            });
+        });
+
+        it('should handle multicall expansion errors gracefully', async () => {
+            const originalMessage = {
+                role: 'assistant',
+                content: 'I will use a multicall tool',
+                tool_calls: [
+                    {
+                        id: 'call_multicall_123',
+                        type: 'function',
+                        function: {
+                            name: 'multicall',
+                            arguments: JSON.stringify({
+                                tool_calls: [
+                                    {
+                                        function_name: 'test_tool',
+                                        arguments: JSON.stringify({ param: 'value' }),
+                                    },
+                                ],
+                            }),
+                        },
+                    },
+                ],
+            };
+
+            // Mock multicall tool execution failure
+            mockToolManager.executeToolCall.mockRejectedValueOnce(
+                new Error('Multicall execution failed')
+            );
+
+            const expandedMessage =
+                await clientWithToolManager._expandMulticallTools(originalMessage);
+
+            // Should keep the original multicall tool when expansion fails
+            expect(expandedMessage.tool_calls).toHaveLength(1);
+            expect(expandedMessage.tool_calls[0]).toEqual(originalMessage.tool_calls[0]);
+
+            expect(mockLogger.error).toHaveBeenCalledWith(
+                expect.stringContaining('Failed to expand multicall tool')
+            );
+        });
+
+        it('should handle invalid multicall results gracefully', async () => {
+            const originalMessage = {
+                role: 'assistant',
+                content: 'I will use a multicall tool',
+                tool_calls: [
+                    {
+                        id: 'call_multicall_123',
+                        type: 'function',
+                        function: {
+                            name: 'multicall',
+                            arguments: JSON.stringify({
+                                tool_calls: [
+                                    {
+                                        function_name: 'test_tool',
+                                        arguments: JSON.stringify({ param: 'value' }),
+                                    },
+                                ],
+                            }),
+                        },
+                    },
+                ],
+            };
+
+            // Mock multicall tool execution with invalid result
+            const invalidResult = {
+                role: 'tool',
+                tool_call_id: 'call_multicall_123',
+                content: JSON.stringify({
+                    success: false,
+                    error: 'Invalid tool call format',
+                }),
+            };
+
+            mockToolManager.executeToolCall.mockResolvedValueOnce(invalidResult);
+
+            const expandedMessage =
+                await clientWithToolManager._expandMulticallTools(originalMessage);
+
+            // Should keep the original multicall tool when result is invalid
+            expect(expandedMessage.tool_calls).toHaveLength(1);
+            expect(expandedMessage.tool_calls[0]).toEqual(originalMessage.tool_calls[0]);
+
+            expect(mockLogger.error).toHaveBeenCalledWith(
+                expect.stringContaining('Failed to expand multicall tool')
+            );
+        });
+
+        it('should return original message when no multicall tools are present', async () => {
+            const originalMessage = {
+                role: 'assistant',
+                content: 'I will use regular tools',
+                tool_calls: [
+                    {
+                        id: 'call_regular_123',
+                        type: 'function',
+                        function: {
+                            name: 'regular_tool',
+                            arguments: '{"param": "value"}',
+                        },
+                    },
+                ],
+            };
+
+            const expandedMessage =
+                await clientWithToolManager._expandMulticallTools(originalMessage);
+
+            expect(expandedMessage).toBe(originalMessage); // Should be the same object
+            expect(mockToolManager.executeToolCall).not.toHaveBeenCalled();
+        });
+
+        it('should return original message when no tool calls are present', async () => {
+            const originalMessage = {
+                role: 'assistant',
+                content: 'I will respond without tools',
+            };
+
+            const expandedMessage =
+                await clientWithToolManager._expandMulticallTools(originalMessage);
+
+            expect(expandedMessage).toBe(originalMessage); // Should be the same object
+            expect(mockToolManager.executeToolCall).not.toHaveBeenCalled();
         });
     });
 });

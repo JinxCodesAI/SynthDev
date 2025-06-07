@@ -1,9 +1,9 @@
 // tests/unit/commands/indexCommand.test.js
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import IndexCommand from '../../../commands/indexing/IndexCommand.js';
+import IndexCommand from '../../../src/commands/indexing/IndexCommand.js';
 
 // Mock dependencies
-vi.mock('../../../logger.js', () => ({
+vi.mock('../../../src/core/managers/logger.js', () => ({
     getLogger: vi.fn(),
 }));
 
@@ -21,13 +21,13 @@ vi.mock('../../../indexing/IndexingUtils.js', () => ({
     },
 }));
 
-vi.mock('../../../configManager.js', () => ({
+vi.mock('../../../src/config/managers/configManager.js', () => ({
     default: {
         getInstance: vi.fn(),
     },
 }));
 
-vi.mock('../../../tools/common/fs_utils.js', () => ({
+vi.mock('../../../src/tools/common/fs_utils.js', () => ({
     safeWriteFile: vi.fn(),
     fileExists: vi.fn(),
     scanDirectory: vi.fn(),
@@ -35,11 +35,11 @@ vi.mock('../../../tools/common/fs_utils.js', () => ({
     safeReadFile: vi.fn(),
 }));
 
-vi.mock('../../../aiAPIClient.js', () => ({
+vi.mock('../../../src/core/ai/aiAPIClient.js', () => ({
     default: vi.fn(),
 }));
 
-vi.mock('../../../systemMessages.js', () => ({
+vi.mock('../../../src/core/ai/systemMessages.js', () => ({
     default: {
         getSystemMessage: vi.fn(),
     },
@@ -59,7 +59,7 @@ vi.mock('path', () => ({
     basename: vi.fn(),
 }));
 
-describe('IndexCommand', () => {
+describe.sequential('IndexCommand', () => {
     let indexCommand;
     let mockLogger;
     let mockContext;
@@ -76,10 +76,12 @@ describe('IndexCommand', () => {
             info: vi.fn(),
             warn: vi.fn(),
             error: vi.fn(),
+            user: vi.fn(),
+            status: vi.fn(),
         };
 
         // Setup logger mock
-        const { getLogger } = await import('../../../logger.js');
+        const { getLogger } = await import('../../../src/core/managers/logger.js');
         getLogger.mockReturnValue(mockLogger);
 
         // Setup IndexingUtils mock
@@ -113,7 +115,7 @@ describe('IndexCommand', () => {
         mockIndexingUtils.formatDuration.mockReturnValue('1.2s');
 
         // Setup ConfigManager mock
-        mockConfigManager = (await import('../../../configManager.js')).default;
+        mockConfigManager = (await import('../../../src/config/managers/configManager.js')).default;
         mockConfigManager.getInstance.mockReturnValue({
             hasAIConfig: vi.fn().mockReturnValue(true),
             hasFastModelConfig: vi.fn().mockReturnValue(true),
@@ -125,7 +127,7 @@ describe('IndexCommand', () => {
         });
 
         // Setup fs_utils mock
-        mockFsUtils = await import('../../../tools/common/fs_utils.js');
+        mockFsUtils = await import('../../../src/tools/common/fs_utils.js');
         mockFsUtils.safeWriteFile.mockReturnValue({ success: true });
         mockFsUtils.fileExists.mockReturnValue(false);
         mockFsUtils.scanDirectory.mockReturnValue([
@@ -188,8 +190,8 @@ describe('IndexCommand', () => {
             const result = await indexCommand.implementation('', mockContext);
 
             expect(result).toBe(true);
-            expect(mockLogger.raw).toHaveBeenCalledWith('\n📚 Codebase Indexing');
-            expect(mockLogger.raw).toHaveBeenCalledWith('❌ Indexing cancelled');
+            expect(mockLogger.user).toHaveBeenCalledWith('📚 Codebase Indexing');
+            expect(mockLogger.user).toHaveBeenCalledWith('❌ Indexing cancelled');
         });
 
         it('should handle errors during indexing gracefully', async () => {
@@ -300,7 +302,7 @@ describe('IndexCommand', () => {
             const result = await indexCommand.implementation('', mockContext);
 
             expect(result).toBe(true);
-            expect(mockLogger.raw).toHaveBeenCalledWith('❌ Indexing cancelled');
+            expect(mockLogger.user).toHaveBeenCalledWith('❌ Indexing cancelled');
         });
 
         it('should handle confirmation prompts', async () => {

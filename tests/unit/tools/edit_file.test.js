@@ -1,15 +1,45 @@
 // tests/unit/tools/edit_file.test.js
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { writeFileSync, unlinkSync, existsSync, readFileSync } from 'fs';
-import { join } from 'path';
-import editFile from '../../../tools/edit_file/implementation.js';
+import { writeFileSync, unlinkSync, existsSync, readFileSync, mkdirSync } from 'fs';
+import { join, dirname } from 'path';
+import editFile from '../../../src/tools/edit_file/implementation.js';
 
-describe('Edit File Tool', () => {
+// Mock the logger specifically for this test
+vi.mock('../../../src/core/managers/logger.js', () => ({
+    getLogger: vi.fn(() => ({
+        debug: vi.fn(),
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        user: vi.fn(),
+        status: vi.fn(),
+        toolExecution: vi.fn(),
+        toolExecutionDetailed: vi.fn(),
+        toolResult: vi.fn(),
+        httpRequest: vi.fn(),
+        raw: vi.fn(),
+        setVerbosityLevel: vi.fn(),
+        getVerbosityLevel: vi.fn(() => 2),
+        getRecentHttpRequests: vi.fn(() => []),
+        clearHttpHistory: vi.fn(),
+    })),
+    resetLogger: vi.fn(),
+    initializeLogger: vi.fn(),
+}));
+
+describe.sequential('Edit File Tool', () => {
     const testDir = process.cwd();
     const testFile = join(testDir, 'test_edit_file.txt');
 
     beforeEach(() => {
         vi.clearAllMocks();
+
+        // Ensure the test directory exists
+        const testFileDir = dirname(testFile);
+        if (!existsSync(testFileDir)) {
+            mkdirSync(testFileDir, { recursive: true });
+        }
+
         // Clean up any existing test file
         if (existsSync(testFile)) {
             unlinkSync(testFile);

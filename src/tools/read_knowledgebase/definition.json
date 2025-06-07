@@ -1,0 +1,22 @@
+{
+    "name": "read_knowledgebase",
+    "description": "Use the tool to learn what other agents have discovered and documented in the shared knowledgebase.",
+    "auto_run": true,
+    "version": "1.0.0",
+    "tags": ["knowledgebase", "coordination", "agents", "shared-state"],
+    "schema": {
+        "type": "function",
+        "function": {
+            "name": "read_knowledgebase",
+            "description": "Read the current content of the shared knowledgebase. The knowledgebase is an in-memory multiline string shared between all agents for coordination and information sharing. Use this tool to understand what information other agents have already discovered or documented.",
+            "parameters": {
+                "type": "object",
+                "properties": {},
+                "required": []
+            },
+            "response_format": {
+                "description": "Returns JSON object with 'success' (boolean), 'timestamp' (ISO string), 'tool_name' (string), 'content' (current knowledgebase content), 'length' (content length), and 'lines' (number of lines). Error responses include 'error' field with detailed message."
+            }
+        }
+    }
+}

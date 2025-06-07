@@ -9,6 +9,10 @@ yarn-error.log*
 .env*
 .env.production.local
 
+# Synth-dev internal
+.synthdev*
+examples/*
+
 # Logs
 logs
 *.log

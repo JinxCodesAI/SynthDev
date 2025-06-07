@@ -1,0 +1,32 @@
+{
+    "name": "update_knowledgebase",
+    "description": "Should be called by agents to share new knowledge agent has learned about task they are working on.",
+    "auto_run": true,
+    "version": "1.0.0",
+    "tags": ["knowledgebase", "coordination", "agents", "shared-state"],
+    "schema": {
+        "type": "function",
+        "function": {
+            "name": "update_knowledgebase",
+            "description": "Update the shared knowledgebase with new information. The knowledgebase is an in-memory multiline string shared between all agents for coordination. Use this tool to document discoveries, findings, or important information that other agents should know about. Operations: 'override' replaces entire content, 'append' adds content on new line, 'remove' removes specific content with whitespace cleanup.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "type": {
+                        "type": "string",
+                        "description": "Operation type to perform on the knowledgebase",
+                        "enum": ["override", "append", "remove"]
+                    },
+                    "content": {
+                        "type": "string",
+                        "description": "Content to use for the operation. For 'override': new complete content. For 'append': content to add (will be added on new line). For 'remove': exact content to remove from knowledgebase."
+                    }
+                },
+                "required": ["type", "content"]
+            },
+            "response_format": {
+                "description": "Returns JSON object with 'success' (boolean), 'timestamp' (ISO string), 'tool_name' (string), 'operation' (performed operation), 'previous_length', 'new_length', 'new_lines', and 'content_changed' (boolean). Error responses include 'error' field with detailed message."
+            }
+        }
+    }
+}

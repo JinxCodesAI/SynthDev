@@ -1,6 +1,6 @@
 // tests/unit/tools/baseTool.test.js
 import { describe, it, expect, beforeEach } from 'vitest';
-import { BaseTool } from '../../../tools/common/base-tool.js';
+import { BaseTool } from '../../../src/tools/common/base-tool.js';
 
 describe('BaseTool', () => {
     let baseTool;

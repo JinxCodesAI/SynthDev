@@ -1,11 +1,34 @@
 // tests/unit/tools/writeFile.test.js
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { readFileSync, existsSync, mkdirSync, statSync } from 'fs';
 import { join } from 'path';
-import writeFile from '../../../tools/write_file/implementation.js';
+import writeFile from '../../../src/tools/write_file/implementation.js';
 import { cleanupTestDirectory, normalizePaths } from '../../helpers/testUtils.js';
 
-describe('WriteFile Tool - Fixed Tests', () => {
+// Mock the logger specifically for this test
+vi.mock('../../../src/core/managers/logger.js', () => ({
+    getLogger: vi.fn(() => ({
+        debug: vi.fn(),
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        user: vi.fn(),
+        status: vi.fn(),
+        toolExecution: vi.fn(),
+        toolExecutionDetailed: vi.fn(),
+        toolResult: vi.fn(),
+        httpRequest: vi.fn(),
+        raw: vi.fn(),
+        setVerbosityLevel: vi.fn(),
+        getVerbosityLevel: vi.fn(() => 2),
+        getRecentHttpRequests: vi.fn(() => []),
+        clearHttpHistory: vi.fn(),
+    })),
+    resetLogger: vi.fn(),
+    initializeLogger: vi.fn(),
+}));
+
+describe.sequential('WriteFile Tool - Fixed Tests', () => {
     const testDir = join(process.cwd(), 'test-temp');
     const testFile = join(testDir, 'test.txt');
 

@@ -2,7 +2,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import ToolManager from '../../../toolManager.js';
+import ToolManager from '../../../src/core/managers/toolManager.js';
 import { createMockConsoleInterface } from '../../mocks/consoleInterface.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -74,10 +74,10 @@ describe('ToolManager', () => {
 
     describe('getToolsByCategory', () => {
         it('should return tools in specified category', () => {
-            toolManager.toolCategories.set('file', ['read_file', 'write_file']);
+            toolManager.toolCategories.set('file', ['read_files', 'write_file']);
             toolManager.toolCategories.set('utility', ['get_time']);
 
-            expect(toolManager.getToolsByCategory('file')).toEqual(['read_file', 'write_file']);
+            expect(toolManager.getToolsByCategory('file')).toEqual(['read_files', 'write_file']);
             expect(toolManager.getToolsByCategory('utility')).toEqual(['get_time']);
         });
 
@@ -88,7 +88,7 @@ describe('ToolManager', () => {
 
     describe('getCategories', () => {
         it('should return all category names', () => {
-            toolManager.toolCategories.set('file', ['read_file']);
+            toolManager.toolCategories.set('file', ['read_files']);
             toolManager.toolCategories.set('utility', ['get_time']);
 
             const categories = toolManager.getCategories();
@@ -149,7 +149,13 @@ describe('ToolManager', () => {
                 },
             };
 
-            const result = await toolManager.executeToolCall(toolCall, mockConsole);
+            const mockContext = { currentRole: 'test_role' };
+            const result = await toolManager.executeToolCall(
+                toolCall,
+                mockConsole,
+                null,
+                mockContext
+            );
 
             expect(result.role).toBe('tool');
             expect(result.tool_call_id).toBe('test-call-1');
@@ -196,7 +202,13 @@ describe('ToolManager', () => {
                 },
             };
 
-            const result = await toolManager.executeToolCall(toolCall, mockConsole);
+            const mockContext = { currentRole: 'test_role' };
+            const result = await toolManager.executeToolCall(
+                toolCall,
+                mockConsole,
+                null,
+                mockContext
+            );
 
             expect(result.role).toBe('tool');
             expect(result.tool_call_id).toBe('test-call-3');
@@ -230,11 +242,16 @@ describe('ToolManager', () => {
                 },
             };
 
-            await toolManager.executeToolCall(toolCall, mockConsole);
+            const mockContext = { currentRole: 'test_role' };
+            await toolManager.executeToolCall(toolCall, mockConsole, null, mockContext);
 
-            expect(mockConsole.showToolExecution).toHaveBeenCalledWith('test_tool', {
-                param1: 'value1',
-            });
+            expect(mockConsole.showToolExecution).toHaveBeenCalledWith(
+                'test_tool',
+                {
+                    param1: 'value1',
+                },
+                'test_role'
+            );
         });
 
         it('should show tool result', async () => {
@@ -246,7 +263,8 @@ describe('ToolManager', () => {
                 },
             };
 
-            await toolManager.executeToolCall(toolCall, mockConsole);
+            const mockContext = { currentRole: 'test_role' };
+            await toolManager.executeToolCall(toolCall, mockConsole, null, mockContext);
 
             expect(mockConsole.showToolResult).toHaveBeenCalledWith(
                 expect.objectContaining({

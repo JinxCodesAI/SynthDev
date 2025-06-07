@@ -1,0 +1,62 @@
+{
+    "name": "edit_tasks",
+    "description": "Create or edit tasks in the in-memory task management system. Can create new tasks or update existing ones. Validates parent relationships and outputs current task list. Never call before calling list_tasks to see current task list. Note task creation do not spawn any agents to execute tasks. Check if agent is available to pickup task by calling get_agents tool If not spawning new agent to pickup task, use speak_to_agent tool to send message to available agent.",
+    "auto_run": true,
+    "version": "1.0.0",
+    "tags": ["tasks", "management", "productivity", "organization"],
+    "schema": {
+        "type": "function",
+        "function": {
+            "name": "edit_tasks",
+            "description": "Create or edit tasks in the task management system. Each task has an ID, title, description, parent (optional), and status. If a task with the given ID exists, it will be updated with the provided fields (non-provided fields remain unchanged). If no ID is provided or the ID doesn't exist, a new task is created. Parent relationships are validated to prevent circular dependencies.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "tasks": {
+                        "type": "array",
+                        "description": "Array of task objects to create or edit. Each task can have id, title, description, parent, and status fields.",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "description": "Task ID. If provided and exists, the task will be updated. If not provided, a new task will be created with a generated ID."
+                                },
+                                "title": {
+                                    "type": "string",
+                                    "description": "Task title/name. Required for new tasks, optional for updates."
+                                },
+                                "target_role": {
+                                    "type": "string",
+                                    "description": "role of agent that should pickup the task. Required for new tasks. do not change for in_progress or completed tasks"
+                                },
+                                "description": {
+                                    "type": "string",
+                                    "description": "Detailed description of the task. Required for new tasks, optional for updates (overrides)."
+                                },
+                                "parent": {
+                                    "type": "string",
+                                    "description": "ID of the parent task. Must be a valid existing task ID. Creates a hierarchical relationship. Optional field."
+                                },
+                                "status": {
+                                    "type": "string",
+                                    "description": "Task status. Valid values: 'not_started', 'in_progress', 'completed', 'cancelled'. Defaults to 'not_started' for new tasks.",
+                                    "enum": ["not_started", "in_progress", "completed", "cancelled"]
+                                },
+                                "results": {
+                                    "type": "string",
+                                    "description": "What has been produced in scope of this task that justifies setting task to complete. Required when changing task status to 'completed', otherwise optional."
+                                }
+                            }
+                        },
+                        "minItems": 1
+                    }
+                },
+                "required": ["tasks"]
+            },
+            "response_format": {
+                "description": "Returns a JSON object with 'success' (boolean), 'timestamp' (ISO string), 'tool_name' (string), 'processed_tasks' (array of processed task results), and 'current_task_list' (hierarchical list of all tasks in short format). Error responses include 'error' field with detailed error message."
+            }
+        }
+    }
+}

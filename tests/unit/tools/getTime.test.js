@@ -1,9 +1,20 @@
 // tests/unit/tools/getTime.test.js
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import getTime from '../../../tools/get_time/implementation.js';
+import getTime from '../../../src/tools/get_time/implementation.js';
 
 describe('GetTime Tool', () => {
     let originalDate;
+
+    // Mock logger
+    vi.mock('../../../src/core/managers/logger.js', () => ({
+        getLogger: vi.fn().mockReturnValue({
+            raw: vi.fn(),
+            error: vi.fn(),
+            warn: vi.fn(),
+            info: vi.fn(),
+            debug: vi.fn(),
+        }),
+    }));
 
     beforeEach(() => {
         // Mock Date to have consistent test results
@@ -105,14 +116,14 @@ describe('GetTime Tool', () => {
             const result = await getTime(null);
 
             expect(result.success).toBe(false);
-            expect(result.error).toContain('Cannot read properties of null');
+            expect(result.error).toContain('Cannot destructure property');
         });
 
         it('should handle undefined parameters', async () => {
             const result = await getTime(undefined);
 
             expect(result.success).toBe(false);
-            expect(result.error).toContain('Cannot read properties of undefined');
+            expect(result.error).toContain('Cannot destructure property');
         });
 
         it('should validate format parameter type', async () => {

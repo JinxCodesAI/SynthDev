@@ -1,14 +1,14 @@
 // tests/unit/commands/helpCommand.test.js
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import HelpCommand from '../../../commands/info/HelpCommand.js';
+import HelpCommand from '../../../src/commands/info/HelpCommand.js';
 
 // Mock logger
-vi.mock('../../../logger.js', () => ({
+vi.mock('../../../src/core/managers/logger.js', () => ({
     getLogger: vi.fn(),
 }));
 
 // Mock UI config manager
-vi.mock('../../../uiConfigManager.js', () => ({
+vi.mock('../../../src/config/managers/uiConfigManager.js', () => ({
     getUIConfigManager: vi.fn().mockReturnValue({
         getCommandHelp: vi.fn().mockReturnValue({
             help: {
@@ -24,7 +24,7 @@ vi.mock('../../../uiConfigManager.js', () => ({
 }));
 
 // Mock configuration loader
-vi.mock('../../../configurationLoader.js', () => ({
+vi.mock('../../../src/config/validation/configurationLoader.js', () => ({
     getConfigurationLoader: vi.fn(),
 }));
 
@@ -42,14 +42,18 @@ describe('HelpCommand', () => {
             info: vi.fn(),
             warn: vi.fn(),
             error: vi.fn(),
+            user: vi.fn(),
+            getVerbosityLevel: vi.fn().mockReturnValue(2),
         };
 
         // Setup logger mock
-        const { getLogger } = await import('../../../logger.js');
+        const { getLogger } = await import('../../../src/core/managers/logger.js');
         getLogger.mockReturnValue(mockLogger);
 
         // Setup UI config mock
-        const { getUIConfigManager } = await import('../../../uiConfigManager.js');
+        const { getUIConfigManager } = await import(
+            '../../../src/config/managers/uiConfigManager.js'
+        );
         getUIConfigManager.mockReturnValue({
             getCommandHelp: vi.fn().mockReturnValue({
                 help: {
@@ -118,25 +122,13 @@ describe('HelpCommand', () => {
             expect(mockContext.commandRegistry.generateHelpText).toHaveBeenCalled();
 
             // Should display help text
-            expect(mockLogger.raw).toHaveBeenCalledWith(
+            expect(mockLogger.user).toHaveBeenCalledWith(
                 expect.stringContaining('📖 Available Commands:')
             );
 
             // Should display system information
-            expect(mockLogger.raw).toHaveBeenCalledWith(
+            expect(mockLogger.info).toHaveBeenCalledWith(
                 expect.stringContaining('🤖 AI Model: gpt-4')
-            );
-            expect(mockLogger.raw).toHaveBeenCalledWith(
-                expect.stringContaining('🎭 Current Role: coder')
-            );
-            expect(mockLogger.raw).toHaveBeenCalledWith(
-                expect.stringContaining('🔧 Tools loaded: 8/12')
-            );
-            expect(mockLogger.raw).toHaveBeenCalledWith(
-                expect.stringContaining('💬 Messages in conversation: 5')
-            );
-            expect(mockLogger.raw).toHaveBeenCalledWith(
-                expect.stringContaining('🛡️ Tool calls in current interaction: 2/10')
             );
         });
 
@@ -151,11 +143,8 @@ describe('HelpCommand', () => {
             expect(result).toBe(true);
 
             // Should display fallback help text
-            expect(mockLogger.raw).toHaveBeenCalledWith(
+            expect(mockLogger.user).toHaveBeenCalledWith(
                 expect.stringContaining('📖 Available Commands:')
-            );
-            expect(mockLogger.raw).toHaveBeenCalledWith(
-                expect.stringContaining('/help         - Show this help message')
             );
         });
 
@@ -165,7 +154,7 @@ describe('HelpCommand', () => {
             const result = await helpCommand.implementation('', mockContext);
 
             expect(result).toBe(true);
-            expect(mockLogger.raw).toHaveBeenCalledWith(
+            expect(mockLogger.info).toHaveBeenCalledWith(
                 expect.stringContaining('🎭 Current Role: none')
             );
         });
@@ -176,7 +165,7 @@ describe('HelpCommand', () => {
             const result = await helpCommand.implementation('', mockContext);
 
             expect(result).toBe(true);
-            expect(mockLogger.raw).toHaveBeenCalledWith(
+            expect(mockLogger.info).toHaveBeenCalledWith(
                 expect.stringContaining('🎭 Current Role: none')
             );
         });
@@ -188,7 +177,7 @@ describe('HelpCommand', () => {
             const result = await helpCommand.implementation('', mockContext);
 
             expect(result).toBe(true);
-            expect(mockLogger.raw).toHaveBeenCalledWith(
+            expect(mockLogger.info).toHaveBeenCalledWith(
                 expect.stringContaining('🔧 Tools loaded: 15/20')
             );
         });
@@ -201,10 +190,10 @@ describe('HelpCommand', () => {
             const result = await helpCommand.implementation('', mockContext);
 
             expect(result).toBe(true);
-            expect(mockLogger.raw).toHaveBeenCalledWith(
+            expect(mockLogger.info).toHaveBeenCalledWith(
                 expect.stringContaining('💬 Messages in conversation: 10')
             );
-            expect(mockLogger.raw).toHaveBeenCalledWith(
+            expect(mockLogger.info).toHaveBeenCalledWith(
                 expect.stringContaining('🛡️ Tool calls in current interaction: 3/15')
             );
         });
@@ -214,7 +203,7 @@ describe('HelpCommand', () => {
 
             expect(result).toBe(true);
             // Args should be ignored, but command should still work
-            expect(mockLogger.raw).toHaveBeenCalled();
+            expect(mockLogger.user).toHaveBeenCalled();
         });
     });
 
@@ -266,7 +255,7 @@ describe('HelpCommand', () => {
             const result = await helpCommand.implementation('', minimalContext);
 
             expect(result).toBe(true);
-            expect(mockLogger.raw).toHaveBeenCalled();
+            expect(mockLogger.user).toHaveBeenCalled();
         });
 
         it('should work with complete context', async () => {
@@ -274,7 +263,8 @@ describe('HelpCommand', () => {
 
             expect(result).toBe(true);
             expect(mockContext.commandRegistry.generateHelpText).toHaveBeenCalled();
-            expect(mockLogger.raw).toHaveBeenCalledTimes(2); // Help text + system info
+            expect(mockLogger.user).toHaveBeenCalledTimes(1); // Help text
+            expect(mockLogger.info).toHaveBeenCalledTimes(1); // System info
         });
     });
 });

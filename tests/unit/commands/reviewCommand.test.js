@@ -1,9 +1,9 @@
 // tests/unit/commands/reviewCommand.test.js
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import ReviewCommand from '../../../commands/info/ReviewCommand.js';
+import ReviewCommand from '../../../src/commands/info/ReviewCommand.js';
 
 // Mock logger
-vi.mock('../../../logger.js', () => ({
+vi.mock('../../../src/core/managers/logger.js', () => ({
     getLogger: vi.fn(),
 }));
 
@@ -21,10 +21,11 @@ describe('ReviewCommand', () => {
             info: vi.fn(),
             warn: vi.fn(),
             error: vi.fn(),
+            debug: vi.fn(),
         };
 
         // Setup logger mock
-        const { getLogger } = await import('../../../logger.js');
+        const { getLogger } = await import('../../../src/core/managers/logger.js');
         getLogger.mockReturnValue(mockLogger);
 
         // Create mock context
@@ -104,18 +105,18 @@ describe('ReviewCommand', () => {
             expect(mockContext.apiClient.getLastAPICall).toHaveBeenCalled();
 
             // Should display review header
-            expect(mockLogger.raw).toHaveBeenCalledWith('\n📋 Last API Call Review');
-            expect(mockLogger.raw).toHaveBeenCalledWith('═'.repeat(80));
+            expect(mockLogger.debug).toHaveBeenCalledWith('\n📋 Last API Call Review');
+            expect(mockLogger.debug).toHaveBeenCalledWith('═'.repeat(80));
 
             // Should display timestamp
-            expect(mockLogger.raw).toHaveBeenCalledWith('🕒 Timestamp: 2024-01-15T10:30:00.000Z');
+            expect(mockLogger.debug).toHaveBeenCalledWith('🕒 Timestamp: 2024-01-15T10:30:00.000Z');
 
             // Should display request section
-            expect(mockLogger.raw).toHaveBeenCalledWith('📤 REQUEST:');
-            expect(mockLogger.raw).toHaveBeenCalledWith('─'.repeat(40));
+            expect(mockLogger.debug).toHaveBeenCalledWith('📤 REQUEST:');
+            expect(mockLogger.debug).toHaveBeenCalledWith('─'.repeat(40));
 
             // Should display response section
-            expect(mockLogger.raw).toHaveBeenCalledWith('📥 RESPONSE:');
+            expect(mockLogger.debug).toHaveBeenCalledWith('📥 RESPONSE:');
         });
 
         it('should handle no API calls made yet', async () => {
@@ -133,7 +134,7 @@ describe('ReviewCommand', () => {
             expect(mockContext.apiClient.getLastAPICall).toHaveBeenCalled();
 
             // Should display no API calls message
-            expect(mockLogger.raw).toHaveBeenCalledWith('📋 No API calls have been made yet');
+            expect(mockLogger.info).toHaveBeenCalledWith('📋 No API calls have been made yet');
         });
 
         it('should handle missing request', async () => {
@@ -146,7 +147,7 @@ describe('ReviewCommand', () => {
             const result = await reviewCommand.implementation('', mockContext);
 
             expect(result).toBe(true);
-            expect(mockLogger.raw).toHaveBeenCalledWith('📋 No API calls have been made yet');
+            expect(mockLogger.info).toHaveBeenCalledWith('📋 No API calls have been made yet');
         });
 
         it('should handle missing response', async () => {
@@ -159,7 +160,7 @@ describe('ReviewCommand', () => {
             const result = await reviewCommand.implementation('', mockContext);
 
             expect(result).toBe(true);
-            expect(mockLogger.raw).toHaveBeenCalledWith('📋 No API calls have been made yet');
+            expect(mockLogger.info).toHaveBeenCalledWith('📋 No API calls have been made yet');
         });
 
         it('should handle arguments (ignored)', async () => {
@@ -177,8 +178,8 @@ describe('ReviewCommand', () => {
             expect(result).toBe(true);
 
             // Check that JSON.stringify was called with proper formatting (3 spaces)
-            const rawCalls = mockLogger.raw.mock.calls;
-            const jsonCalls = rawCalls.filter(
+            const debugCalls = mockLogger.debug.mock.calls;
+            const jsonCalls = debugCalls.filter(
                 call => call[0] && typeof call[0] === 'string' && call[0].includes('{')
             );
 

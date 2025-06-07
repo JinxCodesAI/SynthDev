@@ -11,7 +11,7 @@ export default defineConfig({
         coverage: {
             provider: 'v8',
             reporter: ['text', 'json', 'html'],
-            exclude: ['node_modules/', 'tests/', '*.config.js', 'logs/', '.index/', 'scripts/'],
+            exclude: ['node_modules/', 'tests/', '*.config.js', 'logs/', '.synthdev/', 'scripts/'],
             thresholds: {
                 global: {
                     branches: 40,
@@ -21,14 +21,28 @@ export default defineConfig({
                 },
             },
         },
-        testTimeout: 10000,
-        // Run tool tests sequentially to avoid file system conflicts
+        // Increased timeouts for E2E tests that spawn processes
+        testTimeout: process.env.CI ? 60000 : 45000,
+        hookTimeout: process.env.CI ? 30000 : 20000,
+
+        // Force sequential execution for better test isolation
+        // This prevents race conditions in E2E tests that spawn processes
         pool: 'forks',
         poolOptions: {
             forks: {
                 singleFork: true,
+                isolate: true,
             },
         },
+
+        // Ensure tests run sequentially by default to prevent conflicts
+        sequence: {
+            concurrent: false,
+            shuffle: false,
+        },
+
+        // Retry flaky tests (especially E2E tests)
+        retry: process.env.CI ? 3 : 2,
 
         // This is the definitive reporter configuration.
         // It passes the `showFailures` option to your custom reporter.

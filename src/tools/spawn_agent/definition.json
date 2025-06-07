@@ -1,0 +1,30 @@
+{
+    "name": "spawn_agent",
+    "description": "Spawns a new, specialized AI agent to perform a specific task in an isolated context, when spawned agent will finish it will call return_results to pass results back to the parent agent.",
+    "auto_run": true,
+    "version": "1.0.0",
+    "schema": {
+        "type": "function",
+        "function": {
+            "name": "spawn_agent",
+            "description": "Creates and starts a new worker agent with a specific role and task. The new agent runs independently with its own conversation history and cost tracking. Use this to delegate specialized sub-tasks to expert agents.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "role_name": {
+                        "type": "string",
+                        "description": "The role of the new agent to spawn (e.g., 'test_writer', 'code_reviewer'). Must be listed in the current role's 'enabled_agents' configuration."
+                    },
+                    "task_prompt": {
+                        "type": "string",
+                        "description": "Detailed initial instruction or task description for the new agent. Should be specific and actionable."
+                    }
+                },
+                "required": ["role_name", "task_prompt"]
+            },
+            "response_format": {
+                "description": "Returns agent ID and status information for the newly spawned agent"
+            }
+        }
+    }
+}

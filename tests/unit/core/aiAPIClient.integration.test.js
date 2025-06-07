@@ -1,6 +1,6 @@
 // tests/unit/core/aiAPIClient.integration.test.js
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import AIAPIClient from '../../../aiAPIClient.js';
+import AIAPIClient from '../../../src/core/ai/aiAPIClient.js';
 import {
     createMockOpenAI,
     createMockOpenAIWithToolCalls,
@@ -13,22 +13,23 @@ vi.mock('openai', () => ({
     OpenAI: vi.fn(),
 }));
 
-vi.mock('../../../configManager.js', () => ({
+vi.mock('../../../src/config/managers/configManager.js', () => ({
     default: {
         getInstance: vi.fn(),
     },
 }));
 
-vi.mock('../../../systemMessages.js', () => ({
+vi.mock('../../../src/core/ai/systemMessages.js', () => ({
     default: {
         getSystemMessage: vi.fn(),
         getLevel: vi.fn(),
         getExcludedTools: vi.fn(),
         getReminder: vi.fn(),
+        getParsingTools: vi.fn(),
     },
 }));
 
-vi.mock('../../../logger.js', () => ({
+vi.mock('../../../src/core/managers/logger.js', () => ({
     getLogger: vi.fn(),
 }));
 
@@ -64,6 +65,7 @@ describe('AIAPIClient Integration Tests', () => {
             hasSmartModelConfig: vi.fn().mockReturnValue(false),
             hasFastModelConfig: vi.fn().mockReturnValue(false),
             getMaxTokens: vi.fn().mockReturnValue(4000),
+            getModelParameters: vi.fn().mockReturnValue({}),
         };
 
         mockSystemMessages = {
@@ -71,22 +73,24 @@ describe('AIAPIClient Integration Tests', () => {
             getLevel: vi.fn().mockReturnValue('base'),
             getExcludedTools: vi.fn().mockReturnValue([]),
             getReminder: vi.fn().mockReturnValue(null),
+            getParsingTools: vi.fn().mockReturnValue([]),
         };
 
         // Setup module mocks
         const { OpenAI } = await import('openai');
         OpenAI.mockImplementation(() => mockOpenAI);
 
-        const ConfigManager = await import('../../../configManager.js');
+        const ConfigManager = await import('../../../src/config/managers/configManager.js');
         ConfigManager.default.getInstance.mockReturnValue(mockConfig);
 
-        const SystemMessages = await import('../../../systemMessages.js');
+        const SystemMessages = await import('../../../src/core/ai/systemMessages.js');
         SystemMessages.default.getSystemMessage = mockSystemMessages.getSystemMessage;
         SystemMessages.default.getLevel = mockSystemMessages.getLevel;
         SystemMessages.default.getExcludedTools = mockSystemMessages.getExcludedTools;
         SystemMessages.default.getReminder = mockSystemMessages.getReminder;
+        SystemMessages.default.getParsingTools = mockSystemMessages.getParsingTools;
 
-        const { getLogger } = await import('../../../logger.js');
+        const { getLogger } = await import('../../../src/core/managers/logger.js');
         getLogger.mockReturnValue(mockLogger);
 
         // Create AIAPIClient instance
@@ -286,7 +290,7 @@ describe('AIAPIClient Integration Tests', () => {
     });
 
     describe('_handleToolCalls', () => {
-        it('should enforce maximum tool call limit', async () => {
+        it('should enforce maximum tool call limit when no confirmation callback is set', async () => {
             // Create a mock that always returns tool calls to simulate infinite loop
             const mockOpenAIInfinite = {
                 baseURL: 'https://api.test.com/v1',
@@ -354,6 +358,300 @@ describe('AIAPIClient Integration Tests', () => {
                     message: expect.stringContaining('Maximum number of tool calls (2) exceeded'),
                 })
             );
+        });
+
+        it('should request confirmation when max tool calls exceeded and callback is set', async () => {
+            // Create a mock that returns tool calls first, then a normal response
+            const mockOpenAI = {
+                baseURL: 'https://api.test.com/v1',
+                chat: {
+                    completions: {
+                        create: vi.fn().mockResolvedValueOnce({
+                            id: 'chatcmpl-test',
+                            object: 'chat.completion',
+                            created: Date.now(),
+                            model: 'test-model',
+                            choices: [
+                                {
+                                    index: 0,
+                                    message: {
+                                        role: 'assistant',
+                                        content: null,
+                                        tool_calls: [
+                                            {
+                                                id: 'call_test_1',
+                                                type: 'function',
+                                                function: { name: 'test_tool', arguments: '{}' },
+                                            },
+                                            {
+                                                id: 'call_test_2',
+                                                type: 'function',
+                                                function: { name: 'test_tool', arguments: '{}' },
+                                            },
+                                            {
+                                                id: 'call_test_3',
+                                                type: 'function',
+                                                function: { name: 'test_tool', arguments: '{}' },
+                                            },
+                                        ],
+                                        reasoning_content: null,
+                                    },
+                                    finish_reason: 'tool_calls',
+                                },
+                            ],
+                            usage: { prompt_tokens: 10, completion_tokens: 5, total_tokens: 15 },
+                        }),
+                    },
+                },
+            };
+
+            const { OpenAI } = await import('openai');
+            OpenAI.mockImplementation(() => mockOpenAI);
+
+            aiClient = new AIAPIClient(mockCostsManager, 'test-key');
+            aiClient.maxToolCalls = 2; // Set low limit for testing
+
+            const onToolExecution = vi.fn().mockResolvedValue({
+                role: 'tool',
+                tool_call_id: 'call_test_1',
+                content: 'Tool result',
+            });
+
+            const onMaxToolCallsExceeded = vi.fn().mockResolvedValue(false); // User chooses not to continue
+            const onError = vi.fn();
+
+            aiClient.setCallbacks({ onToolExecution, onMaxToolCallsExceeded, onError });
+
+            const result = await aiClient.sendUserMessage('Test');
+
+            // The confirmation callback should be called
+            expect(onMaxToolCallsExceeded).toHaveBeenCalledWith(2);
+
+            // Should return a message indicating operation was stopped
+            expect(result).toBe('Operation stopped due to maximum tool calls limit.');
+
+            // Error callback should not be called
+            expect(onError).not.toHaveBeenCalled();
+        });
+
+        it('should continue processing when user confirms to continue', async () => {
+            // Create a mock that returns tool calls first, then a normal response
+            const mockOpenAI = {
+                baseURL: 'https://api.test.com/v1',
+                chat: {
+                    completions: {
+                        create: vi
+                            .fn()
+                            .mockResolvedValueOnce({
+                                id: 'chatcmpl-test-1',
+                                object: 'chat.completion',
+                                created: Date.now(),
+                                model: 'test-model',
+                                choices: [
+                                    {
+                                        index: 0,
+                                        message: {
+                                            role: 'assistant',
+                                            content: null,
+                                            tool_calls: [
+                                                {
+                                                    id: 'call_test_1',
+                                                    type: 'function',
+                                                    function: {
+                                                        name: 'test_tool',
+                                                        arguments: '{}',
+                                                    },
+                                                },
+                                                {
+                                                    id: 'call_test_2',
+                                                    type: 'function',
+                                                    function: {
+                                                        name: 'test_tool',
+                                                        arguments: '{}',
+                                                    },
+                                                },
+                                                {
+                                                    id: 'call_test_3',
+                                                    type: 'function',
+                                                    function: {
+                                                        name: 'test_tool',
+                                                        arguments: '{}',
+                                                    },
+                                                },
+                                            ],
+                                            reasoning_content: null,
+                                        },
+                                        finish_reason: 'tool_calls',
+                                    },
+                                ],
+                                usage: {
+                                    prompt_tokens: 10,
+                                    completion_tokens: 5,
+                                    total_tokens: 15,
+                                },
+                            })
+                            .mockResolvedValueOnce({
+                                id: 'chatcmpl-test-2',
+                                object: 'chat.completion',
+                                created: Date.now(),
+                                model: 'test-model',
+                                choices: [
+                                    {
+                                        index: 0,
+                                        message: {
+                                            role: 'assistant',
+                                            content: 'Task completed successfully',
+                                            tool_calls: null,
+                                            reasoning_content: null,
+                                        },
+                                        finish_reason: 'stop',
+                                    },
+                                ],
+                                usage: {
+                                    prompt_tokens: 10,
+                                    completion_tokens: 5,
+                                    total_tokens: 15,
+                                },
+                            }),
+                    },
+                },
+            };
+
+            const { OpenAI } = await import('openai');
+            OpenAI.mockImplementation(() => mockOpenAI);
+
+            aiClient = new AIAPIClient(mockCostsManager, 'test-key');
+            aiClient.maxToolCalls = 2; // Set low limit for testing
+
+            const onToolExecution = vi.fn().mockResolvedValue({
+                role: 'tool',
+                tool_call_id: 'call_test_1',
+                content: 'Tool result',
+            });
+
+            const onMaxToolCallsExceeded = vi.fn().mockResolvedValue(true); // User chooses to continue
+            const onError = vi.fn();
+
+            aiClient.setCallbacks({ onToolExecution, onMaxToolCallsExceeded, onError });
+
+            const result = await aiClient.sendUserMessage('Test');
+
+            // The confirmation callback should be called
+            expect(onMaxToolCallsExceeded).toHaveBeenCalledWith(2);
+
+            // Should continue and return the final response
+            expect(result).toBe('Task completed successfully');
+
+            // Error callback should not be called
+            expect(onError).not.toHaveBeenCalled();
+
+            // Tool execution should have been called for all 3 tools
+            expect(onToolExecution).toHaveBeenCalledTimes(3);
+        });
+
+        it('should increase limit by original amount when user confirms continuation', async () => {
+            // Create a mock that will trigger multiple confirmations
+            const mockOpenAI = {
+                chat: {
+                    completions: {
+                        create: vi
+                            .fn()
+                            .mockResolvedValueOnce({
+                                choices: [
+                                    {
+                                        message: {
+                                            role: 'assistant',
+                                            content: null,
+                                            tool_calls: [
+                                                {
+                                                    id: 'call_1',
+                                                    type: 'function',
+                                                    function: {
+                                                        name: 'test_tool',
+                                                        arguments: '{}',
+                                                    },
+                                                },
+                                                {
+                                                    id: 'call_2',
+                                                    type: 'function',
+                                                    function: {
+                                                        name: 'test_tool',
+                                                        arguments: '{}',
+                                                    },
+                                                },
+                                            ],
+                                        },
+                                    },
+                                ],
+                            })
+                            .mockResolvedValueOnce({
+                                choices: [
+                                    {
+                                        message: {
+                                            role: 'assistant',
+                                            content: null,
+                                            tool_calls: [
+                                                {
+                                                    id: 'call_3',
+                                                    type: 'function',
+                                                    function: {
+                                                        name: 'test_tool',
+                                                        arguments: '{}',
+                                                    },
+                                                },
+                                            ],
+                                        },
+                                    },
+                                ],
+                            })
+                            .mockResolvedValueOnce({
+                                choices: [
+                                    {
+                                        message: {
+                                            role: 'assistant',
+                                            content: 'Final response',
+                                        },
+                                    },
+                                ],
+                            }),
+                    },
+                },
+            };
+
+            const { OpenAI } = await import('openai');
+            OpenAI.mockImplementation(() => mockOpenAI);
+
+            aiClient = new AIAPIClient(mockCostsManager, 'test-key');
+            aiClient.role = 'test-role';
+            aiClient.maxToolCalls = 2; // Set low limit to trigger confirmation
+            aiClient.originalMaxToolCalls = 2; // Store original value
+
+            const onToolExecution = vi.fn().mockResolvedValue({
+                role: 'tool',
+                tool_call_id: 'call_test',
+                content: 'Tool result',
+            });
+
+            const onMaxToolCallsExceeded = vi.fn().mockResolvedValue(true); // User always confirms
+            const onError = vi.fn();
+
+            aiClient.setCallbacks({ onToolExecution, onMaxToolCallsExceeded, onError });
+
+            const result = await aiClient.sendUserMessage('Test');
+
+            // Should have been called once when limit was first exceeded (after 2 calls)
+            expect(onMaxToolCallsExceeded).toHaveBeenCalledTimes(1);
+            expect(onMaxToolCallsExceeded).toHaveBeenCalledWith(2);
+
+            // After confirmation, limit should be increased to 4 (2 + 2)
+            // So the 3rd tool call should proceed without another confirmation
+            expect(result).toBe('Final response');
+
+            // All 3 tool executions should have completed
+            expect(onToolExecution).toHaveBeenCalledTimes(3);
+
+            // No errors should have occurred
+            expect(onError).not.toHaveBeenCalled();
         });
 
         it('should handle reminder messages', async () => {

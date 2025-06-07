@@ -1,0 +1,43 @@
+{
+    "models": {
+        "base": {
+            "model": "gpt-4.1-mini",
+            "baseUrl": "https://api.openai.com/v1"
+        },
+        "smart": {
+            "model": "gpt-4.1-nano",
+            "baseUrl": "https://api.openai.com/v1"
+        },
+        "fast": {
+            "model": "gpt-4.1-nano",
+            "baseUrl": "https://api.openai.com/v1"
+        }
+    },
+    "global_settings": {
+        "maxToolCalls": 50,
+        "enablePromptEnhancement": false,
+        "verbosityLevel": 2
+    },
+    "ui_settings": {
+        "defaultRole": "coder",
+        "showStartupBanner": true,
+        "enableColors": true,
+        "promptPrefix": "💭 You: "
+    },
+    "tool_settings": {
+        "autoRun": true,
+        "defaultEncoding": "utf8",
+        "maxFileSize": 10485760,
+        "defaultTimeout": 10000
+    },
+    "safety": {
+        "enableAISafetyCheck": true,
+        "fallbackToPatternMatching": true,
+        "maxScriptSize": 50000,
+        "scriptTimeout": {
+            "min": 1000,
+            "max": 30000,
+            "default": 10000
+        }
+    }
+}

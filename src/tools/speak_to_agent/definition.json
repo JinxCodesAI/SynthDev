@@ -1,0 +1,45 @@
+{
+    "name": "speak_to_agent",
+    "description": "Sends a message to a previously spawned agent for follow-up instructions or status updates.",
+    "auto_run": true,
+    "version": "1.0.0",
+    "tags": ["agents", "communication", "collaboration"],
+    "schema": {
+        "type": "function",
+        "function": {
+            "name": "speak_to_agent",
+            "description": "Sends a follow-up message to a specific worker agent. IMPORTANT: Check agent status first using get_agents tool. Only 'inactive' and 'completed' agents can receive messages. 'running' agents should not be disturbed, 'failed' agents cannot process messages. Use this for additional instructions, clarifications, feedback, or progress updates.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "agent_id": {
+                        "type": "string",
+                        "description": "The unique ID of the target agent, obtained from spawn_agent or get_agents tools."
+                    },
+                    "message": {
+                        "type": "string",
+                        "description": "The message, instruction, or question to send to the agent. Be specific and actionable."
+                    }
+                },
+                "required": ["agent_id", "message"]
+            },
+            "response_format": {
+                "description": "Returns confirmation of message delivery and agent response if available"
+            },
+            "usage_guidance": {
+                "description": "Agent status determines messaging capability",
+                "rules": [
+                    "running: Cannot send messages (agent is processing)",
+                    "inactive: Can send messages (agent waiting for instructions)",
+                    "completed: Can send messages (for corrections/follow-up)",
+                    "failed: Cannot send messages (agent has errored)"
+                ],
+                "best_practices": [
+                    "Always check agent status with get_agents before messaging",
+                    "Be specific and actionable in messages",
+                    "Use for clarifications, corrections, or additional work"
+                ]
+            }
+        }
+    }
+}

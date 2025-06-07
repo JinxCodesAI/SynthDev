@@ -1,9 +1,9 @@
 // tests/unit/utils/gitUtils.test.js
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import GitUtils from '../../../utils/GitUtils.js';
+import GitUtils from '../../../src/utils/GitUtils.js';
 
 // Mock dependencies
-vi.mock('../../../tools/execute_terminal/implementation.js', () => ({
+vi.mock('../../../src/tools/execute_terminal/implementation.js', () => ({
     default: vi.fn(),
 }));
 
@@ -22,7 +22,9 @@ describe('GitUtils', () => {
     let mockLogger;
 
     beforeEach(async () => {
-        const executeTerminal = await import('../../../tools/execute_terminal/implementation.js');
+        const executeTerminal = await import(
+            '../../../src/tools/execute_terminal/implementation.js'
+        );
         mockExecuteTerminal = executeTerminal.default;
 
         const { getLogger } = await import('../../../logger.js');

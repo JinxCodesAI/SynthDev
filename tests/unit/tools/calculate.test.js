@@ -1,6 +1,20 @@
 // tests/unit/tools/calculate.test.js
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import calculate from '../../../tools/calculate/implementation.js';
+
+// Mock logger before importing the tool
+vi.mock('../../../src/core/managers/logger.js', () => ({
+    getLogger: vi.fn().mockReturnValue({
+        raw: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        info: vi.fn(),
+        debug: vi.fn(),
+        user: vi.fn(),
+        status: vi.fn(),
+    }),
+}));
+
+import calculate from '../../../src/tools/calculate/implementation.js';
 
 describe('Calculate Tool', () => {
     beforeEach(() => {

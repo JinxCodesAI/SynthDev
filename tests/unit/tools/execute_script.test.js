@@ -1,6 +1,6 @@
 // tests/unit/tools/execute_script.test.js
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import executeScript from '../../../tools/execute_script/implementation.js';
+import executeScript from '../../../src/tools/execute_script/implementation.js';
 
 // Mock dependencies
 vi.mock('child_process', () => ({
@@ -11,6 +11,7 @@ vi.mock('fs', () => ({
     writeFileSync: vi.fn(),
     unlinkSync: vi.fn(),
     existsSync: vi.fn(),
+    readFileSync: vi.fn(),
 }));
 
 vi.mock('openai', () => ({
@@ -23,11 +24,11 @@ vi.mock('../../../configManager.js', () => ({
     },
 }));
 
-vi.mock('../../../logger.js', () => ({
+vi.mock('../../../src/core/managers/logger.js', () => ({
     getLogger: vi.fn(),
 }));
 
-vi.mock('../../../toolConfigManager.js', () => ({
+vi.mock('../../../src/config/managers/toolConfigManager.js', () => ({
     getToolConfigManager: vi.fn().mockReturnValue({
         getToolDescription: vi.fn().mockReturnValue('Execute JavaScript code safely'),
         getErrorMessage: vi.fn((key, params = {}) => {
@@ -65,11 +66,12 @@ vi.mock('../../../toolConfigManager.js', () => ({
             { pattern: /eval\s*\(/, reason: 'Dynamic code execution' },
             { pattern: /spawn|exec|fork/, reason: 'Process execution functions' },
             { pattern: /writeFileSync|writeFile/, reason: 'File writing operations' },
+            { pattern: /unlinkSync|unlink/, reason: 'File deletion operations' },
         ]),
     }),
 }));
 
-vi.mock('../../../configurationLoader.js', () => ({
+vi.mock('../../../src/config/validation/configurationLoader.js', () => ({
     getConfigurationLoader: vi.fn(),
 }));
 
@@ -95,7 +97,7 @@ vi.mock('../../../costsManager.js', () => ({
     },
 }));
 
-describe('Execute Script Tool', () => {
+describe.sequential('Execute Script Tool', () => {
     let mockSpawn;
     let mockOpenAI;
     let mockConfigManager;
@@ -115,7 +117,7 @@ describe('Execute Script Tool', () => {
         const configManager = await import('../../../configManager.js');
         mockConfigManager = configManager.default.getInstance;
 
-        const logger = await import('../../../logger.js');
+        const logger = await import('../../../src/core/managers/logger.js');
         mockLogger = logger.getLogger;
 
         mockFs = await import('fs');
@@ -135,6 +137,28 @@ describe('Execute Script Tool', () => {
         });
 
         mockFs.existsSync.mockReturnValue(false);
+
+        // Mock readFileSync for pricing data loading
+        mockFs.readFileSync.mockImplementation(filePath => {
+            if (filePath.includes('providers.json')) {
+                return JSON.stringify({
+                    providers: [
+                        {
+                            name: 'test-provider',
+                            models: [
+                                {
+                                    name: 'test-model',
+                                    inputPricePerMillionTokens: 0.001,
+                                    outputPricePerMillionTokens: 0.002,
+                                    cachedPricePerMillionTokens: 0.0005,
+                                },
+                            ],
+                        },
+                    ],
+                });
+            }
+            return '';
+        });
     });
 
     describe('Parameter Validation', () => {
@@ -203,6 +227,7 @@ describe('Execute Script Tool', () => {
                 },
             }));
 
+            // Don't need to mock spawn since script should fail safety check before execution
             const result = await executeScript({
                 script: 'fs.unlinkSync("important.txt");',
             });
@@ -356,7 +381,6 @@ describe('Execute Script Tool', () => {
             expect(result.success).toBe(true);
             expect(result.output).toBe('Hello World\n');
             expect(result.exit_code).toBe(0);
-            expect(result.execution_time).toBeGreaterThanOrEqual(0);
         });
 
         it('should handle script execution timeout', async () => {

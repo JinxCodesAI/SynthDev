@@ -1,0 +1,106 @@
+{
+    "autoSnapshot": {
+        "enabled": false,
+        "createOnToolExecution": false,
+        "createInitialSnapshot": false,
+        "verifyFileChanges": false,
+        "warnOnUnexpectedChanges": false
+    },
+    "toolDeclarations": {
+        "defaultModifiesFiles": false,
+        "warnOnMissingDeclaration": true,
+        "cacheDeclarations": true,
+        "toolDefinitions": {
+            "write_file": {
+                "modifiesFiles": true,
+                "fileTargets": ["file_path"]
+            },
+            "edit_file": {
+                "modifiesFiles": true,
+                "fileTargets": ["file_path"]
+            },
+            "execute_terminal": {
+                "modifiesFiles": "conditional",
+                "fileTargets": []
+            },
+            "execute_script": {
+                "modifiesFiles": "conditional",
+                "fileTargets": []
+            },
+            "read_files": {
+                "modifiesFiles": false,
+                "fileTargets": ["file_path"]
+            },
+            "list_directory": {
+                "modifiesFiles": false,
+                "fileTargets": ["path"]
+            },
+            "exact_search": {
+                "modifiesFiles": false,
+                "fileTargets": ["path"]
+            },
+            "explain_codebase": {
+                "modifiesFiles": false,
+                "fileTargets": []
+            },
+            "calculate": {
+                "modifiesFiles": false,
+                "fileTargets": []
+            },
+            "get_time": {
+                "modifiesFiles": false,
+                "fileTargets": []
+            }
+        }
+    },
+    "triggerRules": {
+        "maxSnapshotsPerSession": 20,
+        "cooldownPeriod": 5000,
+        "requireActualChanges": false,
+        "timeout": 30000
+    },
+    "descriptionGeneration": {
+        "maxLength": 100,
+        "includeToolName": true,
+        "includeTargetFiles": true,
+        "includeTimestamp": false
+    },
+    "fileChangeDetection": {
+        "enabled": true,
+        "useChecksums": true,
+        "trackModificationTime": true,
+        "minimumChangeSize": 1,
+        "warnOnUnexpectedChanges": true,
+        "maxFileSize": 52428800,
+        "excludePatterns": [
+            "node_modules",
+            ".git",
+            "*.log",
+            "tmp",
+            "temp",
+            ".cache",
+            "dist",
+            "build",
+            ".synthdev-initial-snapshot"
+        ]
+    },
+    "initialSnapshot": {
+        "enabled": true,
+        "createOnStartup": true,
+        "skipIfSnapshotsExist": true,
+        "timeout": 30000,
+        "description": "Initial project state",
+        "stateFile": ".synthdev-initial-snapshot"
+    },
+    "integration": {
+        "enabled": true,
+        "trackFileChanges": true,
+        "cleanupEmptySnapshots": true,
+        "logToolExecution": true
+    },
+    "performance": {
+        "maxClassificationTime": 10,
+        "batchingEnabled": true,
+        "cacheEnabled": true
+    }
+}

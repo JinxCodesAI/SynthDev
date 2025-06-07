@@ -1,9 +1,9 @@
 // tests/unit/commands/toolsCommand.test.js
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import ToolsCommand from '../../../commands/info/ToolsCommand.js';
+import ToolsCommand from '../../../src/commands/info/ToolsCommand.js';
 
 // Mock logger
-vi.mock('../../../logger.js', () => ({
+vi.mock('../../../src/core/managers/logger.js', () => ({
     getLogger: vi.fn(),
 }));
 
@@ -19,10 +19,12 @@ describe('ToolsCommand', () => {
         mockLogger = {
             raw: vi.fn(),
             debug: vi.fn(),
+            user: vi.fn(),
+            info: vi.fn(),
         };
 
         // Setup logger mock
-        const { getLogger } = await import('../../../logger.js');
+        const { getLogger } = await import('../../../src/core/managers/logger.js');
         getLogger.mockReturnValue(mockLogger);
 
         // Create mock context
@@ -32,7 +34,7 @@ describe('ToolsCommand', () => {
                     {
                         type: 'function',
                         function: {
-                            name: 'read_file',
+                            name: 'read_files',
                             description: 'Read contents of a file',
                             parameters: {
                                 type: 'object',
@@ -98,21 +100,21 @@ describe('ToolsCommand', () => {
 
             // Should call getTools and getToolDefinition
             expect(mockContext.toolManager.getTools).toHaveBeenCalled();
-            expect(mockContext.toolManager.getToolDefinition).toHaveBeenCalledWith('read_file');
+            expect(mockContext.toolManager.getToolDefinition).toHaveBeenCalledWith('read_files');
             expect(mockContext.toolManager.getToolDefinition).toHaveBeenCalledWith('write_file');
 
             // Should display tools header
-            expect(mockLogger.raw).toHaveBeenCalledWith('\n🔧 Available Tools:');
-            expect(mockLogger.raw).toHaveBeenCalledWith('─'.repeat(50));
+            expect(mockLogger.user).toHaveBeenCalledWith('🔧 Available Tools:');
+            expect(mockLogger.user).toHaveBeenCalledWith('─'.repeat(50));
 
             // Should display tool information
-            expect(mockLogger.raw).toHaveBeenCalledWith(
-                expect.stringContaining('📍 read_file 🟢 Auto-run')
+            expect(mockLogger.info).toHaveBeenCalledWith(
+                expect.stringContaining('📍 read_files 🟢 Auto-run')
             );
-            expect(mockLogger.raw).toHaveBeenCalledWith(
+            expect(mockLogger.info).toHaveBeenCalledWith(
                 expect.stringContaining('Description: Read contents of a file')
             );
-            expect(mockLogger.raw).toHaveBeenCalledWith(
+            expect(mockLogger.info).toHaveBeenCalledWith(
                 expect.stringContaining('Parameters: file_path')
             );
         });
@@ -125,7 +127,7 @@ describe('ToolsCommand', () => {
             expect(result).toBe(true);
 
             // Should display no tools message
-            expect(mockLogger.raw).toHaveBeenCalledWith('🔧 No tools available');
+            expect(mockLogger.info).toHaveBeenCalledWith('🔧 No tools available');
         });
 
         it('should handle args parameter (unused)', async () => {
@@ -142,10 +144,10 @@ describe('ToolsCommand', () => {
             expect(result).toBe(true);
 
             // Should display parameter information
-            expect(mockLogger.raw).toHaveBeenCalledWith(
+            expect(mockLogger.info).toHaveBeenCalledWith(
                 expect.stringContaining('Parameters: file_path')
             );
-            expect(mockLogger.raw).toHaveBeenCalledWith(
+            expect(mockLogger.info).toHaveBeenCalledWith(
                 expect.stringContaining('Parameters: file_path, content')
             );
         });
@@ -191,7 +193,7 @@ describe('ToolsCommand', () => {
             const result = await toolsCommand.implementation('', mockContext);
 
             expect(result).toBe(true);
-            expect(mockLogger.raw).toHaveBeenCalledWith(
+            expect(mockLogger.info).toHaveBeenCalledWith(
                 expect.stringContaining('🔴 Requires confirmation')
             );
         });
@@ -214,7 +216,7 @@ describe('ToolsCommand', () => {
             const result = await toolsCommand.implementation('', mockContext);
 
             expect(result).toBe(true);
-            expect(mockLogger.raw).toHaveBeenCalledWith(expect.stringContaining('📍 simple_tool'));
+            expect(mockLogger.info).toHaveBeenCalledWith(expect.stringContaining('📍 simple_tool'));
         });
     });
 });

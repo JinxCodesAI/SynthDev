@@ -1,19 +1,24 @@
 // tests/unit/commands/roleCommand.test.js
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import RoleCommand from '../../../commands/role/RoleCommand.js';
+import RoleCommand from '../../../src/commands/role/RoleCommand.js';
 
 // Mock logger
-vi.mock('../../../logger.js', () => ({
+vi.mock('../../../src/core/managers/logger.js', () => ({
     getLogger: vi.fn(),
 }));
 
 // Mock SystemMessages
-vi.mock('../../../systemMessages.js', () => ({
+vi.mock('../../../src/core/ai/systemMessages.js', () => ({
     default: {
         hasRole: vi.fn(),
         getAvailableRoles: vi.fn(),
         getSystemMessage: vi.fn(),
         getExcludedTools: vi.fn(),
+        getAvailableGroups: vi.fn(),
+        getRolesByGroup: vi.fn(),
+        getRoleGroup: vi.fn(),
+        resolveRole: vi.fn(),
+        isAgentic: vi.fn(),
     },
 }));
 
@@ -32,18 +37,55 @@ describe('RoleCommand', () => {
             info: vi.fn(),
             warn: vi.fn(),
             error: vi.fn(),
+            user: vi.fn(),
         };
 
         // Setup logger mock
-        const { getLogger } = await import('../../../logger.js');
+        const { getLogger } = await import('../../../src/core/managers/logger.js');
         getLogger.mockReturnValue(mockLogger);
 
         // Setup SystemMessages mock
-        mockSystemMessages = (await import('../../../systemMessages.js')).default;
+        mockSystemMessages = (await import('../../../src/core/ai/systemMessages.js')).default;
         mockSystemMessages.hasRole.mockReturnValue(true);
         mockSystemMessages.getAvailableRoles.mockReturnValue(['coder', 'reviewer', 'architect']);
         mockSystemMessages.getSystemMessage.mockReturnValue('You are a helpful assistant.');
         mockSystemMessages.getExcludedTools.mockReturnValue(['get_time', 'calculate']);
+        mockSystemMessages.getAvailableGroups.mockReturnValue(['global', 'testing']);
+        mockSystemMessages.getRolesByGroup.mockImplementation(group => {
+            const rolesByGroup = {
+                global: ['coder', 'reviewer', 'architect'],
+                testing: ['dude'],
+            };
+            return rolesByGroup[group] || [];
+        });
+        mockSystemMessages.getRoleGroup.mockImplementation(role => {
+            const roleGroups = {
+                coder: 'global',
+                reviewer: 'global',
+                architect: 'global',
+                dude: 'testing',
+            };
+            return roleGroups[role] || 'global';
+        });
+        mockSystemMessages.resolveRole.mockImplementation(roleSpec => {
+            if (roleSpec.includes('.')) {
+                const [group, roleName] = roleSpec.split('.', 2);
+                const rolesInGroup = mockSystemMessages.getRolesByGroup(group);
+                return {
+                    roleName,
+                    group,
+                    found: rolesInGroup.includes(roleName),
+                };
+            } else {
+                const globalRoles = mockSystemMessages.getRolesByGroup('global');
+                return {
+                    roleName: roleSpec,
+                    group: 'global',
+                    found: globalRoles.includes(roleSpec),
+                };
+            }
+        });
+        mockSystemMessages.isAgentic.mockReturnValue(false); // Default to non-agentic
 
         // Create mock context
         mockContext = {
@@ -52,6 +94,12 @@ describe('RoleCommand', () => {
                 setSystemMessage: vi.fn().mockResolvedValue(true),
                 getFilteredToolCount: vi.fn().mockReturnValue(8),
                 getTotalToolCount: vi.fn().mockReturnValue(10),
+            },
+            app: {
+                agentManager: {
+                    _generateAgentId: vi.fn().mockReturnValue('agent-1'),
+                },
+                currentAgentId: null,
             },
         };
 
@@ -108,8 +156,8 @@ describe('RoleCommand', () => {
 
             expect(result).toBe(true);
 
-            // Should check if role exists
-            expect(mockSystemMessages.hasRole).toHaveBeenCalledWith('reviewer');
+            // Should resolve the role
+            expect(mockSystemMessages.resolveRole).toHaveBeenCalledWith('reviewer');
 
             // Should get system message and set it
             expect(mockSystemMessages.getSystemMessage).toHaveBeenCalledWith('reviewer');
@@ -119,35 +167,39 @@ describe('RoleCommand', () => {
             );
 
             // Should display success message
-            expect(mockLogger.raw).toHaveBeenCalledWith(
+            expect(mockLogger.user).toHaveBeenCalledWith(
                 "🎭 Role switched from 'coder' to 'reviewer'"
             );
 
             // Should display tool count
-            expect(mockLogger.raw).toHaveBeenCalledWith('🔧 Tools: 8/10 available');
+            expect(mockLogger.info).toHaveBeenCalledWith('🔧 Tools: 8/10 available');
 
             // Should display excluded tools
-            expect(mockLogger.raw).toHaveBeenCalledWith(
+            expect(mockLogger.info).toHaveBeenCalledWith(
                 '🚫 Excluded tools for reviewer: get_time, calculate'
             );
         });
 
         it('should handle unknown role', async () => {
-            mockSystemMessages.hasRole.mockReturnValue(false);
+            mockSystemMessages.resolveRole.mockReturnValue({
+                roleName: 'unknown',
+                group: 'global',
+                found: false,
+            });
 
             const result = await roleCommand.implementation('unknown', mockContext);
 
             expect(result).toBe(true);
 
-            // Should check if role exists
-            expect(mockSystemMessages.hasRole).toHaveBeenCalledWith('unknown');
+            // Should resolve the role
+            expect(mockSystemMessages.resolveRole).toHaveBeenCalledWith('unknown');
 
             // Should display error messages
-            expect(mockLogger.raw).toHaveBeenCalledWith('❌ Unknown role: unknown');
-            expect(mockLogger.raw).toHaveBeenCalledWith(
-                '📖 Available roles: coder, reviewer, architect'
+            expect(mockLogger.error).toHaveBeenCalledWith('Unknown role: unknown');
+            expect(mockLogger.info).toHaveBeenCalledWith(
+                '📖 Available global roles: coder, reviewer, architect'
             );
-            expect(mockLogger.raw).toHaveBeenCalledWith(
+            expect(mockLogger.info).toHaveBeenCalledWith(
                 '💡 Use /roles to see detailed role information\n'
             );
 
@@ -163,7 +215,7 @@ describe('RoleCommand', () => {
             expect(result).toBe(true);
 
             // Should not display excluded tools message
-            const excludedToolsCalls = mockLogger.raw.mock.calls.filter(
+            const excludedToolsCalls = mockLogger.info.mock.calls.filter(
                 call => call[0] && call[0].includes('🚫 Excluded tools')
             );
             expect(excludedToolsCalls).toHaveLength(0);
@@ -177,7 +229,7 @@ describe('RoleCommand', () => {
             expect(result).toBe(true);
 
             // Should display switch message with 'none' as previous role
-            expect(mockLogger.raw).toHaveBeenCalledWith("🎭 Role switched from 'none' to 'coder'");
+            expect(mockLogger.user).toHaveBeenCalledWith("🎭 Role switched from 'none' to 'coder'");
         });
 
         it('should handle setSystemMessage errors', async () => {
@@ -197,8 +249,45 @@ describe('RoleCommand', () => {
 
             expect(result).toBe(true);
 
-            // Should check trimmed role name
-            expect(mockSystemMessages.hasRole).toHaveBeenCalledWith('coder');
+            // Should resolve trimmed role name
+            expect(mockSystemMessages.resolveRole).toHaveBeenCalledWith('coder');
+        });
+
+        it('should handle group-specific role selection', async () => {
+            const result = await roleCommand.implementation('testing.dude', mockContext);
+
+            expect(result).toBe(true);
+
+            // Should resolve the group.role specification
+            expect(mockSystemMessages.resolveRole).toHaveBeenCalledWith('testing.dude');
+
+            // Should get system message and set it
+            expect(mockSystemMessages.getSystemMessage).toHaveBeenCalledWith('dude');
+            expect(mockContext.apiClient.setSystemMessage).toHaveBeenCalledWith(
+                'You are a helpful assistant.',
+                'dude'
+            );
+
+            // Should display success message with group info
+            expect(mockLogger.user).toHaveBeenCalledWith(
+                "🎭 Role switched from 'coder' to 'dude' [testing]"
+            );
+        });
+
+        it('should handle unknown group.role combination', async () => {
+            mockSystemMessages.resolveRole.mockReturnValue({
+                roleName: 'unknown',
+                group: 'testing',
+                found: false,
+            });
+
+            const result = await roleCommand.implementation('testing.unknown', mockContext);
+
+            expect(result).toBe(true);
+
+            // Should display error for unknown role in group
+            expect(mockLogger.error).toHaveBeenCalledWith('Unknown role: testing.unknown');
+            expect(mockLogger.info).toHaveBeenCalledWith("📖 Available roles in 'testing': dude");
         });
     });
 
@@ -210,17 +299,18 @@ describe('RoleCommand', () => {
     });
 
     describe('getHelp', () => {
-        it('should return help text with available roles', () => {
+        it('should return help text with global roles and groups', () => {
             const help = roleCommand.getHelp();
 
-            expect(help).toContain('Available roles: coder, reviewer, architect');
-            expect(help).toContain('Example: /role coder');
+            expect(help).toContain('Global roles: coder, reviewer, architect');
+            expect(help).toContain('Groups: testing');
+            expect(help).toContain('Examples: /role coder, /role testing.dude');
         });
     });
 
     describe('error handling', () => {
         it('should handle SystemMessages errors', async () => {
-            mockSystemMessages.hasRole.mockImplementation(() => {
+            mockSystemMessages.resolveRole.mockImplementation(() => {
                 throw new Error('SystemMessages error');
             });
 

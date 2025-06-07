@@ -1,0 +1,41 @@
+{
+    "name": "multicall",
+    "description": "Execute multiple tool calls in a single operation. Use this tool when you want to do series of simple read-only operations like, list_tasks, list_directory, ",
+    "auto_run": true,
+    "version": "1.0.0",
+    "schema": {
+        "type": "function",
+        "function": {
+            "name": "multicall",
+            "description": "Execute multiple tool calls in a single operation. This tool internally unwraps multiple tool calls and executes them sequentially, returning aggregated results.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "tool_calls": {
+                        "type": "array",
+                        "description": "Array of tool call objects to execute",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "function_name": {
+                                    "type": "string",
+                                    "description": "Name of the tool/function to call"
+                                },
+                                "arguments": {
+                                    "type": "string",
+                                    "description": "JSON string containing the parameters for the function call"
+                                }
+                            },
+                            "required": ["function_name", "arguments"]
+                        },
+                        "minItems": 1
+                    }
+                },
+                "required": ["tool_calls"],
+                "response_format": {
+                    "description": "Returns aggregated results from all tool calls with success status and individual results"
+                }
+            }
+        }
+    }
+}

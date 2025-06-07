@@ -2,9 +2,9 @@ name: Test Suite
 
 on:
     push:
-        branches: [main, develop, introduce_tests]
+        branches: [master, stable]
     pull_request:
-        branches: [main, develop]
+        branches: [master, stable]
 
 jobs:
     test:
@@ -151,34 +151,3 @@ jobs:
 
             - name: Run integration tests
               run: npm run test:integration || echo "No integration tests defined yet"
-
-            - name: Test tool loading
-              run: |
-                  echo "Testing tool loading..."
-                  node -e "
-                    import('./toolManager.js').then(({ default: ToolManager }) => {
-                      const tm = new ToolManager();
-                      return tm.loadTools();
-                    }).then(() => {
-                      console.log('✅ Tool loading test passed');
-                      process.exit(0);
-                    }).catch(err => {
-                      console.error('❌ Tool loading test failed:', err.message);
-                      process.exit(1);
-                    });
-                  "
-
-            - name: Test configuration loading
-              run: |
-                  echo "Testing configuration loading..."
-                  node -e "
-                    import('./configManager.js').then(({ default: ConfigManager }) => {
-                      const config = ConfigManager.getInstance();
-                      const cfg = config.getConfig();
-                      console.log('✅ Configuration loading test passed');
-                      console.log('Config keys:', Object.keys(cfg));
-                    }).catch(err => {
-                      console.error('❌ Configuration loading test failed:', err.message);
-                      process.exit(1);
-                    });
-                  "

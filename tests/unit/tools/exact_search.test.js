@@ -2,15 +2,15 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { writeFileSync, unlinkSync, existsSync, mkdirSync, rmSync } from 'fs';
 import { join } from 'path';
-import exactSearch from '../../../tools/exact_search/implementation.js';
+import exactSearch from '../../../src/tools/exact_search/implementation.js';
 
 // Mock the fs_utils module
-vi.mock('../../../tools/common/fs_utils.js', () => ({
+vi.mock('../../../src/tools/common/fs_utils.js', () => ({
     scanDirectory: vi.fn(),
     safeReadFile: vi.fn(),
 }));
 
-describe('Exact Search Tool', () => {
+describe.sequential('Exact Search Tool', () => {
     let mockScanDirectory;
     let mockSafeReadFile;
 
@@ -18,7 +18,7 @@ describe('Exact Search Tool', () => {
         vi.clearAllMocks();
 
         // Get the mocked functions
-        const fsUtils = await import('../../../tools/common/fs_utils.js');
+        const fsUtils = await import('../../../src/tools/common/fs_utils.js');
         mockScanDirectory = fsUtils.scanDirectory;
         mockSafeReadFile = fsUtils.safeReadFile;
     });

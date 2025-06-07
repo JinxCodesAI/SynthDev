@@ -1,0 +1,66 @@
+{
+    "help": {
+        "title": "📖 Available Commands:",
+        "commands": {
+            "help": "Show this help message",
+            "tools": "List available tools",
+            "roles": "Show available roles and current role",
+            "role": "Switch to a specific role (coder, reviewer, architect)",
+            "review": "Show raw content of last API request/response",
+            "clear": "Clear conversation history",
+            "cost": "Show accumulated API costs",
+
+            "index": "Index codebase with AI-powered summaries",
+            "cmd": "Execute terminal commands or generate with AI",
+            "exit": "Exit the application"
+        }
+    },
+    "cmd": {
+        "title": "🔧 Terminal Command Execution",
+        "usage": [
+            "/cmd <command>           - Execute command directly",
+            "/cmd ??? <description>    - Generate command with AI (editable)",
+            "/cmd history             - Show command history",
+            "/cmd context on/off      - Toggle auto context integration",
+            "/cmd context             - Show context status"
+        ],
+        "ai_generation": [
+            "- Generated command replaces your input",
+            "- Edit the command before pressing ENTER",
+            "- Press ESC to cancel and revert"
+        ],
+        "context_integration": [
+            "- When enabled, adds codebase context to chat history",
+            "- Helps AI understand project structure for better commands",
+            "- Toggle with '/cmd context on/off'"
+        ],
+        "examples": [
+            "/cmd ls -la",
+            "/cmd ??? add all files to git",
+            "/cmd ??? run tests for the user module"
+        ]
+    },
+    "cli_help": {
+        "title": "Synth-Dev - AI-Powered Development Assistant",
+        "usage": "Usage: synth-dev [options]",
+        "options": [
+            "--api-key=<key>        Provide API key via command line",
+            "--base-model=<model>   Specify base model to use",
+            "--base-url=<url>       Provide base URL via command line",
+            "--smart-model=<model>  Specify smart model for architect role",
+            "--smart-api-key=<key> Provide smart model API key",
+            "--smart-url=<url>      Provide smart model base URL via command line",
+            "--fast-model=<model>   Specify fast model for quick tasks",
+            "--fast-api-key=<key>  Provide fast model API key",
+            "--fast-url=<url>       Provide fast model base URL via command line",
+            "--help, -h             Show this help message"
+        ],
+        "examples": [
+            "synth-dev",
+            "synth-dev --api-key=sk-your-api-key-here",
+            "synth-dev --smart-model=gpt-4.1 --fast-model=gpt-4.1-mini",
+            "synth-dev --smart-api-key=sk-smart-key --fast-api-key=sk-fast-key",
+            "synth-dev --smart-url=https://api.openai.com/v1 --fast-url=https://api.openai.com/v1"
+        ]
+    }
+}

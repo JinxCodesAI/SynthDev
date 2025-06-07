@@ -2,10 +2,10 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { writeFileSync, existsSync, mkdirSync, rmSync } from 'fs';
 import { join } from 'path';
-import listDirectory from '../../../tools/list_directory/implementation.js';
+import listDirectory from '../../../src/tools/list_directory/implementation.js';
 import { cleanupTestDirectory } from '../../helpers/testUtils.js';
 
-describe('ListDirectory Tool - Fixed Tests', () => {
+describe.sequential('ListDirectory Tool - Fixed Tests', () => {
     const testDir = join(process.cwd(), 'test-temp');
 
     beforeEach(async () => {
@@ -290,7 +290,7 @@ describe('ListDirectory Tool - Fixed Tests', () => {
     });
 
     describe('AI summaries functionality', () => {
-        const indexDir = join(process.cwd(), '.index');
+        const indexDir = join(process.cwd(), '.synthdev', 'index');
         const indexFile = join(indexDir, 'codebase-index.json');
 
         beforeEach(() => {
@@ -364,7 +364,7 @@ describe('ListDirectory Tool - Fixed Tests', () => {
                 },
             };
 
-            // Create .index directory and file
+            // Create .synthdev directory and file
             mkdirSync(indexDir, { recursive: true });
             writeFileSync(indexFile, JSON.stringify(mockIndexData, null, 2));
 
@@ -389,7 +389,7 @@ describe('ListDirectory Tool - Fixed Tests', () => {
         });
 
         it('should handle corrupted index file gracefully', async () => {
-            // Create .index directory with corrupted JSON
+            // Create .synthdev directory with corrupted JSON
             mkdirSync(indexDir, { recursive: true });
             writeFileSync(indexFile, '{ invalid json content');
 

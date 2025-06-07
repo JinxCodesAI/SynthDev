@@ -1,6 +1,6 @@
 // tests/unit/tools/explain_codebase.test.js
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import explainCodebase from '../../../tools/explain_codebase/implementation.js';
+import explainCodebase from '../../../src/tools/explain_codebase/implementation.js';
 
 // Mock dependencies
 vi.mock('fs', () => ({
@@ -14,13 +14,13 @@ vi.mock('openai', () => ({
     OpenAI: vi.fn(),
 }));
 
-vi.mock('../../../configManager.js', () => ({
+vi.mock('../../../src/config/managers/configManager.js', () => ({
     default: {
         getInstance: vi.fn(),
     },
 }));
 
-vi.mock('../../../toolConfigManager.js', () => ({
+vi.mock('../../../src/config/managers/toolConfigManager.js', () => ({
     getToolConfigManager: vi.fn().mockReturnValue({
         getToolDescription: vi.fn().mockReturnValue('Explain codebase tool'),
         getErrorMessage: vi.fn().mockReturnValue('Error message'),
@@ -36,7 +36,7 @@ vi.mock('../../../toolConfigManager.js', () => ({
     }),
 }));
 
-vi.mock('../../../configurationLoader.js', () => ({
+vi.mock('../../../src/config/validation/configurationLoader.js', () => ({
     getConfigurationLoader: vi.fn(),
 }));
 
@@ -48,7 +48,7 @@ vi.mock('path', async importOriginal => {
     };
 });
 
-describe('Explain Codebase Tool', () => {
+describe.sequential('Explain Codebase Tool', () => {
     let mockReadFileSync;
     let mockOpenAI;
     let mockConfigManager;
@@ -64,7 +64,7 @@ describe('Explain Codebase Tool', () => {
         const openai = await import('openai');
         mockOpenAI = openai.OpenAI;
 
-        const configManager = await import('../../../configManager.js');
+        const configManager = await import('../../../src/config/managers/configManager.js');
         mockConfigManager = configManager.default.getInstance;
 
         const path = await import('path');
@@ -81,7 +81,7 @@ describe('Explain Codebase Tool', () => {
             get: vi.fn().mockReturnValue('test-api-key'),
         });
 
-        mockJoin.mockReturnValue('.index/codebase-index.json');
+        mockJoin.mockReturnValue('.synthdev/index/codebase-index.json');
     });
 
     describe('Parameter Validation', () => {

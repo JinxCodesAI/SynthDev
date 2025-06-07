@@ -1,6 +1,6 @@
 // tests/unit/core/systemMessages.test.js
 import { describe, it, expect } from 'vitest';
-import systemMessages from '../../../systemMessages.js';
+import systemMessages from '../../../src/core/ai/systemMessages.js';
 
 describe('SystemMessages', () => {
     describe('getSystemMessage', () => {
@@ -178,6 +178,46 @@ describe('SystemMessages', () => {
                 // Should mention tools or capabilities
                 expect(message.toLowerCase()).toMatch(/(tool|function|capability|available|use)/);
             });
+        });
+    });
+
+    describe('getExamples', () => {
+        it('should return examples for prompt_enhancer role', () => {
+            const examples = systemMessages.getExamples('prompt_enhancer');
+
+            expect(examples).toBeDefined();
+            expect(Array.isArray(examples)).toBe(true);
+            expect(examples.length).toBeGreaterThan(0);
+
+            // Check structure of first example
+            expect(examples[0]).toHaveProperty('role');
+            expect(examples[0]).toHaveProperty('content');
+        });
+
+        it('should return empty array for roles without examples', () => {
+            const examples = systemMessages.getExamples('coder');
+
+            expect(examples).toBeDefined();
+            expect(Array.isArray(examples)).toBe(true);
+            expect(examples.length).toBe(0);
+        });
+
+        it('should throw error for unknown role', () => {
+            expect(() => {
+                systemMessages.getExamples('unknown_role');
+            }).toThrow('Unknown role: unknown_role');
+        });
+
+        it('should throw error for null role', () => {
+            expect(() => {
+                systemMessages.getExamples(null);
+            }).toThrow('Unknown role: null');
+        });
+
+        it('should throw error for undefined role', () => {
+            expect(() => {
+                systemMessages.getExamples(undefined);
+            }).toThrow('Unknown role: undefined');
         });
     });
 

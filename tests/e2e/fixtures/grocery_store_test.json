@@ -1,0 +1,63 @@
+{
+    "workflow_name": "grocery_store_test",
+    "description": "Test workflow simulating customer-grocery worker interaction to test multi-agent conversation patterns and context sharing",
+    "input": {
+        "name": "initial_customer_request",
+        "type": "string",
+        "description": "What the customer initially asks for or mentions when approaching the grocery worker"
+    },
+    "output": {
+        "name": "interaction_summary",
+        "type": "string",
+        "description": "Summary of the customer-worker interaction and what was accomplished"
+    },
+    "variables": {
+        "max_interactions": 15
+    },
+    "contexts": [
+        {
+            "name": "store_conversation",
+            "starting_messages": [],
+            "max_length": 30000
+        }
+    ],
+    "agents": [
+        {
+            "agent_role": "grocery_worker",
+            "context": "store_conversation",
+            "role": "assistant"
+        },
+        {
+            "agent_role": "customer",
+            "context": "store_conversation",
+            "role": "user"
+        }
+    ],
+    "states": [
+        {
+            "name": "start",
+            "agent": "grocery_worker",
+            "pre_handler": "addInitialCustomerMessage",
+            "post_handler": "addWorkerResponse",
+            "transition_handler": "alwaysTransitionToCustomer"
+        },
+        {
+            "name": "customer_decision",
+            "agent": "customer",
+            "pre_handler": null,
+            "post_handler": "processCustomerDecision",
+            "transition_handler": "decideNextState"
+        },
+        {
+            "name": "worker_response",
+            "agent": "grocery_worker",
+            "pre_handler": null,
+            "post_handler": "addWorkerResponse",
+            "transition_handler": "alwaysTransitionToCustomer"
+        },
+        {
+            "name": "stop",
+            "input": "common_data.interaction_summary"
+        }
+    ]
+}

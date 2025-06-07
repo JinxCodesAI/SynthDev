@@ -15,18 +15,18 @@ services:
         # Environment variables
         environment:
             # Copy from .env file or set directly
-            - API_KEY=${API_KEY:-}
-            - BASE_MODEL=${BASE_MODEL:-gpt-4o-mini}
-            - BASE_URL=${BASE_URL:-https://api.openai.com/v1}
-            - SMART_API_KEY=${SMART_API_KEY:-}
-            - SMART_MODEL=${SMART_MODEL:-gpt-4o}
-            - SMART_BASE_URL=${SMART_BASE_URL:-https://api.openai.com/v1}
-            - FAST_API_KEY=${FAST_API_KEY:-}
-            - FAST_MODEL=${FAST_MODEL:-gpt-4o-mini}
-            - FAST_BASE_URL=${FAST_BASE_URL:-https://api.openai.com/v1}
-            - MAX_TOOL_CALLS=${MAX_TOOL_CALLS:-50}
-            - ENABLE_PROMPT_ENHANCEMENT=${ENABLE_PROMPT_ENHANCEMENT:-false}
-            - VERBOSITY_LEVEL=${VERBOSITY_LEVEL:-2}
+            - SYNTHDEV_API_KEY=${SYNTHDEV_API_KEY:-}
+            - SYNTHDEV_BASE_MODEL=${SYNTHDEV_BASE_MODEL:-gpt-4o-mini}
+            - SYNTHDEV_BASE_URL=${SYNTHDEV_BASE_URL:-https://api.openai.com/v1}
+            - SYNTHDEV_SMART_API_KEY=${SYNTHDEV_SMART_API_KEY:-}
+            - SYNTHDEV_SMART_MODEL=${SYNTHDEV_SMART_MODEL:-gpt-4o}
+            - SYNTHDEV_SMART_BASE_URL=${SYNTHDEV_SMART_BASE_URL:-https://api.openai.com/v1}
+            - SYNTHDEV_FAST_API_KEY=${SYNTHDEV_FAST_API_KEY:-}
+            - SYNTHDEV_FAST_MODEL=${SYNTHDEV_FAST_MODEL:-gpt-4o-mini}
+            - SYNTHDEV_FAST_BASE_URL=${SYNTHDEV_FAST_BASE_URL:-https://api.openai.com/v1}
+            - SYNTHDEV_MAX_TOOL_CALLS=${SYNTHDEV_MAX_TOOL_CALLS:-50}
+            - SYNTHDEV_ENABLE_PROMPT_ENHANCEMENT=${SYNTHDEV_ENABLE_PROMPT_ENHANCEMENT:-false}
+            - SYNTHDEV_VERBOSITY_LEVEL=${SYNTHDEV_VERBOSITY_LEVEL:-2}
             - NODE_ENV=production
             - TERM=xterm-256color
 
@@ -77,18 +77,18 @@ services:
 
         # Environment variables
         environment:
-            - API_KEY=${API_KEY:-}
-            - BASE_MODEL=${BASE_MODEL:-gpt-4o-mini}
-            - BASE_URL=${BASE_URL:-https://api.openai.com/v1}
-            - SMART_API_KEY=${SMART_API_KEY:-}
-            - SMART_MODEL=${SMART_MODEL:-gpt-4o}
-            - SMART_BASE_URL=${SMART_BASE_URL:-https://api.openai.com/v1}
-            - FAST_API_KEY=${FAST_API_KEY:-}
-            - FAST_MODEL=${FAST_MODEL:-gpt-4o-mini}
-            - FAST_BASE_URL=${FAST_BASE_URL:-https://api.openai.com/v1}
-            - MAX_TOOL_CALLS=${MAX_TOOL_CALLS:-50}
-            - ENABLE_PROMPT_ENHANCEMENT=${ENABLE_PROMPT_ENHANCEMENT:-false}
-            - VERBOSITY_LEVEL=${VERBOSITY_LEVEL:-2}
+            - SYNTHDEV_API_KEY=${SYNTHDEV_API_KEY:-}
+            - SYNTHDEV_BASE_MODEL=${SYNTHDEV_BASE_MODEL:-gpt-4o-mini}
+            - SYNTHDEV_BASE_URL=${SYNTHDEV_BASE_URL:-https://api.openai.com/v1}
+            - SYNTHDEV_SMART_API_KEY=${SYNTHDEV_SMART_API_KEY:-}
+            - SYNTHDEV_SMART_MODEL=${SYNTHDEV_SMART_MODEL:-gpt-4o}
+            - SYNTHDEV_SMART_BASE_URL=${SYNTHDEV_SMART_BASE_URL:-https://api.openai.com/v1}
+            - SYNTHDEV_FAST_API_KEY=${SYNTHDEV_FAST_API_KEY:-}
+            - SYNTHDEV_FAST_MODEL=${SYNTHDEV_FAST_MODEL:-gpt-4o-mini}
+            - SYNTHDEV_FAST_BASE_URL=${SYNTHDEV_FAST_BASE_URL:-https://api.openai.com/v1}
+            - SYNTHDEV_MAX_TOOL_CALLS=${SYNTHDEV_MAX_TOOL_CALLS:-50}
+            - SYNTHDEV_ENABLE_PROMPT_ENHANCEMENT=${SYNTHDEV_ENABLE_PROMPT_ENHANCEMENT:-false}
+            - SYNTHDEV_VERBOSITY_LEVEL=${SYNTHDEV_VERBOSITY_LEVEL:-2}
             - NODE_ENV=development
             - TERM=xterm-256color
 
