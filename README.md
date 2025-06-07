@@ -32,7 +32,7 @@ npm start
 Download, run, test, create Issues, start discussion. 
 
 If you want to see this project continue, consider living a star, shouting out about it on X.com, 
-or maybe even supporting it on [GitHub Sponsors](https://github.com/sponsors/adamskrodzki).
+or maybe even supporting it on [GitHub Sponsors](https://github.com/sponsors/adamskrodzki) if you learned something.
 
 ## License
 
