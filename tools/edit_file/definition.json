@@ -11,7 +11,7 @@
     "type": "function",
     "function": {
       "name": "edit_file",
-      "description": "Edit file content by replacing text between two unique boundary strings. This tool works by finding two unique strings in the file that mark the beginning and end of the section to be replaced. CRITICAL: Both boundary strings must exist exactly once in the file. Use read_file first to identify suitable unique boundary strings. The boundary strings themselves are included in the replacement - they will be removed and replaced by the new content.\n\nExample usage:\nIf file contains: 'function test() {\\n  console.log(\"old\");\\n}'\nTo replace the console.log line:\n- boundary_start: 'function test() {\\n  '\n- boundary_end: '\\n}'\n- new_content: 'function test() {\\n  console.log(\"new\");\\n}'\n\nThe result will be: 'function test() {\\n  console.log(\"new\");\\n}'\n\nALWAYS use read_file first to see the exact content and line breaks before using this tool.",
+      "description": "Edit file content by replacing text between two unique boundary strings. This tool works by finding two unique strings in the file that mark the beginning and end of the section to be replaced. CRITICAL: Both boundary strings must exist exactly once in the file. Use read_file first to identify suitable unique boundary strings. The boundary strings themselves are included in the replacement - they will be removed and replaced by the new content.\n\nRECOVERY FEATURE: For 'replace' operations, if boundary strings are found multiple times, the tool attempts automatic recovery by extending the boundaries using content from new_content to make them unique. This helps when AI gets confused about boundary selection.\n\nExample usage:\nIf file contains: 'function test() {\\n  console.log(\"old\");\\n}'\nTo replace the console.log line:\n- boundary_start: 'function test() {\\n  '\n- boundary_end: '\\n}'\n- new_content: 'function test() {\\n  console.log(\"new\");\\n}'\n\nThe result will be: 'function test() {\\n  console.log(\"new\");\\n}'\n\nALWAYS use read_file first to see the exact content and line breaks before using this tool.",
       "parameters": {
         "type": "object",
         "properties": {
@@ -46,7 +46,7 @@
         "required": ["file_path", "operation", "boundary_start", "boundary_end"]
       },
       "response_format": {
-        "description": "Returns JSON object with 'success' (boolean), 'timestamp' (ISO string), 'tool_name' (string), 'file_path', and on success: 'size' (new file size), 'encoding', 'edited' (true). On failure: 'error' (string describing the issue). Common errors: boundary strings not found, multiple matches for boundaries, boundary_start appears after boundary_end."
+        "description": "Returns JSON object with 'success' (boolean), 'timestamp' (ISO string), 'tool_name' (string), 'file_path', and on success: 'size' (new file size), 'encoding', 'edited' (true), optionally 'boundary_recovery_used' (boolean) and recovery details. On failure: 'error' (string describing the issue), 'boundary_errors' (array of specific boundary issues), 'original_file_content' (for debugging), and 'recovery_result' (if recovery was attempted). Common errors: boundary strings not found, multiple matches for boundaries, boundary_start appears after boundary_end."
       }
     }
   }

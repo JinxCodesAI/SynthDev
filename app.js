@@ -170,6 +170,8 @@ class AICoderConsole {
         
         // Set default role and system message
         await this.apiClient.setSystemMessage(SystemMessages.getSystemMessage('coder'), 'coder');
+
+        await this.snapshotManager.initialize();
         
         this.consoleInterface.setupEventHandlers(
             async (input) => await this.handleInput(input),
@@ -217,7 +219,7 @@ class AICoderConsole {
             }
 
             // Create snapshot for user instruction with the final prompt
-            this.snapshotManager.createSnapshot(finalPrompt);
+            await this.snapshotManager.createSnapshot(finalPrompt);
         }
 
         // Process user message through API client
