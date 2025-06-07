@@ -7,6 +7,7 @@ import GitUtils from './utils/GitUtils.js';
  */
 class SnapshotManager {
     constructor() {
+        this.isReady = false;
         this.snapshots = []; // Array of snapshot objects
         this.currentSnapshot = null; // Current active snapshot
         this.logger = getLogger();
@@ -17,9 +18,6 @@ class SnapshotManager {
         this.featureBranch = null; // Store feature branch name
         this.gitMode = false; // Whether we're using Git mode
         this.gitInitialized = false; // Track if Git initialization is complete
-
-        // Initialize Git availability check (async, will complete in background)
-        this._initializeGit();
     }
 
     /**
@@ -48,6 +46,7 @@ class SnapshotManager {
             this.isGitRepo = false;
         } finally {
             this.gitInitialized = true;
+            this.isReady = true;
         }
     }
 
@@ -55,9 +54,14 @@ class SnapshotManager {
      * Ensure Git initialization is complete
      */
     async ensureGitInitialized() {
-        if (!this.gitInitialized) {
+        if (!this.gitInitialized && !this.isReady) {
             await this._initializeGit();
         }
+    }
+
+    async initialize() {
+        await this.ensureGitInitialized();
+        this.isReady = true;
     }
 
     /**
