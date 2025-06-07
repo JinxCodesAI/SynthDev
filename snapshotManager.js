@@ -161,22 +161,22 @@ class SnapshotManager {
         }
 
         try {
-            // Add modified files to Git
-            const addResult = await this.gitUtils.addFiles(modifiedFiles);
-            if (!addResult.success) {
-                return { success: false, error: `Failed to add files: ${addResult.error}` };
-            }
-
             // Create commit message with timestamp and affected files
             const timestamp = new Date().toISOString().slice(0, 19).replace('T', ' ');
             const fileList = modifiedFiles.length <= 3
                 ? modifiedFiles.join(', ')
                 : `${modifiedFiles.slice(0, 3).join(', ')} and ${modifiedFiles.length - 3} more`;
 
+            // Sanitize the instruction to avoid shell command issues
+            const sanitizedInstruction = this.currentSnapshot.instruction
+                .replace(/[\r\n]+/g, ' ')  // Replace newlines with spaces
+                .replace(/\s+/g, ' ')      // Normalize whitespace
+                .trim();
+
             // Create structured commit message
             const commitMessage = `Synth-Dev [${timestamp}]: Modified ${fileList}
 
-Original instruction: ${this.currentSnapshot.instruction}`;
+Original instruction: ${sanitizedInstruction}`;
 
             // Commit changes
             const commitResult = await this.gitUtils.commit(commitMessage);

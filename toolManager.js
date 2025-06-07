@@ -347,12 +347,53 @@ class ToolManager {
         // Only commit if there are modified files
         if (modifiedFiles.length > 0) {
             try {
+                const gitUtils = snapshotManager.gitUtils;
+
+                // First, check Git status to see what actually changed
+                const statusResult = await gitUtils.getStatus();
+                if (!statusResult.success) {
+                    this.logger.warn(`Git status check failed: ${statusResult.error}`, 'Git auto-commit');
+                    return;
+                }
+
+                this.logger.debug(`Git status before commit: ${statusResult.status}`, 'Git auto-commit');
+
+                if (!statusResult.hasChanges) {
+                    this.logger.debug(`No Git changes detected, skipping commit`, 'Git auto-commit');
+                    return;
+                }
+
+                // Add the modified files to Git staging area
+                const addResult = await gitUtils.addFiles(modifiedFiles);
+
+                if (!addResult.success) {
+                    this.logger.warn(`Git add failed: ${addResult.error}`, 'Git auto-commit');
+                    return;
+                }
+
+                // Check status again after adding files
+                const statusAfterAdd = await gitUtils.getStatus();
+                if (statusAfterAdd.success) {
+                    this.logger.debug(`Git status after add: ${statusAfterAdd.status}`, 'Git auto-commit');
+                }
+
+                // Then commit the changes
                 const commitResult = await snapshotManager.commitChangesToGit(modifiedFiles);
                 if (!commitResult.success) {
-                    this.logger.warn(`Git commit failed: ${commitResult.error}`, 'Git auto-commit');
+                    // Show full error message with proper formatting
+                    this.logger.warn(`Git commit failed:`, 'Git auto-commit');
+                    const errorLines = commitResult.error.split('\n');
+                    errorLines.forEach(line => {
+                        if (line.trim()) {
+                            this.logger.warn(`  ${line}`, '');
+                        }
+                    });
                 }
             } catch (error) {
                 this.logger.warn(`Git commit error: ${error.message}`, 'Git auto-commit');
+                if (error.stack) {
+                    this.logger.debug(`Stack trace: ${error.stack}`);
+                }
             }
         }
     }
