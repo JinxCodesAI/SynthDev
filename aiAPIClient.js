@@ -161,10 +161,13 @@ class AIAPIClient {
 
         // Switch to appropriate model based on role level
         if (role) {
+            const previousModel = this.model;
             try {
                 const level = SystemMessages.getLevel(role);
                 this._switchToModelLevel(level);
-                this.logger.info(`🤖 Switched to ${level} model (${this.model}) for role '${role}'`);
+                if (this.model !== previousModel) {
+                    this.logger.info(`🤖 Switched to ${level} model (${this.model}) for role '${role}'`);
+                }
             } catch (error) {
                 this.logger.warn(`Could not determine model level for role '${role}': ${error.message}`);
             }
