@@ -139,6 +139,35 @@ When using `--path`, Synth-Dev:
 
 This allows you to use Synth-Dev with any project while keeping it containerized and isolated.
 
+### Option 3: Global Installation
+
+For users who prefer to have the `synth-dev` command available system-wide, you can install it globally using npm.
+
+#### 1. Install Globally
+
+Navigate to the root directory of the Synth-Dev project and run the following command:
+
+```bash
+npm install -g .
+```
+
+This command installs the current project (indicated by `.`) as a global npm package.
+
+#### 2. Using the Globally Installed Application
+
+Once installed, the `synth-dev` command will be available in your system's PATH. You can then run the application from any directory in your terminal:
+
+```bash
+synth-dev
+```
+
+#### 3. Operating Context and Configuration
+
+- **Working Directory**: The application will operate in the context of the directory from which it is launched. This means any file operations, codebase indexing, or other path-dependent actions will be relative to your current working directory.
+- **Configuration File**: It is recommended to place your `.env` configuration file in the working directory where you intend to run `synth-dev`. The application will look for the `.env` file in the current directory to load API keys and other settings.
+
+This method provides flexibility for developers who want to use Synth-Dev across multiple projects without navigating to the Synth-Dev source directory or using Docker.
+
 ## Main Functionalities
 
 ### Command System
