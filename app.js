@@ -170,6 +170,8 @@ class AICoderConsole {
         
         // Set default role and system message
         await this.apiClient.setSystemMessage(SystemMessages.getSystemMessage('coder'), 'coder');
+
+        await this.snapshotManager.initialize();
         
         this.consoleInterface.setupEventHandlers(
             async (input) => await this.handleInput(input),
