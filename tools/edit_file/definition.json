@@ -1,53 +1,53 @@
 {
-  "name": "edit_file",
-  "description": "Edit content of a file by replacing text between two unique boundary strings.",
-  "auto_run": false,
-  "requires_backup": true,
-  "backup_resource_path_property_name": "file_path",
-  "category": "file",
-  "version": "2.0.0",
-  "tags": ["file", "edit", "replace", "filesystem"],
-  "schema": {
-    "type": "function",
-    "function": {
-      "name": "edit_file",
-      "description": "Edit file content by replacing text between two unique boundary strings. This tool works by finding two unique strings in the file that mark the beginning and end of the section to be replaced. CRITICAL: Both boundary strings must exist exactly once in the file. Use read_file first to identify suitable unique boundary strings. The boundary strings themselves are included in the replacement - they will be removed and replaced by the new content.\n\nRECOVERY FEATURE: For 'replace' operations, if boundary strings are found multiple times, the tool attempts automatic recovery by extending the boundaries using content from new_content to make them unique. This helps when AI gets confused about boundary selection.\n\nExample usage:\nIf file contains: 'function test() {\\n  console.log(\"old\");\\n}'\nTo replace the console.log line:\n- boundary_start: 'function test() {\\n  '\n- boundary_end: '\\n}'\n- new_content: 'function test() {\\n  console.log(\"new\");\\n}'\n\nThe result will be: 'function test() {\\n  console.log(\"new\");\\n}'\n\nALWAYS use read_file first to see the exact content and line breaks before using this tool.",
-      "parameters": {
-        "type": "object",
-        "properties": {
-          "file_path": {
-            "type": "string",
-            "description": "Relative path to the file to edit. Must be within the current project directory. Use forward slashes (/) for path separation."
-          },
-          "operation": {
-            "type": "string",
-            "enum": ["replace", "delete"],
-            "description": "Type of edit operation. 'replace' replaces content between boundaries with new_content. 'delete' removes content between boundaries (including the boundaries themselves)."
-          },
-          "boundary_start": {
-            "type": "string",
-            "description": "Unique string that marks the beginning of the section to edit. This exact string must appear exactly once in the file. Include newlines (\\n) as they appear in the file. This string will be part of what gets replaced."
-          },
-          "boundary_end": {
-            "type": "string",
-            "description": "Unique string that marks the end of the section to edit. This exact string must appear exactly once in the file. Include newlines (\\n) as they appear in the file. This string will be part of what gets replaced."
-          },
-          "new_content": {
-            "type": "string",
-            "description": "New content to insert between the boundaries (for 'replace' operation only). This content completely replaces everything from boundary_start to boundary_end inclusive. Include proper newlines (\\n) and indentation as needed."
-          },
-          "encoding": {
-            "type": "string",
-            "enum": ["utf8", "ascii", "base64", "hex", "latin1"],
-            "default": "utf8",
-            "description": "File encoding (default utf8)."
-          }
-        },
-        "required": ["file_path", "operation", "boundary_start", "boundary_end"]
-      },
-      "response_format": {
-        "description": "Returns JSON object with 'success' (boolean), 'timestamp' (ISO string), 'tool_name' (string), 'file_path', and on success: 'size' (new file size), 'encoding', 'edited' (true), optionally 'boundary_recovery_used' (boolean) and recovery details. On failure: 'error' (string describing the issue), 'boundary_errors' (array of specific boundary issues), 'original_file_content' (for debugging), and 'recovery_result' (if recovery was attempted). Common errors: boundary strings not found, multiple matches for boundaries, boundary_start appears after boundary_end."
-      }
+    "name": "edit_file",
+    "description": "Edit content of a file by replacing text between two unique boundary strings.",
+    "auto_run": false,
+    "requires_backup": true,
+    "backup_resource_path_property_name": "file_path",
+    "category": "file",
+    "version": "2.0.0",
+    "tags": ["file", "edit", "replace", "filesystem"],
+    "schema": {
+        "type": "function",
+        "function": {
+            "name": "edit_file",
+            "description": "Edit file content by replacing text between two unique boundary strings. This tool works by finding two unique strings in the file that mark the beginning and end of the section to be replaced. CRITICAL: Both boundary strings must exist exactly once in the file. Use read_file first to identify suitable unique boundary strings. The boundary strings themselves are included in the replacement - they will be removed and replaced by the new content.\n\nRECOVERY FEATURE: For 'replace' operations, if boundary strings are found multiple times, the tool attempts automatic recovery by extending the boundaries using content from new_content to make them unique. This helps when AI gets confused about boundary selection.\n\nExample usage:\nIf file contains: 'function test() {\\n  console.log(\"old\");\\n}'\nTo replace the console.log line:\n- boundary_start: 'function test() {\\n  '\n- boundary_end: '\\n}'\n- new_content: 'function test() {\\n  console.log(\"new\");\\n}'\n\nThe result will be: 'function test() {\\n  console.log(\"new\");\\n}'\n\nALWAYS use read_file first to see the exact content and line breaks before using this tool.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "file_path": {
+                        "type": "string",
+                        "description": "Relative path to the file to edit. Must be within the current project directory. Use forward slashes (/) for path separation."
+                    },
+                    "operation": {
+                        "type": "string",
+                        "enum": ["replace", "delete"],
+                        "description": "Type of edit operation. 'replace' replaces content between boundaries with new_content. 'delete' removes content between boundaries (including the boundaries themselves)."
+                    },
+                    "boundary_start": {
+                        "type": "string",
+                        "description": "Unique string that marks the beginning of the section to edit. This exact string must appear exactly once in the file. Include newlines (\\n) as they appear in the file. This string will be part of what gets replaced."
+                    },
+                    "boundary_end": {
+                        "type": "string",
+                        "description": "Unique string that marks the end of the section to edit. This exact string must appear exactly once in the file. Include newlines (\\n) as they appear in the file. This string will be part of what gets replaced."
+                    },
+                    "new_content": {
+                        "type": "string",
+                        "description": "New content to insert between the boundaries (for 'replace' operation only). This content completely replaces everything from boundary_start to boundary_end inclusive. Include proper newlines (\\n) and indentation as needed."
+                    },
+                    "encoding": {
+                        "type": "string",
+                        "enum": ["utf8", "ascii", "base64", "hex", "latin1"],
+                        "default": "utf8",
+                        "description": "File encoding (default utf8)."
+                    }
+                },
+                "required": ["file_path", "operation", "boundary_start", "boundary_end"]
+            },
+            "response_format": {
+                "description": "Returns JSON object with 'success' (boolean), 'timestamp' (ISO string), 'tool_name' (string), 'file_path', and on success: 'size' (new file size), 'encoding', 'edited' (true), optionally 'boundary_recovery_used' (boolean) and recovery details. On failure: 'error' (string describing the issue), 'boundary_errors' (array of specific boundary issues), 'original_file_content' (for debugging), and 'recovery_result' (if recovery was attempted). Common errors: boundary strings not found, multiple matches for boundaries, boundary_start appears after boundary_end."
+            }
+        }
     }
-  }
 }

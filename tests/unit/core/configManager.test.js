@@ -1,0 +1,126 @@
+// tests/unit/core/configManager.test.js
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import ConfigManager from '../../../configManager.js';
+import { mockEnvVars } from '../../helpers/testUtils.js';
+
+describe('ConfigManager', () => {
+    let restoreEnv;
+
+    beforeEach(() => {
+        // Reset singleton instance
+        ConfigManager.instance = null;
+        vi.clearAllMocks();
+
+        // Mock environment variables
+        restoreEnv = mockEnvVars({
+            API_KEY: 'test-api-key',
+            BASE_MODEL: 'gpt-4-mini',
+            BASE_URL: 'https://api.openai.com/v1',
+        });
+    });
+
+    afterEach(() => {
+        if (restoreEnv) {
+            restoreEnv();
+        }
+    });
+
+    describe('getInstance', () => {
+        it('should create singleton instance', () => {
+            const instance1 = ConfigManager.getInstance();
+            const instance2 = ConfigManager.getInstance();
+            expect(instance1).toBe(instance2);
+        });
+
+        it('should accept CLI options', () => {
+            const options = { apiKey: 'cli-test-key' };
+            const instance = ConfigManager.getInstance(options);
+            expect(instance.cliOptions.apiKey).toBe('cli-test-key');
+        });
+
+        it('should prioritize CLI options over environment variables', () => {
+            const options = { apiKey: 'cli-key', baseModel: 'cli-model' };
+            const instance = ConfigManager.getInstance(options);
+
+            expect(instance.cliOptions.apiKey).toBe('cli-key');
+            expect(instance.cliOptions.baseModel).toBe('cli-model');
+        });
+    });
+
+    describe('configuration loading', () => {
+        it('should load configuration from environment variables', () => {
+            const instance = ConfigManager.getInstance();
+            const config = instance.config;
+
+            expect(config.base.apiKey).toBe('test-api-key');
+            expect(config.base.baseModel).toBe('gpt-4-mini');
+            expect(config.base.baseUrl).toBe('https://api.openai.com/v1');
+        });
+
+        it('should use CLI options over environment variables', () => {
+            const options = {
+                apiKey: 'cli-api-key',
+                baseModel: 'cli-model',
+            };
+            const instance = ConfigManager.getInstance(options);
+            const config = instance.config;
+
+            expect(config.base.apiKey).toBe('cli-api-key');
+            expect(config.base.baseModel).toBe('cli-model');
+        });
+
+        it('should fall back to defaults when no env vars or CLI options', () => {
+            // Clear environment variables
+            restoreEnv();
+            restoreEnv = mockEnvVars({
+                API_KEY: '',
+                BASE_MODEL: '',
+                BASE_URL: '',
+            });
+
+            const instance = ConfigManager.getInstance();
+            const config = instance.config;
+
+            expect(config.base.baseModel).toBe('gpt-4.1-mini');
+            expect(config.base.baseUrl).toBe('https://api.openai.com/v1');
+        });
+    });
+
+    describe('getModel', () => {
+        it('should return base model configuration', () => {
+            const instance = ConfigManager.getInstance();
+            const modelConfig = instance.getModel('base');
+
+            expect(modelConfig).toHaveProperty('apiKey');
+            expect(modelConfig).toHaveProperty('baseModel');
+            expect(modelConfig).toHaveProperty('baseUrl');
+        });
+
+        it('should return smart model configuration when available', () => {
+            const options = {
+                smartApiKey: 'smart-key',
+                smartModel: 'gpt-4',
+                smartUrl: 'https://smart.api.com',
+            };
+            const instance = ConfigManager.getInstance(options);
+            const modelConfig = instance.getModel('smart');
+
+            expect(modelConfig.apiKey).toBe('smart-key');
+            expect(modelConfig.model).toBe('gpt-4');
+            expect(modelConfig.baseUrl).toBe('https://smart.api.com');
+        });
+    });
+
+    describe('validation', () => {
+        it('should not be validated initially', () => {
+            const instance = ConfigManager.getInstance();
+            expect(instance.isValidated).toBe(false);
+        });
+
+        it('should mark as validated after initialize', async () => {
+            const instance = ConfigManager.getInstance();
+            await instance.initialize();
+            expect(instance.isValidated).toBe(true);
+        });
+    });
+});

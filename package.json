@@ -1,24 +1,59 @@
 {
-  "name": "synth-dev",
-  "version": "0.1.0",
-  "description": "Console based ai coding assistant",
-  "main": "app.js",
-  "type": "module",
-  "bin": {
-    "synth-dev": "./app.js"
-  },
-  "scripts": {
-    "start": "node app.js",
-    "dev": "node --watch app.js"
-  },
-  "keywords": ["ai", "console", "tools", "coding", "assistant"],
-  "license": "MIT",
-  "dependencies": {
-    "openai": "^4.67.3",
-    "readline": "^1.3.0",
-    "dotenv": "^16.4.5"
-  },
-  "devDependencies": {
-    "@types/node": "^20.10.0"
-  }
-} 
+    "name": "synth-dev",
+    "version": "0.1.0",
+    "description": "Console based ai coding assistant",
+    "main": "app.js",
+    "type": "module",
+    "bin": {
+        "synth-dev": "./app.js"
+    },
+    "scripts": {
+        "start": "node app.js",
+        "dev": "node --watch app.js",
+        "test": "vitest run",
+        "test:watch": "vitest --watch",
+        "test:coverage": "vitest run --coverage",
+        "test:ui": "vitest --ui",
+        "lint": "eslint .",
+        "lint:fix": "eslint . --fix",
+        "format": "prettier --write .",
+        "format:check": "prettier --check .",
+        "quality": "npm run lint && npm run format:check && npm run test",
+        "pre-commit": "npm run quality",
+        "prepare": "husky",
+        "fix-lint": "node scripts/fix-lint-issues.js && npm run lint:fix"
+    },
+    "keywords": [
+        "ai",
+        "console",
+        "tools",
+        "coding",
+        "assistant"
+    ],
+    "license": "MIT",
+    "dependencies": {
+        "openai": "^4.67.3",
+        "readline": "^1.3.0",
+        "dotenv": "^16.4.5"
+    },
+    "devDependencies": {
+        "@types/node": "^20.10.0",
+        "@eslint/js": "^9.17.0",
+        "@vitest/coverage-v8": "^2.1.8",
+        "@vitest/ui": "^2.1.8",
+        "eslint": "^9.17.0",
+        "husky": "^9.1.7",
+        "lint-staged": "^15.2.11",
+        "prettier": "^3.4.2",
+        "vitest": "^2.1.8"
+    },
+    "lint-staged": {
+        "*.js": [
+            "eslint --fix",
+            "prettier --write"
+        ],
+        "*.{json,md}": [
+            "prettier --write"
+        ]
+    }
+}

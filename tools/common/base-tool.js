@@ -24,7 +24,7 @@ export class BaseTool {
             success: true,
             timestamp: new Date().toISOString(),
             tool_name: this.name,
-            ...data
+            ...data,
         };
     }
 
@@ -40,7 +40,7 @@ export class BaseTool {
             timestamp: new Date().toISOString(),
             tool_name: this.name,
             error: message,
-            ...metadata
+            ...metadata,
         };
     }
 
@@ -53,10 +53,9 @@ export class BaseTool {
     validateRequiredParams(params, requiredFields) {
         for (const field of requiredFields) {
             if (params[field] === undefined || params[field] === null) {
-                return this.createErrorResponse(
-                    `${field} parameter is required`,
-                    { missing_parameter: field }
-                );
+                return this.createErrorResponse(`${field} parameter is required`, {
+                    missing_parameter: field,
+                });
             }
         }
         return null;
@@ -80,10 +79,16 @@ export class BaseTool {
                 }
 
                 if (!isValid) {
-                    const actualType = Array.isArray(params[param]) ? 'array' : typeof params[param];
+                    const actualType = Array.isArray(params[param])
+                        ? 'array'
+                        : typeof params[param];
                     return this.createErrorResponse(
                         `${param} parameter must be of type ${expectedType}`,
-                        { invalid_parameter: param, expected_type: expectedType, actual_type: actualType }
+                        {
+                            invalid_parameter: param,
+                            expected_type: expectedType,
+                            actual_type: actualType,
+                        }
                     );
                 }
             }
@@ -100,14 +105,16 @@ export class BaseTool {
     validateAndResolvePath(filePath, cwd = process.cwd()) {
         if (!filePath || typeof filePath !== 'string') {
             return {
-                error: this.createErrorResponse('file_path parameter is required and must be a string')
+                error: this.createErrorResponse(
+                    'file_path parameter is required and must be a string'
+                ),
             };
         }
 
         try {
             const targetPath = join(cwd, filePath);
             const resolvedPath = resolve(targetPath);
-            
+
             // Security check: ensure the resolved path is within the current working directory
             const relativePath = relative(cwd, resolvedPath);
             if (relativePath.startsWith('..') || resolve(relativePath) !== resolvedPath) {
@@ -115,21 +122,20 @@ export class BaseTool {
                     error: this.createErrorResponse(
                         'Access denied: file path must be within the current working directory',
                         { file_path: filePath }
-                    )
+                    ),
                 };
             }
 
             return {
                 targetPath,
                 resolvedPath,
-                relativePath
+                relativePath,
             };
         } catch (error) {
             return {
-                error: this.createErrorResponse(
-                    `Path resolution error: ${error.message}`,
-                    { file_path: filePath }
-                )
+                error: this.createErrorResponse(`Path resolution error: ${error.message}`, {
+                    file_path: filePath,
+                }),
             };
         }
     }
@@ -144,21 +150,24 @@ export class BaseTool {
             // Validate basic parameters if defined
             if (this.requiredParams) {
                 const validationError = this.validateRequiredParams(params, this.requiredParams);
-                if (validationError) return validationError;
+                if (validationError) {
+                    return validationError;
+                }
             }
 
             if (this.parameterTypes) {
                 const typeError = this.validateParameterTypes(params, this.parameterTypes);
-                if (typeError) return typeError;
+                if (typeError) {
+                    return typeError;
+                }
             }
 
             // Call the implementation method
             return await this.implementation(params);
         } catch (error) {
-            return this.createErrorResponse(
-                `Unexpected error: ${error.message}`,
-                { stack: error.stack }
-            );
+            return this.createErrorResponse(`Unexpected error: ${error.message}`, {
+                stack: error.stack,
+            });
         }
     }
 
@@ -167,7 +176,7 @@ export class BaseTool {
      * @param {Object} params - Tool parameters
      * @returns {Object} Tool execution result
      */
-    async implementation(params) {
+    async implementation(_params) {
         throw new Error('implementation method must be overridden by concrete tool classes');
     }
 }
@@ -206,30 +215,30 @@ export class FileBaseTool extends BaseTool {
     handleFileSystemError(error, filePath) {
         switch (error.code) {
             case 'ENOENT':
-                return this.createErrorResponse(
-                    `File not found: ${filePath}`,
-                    { file_path: filePath, error_code: 'ENOENT' }
-                );
+                return this.createErrorResponse(`File not found: ${filePath}`, {
+                    file_path: filePath,
+                    error_code: 'ENOENT',
+                });
             case 'EACCES':
-                return this.createErrorResponse(
-                    `Permission denied: cannot access ${filePath}`,
-                    { file_path: filePath, error_code: 'EACCES' }
-                );
+                return this.createErrorResponse(`Permission denied: cannot access ${filePath}`, {
+                    file_path: filePath,
+                    error_code: 'EACCES',
+                });
             case 'EISDIR':
-                return this.createErrorResponse(
-                    `Path is a directory, not a file: ${filePath}`,
-                    { file_path: filePath, error_code: 'EISDIR' }
-                );
+                return this.createErrorResponse(`Path is a directory, not a file: ${filePath}`, {
+                    file_path: filePath,
+                    error_code: 'EISDIR',
+                });
             case 'ENOSPC':
-                return this.createErrorResponse(
-                    'Disk full: not enough space',
-                    { file_path: filePath, error_code: 'ENOSPC' }
-                );
+                return this.createErrorResponse('Disk full: not enough space', {
+                    file_path: filePath,
+                    error_code: 'ENOSPC',
+                });
             default:
-                return this.createErrorResponse(
-                    `File system error: ${error.message}`,
-                    { file_path: filePath, error_code: error.code }
-                );
+                return this.createErrorResponse(`File system error: ${error.message}`, {
+                    file_path: filePath,
+                    error_code: error.code,
+                });
         }
     }
 }
@@ -250,17 +259,15 @@ export class CommandBaseTool extends BaseTool {
      */
     validateCommand(command) {
         if (!command || typeof command !== 'string') {
-            return this.createErrorResponse(
-                'Command is required and must be a string',
-                { provided_command: command }
-            );
+            return this.createErrorResponse('Command is required and must be a string', {
+                provided_command: command,
+            });
         }
 
         if (command.trim().length === 0) {
-            return this.createErrorResponse(
-                'Command cannot be empty or whitespace only',
-                { provided_command: command }
-            );
+            return this.createErrorResponse('Command cannot be empty or whitespace only', {
+                provided_command: command,
+            });
         }
 
         return null;
@@ -277,9 +284,9 @@ export class CommandBaseTool extends BaseTool {
     createCommandResponse(success, stdout = '', stderr = '', error = null) {
         const response = this.createSuccessResponse({
             stdout: stdout,
-            stderr: stderr
+            stderr: stderr,
         });
-        
+
         if (!success) {
             response.success = false;
             response.error = error || 'Command execution failed';
@@ -287,4 +294,4 @@ export class CommandBaseTool extends BaseTool {
 
         return response;
     }
-} 
+}

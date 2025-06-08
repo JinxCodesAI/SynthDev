@@ -45,19 +45,19 @@ commands/
 
 ## Available Commands
 
-| Command | Description | Type |
-|---------|-------------|------|
-| `/help` | Show help message | Info |
-| `/tools` | List available tools | Info |
-| `/review` | Show last API call | Info |
-| `/cost` | Show API costs | Info |
-| `/clear` | Clear conversation | Conversation |
-| `/exit`, `/quit` | Exit application | System |
-| `/role <name>` | Switch role | Role |
-| `/roles` | Show available roles | Role |
-| `/snapshots` | Manage snapshots | Interactive |
-| `/index` | Index codebase | Interactive |
-| `/cmd` | Execute terminal commands with AI assistance | Terminal |
+| Command          | Description                                  | Type         |
+| ---------------- | -------------------------------------------- | ------------ |
+| `/help`          | Show help message                            | Info         |
+| `/tools`         | List available tools                         | Info         |
+| `/review`        | Show last API call                           | Info         |
+| `/cost`          | Show API costs                               | Info         |
+| `/clear`         | Clear conversation                           | Conversation |
+| `/exit`, `/quit` | Exit application                             | System       |
+| `/role <name>`   | Switch role                                  | Role         |
+| `/roles`         | Show available roles                         | Role         |
+| `/snapshots`     | Manage snapshots                             | Interactive  |
+| `/index`         | Index codebase                               | Interactive  |
+| `/cmd`           | Execute terminal commands with AI assistance | Terminal     |
 
 ## Terminal Command Execution (`/cmd`)
 
@@ -66,20 +66,22 @@ The `/cmd` command provides powerful terminal command execution with AI assistan
 ### Usage Modes
 
 1. **Direct Execution**: `/cmd <command>`
-   - Executes the command immediately without confirmation
-   - Example: `/cmd git status`
+
+    - Executes the command immediately without confirmation
+    - Example: `/cmd git status`
 
 2. **AI Generation**: `/cmd ??? <description>`
-   - Uses AI to generate appropriate terminal command
-   - Generated command replaces original text (editable)
-   - User can edit the command before pressing ENTER
-   - Press ESC to cancel and revert to original
-   - Example: `/cmd ??? add all files to git`
+
+    - Uses AI to generate appropriate terminal command
+    - Generated command replaces original text (editable)
+    - User can edit the command before pressing ENTER
+    - Press ESC to cancel and revert to original
+    - Example: `/cmd ??? add all files to git`
 
 3. **Special Commands**:
-   - `/cmd history` - Show recent command history
-   - `/cmd context on/off` - Toggle context integration
-   - `/cmd context` - Show current context status
+    - `/cmd history` - Show recent command history
+    - `/cmd context on/off` - Toggle context integration
+    - `/cmd context` - Show current context status
 
 ### Context Integration
 
@@ -135,11 +137,11 @@ export class MyInteractiveCommand extends InteractiveCommand {
     async implementation(args, context) {
         const input = await this.promptForInput('Enter something: ', context);
         const confirmed = await this.promptForConfirmation('Are you sure?', context);
-        
+
         if (confirmed) {
             console.log(`You entered: ${input}`);
         }
-        
+
         return true;
     }
 }
@@ -154,10 +156,10 @@ import MyCommand from '../path/to/MyCommand.js';
 
 export function createCommandRegistry() {
     const registry = new CommandRegistry();
-    
+
     // ... existing registrations
     registry.register(new MyCommand());
-    
+
     return registry;
 }
 ```
@@ -181,12 +183,12 @@ The context object contains all available dependencies:
 
 ```javascript
 const context = {
-    apiClient,          // AI API client
-    toolManager,        // Tool manager
-    consoleInterface,   // Console I/O
-    costsManager,       // Cost tracking
-    snapshotManager,    // Snapshot management
-    commandRegistry     // Command registry itself
+    apiClient, // AI API client
+    toolManager, // Tool manager
+    consoleInterface, // Console I/O
+    costsManager, // Cost tracking
+    snapshotManager, // Snapshot management
+    commandRegistry, // Command registry itself
 };
 ```
 

@@ -190,7 +190,7 @@ export const examples = {
     text: textExample,
     data: dataExample,
     file: fileExample,
-    json: jsonExample
+    json: jsonExample,
 };
 
 // Usage instructions
@@ -215,4 +215,4 @@ console.log('5. JSON transformation:');
 console.log('   executeScript({ script: examples.json })');
 console.log('');
 console.log('All examples include comprehensive output and demonstrate');
-console.log('different aspects of the tool\'s capabilities.');
+console.log("different aspects of the tool's capabilities.");

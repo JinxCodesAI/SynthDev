@@ -9,7 +9,7 @@ class ConsoleInterface {
         this.rl = createInterface({
             input: process.stdin,
             output: process.stdout,
-            prompt: '💭 You: '
+            prompt: '💭 You: ',
         });
         this.isPaused = false;
         this.logger = getLogger();
@@ -81,11 +81,20 @@ class ConsoleInterface {
         this.logger.error(error);
     }
 
-    showStartupMessage(model, totalToolsCount, role = null, allToolsCount = null, filteredToolsCount = null) {
+    showStartupMessage(
+        model,
+        totalToolsCount,
+        role = null,
+        allToolsCount = null,
+        filteredToolsCount = null
+    ) {
         const roleInfo = role ? `\n🎭 Role: ${role.charAt(0).toUpperCase() + role.slice(1)}` : '';
-        const toolInfo = (allToolsCount !== null && filteredToolsCount !== null && allToolsCount !== filteredToolsCount)
-            ? `🔧 Tools: ${filteredToolsCount}/${allToolsCount} available (${allToolsCount - filteredToolsCount} filtered for role)`
-            : `🔧 Tools: ${totalToolsCount} loaded`;
+        const toolInfo =
+            allToolsCount !== null &&
+            filteredToolsCount !== null &&
+            allToolsCount !== filteredToolsCount
+                ? `🔧 Tools: ${filteredToolsCount}/${allToolsCount} available (${allToolsCount - filteredToolsCount} filtered for role)`
+                : `🔧 Tools: ${totalToolsCount} loaded`;
 
         this.logger.raw(`
 🚀 Synth-Dev Console Application Started!
@@ -110,8 +119,8 @@ Use /help for commands.
     }
 
     async promptForConfirmation(prompt) {
-        return new Promise((resolve) => {
-            this.logger.raw('\n❓ ' + prompt);
+        return new Promise(resolve => {
+            this.logger.raw(`\n❓ ${prompt}`);
             this.logger.raw('   Type "y" or "yes" to proceed, anything else to cancel:');
 
             // Store current paused state
@@ -130,7 +139,7 @@ Use /help for commands.
             }
 
             // Set up one-time confirmation handler
-            const confirmationHandler = (input) => {
+            const confirmationHandler = input => {
                 const response = input.trim().toLowerCase();
                 const confirmed = response === 'y' || response === 'yes';
 
@@ -173,7 +182,11 @@ Use /help for commands.
         this.logger.raw('🔄 Press Esc to revert to original or ENTER to submit current prompt');
 
         // Show the enhanced prompt as editable input
-        const userInput = await this.promptForEditableInput('💭 You: ', enhancedPrompt, originalPrompt);
+        const userInput = await this.promptForEditableInput(
+            '💭 You: ',
+            enhancedPrompt,
+            originalPrompt
+        );
 
         if (userInput === null) {
             // User pressed Escape - revert to original
@@ -192,7 +205,7 @@ Use /help for commands.
      * @private
      */
     async promptForEditableInput(prompt, prefillText, originalText) {
-        return new Promise((resolve) => {
+        return new Promise(resolve => {
             // Store current paused state and listeners
             const wasPaused = this.isPaused;
             const currentListeners = this.rl.listeners('line');
@@ -225,11 +238,11 @@ Use /help for commands.
                 const targetPos = promptLength + cursorPos;
                 const currentPos = promptLength + inputBuffer.length;
                 if (targetPos < currentPos) {
-                    process.stdout.write('\x1b[' + (currentPos - targetPos) + 'D');
+                    process.stdout.write(`\x1b[${currentPos - targetPos}D`);
                 }
             };
 
-            const handleKeypress = (chunk) => {
+            const handleKeypress = chunk => {
                 const key = chunk[0];
 
                 // Handle Escape key
@@ -256,7 +269,8 @@ Use /help for commands.
                 // Handle Backspace
                 if (key === 127 || key === 8) {
                     if (cursorPos > 0) {
-                        inputBuffer = inputBuffer.slice(0, cursorPos - 1) + inputBuffer.slice(cursorPos);
+                        inputBuffer =
+                            inputBuffer.slice(0, cursorPos - 1) + inputBuffer.slice(cursorPos);
                         cursorPos--;
                         redrawLine();
                     }
@@ -271,12 +285,14 @@ Use /help for commands.
 
                 // Handle arrow keys
                 if (key === 27 && chunk.length >= 3 && chunk[1] === 91) {
-                    if (chunk[2] === 67) { // Right arrow
+                    if (chunk[2] === 67) {
+                        // Right arrow
                         if (cursorPos < inputBuffer.length) {
                             cursorPos++;
                             process.stdout.write('\x1b[C');
                         }
-                    } else if (chunk[2] === 68) { // Left arrow
+                    } else if (chunk[2] === 68) {
+                        // Left arrow
                         if (cursorPos > 0) {
                             cursorPos--;
                             process.stdout.write('\x1b[D');
@@ -296,7 +312,8 @@ Use /help for commands.
                 // Handle printable characters
                 if (key >= 32 && key <= 126) {
                     const char = String.fromCharCode(key);
-                    inputBuffer = inputBuffer.slice(0, cursorPos) + char + inputBuffer.slice(cursorPos);
+                    inputBuffer =
+                        inputBuffer.slice(0, cursorPos) + char + inputBuffer.slice(cursorPos);
                     cursorPos++;
                     redrawLine();
                 }
@@ -349,7 +366,7 @@ Use /help for commands.
     }
 
     async promptForInput(prompt) {
-        return new Promise((resolve) => {
+        return new Promise(resolve => {
             // Store current paused state and listeners
             const wasPaused = this.isPaused;
             const currentListeners = this.rl.listeners('line');
@@ -364,7 +381,7 @@ Use /help for commands.
             }
 
             // Set up one-time input handler
-            const inputHandler = (input) => {
+            const inputHandler = input => {
                 // Remove the input handler
                 this.rl.removeListener('line', inputHandler);
 
@@ -388,8 +405,6 @@ Use /help for commands.
             process.stdout.write(prompt);
         });
     }
-
-
 }
 
-export default ConsoleInterface; 
+export default ConsoleInterface;

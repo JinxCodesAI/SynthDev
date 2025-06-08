@@ -60,7 +60,7 @@ export class CommandRegistry {
     getCommand(commandName) {
         // Check direct command name first
         let command = this.commands.get(commandName);
-        
+
         // If not found, check aliases
         if (!command) {
             const aliasTarget = this.aliases.get(commandName);
@@ -68,7 +68,7 @@ export class CommandRegistry {
                 command = this.commands.get(aliasTarget);
             }
         }
-        
+
         return command || null;
     }
 
@@ -90,7 +90,7 @@ export class CommandRegistry {
      */
     async executeCommand(commandName, args, context) {
         const command = this.getCommand(commandName);
-        
+
         if (!command) {
             const logger = getLogger();
             logger.raw(`❌ Unknown command: /${commandName}`);
@@ -121,7 +121,7 @@ export class CommandRegistry {
         // Parse command and arguments
         const commandPart = input.substring(1); // Remove leading /
         const spaceIndex = commandPart.indexOf(' ');
-        
+
         let commandName, args;
         if (spaceIndex === -1) {
             commandName = commandPart;
@@ -158,19 +158,19 @@ export class CommandRegistry {
      */
     generateHelpText() {
         const commands = this.getAllCommands();
-        
+
         if (commands.length === 0) {
             return '📖 No commands available';
         }
 
         let helpText = '\n📖 Available Commands:\n';
-        helpText += '─'.repeat(50) + '\n';
+        helpText += `${'─'.repeat(50)}\n`;
 
         // Sort commands by name for consistent output
         commands.sort((a, b) => a.name.localeCompare(b.name));
 
         for (const command of commands) {
-            helpText += command.getHelp() + '\n';
+            helpText += `${command.getHelp()}\n`;
         }
 
         return helpText;
@@ -182,11 +182,11 @@ export class CommandRegistry {
      */
     getCommandsByCategory() {
         const categories = {};
-        
+
         for (const command of this.getAllCommands()) {
             // Try to determine category from command class name or other metadata
             let category = 'general';
-            
+
             // This could be enhanced to use metadata from commands
             // For now, we'll use a simple categorization
             if (command.name.includes('role')) {
@@ -202,13 +202,13 @@ export class CommandRegistry {
             } else if (['exit', 'quit'].includes(command.name)) {
                 category = 'system';
             }
-            
+
             if (!categories[category]) {
                 categories[category] = [];
             }
             categories[category].push(command);
         }
-        
+
         return categories;
     }
 
@@ -229,7 +229,7 @@ export class CommandRegistry {
             totalCommands: this.commands.size,
             totalAliases: this.aliases.size,
             commandNames: Array.from(this.commands.keys()),
-            aliasNames: Array.from(this.aliases.keys())
+            aliasNames: Array.from(this.aliases.keys()),
         };
     }
 }

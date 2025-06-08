@@ -8,22 +8,18 @@ import { BaseTool } from '../common/base-tool.js';
 class GetTimeTool extends BaseTool {
     constructor() {
         super('get_time', 'Get current date and time in various formats and timezones');
-        
+
         // Define parameter validation
         this.requiredParams = []; // No required parameters
         this.parameterTypes = {
             format: 'string',
             timezone: 'string',
-            custom_format: 'string'
+            custom_format: 'string',
         };
     }
 
     async implementation(params) {
-        const { 
-            format = 'iso', 
-            timezone = 'local', 
-            custom_format
-        } = params;
+        const { format = 'iso', timezone = 'local', custom_format } = params;
 
         // Validate format
         const validFormats = ['iso', 'unix', 'readable', 'custom'];
@@ -51,18 +47,18 @@ class GetTimeTool extends BaseTool {
             if (timezone !== 'local') {
                 try {
                     // Validate timezone by attempting to format
-                    const testFormat = new Intl.DateTimeFormat('en-US', { 
+                    new Intl.DateTimeFormat('en-US', {
                         timeZone: timezone,
-                        hour: 'numeric'
+                        hour: 'numeric',
                     }).format(now);
-                    
+
                     // If we get here, timezone is valid
                     timezoneInfo = timezone;
                 } catch (timezoneError) {
-                    return this.createErrorResponse(
-                        `Invalid timezone: ${timezone}`,
-                        { timezone, error: timezoneError.message }
-                    );
+                    return this.createErrorResponse(`Invalid timezone: ${timezone}`, {
+                        timezone,
+                        error: timezoneError.message,
+                    });
                 }
             } else {
                 timezoneInfo = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -83,7 +79,7 @@ class GetTimeTool extends BaseTool {
                             hour: '2-digit',
                             minute: '2-digit',
                             second: '2-digit',
-                            hour12: false
+                            hour12: false,
                         };
                         const parts = new Intl.DateTimeFormat('en-CA', options).formatToParts(now);
                         const partsObj = parts.reduce((acc, part) => {
@@ -110,41 +106,45 @@ class GetTimeTool extends BaseTool {
                             hour: '2-digit',
                             minute: '2-digit',
                             second: '2-digit',
-                            timeZoneName: 'short'
+                            timeZoneName: 'short',
                         };
                         formattedTime = new Intl.DateTimeFormat('en-US', options).format(now);
                     }
                     break;
 
-                case 'custom':
+                case 'custom': {
                     // Basic custom formatting support
                     let customResult = custom_format;
-                    const timeObj = timezone === 'local' 
-                        ? {
-                            year: now.getFullYear(),
-                            month: (now.getMonth() + 1).toString().padStart(2, '0'),
-                            day: now.getDate().toString().padStart(2, '0'),
-                            hour: now.getHours().toString().padStart(2, '0'),
-                            minute: now.getMinutes().toString().padStart(2, '0'),
-                            second: now.getSeconds().toString().padStart(2, '0')
-                        }
-                        : (() => {
-                            const options = {
-                                timeZone: timezone,
-                                year: 'numeric',
-                                month: '2-digit',
-                                day: '2-digit',
-                                hour: '2-digit',
-                                minute: '2-digit',
-                                second: '2-digit',
-                                hour12: false
-                            };
-                            const parts = new Intl.DateTimeFormat('en-CA', options).formatToParts(now);
-                            return parts.reduce((acc, part) => {
-                                acc[part.type] = part.value;
-                                return acc;
-                            }, {});
-                        })();
+                    const timeObj =
+                        timezone === 'local'
+                            ? {
+                                  year: now.getFullYear(),
+                                  month: (now.getMonth() + 1).toString().padStart(2, '0'),
+                                  day: now.getDate().toString().padStart(2, '0'),
+                                  hour: now.getHours().toString().padStart(2, '0'),
+                                  minute: now.getMinutes().toString().padStart(2, '0'),
+                                  second: now.getSeconds().toString().padStart(2, '0'),
+                              }
+                            : (() => {
+                                  const options = {
+                                      timeZone: timezone,
+                                      year: 'numeric',
+                                      month: '2-digit',
+                                      day: '2-digit',
+                                      hour: '2-digit',
+                                      minute: '2-digit',
+                                      second: '2-digit',
+                                      hour12: false,
+                                  };
+                                  const parts = new Intl.DateTimeFormat(
+                                      'en-CA',
+                                      options
+                                  ).formatToParts(now);
+                                  return parts.reduce((acc, part) => {
+                                      acc[part.type] = part.value;
+                                      return acc;
+                                  }, {});
+                              })();
 
                     // Replace common format tokens
                     customResult = customResult
@@ -157,6 +157,7 @@ class GetTimeTool extends BaseTool {
 
                     formattedTime = customResult;
                     break;
+                }
             }
 
             return this.createSuccessResponse({
@@ -165,14 +166,14 @@ class GetTimeTool extends BaseTool {
                 format,
                 iso_string: now.toISOString(),
                 unix_timestamp: Math.floor(now.getTime() / 1000),
-                readable_format: now.toLocaleString()
+                readable_format: now.toLocaleString(),
             });
-
         } catch (error) {
-            return this.createErrorResponse(
-                `Time formatting failed: ${error.message}`,
-                { format, timezone, stack: error.stack }
-            );
+            return this.createErrorResponse(`Time formatting failed: ${error.message}`, {
+                format,
+                timezone,
+                stack: error.stack,
+            });
         }
     }
 }
@@ -182,4 +183,4 @@ const getTimeTool = new GetTimeTool();
 
 export default async function getTime(params) {
     return await getTimeTool.execute(params);
-} 
+}

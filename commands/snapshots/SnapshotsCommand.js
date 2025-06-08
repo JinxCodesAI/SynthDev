@@ -26,14 +26,16 @@ export class SnapshotsCommand extends InteractiveCommand {
      * @returns {boolean} Always returns true
      */
     async implementation(args, context) {
-        const { snapshotManager, consoleInterface } = context;
-        
+        const { snapshotManager } = context;
+
         const snapshots = snapshotManager.getSnapshotSummaries();
         const logger = getLogger();
 
         if (snapshots.length === 0) {
             logger.raw('\n📸 No snapshots available');
-            logger.raw('💡 Snapshots are automatically created when you give new instructions to the AI\n');
+            logger.raw(
+                '💡 Snapshots are automatically created when you give new instructions to the AI\n'
+            );
             return true;
         }
 
@@ -54,14 +56,17 @@ export class SnapshotsCommand extends InteractiveCommand {
                 logger.raw();
             }
 
-            snapshots.forEach((snapshot, index) => {
+            snapshots.forEach((snapshot, _index) => {
                 const date = new Date(snapshot.timestamp).toLocaleString();
-                const instructionPreview = snapshot.instruction.length > 60
-                    ? snapshot.instruction.substring(0, 60) + '...'
-                    : snapshot.instruction;
+                const instructionPreview =
+                    snapshot.instruction.length > 60
+                        ? `${snapshot.instruction.substring(0, 60)}...`
+                        : snapshot.instruction;
 
                 logger.raw(`${snapshot.id}. [${date}] ${instructionPreview}`);
-                logger.raw(`   📁 Files: ${snapshot.fileCount} | Modified: ${snapshot.modifiedFiles.join(', ')}`);
+                logger.raw(
+                    `   📁 Files: ${snapshot.fileCount} | Modified: ${snapshot.modifiedFiles.join(', ')}`
+                );
                 logger.raw();
             });
 
@@ -185,7 +190,7 @@ export class SnapshotsCommand extends InteractiveCommand {
             logger.raw(`✅ Successfully restored ${result.restoredFiles.length} files:`);
             result.restoredFiles.forEach(file => logger.raw(`   ✓ ${file}`));
         } else {
-            logger.raw(`❌ Restore completed with errors:`);
+            logger.raw('❌ Restore completed with errors:');
             logger.raw(`   ✓ Restored: ${result.restoredFiles.length} files`);
             logger.raw(`   ❌ Errors: ${result.errors.length}`);
             result.errors.forEach(error => logger.raw(`      - ${error}`));
@@ -252,7 +257,10 @@ export class SnapshotsCommand extends InteractiveCommand {
         const result = await snapshotManager.mergeFeatureBranch();
 
         if (result.success) {
-            logger.user(`✅ Successfully merged ${gitStatus.featureBranch} into ${gitStatus.originalBranch}`, '🔀 Git:');
+            logger.user(
+                `✅ Successfully merged ${gitStatus.featureBranch} into ${gitStatus.originalBranch}`,
+                '🔀 Git:'
+            );
             logger.user('🌿 Switched back to original branch', '🔀 Git:');
         } else {
             logger.error(`Merge failed: ${result.error}`, 'Git merge');

@@ -27,10 +27,17 @@ class GitUtils {
             const gitStatusResult = await executeTerminal({ command: 'git status --porcelain' });
             if (!gitStatusResult.success) {
                 // Check if it's a "not a git repository" error
-                if (gitStatusResult.stderr && gitStatusResult.stderr.includes('not a git repository')) {
+                if (
+                    gitStatusResult.stderr &&
+                    gitStatusResult.stderr.includes('not a git repository')
+                ) {
                     return { available: true, isRepo: false, error: 'Not a Git repository' };
                 }
-                return { available: true, isRepo: false, error: gitStatusResult.error || 'Git status failed' };
+                return {
+                    available: true,
+                    isRepo: false,
+                    error: gitStatusResult.error || 'Git status failed',
+                };
             }
 
             return { available: true, isRepo: true };
@@ -174,7 +181,7 @@ class GitUtils {
             .replace(/[^a-z0-9\s]/g, '') // Remove special characters
             .replace(/\s+/g, '-') // Replace spaces with hyphens
             .slice(0, 30); // Limit length
-        
+
         return `synth-dev/${timestamp}-${safeName}`;
     }
 

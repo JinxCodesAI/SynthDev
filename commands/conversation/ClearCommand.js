@@ -27,7 +27,7 @@ export class ClearCommand extends BaseCommand {
      */
     async implementation(args, context) {
         const { apiClient } = context;
-        
+
         apiClient.clearConversation();
         const logger = getLogger();
         logger.raw('🧹 Conversation cleared\n');

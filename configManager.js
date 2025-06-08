@@ -1,6 +1,5 @@
 import { config } from 'dotenv';
 import { createInterface } from 'readline';
-import { getLogger } from './logger.js';
 
 /**
  * Singleton ConfigManager class that loads and manages all application configuration
@@ -24,7 +23,7 @@ class ConfigManager {
             smartUrl: options.smartUrl,
             fastUrl: options.fastUrl,
             baseModel: options.baseModel,
-            baseUrl: options.baseUrl
+            baseUrl: options.baseUrl,
         };
 
         // Initialize configuration
@@ -75,36 +74,41 @@ class ConfigManager {
         // Prioritize CLI API key over environment variable
         const apiKey = this.cliOptions.apiKey || process.env.API_KEY;
 
-        return {
-
+        const config = {
             // OpenAI/General AI Provider Configuration
             base: {
                 apiKey: apiKey,
                 baseModel: this.cliOptions.baseModel || process.env.BASE_MODEL || 'gpt-4.1-mini',
-                baseUrl: this.cliOptions.baseUrl || process.env.BASE_URL || 'https://api.openai.com/v1'
+                baseUrl:
+                    this.cliOptions.baseUrl || process.env.BASE_URL || 'https://api.openai.com/v1',
             },
 
             // Smart Model Configuration (Optional)
             smart: {
                 apiKey: this.cliOptions.smartApiKey || process.env.SMART_API_KEY || apiKey,
-                model: this.cliOptions.smartModel || process.env.SMART_MODEL || process.env.BASE_MODEL,
-                baseUrl: this.cliOptions.smartUrl || process.env.SMART_BASE_URL || process.env.BASE_URL
+                model:
+                    this.cliOptions.smartModel || process.env.SMART_MODEL || process.env.BASE_MODEL,
+                baseUrl:
+                    this.cliOptions.smartUrl || process.env.SMART_BASE_URL || process.env.BASE_URL,
             },
 
             // Fast Model Configuration (Optional)
             fast: {
                 apiKey: this.cliOptions.fastApiKey || process.env.FAST_API_KEY || apiKey,
-                model: this.cliOptions.fastModel || process.env.FAST_MODEL || process.env.BASE_MODEL,
-                baseUrl: this.cliOptions.fastUrl || process.env.FAST_BASE_URL || process.env.BASE_URL
+                model:
+                    this.cliOptions.fastModel || process.env.FAST_MODEL || process.env.BASE_MODEL,
+                baseUrl:
+                    this.cliOptions.fastUrl || process.env.FAST_BASE_URL || process.env.BASE_URL,
             },
 
             // Global Settings
             global: {
                 maxToolCalls: parseInt(process.env.MAX_TOOL_CALLS) || 50,
                 enablePromptEnhancement: process.env.ENABLE_PROMPT_ENHANCEMENT === 'true' || false,
-                verbosityLevel: parseInt(process.env.VERBOSITY_LEVEL) || 2
-            }
+                verbosityLevel: parseInt(process.env.VERBOSITY_LEVEL) || 2,
+            },
         };
+        return config;
     }
 
     /**
@@ -119,7 +123,7 @@ class ConfigManager {
             try {
                 const apiKey = await this._promptForApiKey();
                 this._updateApiKey(apiKey);
-            } catch (error) {
+            } catch (_error) {
                 errors.push('API_KEY is required');
             }
         }
@@ -168,10 +172,10 @@ class ConfigManager {
     }
 
     getMaxTokens(model) {
-        if(model.indexOf('qwen3-235b-a22b') != -1) {
+        if (model.indexOf('qwen3-235b-a22b') !== -1) {
             return 16000;
         }
-        return 32000;   
+        return 32000;
     }
     getModel(model) {
         if (model === 'base') {
@@ -218,11 +222,11 @@ class ConfigManager {
 
         const rl = createInterface({
             input: process.stdin,
-            output: process.stdout
+            output: process.stdout,
         });
 
         return new Promise((resolve, reject) => {
-            rl.question('Enter your API key: ', (apiKey) => {
+            rl.question('Enter your API key: ', apiKey => {
                 rl.close();
 
                 if (!apiKey || apiKey.trim().length === 0) {
@@ -245,7 +249,6 @@ class ConfigManager {
         this.config.smart.apiKey = this.config.smart.apiKey || apiKey;
         this.config.fast.apiKey = this.config.fast.apiKey || apiKey;
     }
-
 }
 
-export default ConfigManager; 
+export default ConfigManager;

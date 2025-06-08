@@ -49,17 +49,22 @@ class CommandGenerator {
             let responseError = null;
 
             aiClient.setCallbacks({
-                onResponse: (response) => {
-                    if (response && response.choices && response.choices[0] && response.choices[0].message) {
+                onResponse: response => {
+                    if (
+                        response &&
+                        response.choices &&
+                        response.choices[0] &&
+                        response.choices[0].message
+                    ) {
                         responseContent = response.choices[0].message.content;
                     }
                 },
-                onError: (error) => {
+                onError: error => {
                     responseError = error;
                 },
-                onReminder: (reminder) => {
-                    return reminder + `\n Original request was: ${description}`;
-                }
+                onReminder: reminder => {
+                    return `${reminder}\n Original request was: ${description}`;
+                },
             });
 
             // Send the generation request
@@ -85,11 +90,13 @@ class CommandGenerator {
             // Validate the command for basic safety
             const validationResult = this._validateCommand(command);
             if (!validationResult.safe) {
-                return { success: false, error: `Generated command appears unsafe: ${validationResult.reason}` };
+                return {
+                    success: false,
+                    error: `Generated command appears unsafe: ${validationResult.reason}`,
+                };
             }
 
             return { success: true, command: command.trim() };
-
         } catch (error) {
             return { success: false, error: `Command generation failed: ${error.message}` };
         }
@@ -104,7 +111,7 @@ class CommandGenerator {
     _createGenerationPrompt(description) {
         const os = process.platform;
         const cwd = process.cwd();
-        
+
         return `Generate a terminal command for the following request:
 
 Request: "${description}"
@@ -129,7 +136,7 @@ Command:`;
 
         // Clean up the response - remove any potential formatting or extra text
         let cleaned = response.trim();
-        
+
         // Remove common prefixes that the AI might add
         const prefixesToRemove = [
             'Command:',
@@ -138,7 +145,7 @@ Command:`;
             'Execute:',
             'Run:',
             '$',
-            '> '
+            '> ',
         ];
 
         for (const prefix of prefixesToRemove) {
@@ -158,7 +165,11 @@ Command:`;
         }
 
         // Remove single backticks if the entire response is wrapped in them
-        if (cleaned.startsWith('`') && cleaned.endsWith('`') && cleaned.indexOf('`', 1) === cleaned.length - 1) {
+        if (
+            cleaned.startsWith('`') &&
+            cleaned.endsWith('`') &&
+            cleaned.indexOf('`', 1) === cleaned.length - 1
+        ) {
             cleaned = cleaned.substring(1, cleaned.length - 1).trim();
         }
 
@@ -196,7 +207,10 @@ Command:`;
 
         for (const pattern of dangerousPatterns) {
             if (pattern.test(cmd)) {
-                return { safe: false, reason: 'Command contains potentially destructive operations' };
+                return {
+                    safe: false,
+                    reason: 'Command contains potentially destructive operations',
+                };
             }
         }
 

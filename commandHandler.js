@@ -37,7 +37,7 @@ class CommandHandler {
                 consoleInterface: this.consoleInterface,
                 costsManager: this.costsManager,
                 snapshotManager: this.snapshotManager,
-                commandRegistry: this.commandRegistry
+                commandRegistry: this.commandRegistry,
             };
 
             // Use the new command registry to handle the command

@@ -26,7 +26,7 @@ export class ExitCommand extends BaseCommand {
      */
     async implementation(args, context) {
         const { consoleInterface } = context;
-        
+
         consoleInterface.showGoodbye();
         process.exit(0);
     }

@@ -15,7 +15,7 @@ Synth-Dev is an AI-powered development assistant that provides:
 ## System Requirements
 
 - **Node.js**: Version 20.10.0 or higher (ES Modules support required)
-- **Operating System**: Tested on Windows, WSL and Linux docker container, never tested on macOS (Sorry *)
+- **Operating System**: Tested on Windows, WSL and Linux docker container, never tested on macOS (Sorry \*)
 
 ## Installation & Setup
 
@@ -30,11 +30,13 @@ npm install
 #### 2. Configure Environment
 
 Copy the example configuration file:
+
 ```bash
 cp config.example.env .env
 ```
 
 Edit `.env` with your API keys and preferences:
+
 ```env
 # Base Model Configuration (Required)
 API_KEY=your_api_key_here
@@ -64,6 +66,7 @@ npm start
 ```
 
 Or run in development mode with auto-reload:
+
 ```bash
 npm run dev
 ```
@@ -73,6 +76,7 @@ npm run dev
 Docker provides an isolated environment and is the recommended way to run Synth-Dev, especially when working with different projects.
 
 #### Prerequisites
+
 - Docker Desktop installed and running
 - Git (to clone the repository)
 
@@ -97,6 +101,7 @@ Edit the `.env` file with your API keys (same format as native installation abov
 #### 3. Run Synth-Dev
 
 **From Synth-Dev source directory:**
+
 ```bash
 # Windows:
 ./docker-run.bat run
@@ -105,6 +110,7 @@ Edit the `.env` file with your API keys (same format as native installation abov
 ```
 
 **From any project directory:**
+
 ```bash
 # Windows:
 ./docker-run.bat run --path "C:\path\to\your\project"
@@ -114,24 +120,25 @@ Edit the `.env` file with your API keys (same format as native installation abov
 
 #### Docker Commands
 
-| Command | Description |
-|---------|-------------|
-| `./docker-run.{bat\|sh} setup` | Initial setup and build |
-| `./docker-run.{bat\|sh} run` | Run interactively (recommended) |
-| `./docker-run.{bat\|sh} run --path "path"` | Run from custom directory |
-| `./docker-run.{bat\|sh} start` | Start in production mode |
-| `./docker-run.{bat\|sh} dev` | Start in development mode |
-| `./docker-run.{bat\|sh} stop` | Stop the application |
-| `./docker-run.{bat\|sh} logs` | View application logs |
-| `./docker-run.{bat\|sh} shell` | Open shell in container |
-| `./docker-run.{bat\|sh} clean` | Remove containers and volumes |
-| `./docker-run.{bat\|sh} status` | Show container status |
+| Command                                    | Description                     |
+| ------------------------------------------ | ------------------------------- |
+| `./docker-run.{bat\|sh} setup`             | Initial setup and build         |
+| `./docker-run.{bat\|sh} run`               | Run interactively (recommended) |
+| `./docker-run.{bat\|sh} run --path "path"` | Run from custom directory       |
+| `./docker-run.{bat\|sh} start`             | Start in production mode        |
+| `./docker-run.{bat\|sh} dev`               | Start in development mode       |
+| `./docker-run.{bat\|sh} stop`              | Stop the application            |
+| `./docker-run.{bat\|sh} logs`              | View application logs           |
+| `./docker-run.{bat\|sh} shell`             | Open shell in container         |
+| `./docker-run.{bat\|sh} clean`             | Remove containers and volumes   |
+| `./docker-run.{bat\|sh} status`            | Show container status           |
 
 > **Note**: Use `docker-run.bat` on Windows and `docker-run.sh` on Linux/macOS
 
 #### How Docker Mode Works
 
 When using `--path`, Synth-Dev:
+
 1. **Installs globally** in the container via `npm install -g .`
 2. **Mounts your directory** as the working directory
 3. **Loads environment variables** from the `.env` file automatically
@@ -174,18 +181,18 @@ This method provides flexibility for developers who want to use Synth-Dev across
 
 Synth-Dev includes a comprehensive command system accessible via `/` prefix:
 
-| Command | Description |
-|---------|-------------|
-| `/help` | Show available commands and usage |
-| `/tools` | List all available tools |
-| `/cost` | Display API usage costs |
-| `/review` | Show last API call details |
-| `/clear` | Clear conversation history |
-| `/snapshots` | Manage conversation snapshots |
-| `/index` | Index codebase for analysis |
-| `/roles` | Show available AI roles |
-| `/role <name>` | Switch to a specific role |
-| `/exit`, `/quit` | Exit the application |
+| Command          | Description                       |
+| ---------------- | --------------------------------- |
+| `/help`          | Show available commands and usage |
+| `/tools`         | List all available tools          |
+| `/cost`          | Display API usage costs           |
+| `/review`        | Show last API call details        |
+| `/clear`         | Clear conversation history        |
+| `/snapshots`     | Manage conversation snapshots     |
+| `/index`         | Index codebase for analysis       |
+| `/roles`         | Show available AI roles           |
+| `/role <name>`   | Switch to a specific role         |
+| `/exit`, `/quit` | Exit the application              |
 
 ## Tool System
 
@@ -194,6 +201,7 @@ Synth-Dev features a powerful, extensible tool system that provides AI with comp
 ### Architecture Overview
 
 The tool system follows a standardized structure:
+
 - **Auto-Discovery**: Tools are automatically loaded from the `tools/` directory
 - **Standardized Schema**: Each tool has a `definition.json` and `implementation.js`
 - **Category Organization**: Tools are organized by functionality (file, search, utility, etc.)
@@ -203,76 +211,86 @@ The tool system follows a standardized structure:
 ### Tool Categories
 
 #### File Operations (`category: "file"`)
+
 Essential file system operations with safety validation and automatic backups:
 
 - **read_file**: Safely read file contents with encoding detection and error handling
-  - Supports Unicode filenames and cross-platform paths
-  - Automatic encoding detection (UTF-8, ASCII, etc.)
-  - Security validation to prevent directory traversal
+
+    - Supports Unicode filenames and cross-platform paths
+    - Automatic encoding detection (UTF-8, ASCII, etc.)
+    - Security validation to prevent directory traversal
 
 - **write_file**: Create or overwrite files with automatic directory creation
-  - Atomic write operations with backup creation
-  - Automatic parent directory creation
-  - Content validation and encoding handling
+
+    - Atomic write operations with backup creation
+    - Automatic parent directory creation
+    - Content validation and encoding handling
 
 - **edit_file**: Safely edit files using boundary-based replacement
-  - Non-destructive editing with automatic backups
-  - Boundary string validation to prevent accidental overwrites
-  - Supports complex multi-line replacements
+
+    - Non-destructive editing with automatic backups
+    - Boundary string validation to prevent accidental overwrites
+    - Supports complex multi-line replacements
 
 - **list_directory**: Recursively list directory contents with rich metadata
-  - Configurable depth control (1-10 levels)
-  - Hidden file inclusion options
-  - Smart exclusion lists (node_modules, .git, etc.)
-  - File type categorization and size information
+    - Configurable depth control (1-10 levels)
+    - Hidden file inclusion options
+    - Smart exclusion lists (node_modules, .git, etc.)
+    - File type categorization and size information
 
 #### Search & Analysis (`category: "search"`)
+
 Powerful search capabilities for code exploration and analysis:
 
 - **exact_search**: Search for exact text patterns across the entire codebase
-  - Multi-file search with context lines (4 before/after matches)
-  - Respects exclusion lists to avoid searching irrelevant files
-  - Returns structured results with filename and context fragments
-  - Optimized for large codebases
+    - Multi-file search with context lines (4 before/after matches)
+    - Respects exclusion lists to avoid searching irrelevant files
+    - Returns structured results with filename and context fragments
+    - Optimized for large codebases
 
 #### Code Intelligence (`category: "utility"`)
+
 AI-powered code understanding and explanation capabilities:
 
 - **explain_codebase**: AI-powered codebase explanations using indexed summaries
-  - Uses pre-generated AI summaries from the `/index` command
-  - Provides contextual answers about codebase structure and functionality
-  - Supports natural language queries about code architecture
-  - Leverages the complete codebase index for comprehensive understanding
+    - Uses pre-generated AI summaries from the `/index` command
+    - Provides contextual answers about codebase structure and functionality
+    - Supports natural language queries about code architecture
+    - Leverages the complete codebase index for comprehensive understanding
 
 #### Execution & Scripting (`category: "command"`)
+
 Safe code execution with comprehensive safety measures:
 
 - **execute_script**: Run JavaScript code in sandboxed environment
-  - AI-powered safety assessment before execution
-  - Isolated process execution with timeout protection
-  - Comprehensive output capture (stdout, stderr, execution time)
-  - Safety confidence scoring and detailed reasoning
+
+    - AI-powered safety assessment before execution
+    - Isolated process execution with timeout protection
+    - Comprehensive output capture (stdout, stderr, execution time)
+    - Safety confidence scoring and detailed reasoning
 
 - **execute_terminal**: Execute terminal commands with output capture
-  - Cross-platform command execution (Windows, Linux, macOS)
-  - Real-time output streaming and error handling
-  - Working directory and environment variable support
-  - Timeout protection and process management
+    - Cross-platform command execution (Windows, Linux, macOS)
+    - Real-time output streaming and error handling
+    - Working directory and environment variable support
+    - Timeout protection and process management
 
 #### Utilities (`category: "calculation"`)
+
 General-purpose computational and utility functions:
 
 - **calculate**: Advanced mathematical calculator with expression parsing
-  - Supports complex mathematical expressions
-  - Function support (sin, cos, log, sqrt, etc.)
-  - Variable assignment and reuse
-  - Error handling for invalid expressions
+
+    - Supports complex mathematical expressions
+    - Function support (sin, cos, log, sqrt, etc.)
+    - Variable assignment and reuse
+    - Error handling for invalid expressions
 
 - **get_time**: Comprehensive time/date operations and formatting
-  - Multiple timezone support
-  - Flexible date formatting options
-  - Relative time calculations
-  - ISO 8601 standard compliance
+    - Multiple timezone support
+    - Flexible date formatting options
+    - Relative time calculations
+    - ISO 8601 standard compliance
 
 ### Codebase Indexing & Intelligence System
 
@@ -283,6 +301,7 @@ One of Synth-Dev's most powerful features is its intelligent codebase indexing s
 The `/index` command creates a comprehensive, AI-powered index of your entire codebase:
 
 **What it does:**
+
 1. **Scans** the entire project directory recursively
 2. **Analyzes** each file and directory for changes using checksums
 3. **Generates** AI-powered summaries for files and directories
@@ -290,6 +309,7 @@ The `/index` command creates a comprehensive, AI-powered index of your entire co
 5. **Optimizes** by only processing changed files on subsequent runs
 
 **Usage:**
+
 ```bash
 /index                    # Index with default settings
 /index --max-size 50000   # Set maximum file size (bytes)
@@ -297,6 +317,7 @@ The `/index` command creates a comprehensive, AI-powered index of your entire co
 ```
 
 **Smart Features:**
+
 - **Incremental Updates**: Only processes files that have changed since last indexing
 - **Size Limits**: Configurable maximum file size to avoid processing huge files
 - **Exclusion Lists**: Automatically excludes common directories (node_modules, .git, build, etc.)
@@ -308,6 +329,7 @@ The `/index` command creates a comprehensive, AI-powered index of your entire co
 This tool leverages the generated index to provide intelligent, contextual answers about your codebase:
 
 **How it works:**
+
 1. **Loads** the pre-generated codebase index (`.index/codebase-index.json`)
 2. **Extracts** relevant AI summaries for files and directories
 3. **Constructs** a comprehensive context prompt with all summaries
@@ -315,6 +337,7 @@ This tool leverages the generated index to provide intelligent, contextual answe
 5. **Returns** detailed markdown explanations with contextual understanding
 
 **Example queries:**
+
 - "What tools are available in this codebase?"
 - "How is file editing handled?"
 - "Explain the architecture of the command system"
@@ -322,6 +345,7 @@ This tool leverages the generated index to provide intelligent, contextual answe
 - "How does the AI safety assessment work?"
 
 **Key advantages:**
+
 - **Complete Context**: Uses summaries of the entire codebase, not just individual files
 - **Natural Language**: Ask questions in plain English
 - **Markdown Output**: Formatted, readable explanations
@@ -331,29 +355,30 @@ This tool leverages the generated index to provide intelligent, contextual answe
 #### Index Structure
 
 The generated index contains:
+
 ```json
 {
-  "metadata": {
-    "generated": "2024-01-15T10:30:00.000Z",
-    "version": "1.0.0",
-    "total_files": 45,
-    "total_directories": 12
-  },
-  "files": {
-    "path/to/file.js": {
-      "type": "file",
-      "ai_summary": "AI-generated summary of file purpose and functionality",
-      "checksum": "sha256-hash",
-      "size": 1024,
-      "last_modified": "2024-01-15T10:00:00.000Z"
+    "metadata": {
+        "generated": "2024-01-15T10:30:00.000Z",
+        "version": "1.0.0",
+        "total_files": 45,
+        "total_directories": 12
+    },
+    "files": {
+        "path/to/file.js": {
+            "type": "file",
+            "ai_summary": "AI-generated summary of file purpose and functionality",
+            "checksum": "sha256-hash",
+            "size": 1024,
+            "last_modified": "2024-01-15T10:00:00.000Z"
+        }
+    },
+    "statistics": {
+        "processed": 45,
+        "summarized": 40,
+        "total_tokens_used": 15000,
+        "total_summary_size": 25000
     }
-  },
-  "statistics": {
-    "processed": 45,
-    "summarized": 40,
-    "total_tokens_used": 15000,
-    "total_summary_size": 25000
-  }
 }
 ```
 
@@ -392,17 +417,20 @@ Control output detail with the `VERBOSITY_LEVEL` environment variable (0-5):
 Optional feature that improves user prompts using AI:
 
 **Enable in .env:**
+
 ```env
 ENABLE_PROMPT_ENHANCEMENT=true
 ```
 
 **How it works:**
+
 1. Type your prompt and press ENTER
 2. System shows "🔄 Enhancing prompt..."
 3. Review the enhanced version
 4. Choose: Use enhanced, modify, or use original
 
 **Benefits:**
+
 - Makes vague requests more specific
 - Improves AI response quality
 - Educational tool for better prompting
@@ -416,8 +444,6 @@ The configuration uses the `.env` file shown in the setup section above. Key set
 - **Safety Settings**: `MAX_TOOL_CALLS` limits tool usage per interaction
 - **Verbosity**: `VERBOSITY_LEVEL` controls output detail (0-5)
 - **Features**: `ENABLE_PROMPT_ENHANCEMENT` enables AI prompt improvement
-
-
 
 ## Architecture
 
@@ -443,17 +469,20 @@ synth-dev/
 ### Modular Systems
 
 #### Commands System (`commands/`)
+
 - **Base Classes**: `BaseCommand`, `InteractiveCommand`, `CommandRegistry`
 - **Categories**: Conversation, Info, Role, System, Snapshots, Indexing
 - **Auto-Discovery**: Commands are automatically registered and validated
 
 #### Tools System (`tools/`)
+
 - **Structure**: Each tool has `definition.json` + `implementation.js`
 - **Auto-Loading**: Tools are discovered and loaded automatically
 - **Role-Based Access**: Tools filtered based on current AI role
 - **Common Utilities**: Shared functionality in `tools/common/`
 
 #### Configuration System
+
 - **Multi-Model Support**: Base, Smart, and Fast model configurations
 - **Environment-Based**: All settings via `.env` file
 - **CLI Override**: Command-line arguments override environment variables
@@ -480,28 +509,31 @@ synth-dev/
 ### Development Setup
 
 1. **Fork and Clone**
-   ```bash
-   git clone https://github.com/your-username/synth-dev.git
-   cd synth-dev
-   npm install
-   ```
+
+    ```bash
+    git clone https://github.com/your-username/synth-dev.git
+    cd synth-dev
+    npm install
+    ```
 
 2. **Set Up Development Environment**
-   ```bash
-   cp config.example.env .env
-   # Edit .env with your API keys
-   ```
+
+    ```bash
+    cp config.example.env .env
+    # Edit .env with your API keys
+    ```
 
 3. **Run in Development Mode**
-   ```bash
-   npm run dev  # Auto-reload on changes
-   ```
+    ```bash
+    npm run dev  # Auto-reload on changes
+    ```
 
 ### Creating New Tools
 
 Tools are automatically discovered from the `tools/` directory. Each tool needs:
 
 #### 1. Tool Structure
+
 ```
 tools/my_new_tool/
 ├── definition.json      # Tool schema and metadata
@@ -509,33 +541,35 @@ tools/my_new_tool/
 ```
 
 #### 2. Definition File (`definition.json`)
+
 ```json
 {
-  "name": "my_new_tool",
-  "description": "Brief description",
-  "auto_run": false,
-  "requires_backup": false,
-  "schema": {
-    "type": "function",
-    "function": {
-      "name": "my_new_tool",
-      "description": "Detailed description for AI",
-      "parameters": {
-        "type": "object",
-        "properties": {
-          "input": {
-            "type": "string",
-            "description": "Parameter description"
-          }
-        },
-        "required": ["input"]
-      }
+    "name": "my_new_tool",
+    "description": "Brief description",
+    "auto_run": false,
+    "requires_backup": false,
+    "schema": {
+        "type": "function",
+        "function": {
+            "name": "my_new_tool",
+            "description": "Detailed description for AI",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "input": {
+                        "type": "string",
+                        "description": "Parameter description"
+                    }
+                },
+                "required": ["input"]
+            }
+        }
     }
-  }
 }
 ```
 
 #### 3. Implementation File (`implementation.js`)
+
 ```javascript
 export default async function myNewTool(params) {
     const { input } = params;
@@ -545,7 +579,7 @@ export default async function myNewTool(params) {
         return {
             error: 'Input is required',
             success: false,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
         };
     }
 
@@ -556,13 +590,13 @@ export default async function myNewTool(params) {
         return {
             success: true,
             timestamp: new Date().toISOString(),
-            result: result
+            result: result,
         };
     } catch (error) {
         return {
             error: error.message,
             success: false,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
         };
     }
 }
@@ -573,6 +607,7 @@ export default async function myNewTool(params) {
 Commands are located in the `commands/` directory and automatically registered:
 
 #### 1. Simple Command
+
 ```javascript
 import { BaseCommand } from '../base/BaseCommand.js';
 
@@ -595,6 +630,7 @@ export class MyCommand extends BaseCommand {
 ```
 
 #### 2. Interactive Command
+
 ```javascript
 import { InteractiveCommand } from '../base/BaseCommand.js';
 
@@ -659,8 +695,5 @@ newRole: {
 - **Discussions**: Ask questions in GitHub Discussions
 - **Documentation**: Check existing docs in the `docs/` directory
 - **Examples**: Look at existing tools and commands for patterns
-
-
-
 
 \* - not really, just a figure of speech

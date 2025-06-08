@@ -1,7 +1,6 @@
 import ConfigManager from './configManager.js';
 import AIAPIClient from './aiAPIClient.js';
 import SystemMessages from './systemMessages.js';
-import ToolManager from './toolManager.js';
 import { getLogger } from './logger.js';
 
 /**
@@ -65,17 +64,22 @@ class PromptEnhancer {
             let responseError = null;
 
             aiClient.setCallbacks({
-                onResponse: (response) => {
-                    if (response && response.choices && response.choices[0] && response.choices[0].message) {
+                onResponse: response => {
+                    if (
+                        response &&
+                        response.choices &&
+                        response.choices[0] &&
+                        response.choices[0].message
+                    ) {
                         responseContent = response.choices[0].message.content;
                     }
                 },
-                onError: (error) => {
+                onError: error => {
                     responseError = error;
                 },
-                onReminder: (reminder) => {
-                    return reminder + `\n Original prompt was: ${originalPrompt}`;
-                }
+                onReminder: reminder => {
+                    return `${reminder}\n Original prompt was: ${originalPrompt}`;
+                },
             });
 
             // Send the enhancement request
@@ -95,17 +99,17 @@ class PromptEnhancer {
             const enhancedPrompt = this._extractEnhancedPrompt(responseContent);
 
             if (!enhancedPrompt) {
-                return { success: false, error: 'Failed to extract enhanced prompt from AI response' };
+                return {
+                    success: false,
+                    error: 'Failed to extract enhanced prompt from AI response',
+                };
             }
 
             return { success: true, enhancedPrompt: enhancedPrompt.trim() };
-
         } catch (error) {
             return { success: false, error: `Enhancement failed: ${error.message}` };
         }
     }
-
-
 
     /**
      * Create the enhancement prompt to send to the AI
@@ -134,14 +138,14 @@ Enhanced prompt:`;
 
         // Clean up the response - remove any potential formatting or extra text
         let cleaned = response.trim();
-        
+
         // Remove common prefixes that the AI might add
         const prefixesToRemove = [
             'Enhanced prompt:',
             'Here is the enhanced prompt:',
             'The enhanced prompt is:',
             'Enhanced version:',
-            'Improved prompt:'
+            'Improved prompt:',
         ];
 
         for (const prefix of prefixesToRemove) {
@@ -152,8 +156,10 @@ Enhanced prompt:`;
         }
 
         // Remove quotes if the entire response is wrapped in them
-        if ((cleaned.startsWith('"') && cleaned.endsWith('"')) || 
-            (cleaned.startsWith("'") && cleaned.endsWith("'"))) {
+        if (
+            (cleaned.startsWith('"') && cleaned.endsWith('"')) ||
+            (cleaned.startsWith("'") && cleaned.endsWith("'"))
+        ) {
             cleaned = cleaned.substring(1, cleaned.length - 1).trim();
         }
 

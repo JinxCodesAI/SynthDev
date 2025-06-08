@@ -58,7 +58,9 @@ export class RoleCommand extends BaseCommand {
             await apiClient.setSystemMessage(systemMessage, role);
 
             logger.raw(`🎭 Role switched from '${previousRole || 'none'}' to '${role}'`);
-            logger.raw(`🔧 Tools: ${apiClient.getFilteredToolCount()}/${apiClient.getTotalToolCount()} available`);
+            logger.raw(
+                `🔧 Tools: ${apiClient.getFilteredToolCount()}/${apiClient.getTotalToolCount()} available`
+            );
 
             const excludedTools = SystemMessages.getExcludedTools(role);
             if (excludedTools.length > 0) {

@@ -24,11 +24,18 @@ class ToolManager {
         try {
             const toolsDir = join(__dirname, 'tools');
             const toolDirs = readdirSync(toolsDir, { withFileTypes: true })
-                .filter(dirent => dirent.isDirectory() && !dirent.name.startsWith('.') && dirent.name !== 'common')
+                .filter(
+                    dirent =>
+                        dirent.isDirectory() &&
+                        !dirent.name.startsWith('.') &&
+                        dirent.name !== 'common'
+                )
                 .map(dirent => dirent.name);
 
             this.logger.debug(`📁 Loading tools from: ${toolsDir}`);
-            this.logger.debug(`📂 Found ${toolDirs.length} potential tool directories: ${toolDirs.join(', ')}`);
+            this.logger.debug(
+                `📂 Found ${toolDirs.length} potential tool directories: ${toolDirs.join(', ')}`
+            );
 
             this.loadingErrors = []; // Reset loading errors
 
@@ -68,7 +75,7 @@ class ToolManager {
             if (!existsSync(definitionPath)) {
                 this.loadingErrors.push({
                     tool: toolDir,
-                    message: 'definition.json not found'
+                    message: 'definition.json not found',
                 });
                 return;
             }
@@ -77,7 +84,7 @@ class ToolManager {
             if (!existsSync(implementationPath)) {
                 this.loadingErrors.push({
                     tool: toolDir,
-                    message: 'implementation.js not found'
+                    message: 'implementation.js not found',
                 });
                 return;
             }
@@ -90,7 +97,7 @@ class ToolManager {
             } catch (parseError) {
                 this.loadingErrors.push({
                     tool: toolDir,
-                    message: `Invalid JSON in definition.json: ${parseError.message}`
+                    message: `Invalid JSON in definition.json: ${parseError.message}`,
                 });
                 return;
             }
@@ -100,7 +107,7 @@ class ToolManager {
             if (!validation.success) {
                 this.loadingErrors.push({
                     tool: toolDir,
-                    message: `Definition validation failed: ${validation.errors.join(', ')}`
+                    message: `Definition validation failed: ${validation.errors.join(', ')}`,
                 });
                 return;
             }
@@ -114,17 +121,20 @@ class ToolManager {
             let implementationModule;
             try {
                 implementationModule = await import(`file://${implementationPath}`);
-                if (!implementationModule.default || typeof implementationModule.default !== 'function') {
+                if (
+                    !implementationModule.default ||
+                    typeof implementationModule.default !== 'function'
+                ) {
                     this.loadingErrors.push({
                         tool: toolDir,
-                        message: 'implementation.js must export a default function'
+                        message: 'implementation.js must export a default function',
                     });
                     return;
                 }
             } catch (importError) {
                 this.loadingErrors.push({
                     tool: toolDir,
-                    message: `Failed to import implementation.js: ${importError.message}`
+                    message: `Failed to import implementation.js: ${importError.message}`,
                 });
                 return;
             }
@@ -141,11 +151,13 @@ class ToolManager {
             }
             this.toolCategories.get(category).push(definition.name);
 
-            this.logger.debug(`✅ Loaded tool: ${definition.name}${definition.category ? ` [${definition.category}]` : ''}${definition.version ? ` v${definition.version}` : ''}`);
+            this.logger.debug(
+                `✅ Loaded tool: ${definition.name}${definition.category ? ` [${definition.category}]` : ''}${definition.version ? ` v${definition.version}` : ''}`
+            );
         } catch (error) {
             this.loadingErrors.push({
                 tool: toolDir,
-                message: `Unexpected error: ${error.message}`
+                message: `Unexpected error: ${error.message}`,
             });
         }
     }
@@ -221,8 +233,8 @@ class ToolManager {
                     error: `Tool not found: ${toolName}`,
                     tool_name: toolName,
                     success: false,
-                    timestamp: new Date().toISOString()
-                })
+                    timestamp: new Date().toISOString(),
+                }),
             };
             consoleInterface.showToolResult(JSON.parse(errorResponse.content));
             return errorResponse;
@@ -246,12 +258,12 @@ class ToolManager {
                     role: 'tool',
                     tool_call_id: toolCall.id,
                     content: JSON.stringify({
-                        error: `Tool execution cancelled by user`,
+                        error: 'Tool execution cancelled by user',
                         tool_name: toolName,
                         cancelled: true,
                         success: false,
-                        timestamp: new Date().toISOString()
-                    })
+                        timestamp: new Date().toISOString(),
+                    }),
                 };
             }
         }
@@ -272,7 +284,7 @@ class ToolManager {
                 success: true,
                 timestamp: new Date().toISOString(),
                 tool_name: toolName,
-                ...result
+                ...result,
             };
 
             // Handle Git commit if tool modifies files and we're in Git mode
@@ -285,7 +297,7 @@ class ToolManager {
             return {
                 role: 'tool',
                 tool_call_id: toolCall.id,
-                content: JSON.stringify(standardizedResult)
+                content: JSON.stringify(standardizedResult),
             };
         } catch (executionError) {
             const errorResult = {
@@ -293,7 +305,7 @@ class ToolManager {
                 tool_name: toolName,
                 success: false,
                 timestamp: new Date().toISOString(),
-                stack: executionError.stack
+                stack: executionError.stack,
             };
 
             consoleInterface.showToolResult(errorResult);
@@ -301,7 +313,7 @@ class ToolManager {
             return {
                 role: 'tool',
                 tool_call_id: toolCall.id,
-                content: JSON.stringify(errorResult)
+                content: JSON.stringify(errorResult),
             };
         }
     }
@@ -352,14 +364,23 @@ class ToolManager {
                 // First, check Git status to see what actually changed
                 const statusResult = await gitUtils.getStatus();
                 if (!statusResult.success) {
-                    this.logger.warn(`Git status check failed: ${statusResult.error}`, 'Git auto-commit');
+                    this.logger.warn(
+                        `Git status check failed: ${statusResult.error}`,
+                        'Git auto-commit'
+                    );
                     return;
                 }
 
-                this.logger.debug(`Git status before commit: ${statusResult.status}`, 'Git auto-commit');
+                this.logger.debug(
+                    `Git status before commit: ${statusResult.status}`,
+                    'Git auto-commit'
+                );
 
                 if (!statusResult.hasChanges) {
-                    this.logger.debug(`No Git changes detected, skipping commit`, 'Git auto-commit');
+                    this.logger.debug(
+                        'No Git changes detected, skipping commit',
+                        'Git auto-commit'
+                    );
                     return;
                 }
 
@@ -374,14 +395,17 @@ class ToolManager {
                 // Check status again after adding files
                 const statusAfterAdd = await gitUtils.getStatus();
                 if (statusAfterAdd.success) {
-                    this.logger.debug(`Git status after add: ${statusAfterAdd.status}`, 'Git auto-commit');
+                    this.logger.debug(
+                        `Git status after add: ${statusAfterAdd.status}`,
+                        'Git auto-commit'
+                    );
                 }
 
                 // Then commit the changes
                 const commitResult = await snapshotManager.commitChangesToGit(modifiedFiles);
                 if (!commitResult.success) {
                     // Show full error message with proper formatting
-                    this.logger.warn(`Git commit failed:`, 'Git auto-commit');
+                    this.logger.warn('Git commit failed:', 'Git auto-commit');
                     const errorLines = commitResult.error.split('\n');
                     errorLines.forEach(line => {
                         if (line.trim()) {
@@ -399,4 +423,4 @@ class ToolManager {
     }
 }
 
-export default ToolManager; 
+export default ToolManager;
