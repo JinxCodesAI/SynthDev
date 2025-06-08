@@ -20,7 +20,6 @@ describe('ConfigManager', () => {
     });
 
     afterEach(() => {
-        console.log('After Each');
         if (restoreEnv) {
             restoreEnv();
         }
@@ -81,7 +80,6 @@ describe('ConfigManager', () => {
 
             const instance = ConfigManager.getInstance();
             const config = instance.config;
-            console.log(config);
 
             expect(config.base.baseModel).toBe('gpt-4.1-mini');
             expect(config.base.baseUrl).toBe('https://api.openai.com/v1');
