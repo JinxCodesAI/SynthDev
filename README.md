@@ -43,7 +43,7 @@ This allows you to use synth-dev on any codebase you downloaded.
 
 Download, run, test, create Issues, start discussion. 
 
-If you want to see this project continue, consider living a star, shouting out about it on X.com, 
+If you want to see this project continue, consider giving a star, shouting out about it on X.com, 
 or maybe even supporting it on [GitHub Sponsors](https://github.com/sponsors/adamskrodzki) if you learned something.
 
 ## License
