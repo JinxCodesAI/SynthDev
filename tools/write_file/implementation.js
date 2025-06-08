@@ -93,9 +93,14 @@ class WriteFileTool extends FileBaseTool {
                             currentPath = join(currentPath, part);
                             if (!existsSync(currentPath)) {
                                 mkdirSync(currentPath);
-                                createdDirectories.push(
-                                    currentPath.replace(`${cwd}/`, '').replace(`${cwd}\\`, '')
-                                );
+                                const relativePath = currentPath
+                                    .replace(`${cwd}/`, '')
+                                    .replace(`${cwd}\\`, '')
+                                    .replace(/\\/g, '/');
+                                // Only add if it's not empty (avoid adding root directory)
+                                if (relativePath) {
+                                    createdDirectories.push(relativePath);
+                                }
                             }
                         }
                     } catch (mkdirError) {

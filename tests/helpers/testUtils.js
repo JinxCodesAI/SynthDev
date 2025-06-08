@@ -67,3 +67,90 @@ export function mockEnvVars(envVars) {
         process.env = originalEnv;
     };
 }
+
+/**
+ * Create a temporary test directory with sample files
+ * @param {string} testDir - Directory path to create
+ */
+export function createTestDirectory(testDir) {
+    // Create main test directory
+    if (!fs.existsSync(testDir)) {
+        fs.mkdirSync(testDir, { recursive: true });
+    }
+
+    // Create subdirectories
+    const subdir1 = path.join(testDir, 'subdir1');
+    const subdir2 = path.join(testDir, 'subdir2');
+    fs.mkdirSync(subdir1, { recursive: true });
+    fs.mkdirSync(subdir2, { recursive: true });
+
+    // Create test files
+    fs.writeFileSync(path.join(testDir, 'file1.txt'), 'Content of file 1');
+    fs.writeFileSync(path.join(testDir, 'file2.js'), 'console.log("Hello World");');
+    fs.writeFileSync(path.join(subdir1, 'nested1.txt'), 'Nested file content');
+    fs.writeFileSync(path.join(subdir2, 'nested2.md'), '# Markdown content');
+
+    // Create hidden file (starts with dot)
+    fs.writeFileSync(path.join(testDir, '.hidden'), 'Hidden file content');
+}
+
+/**
+ * Clean up test directory with retry logic for Windows
+ * @param {string} testDir - Directory path to remove
+ */
+export async function cleanupTestDirectory(testDir) {
+    if (!fs.existsSync(testDir)) {
+        return;
+    }
+
+    // Try cleanup with retries for Windows file locking issues
+    let attempts = 0;
+    const maxAttempts = 5;
+
+    while (attempts < maxAttempts) {
+        try {
+            fs.rmSync(testDir, { recursive: true, force: true });
+            break;
+        } catch (error) {
+            attempts++;
+            if (attempts >= maxAttempts) {
+                console.warn(
+                    `Failed to cleanup test directory after ${maxAttempts} attempts:`,
+                    error.message
+                );
+                break;
+            }
+            // Wait before retry (Windows file handle release)
+            await new Promise(resolve => setTimeout(resolve, 100 * attempts));
+        }
+    }
+}
+
+/**
+ * Normalize path separators for cross-platform testing
+ * @param {string} path - Path to normalize
+ * @returns {string} Path with forward slashes
+ */
+export function normalizePath(pathStr) {
+    return pathStr.replace(/\\/g, '/');
+}
+
+/**
+ * Normalize array of paths for cross-platform testing
+ * @param {string[]} paths - Array of paths to normalize
+ * @returns {string[]} Array of paths with forward slashes
+ */
+export function normalizePaths(paths) {
+    return paths.map(pathStr => normalizePath(pathStr));
+}
+
+/**
+ * Generate a unique test directory name to avoid test interference
+ * @param {string} baseName - Base name for the directory (default: 'test-temp')
+ * @returns {string} Unique directory name
+ */
+export function generateUniqueTestDir(baseName = 'test-temp') {
+    const timestamp = Date.now();
+    const random = Math.random().toString(36).substring(2, 8);
+    return `${baseName}-${timestamp}-${random}`;
+}
