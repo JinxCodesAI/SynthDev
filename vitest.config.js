@@ -18,5 +18,12 @@ export default defineConfig({
             },
         },
         testTimeout: 10000,
+        // Run tool tests sequentially to avoid file system conflicts
+        pool: 'forks',
+        poolOptions: {
+            forks: {
+                singleFork: true,
+            },
+        },
     },
 });

@@ -143,3 +143,14 @@ export function normalizePath(pathStr) {
 export function normalizePaths(paths) {
     return paths.map(pathStr => normalizePath(pathStr));
 }
+
+/**
+ * Generate a unique test directory name to avoid test interference
+ * @param {string} baseName - Base name for the directory (default: 'test-temp')
+ * @returns {string} Unique directory name
+ */
+export function generateUniqueTestDir(baseName = 'test-temp') {
+    const timestamp = Date.now();
+    const random = Math.random().toString(36).substring(2, 8);
+    return `${baseName}-${timestamp}-${random}`;
+}
