@@ -160,5 +160,165 @@ describe('CommandRegistry', () => {
             expect(commands).toContain(command1);
             expect(commands).toContain(command2);
         });
+
+        it('should return empty array when no commands registered', () => {
+            const commands = registry.getAllCommands();
+            expect(commands).toHaveLength(0);
+            expect(commands).toEqual([]);
+        });
+    });
+
+    describe('aliases', () => {
+        it('should register command aliases', () => {
+            const command = new TestCommand('main', 'Main command', ['alias1', 'alias2']);
+            registry.register(command);
+
+            expect(registry.hasCommand('main')).toBe(true);
+            expect(registry.hasCommand('alias1')).toBe(true);
+            expect(registry.hasCommand('alias2')).toBe(true);
+        });
+
+        it('should get command by alias', () => {
+            const command = new TestCommand('main', 'Main command', ['alias1']);
+            registry.register(command);
+
+            const foundCommand = registry.getCommand('alias1');
+            expect(foundCommand).toBe(command);
+        });
+
+        it('should execute command by alias', async () => {
+            const command = new TestCommand('main', 'Main command', ['alias1']);
+            registry.register(command);
+
+            const context = {};
+            const result = await registry.executeCommand('alias1', 'test args', context);
+
+            expect(result).toBe('Test command executed with args: test args');
+        });
+
+        it('should allow duplicate command names (overwrites)', () => {
+            const command1 = new TestCommand('duplicate', 'First command');
+            const command2 = new TestCommand('duplicate', 'Second command');
+
+            registry.register(command1);
+            registry.register(command2); // Should overwrite
+
+            const retrievedCommand = registry.getCommand('duplicate');
+            expect(retrievedCommand.description).toBe('Second command');
+        });
+
+        it('should throw error for duplicate aliases', () => {
+            const command1 = new TestCommand('cmd1', 'First command', ['shared']);
+            const command2 = new TestCommand('cmd2', 'Second command', ['shared']);
+
+            registry.register(command1);
+
+            expect(() => registry.register(command2)).toThrow(
+                "Alias 'shared' is already registered"
+            );
+        });
+
+        it('should allow alias that matches existing command name', () => {
+            const command1 = new TestCommand('existing', 'Existing command');
+            const command2 = new TestCommand('new', 'New command', ['existing']);
+
+            registry.register(command1);
+
+            // This should work - alias can match existing command name
+            expect(() => registry.register(command2)).not.toThrow();
+        });
+    });
+
+    describe('command validation', () => {
+        it('should throw error for command without execute method', () => {
+            const invalidCommand = { name: 'test' };
+
+            expect(() => registry.register(invalidCommand)).toThrow(
+                'Invalid command: must have an execute method'
+            );
+        });
+
+        it('should throw error for null command', () => {
+            expect(() => registry.register(null)).toThrow(
+                'Invalid command: must have an execute method'
+            );
+        });
+
+        it('should throw error for undefined command', () => {
+            expect(() => registry.register(undefined)).toThrow(
+                'Invalid command: must have an execute method'
+            );
+        });
+    });
+
+    describe('command parsing', () => {
+        it('should parse command with arguments', async () => {
+            const command = new TestCommand();
+            registry.register(command);
+
+            const context = {};
+            const result = await registry.handleCommand('/test arg1 arg2 arg3', context);
+
+            expect(result).toBe('Test command executed with args: arg1 arg2 arg3');
+        });
+
+        it('should parse command without arguments', async () => {
+            const command = new TestCommand();
+            registry.register(command);
+
+            const context = {};
+            const result = await registry.handleCommand('/test', context);
+
+            expect(result).toBe('Test command executed with args: ');
+        });
+
+        it('should handle command with extra spaces', async () => {
+            const command = new TestCommand();
+            registry.register(command);
+
+            const context = {};
+            const result = await registry.handleCommand('/test arg1   arg2', context);
+
+            expect(result).toBe('Test command executed with args: arg1   arg2');
+        });
+
+        it('should return false for input without slash prefix', async () => {
+            const context = {};
+            const result = await registry.handleCommand('not a command', context);
+
+            expect(result).toBe(false);
+        });
+
+        it('should return false for empty input', async () => {
+            const context = {};
+            const result = await registry.handleCommand('', context);
+
+            expect(result).toBe(false);
+        });
+
+        it('should return false for whitespace-only input', async () => {
+            const context = {};
+            const result = await registry.handleCommand('   ', context);
+
+            expect(result).toBe(false);
+        });
+    });
+
+    describe('error handling', () => {
+        it('should handle command execution errors gracefully', async () => {
+            class ErrorCommand extends TestCommand {
+                async implementation() {
+                    throw new Error('Command error');
+                }
+            }
+
+            const command = new ErrorCommand('error', 'Error command');
+            registry.register(command);
+
+            const context = {};
+            const result = await registry.executeCommand('error', '', context);
+
+            expect(result).toBe('error');
+        });
     });
 });
