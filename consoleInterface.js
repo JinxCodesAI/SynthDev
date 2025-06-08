@@ -200,11 +200,12 @@ Use /help for commands.
             // Remove all existing 'line' listeners to prevent interference
             this.rl.removeAllListeners('line');
 
-            // Temporarily resume input
-            if (wasPaused) {
-                this.isPaused = false;
-                this.rl.resume();
-            }
+            // Pause the readline interface to prevent double input
+            this.rl.pause();
+
+            // Enable raw mode to handle individual keystrokes
+            process.stdin.setRawMode(true);
+            process.stdin.resume();
 
             // Show prompt and pre-filled text
             process.stdout.write(prompt);
@@ -212,60 +213,115 @@ Use /help for commands.
 
             // Set up input handling
             let inputBuffer = prefillText;
+            let cursorPos = prefillText.length;
             let isEscapePressed = false;
+            const promptLength = prompt.length;
 
-            const handleKeypress = (str, key) => {
-                if (!key) return;
-
-                if (key.name === 'escape') {
-                    isEscapePressed = true;
-                    // Clear the line and show original
-                    process.stdout.write('\r\x1b[K');
-                    process.stdout.write(prompt + originalText);
-                    inputBuffer = originalText;
-                    return;
-                }
-
-                // Handle basic editing
-                if (key.name === 'backspace') {
-                    if (inputBuffer.length > 0) {
-                        inputBuffer = inputBuffer.slice(0, -1);
-                        process.stdout.write('\b \b');
-                    }
-                } else if (str && str.length === 1 && !key.ctrl && !key.meta) {
-                    inputBuffer += str;
-                    process.stdout.write(str);
+            const redrawLine = () => {
+                // Clear the entire line and redraw
+                process.stdout.write('\r\x1b[K');
+                process.stdout.write(prompt + inputBuffer);
+                // Move cursor to correct position
+                const targetPos = promptLength + cursorPos;
+                const currentPos = promptLength + inputBuffer.length;
+                if (targetPos < currentPos) {
+                    process.stdout.write('\x1b[' + (currentPos - targetPos) + 'D');
                 }
             };
 
-            const handleLine = (input) => {
-                // Clean up
-                process.stdin.removeListener('keypress', handleKeypress);
-                this.rl.removeListener('line', handleLine);
+            const handleKeypress = (chunk) => {
+                const key = chunk[0];
+
+                // Handle Escape key
+                if (key === 27) {
+                    isEscapePressed = true;
+                    inputBuffer = originalText;
+                    cursorPos = originalText.length;
+                    redrawLine();
+                    return;
+                }
+
+                // Handle Enter key
+                if (key === 13) {
+                    process.stdout.write('\n');
+                    cleanup();
+                    if (isEscapePressed) {
+                        resolve(null);
+                    } else {
+                        resolve(inputBuffer);
+                    }
+                    return;
+                }
+
+                // Handle Backspace
+                if (key === 127 || key === 8) {
+                    if (cursorPos > 0) {
+                        inputBuffer = inputBuffer.slice(0, cursorPos - 1) + inputBuffer.slice(cursorPos);
+                        cursorPos--;
+                        redrawLine();
+                    }
+                    return;
+                }
+
+                // Handle Delete key (ESC sequence)
+                if (key === 27 && chunk.length === 3 && chunk[1] === 91 && chunk[2] === 51) {
+                    // This is the start of a delete sequence, wait for the next chunk
+                    return;
+                }
+
+                // Handle arrow keys
+                if (key === 27 && chunk.length >= 3 && chunk[1] === 91) {
+                    if (chunk[2] === 67) { // Right arrow
+                        if (cursorPos < inputBuffer.length) {
+                            cursorPos++;
+                            process.stdout.write('\x1b[C');
+                        }
+                    } else if (chunk[2] === 68) { // Left arrow
+                        if (cursorPos > 0) {
+                            cursorPos--;
+                            process.stdout.write('\x1b[D');
+                        }
+                    }
+                    return;
+                }
+
+                // Handle Ctrl+C
+                if (key === 3) {
+                    process.stdout.write('\n');
+                    cleanup();
+                    resolve(null);
+                    return;
+                }
+
+                // Handle printable characters
+                if (key >= 32 && key <= 126) {
+                    const char = String.fromCharCode(key);
+                    inputBuffer = inputBuffer.slice(0, cursorPos) + char + inputBuffer.slice(cursorPos);
+                    cursorPos++;
+                    redrawLine();
+                }
+            };
+
+            const cleanup = () => {
+                // Restore normal mode
+                process.stdin.setRawMode(false);
+                process.stdin.pause();
+                process.stdin.removeListener('data', handleKeypress);
+
+                // Restore readline interface
+                if (!wasPaused) {
+                    this.isPaused = false;
+                    this.rl.resume();
+                }
 
                 // Restore original listeners
                 currentListeners.forEach(listener => {
                     this.rl.on('line', listener);
                 });
-
-                // Restore previous paused state
-                if (wasPaused) {
-                    this.isPaused = true;
-                    this.rl.pause();
-                }
-
-                if (isEscapePressed) {
-                    resolve(null); // Signal escape was pressed
-                } else {
-                    // Return the inputBuffer which contains the actual displayed text,
-                    // not the readline input which might be empty
-                    resolve(inputBuffer);
-                }
             };
 
-            // Set up listeners
-            process.stdin.on('keypress', handleKeypress);
-            this.rl.on('line', handleLine);
+            // Set up listener
+            process.stdin.on('data', handleKeypress);
         });
     }
 

@@ -270,6 +270,10 @@ class AIAPIClient {
         }
     }
 
+    addUserMessage(userMessage) {
+        this.messages.push({ role: 'user', content: userMessage });
+    }
+
     async _makeAPICall() {
         const config = ConfigManager.getInstance();
 
