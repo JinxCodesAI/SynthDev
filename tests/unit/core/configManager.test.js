@@ -13,7 +13,7 @@ describe('ConfigManager', () => {
 
         // Mock environment variables
         restoreEnv = mockEnvVars({
-            API_KEY: 'test-api-key',
+            API_KEY: 'sk-test1234567890',
             BASE_MODEL: 'gpt-4-mini',
             BASE_URL: 'https://api.openai.com/v1',
         });
@@ -33,16 +33,16 @@ describe('ConfigManager', () => {
         });
 
         it('should accept CLI options', () => {
-            const options = { apiKey: 'cli-test-key' };
+            const options = { apiKey: 'sk-cli1234567890' };
             const instance = ConfigManager.getInstance(options);
-            expect(instance.cliOptions.apiKey).toBe('cli-test-key');
+            expect(instance.cliOptions.apiKey).toBe('sk-cli1234567890');
         });
 
         it('should prioritize CLI options over environment variables', () => {
-            const options = { apiKey: 'cli-key', baseModel: 'cli-model' };
+            const options = { apiKey: 'sk-cli1234567890', baseModel: 'cli-model' };
             const instance = ConfigManager.getInstance(options);
 
-            expect(instance.cliOptions.apiKey).toBe('cli-key');
+            expect(instance.cliOptions.apiKey).toBe('sk-cli1234567890');
             expect(instance.cliOptions.baseModel).toBe('cli-model');
         });
     });
@@ -52,20 +52,20 @@ describe('ConfigManager', () => {
             const instance = ConfigManager.getInstance();
             const config = instance.config;
 
-            expect(config.base.apiKey).toBe('test-api-key');
+            expect(config.base.apiKey).toBe('sk-test1234567890');
             expect(config.base.baseModel).toBe('gpt-4-mini');
             expect(config.base.baseUrl).toBe('https://api.openai.com/v1');
         });
 
         it('should use CLI options over environment variables', () => {
             const options = {
-                apiKey: 'cli-api-key',
+                apiKey: 'sk-cli1234567890',
                 baseModel: 'cli-model',
             };
             const instance = ConfigManager.getInstance(options);
             const config = instance.config;
 
-            expect(config.base.apiKey).toBe('cli-api-key');
+            expect(config.base.apiKey).toBe('sk-cli1234567890');
             expect(config.base.baseModel).toBe('cli-model');
         });
 
@@ -98,14 +98,14 @@ describe('ConfigManager', () => {
 
         it('should return smart model configuration when available', () => {
             const options = {
-                smartApiKey: 'smart-key',
+                smartApiKey: 'sk-smart1234567890',
                 smartModel: 'gpt-4',
                 smartUrl: 'https://smart.api.com',
             };
             const instance = ConfigManager.getInstance(options);
             const modelConfig = instance.getModel('smart');
 
-            expect(modelConfig.apiKey).toBe('smart-key');
+            expect(modelConfig.apiKey).toBe('sk-smart1234567890');
             expect(modelConfig.model).toBe('gpt-4');
             expect(modelConfig.baseUrl).toBe('https://smart.api.com');
         });

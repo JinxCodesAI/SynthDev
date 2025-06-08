@@ -61,7 +61,7 @@ describe('BaseTool', () => {
             const result = baseTool.validateRequiredParams(params, ['param1', 'param2']);
 
             expect(result.success).toBe(false);
-            expect(result.error).toBe('param2 parameter is required');
+            expect(result.error).toBe('Required parameter missing: param2');
             expect(result.missing_parameter).toBe('param2');
         });
 
@@ -70,7 +70,7 @@ describe('BaseTool', () => {
             const result = baseTool.validateRequiredParams(params, ['param1', 'param2']);
 
             expect(result.success).toBe(false);
-            expect(result.error).toBe('param2 parameter is required');
+            expect(result.error).toBe('Required parameter missing: param2');
         });
 
         it('should return error for undefined parameter', () => {
@@ -78,7 +78,7 @@ describe('BaseTool', () => {
             const result = baseTool.validateRequiredParams(params, ['param1', 'param2']);
 
             expect(result.success).toBe(false);
-            expect(result.error).toBe('param2 parameter is required');
+            expect(result.error).toBe('Required parameter missing: param2');
         });
     });
 
@@ -108,7 +108,9 @@ describe('BaseTool', () => {
             const result = baseTool.validateParameterTypes(params, typeMap);
 
             expect(result.success).toBe(false);
-            expect(result.error).toBe('stringParam parameter must be of type string');
+            expect(result.error).toBe(
+                'Invalid parameter type for stringParam: expected string, got number'
+            );
             expect(result.expected_type).toBe('string');
             expect(result.actual_type).toBe('number');
         });
@@ -120,7 +122,9 @@ describe('BaseTool', () => {
             const result = baseTool.validateParameterTypes(params, typeMap);
 
             expect(result.success).toBe(false);
-            expect(result.error).toBe('arrayParam parameter must be of type array');
+            expect(result.error).toBe(
+                'Invalid parameter type for arrayParam: expected array, got string'
+            );
             expect(result.expected_type).toBe('array');
             expect(result.actual_type).toBe('string');
         });
