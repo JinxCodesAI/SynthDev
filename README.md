@@ -24,8 +24,20 @@ Setup your .env file, see [config.example.env](config.example.env) for details.
 npm start
 ```
 
-/help
 
+You can also do:
+
+```bash
+npm install -g .
+```
+
+and then run synth-dev from anywhere with:
+
+```bash
+synth-dev
+```
+
+This allows you to use synth-dev on any codebase you downloaded.
 
 ## Support
 

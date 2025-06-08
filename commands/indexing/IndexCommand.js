@@ -317,6 +317,7 @@ export class IndexCommand extends InteractiveCommand {
                     fileData.existingInfo,
                     fileSummarizerClient
                 );
+                fileSummarizerClient.clearConversation();
 
                 index.files[fileData.file.path] = fileInfo;
                 index.statistics.processed++;
@@ -362,8 +363,7 @@ export class IndexCommand extends InteractiveCommand {
         let directorySummarizerClient = null;
         if (hasAIConfig) {
             const config = ConfigManager.getInstance();
-            const modelType = config.hasDirectoryModelConfig() ? 'directory' : (config.hasSmartModelConfig() ? 'smart' : 'base');
-            const modelConfig = config.getModel(modelType);
+            const modelConfig = config.getModel('fast');
             directorySummarizerClient = new AIAPIClient(costsManager, modelConfig.apiKey, modelConfig.baseURL, modelConfig.model || modelConfig.baseModel);
             await directorySummarizerClient.setSystemMessage(SystemMessages.getSystemMessage('directory_summarizer'), 'directory_summarizer');
         }
@@ -406,6 +406,8 @@ export class IndexCommand extends InteractiveCommand {
                     allProcessedEntries,
                     directorySummarizerClient
                 );
+
+                directorySummarizerClient.clearConversation();
 
                 index.files[directoryData.directory.path] = directoryInfo;
                 index.statistics.directories_processed++;
