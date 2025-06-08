@@ -1,25 +1,22 @@
-// tests/unit/tools/listDirectory.fixed.test.js
+// tests/unit/tools/listDirectory.test.js
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { writeFileSync, existsSync, mkdirSync, rmSync } from 'fs';
+import { writeFileSync, existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
 import listDirectory from '../../../tools/list_directory/implementation.js';
+import { cleanupTestDirectory } from '../../helpers/testUtils.js';
 
 describe('ListDirectory Tool - Fixed Tests', () => {
     const testDir = join(process.cwd(), 'test-temp');
 
-    beforeEach(() => {
+    beforeEach(async () => {
         // Clean up and create fresh test directory
-        if (existsSync(testDir)) {
-            rmSync(testDir, { recursive: true, force: true });
-        }
+        await cleanupTestDirectory(testDir);
         mkdirSync(testDir, { recursive: true });
     });
 
-    afterEach(() => {
-        // Clean up test files
-        if (existsSync(testDir)) {
-            rmSync(testDir, { recursive: true, force: true });
-        }
+    afterEach(async () => {
+        // Clean up test files with retry logic
+        await cleanupTestDirectory(testDir);
     });
 
     describe('successful directory listing', () => {

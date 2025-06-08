@@ -87,7 +87,10 @@ class WriteFileTool extends FileBaseTool {
                             if (!existsSync(currentPath)) {
                                 mkdirSync(currentPath);
                                 createdDirectories.push(
-                                    currentPath.replace(`${cwd}/`, '').replace(`${cwd}\\`, '')
+                                    currentPath
+                                        .replace(`${cwd}/`, '')
+                                        .replace(`${cwd}\\`, '')
+                                        .replace(/\\/g, '/')
                                 );
                             }
                         }

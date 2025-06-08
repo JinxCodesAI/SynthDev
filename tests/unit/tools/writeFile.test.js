@@ -1,25 +1,23 @@
-// tests/unit/tools/writeFile.fixed.test.js
+// tests/unit/tools/writeFile.test.js
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { readFileSync, existsSync, mkdirSync, rmSync, statSync } from 'fs';
+import { readFileSync, existsSync, mkdirSync, statSync } from 'fs';
 import { join } from 'path';
 import writeFile from '../../../tools/write_file/implementation.js';
+import { cleanupTestDirectory, normalizePaths } from '../../helpers/testUtils.js';
 
 describe('WriteFile Tool - Fixed Tests', () => {
     const testDir = join(process.cwd(), 'test-temp');
     const testFile = join(testDir, 'test.txt');
 
-    beforeEach(() => {
-        // Create test directory
-        if (!existsSync(testDir)) {
-            mkdirSync(testDir, { recursive: true });
-        }
+    beforeEach(async () => {
+        // Clean up and create fresh test directory
+        await cleanupTestDirectory(testDir);
+        mkdirSync(testDir, { recursive: true });
     });
 
-    afterEach(() => {
-        // Clean up test files
-        if (existsSync(testDir)) {
-            rmSync(testDir, { recursive: true, force: true });
-        }
+    afterEach(async () => {
+        // Clean up test files with retry logic
+        await cleanupTestDirectory(testDir);
     });
 
     describe('successful file writing', () => {
@@ -65,7 +63,7 @@ describe('WriteFile Tool - Fixed Tests', () => {
             });
 
             expect(result.success).toBe(true);
-            expect(result.created_directories).toEqual([
+            expect(normalizePaths(result.created_directories)).toEqual([
                 'test-temp/subdir',
                 'test-temp/subdir/nested',
             ]);
@@ -224,7 +222,7 @@ describe('WriteFile Tool - Fixed Tests', () => {
             });
 
             expect(result.success).toBe(true);
-            expect(result.created_directories).toEqual([
+            expect(normalizePaths(result.created_directories)).toEqual([
                 'test-temp/a',
                 'test-temp/a/b',
                 'test-temp/a/b/c',

@@ -1,25 +1,23 @@
-// tests/unit/tools/readFile.fixed.test.js
+// tests/unit/tools/readFile.test.js
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { writeFileSync, unlinkSync, existsSync, mkdirSync, rmSync } from 'fs';
+import { writeFileSync, existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
 import readFile from '../../../tools/read_file/implementation.js';
+import { cleanupTestDirectory } from '../../helpers/testUtils.js';
 
 describe('ReadFile Tool - Fixed Tests', () => {
     const testDir = join(process.cwd(), 'test-temp');
     const testFile = join(testDir, 'test.txt');
 
-    beforeEach(() => {
-        // Create test directory
-        if (!existsSync(testDir)) {
-            mkdirSync(testDir, { recursive: true });
-        }
+    beforeEach(async () => {
+        // Clean up and create fresh test directory
+        await cleanupTestDirectory(testDir);
+        mkdirSync(testDir, { recursive: true });
     });
 
-    afterEach(() => {
-        // Clean up test files
-        if (existsSync(testDir)) {
-            rmSync(testDir, { recursive: true, force: true });
-        }
+    afterEach(async () => {
+        // Clean up test files with retry logic
+        await cleanupTestDirectory(testDir);
     });
 
     describe('successful file reading', () => {
