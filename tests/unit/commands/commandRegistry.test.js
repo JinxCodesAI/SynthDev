@@ -320,5 +320,178 @@ describe('CommandRegistry', () => {
 
             expect(result).toBe('error');
         });
+
+        it('should handle command with no aliases gracefully', () => {
+            const command = new TestCommand('noaliases', 'No aliases command');
+            delete command.aliases;
+            registry.register(command);
+
+            expect(registry.hasCommand('noaliases')).toBe(true);
+            expect(registry.getCommand('noaliases')).toBe(command);
+        });
+
+        it('should handle command with null aliases gracefully', () => {
+            const command = new TestCommand('null', 'Null aliases', null);
+            registry.register(command);
+
+            expect(registry.hasCommand('null')).toBe(true);
+            expect(registry.getCommand('null')).toBe(command);
+        });
+
+        it('should handle command input with only slash', async () => {
+            const context = {};
+            const result = await registry.handleCommand('/', context);
+
+            expect(result).toBe('invalid');
+            // Logger call is expected but we don't need to verify the exact message
+        });
+
+        it('should handle command input with trailing spaces', async () => {
+            const command = new TestCommand();
+            registry.register(command);
+
+            const context = {};
+            const result = await registry.handleCommand('/test args   ', context);
+
+            expect(result).toBe('Test command executed with args: args');
+        });
+
+        it('should handle case-sensitive command names', () => {
+            const command1 = new TestCommand('Test', 'Uppercase test');
+            const command2 = new TestCommand('test', 'Lowercase test');
+
+            registry.register(command1);
+            registry.register(command2);
+
+            expect(registry.getCommand('Test')).toBe(command1);
+            expect(registry.getCommand('test')).toBe(command2);
+        });
+
+        it('should handle very long command names', () => {
+            const longName = 'a'.repeat(1000);
+            const command = new TestCommand(longName, 'Long name command');
+            registry.register(command);
+
+            expect(registry.hasCommand(longName)).toBe(true);
+            expect(registry.getCommand(longName)).toBe(command);
+        });
+
+        it('should handle command with many aliases', () => {
+            const manyAliases = Array.from({ length: 50 }, (_, i) => `alias${i}`);
+            const command = new TestCommand('test', 'Test command', manyAliases);
+            registry.register(command);
+
+            manyAliases.forEach(alias => {
+                expect(registry.hasCommand(alias)).toBe(true);
+                expect(registry.getCommand(alias)).toBe(command);
+            });
+        });
+
+        it('should handle command execution with complex arguments', async () => {
+            const command = new TestCommand();
+            registry.register(command);
+
+            const context = {};
+            const result = await registry.executeCommand(
+                'test',
+                '--flag value "quoted string"',
+                context
+            );
+
+            expect(result).toBe('Test command executed with args: --flag value "quoted string"');
+        });
+
+        it('should handle command execution with unicode characters', async () => {
+            const command = new TestCommand();
+            registry.register(command);
+
+            const context = {};
+            const result = await registry.executeCommand('test', 'héllo wörld 🌍', context);
+
+            expect(result).toBe('Test command executed with args: héllo wörld 🌍');
+        });
+
+        it('should handle command with special characters in alias', () => {
+            const command = new TestCommand('test', 'Test command', ['test-alias_123']);
+            registry.register(command);
+
+            expect(registry.hasCommand('test-alias_123')).toBe(true);
+            expect(registry.getCommand('test-alias_123')).toBe(command);
+        });
+
+        it('should handle command execution with empty context', async () => {
+            const command = new TestCommand();
+            registry.register(command);
+
+            const result = await registry.executeCommand('test', 'args', {});
+
+            expect(result).toBe('Test command executed with args: args');
+        });
+
+        it('should handle command execution with null context', async () => {
+            const command = new TestCommand();
+            registry.register(command);
+
+            const result = await registry.executeCommand('test', 'args', null);
+
+            expect(result).toBe('Test command executed with args: args');
+        });
+
+        it('should handle command execution with undefined context', async () => {
+            const command = new TestCommand();
+            registry.register(command);
+
+            const result = await registry.executeCommand('test', 'args', undefined);
+
+            expect(result).toBe('Test command executed with args: args');
+        });
+
+        it('should handle command that returns non-string result', async () => {
+            class ObjectCommand extends TestCommand {
+                async implementation() {
+                    return { result: 'success', data: [1, 2, 3] };
+                }
+            }
+
+            const command = new ObjectCommand('object', 'Object command');
+            registry.register(command);
+
+            const context = {};
+            const result = await registry.executeCommand('object', '', context);
+
+            expect(result).toEqual({ result: 'success', data: [1, 2, 3] });
+        });
+
+        it('should handle command that returns null', async () => {
+            class NullCommand extends TestCommand {
+                async implementation() {
+                    return null;
+                }
+            }
+
+            const command = new NullCommand('null', 'Null command');
+            registry.register(command);
+
+            const context = {};
+            const result = await registry.executeCommand('null', '', context);
+
+            expect(result).toBeNull();
+        });
+
+        it('should handle command that returns undefined', async () => {
+            class UndefinedCommand extends TestCommand {
+                async implementation() {
+                    return undefined;
+                }
+            }
+
+            const command = new UndefinedCommand('undefined', 'Undefined command');
+            registry.register(command);
+
+            const context = {};
+            const result = await registry.executeCommand('undefined', '', context);
+
+            expect(result).toBeUndefined();
+        });
     });
 });
