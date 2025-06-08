@@ -317,6 +317,7 @@ export class IndexCommand extends InteractiveCommand {
                     fileData.existingInfo,
                     fileSummarizerClient
                 );
+                fileSummarizerClient.clearConversation();
 
                 index.files[fileData.file.path] = fileInfo;
                 index.statistics.processed++;
@@ -405,6 +406,8 @@ export class IndexCommand extends InteractiveCommand {
                     allProcessedEntries,
                     directorySummarizerClient
                 );
+
+                directorySummarizerClient.clearConversation();
 
                 index.files[directoryData.directory.path] = directoryInfo;
                 index.statistics.directories_processed++;

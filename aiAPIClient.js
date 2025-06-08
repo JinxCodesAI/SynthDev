@@ -287,7 +287,6 @@ class AIAPIClient {
 
         // Call OpenAI Compatible API
         const response = await this.client.chat.completions.create(requestData);
-        this.costsManager.addUsage(this.model, response.usage);
 
         // Store response data for review
         this.lastAPICall.response = JSON.parse(JSON.stringify(response));
@@ -297,7 +296,8 @@ class AIAPIClient {
 
         if (response && response.usage) {
             this.costsManager.addUsage(this.model, response.usage);
-        }
+            this.logger.debug(`🤖 ${this.model} usage: ${response.usage.total_tokens} tokens, ${response.usage.prompt_tokens} prompt tokens, ${response.usage.completion_tokens} completion tokens`);
+        } 
 
         return response;
     }
