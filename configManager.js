@@ -1,5 +1,6 @@
 import { config } from 'dotenv';
 import { createInterface } from 'readline';
+import { getConfigurationValidator } from './configurationValidator.js';
 
 /**
  * Singleton ConfigManager class that loads and manages all application configuration
@@ -116,6 +117,7 @@ class ConfigManager {
      * @private
      */
     async _validateConfiguration() {
+        const validator = getConfigurationValidator();
         const errors = [];
 
         // Check for required base configuration - prompt if missing
@@ -128,46 +130,46 @@ class ConfigManager {
             }
         }
 
-        // Validate URLs if provided
-        if (this.config.base.baseUrl && !this._isValidUrl(this.config.base.baseUrl)) {
-            errors.push('BASE_URL must be a valid URL');
+        // Validate base configuration
+        const baseValidation = validator.validateConfiguration(this.config.base, 'base_config');
+        if (!baseValidation.success) {
+            errors.push(...baseValidation.errors);
         }
 
-        if (this.config.smart.baseUrl && !this._isValidUrl(this.config.smart.baseUrl)) {
-            errors.push('SMART_BASE_URL must be a valid URL');
+        // Validate smart configuration if it has required fields
+        if (this.config.smart.apiKey && this.config.smart.model) {
+            const smartValidation = validator.validateConfiguration(
+                this.config.smart,
+                'smart_config'
+            );
+            if (!smartValidation.success) {
+                errors.push(...smartValidation.errors.map(err => `Smart config: ${err}`));
+            }
         }
 
-        if (this.config.fast.baseUrl && !this._isValidUrl(this.config.fast.baseUrl)) {
-            errors.push('FAST_BASE_URL must be a valid URL');
+        // Validate fast configuration if it has required fields
+        if (this.config.fast.apiKey && this.config.fast.model) {
+            const fastValidation = validator.validateConfiguration(this.config.fast, 'fast_config');
+            if (!fastValidation.success) {
+                errors.push(...fastValidation.errors.map(err => `Fast config: ${err}`));
+            }
         }
 
-        // Validate max tool calls
-        if (this.config.global.maxToolCalls < 1 || this.config.global.maxToolCalls > 200) {
-            errors.push('MAX_TOOL_CALLS must be between 1 and 200');
-        }
-
-        // Validate verbosity level
-        if (this.config.global.verbosityLevel < 0 || this.config.global.verbosityLevel > 5) {
-            errors.push('VERBOSITY_LEVEL must be between 0 and 5');
+        // Validate global configuration
+        const globalValidation = validator.validateConfiguration(
+            this.config.global,
+            'global_config'
+        );
+        if (!globalValidation.success) {
+            errors.push(...globalValidation.errors.map(err => `Global config: ${err}`));
         }
 
         if (errors.length > 0) {
-            throw new Error(`Configuration validation failed:\n${errors.join('\n')}`);
-        }
-    }
-
-    /**
-     * Validate URL format
-     * @private
-     * @param {string} url - URL to validate
-     * @returns {boolean} Whether the URL is valid
-     */
-    _isValidUrl(url) {
-        try {
-            new URL(url);
-            return true;
-        } catch {
-            return false;
+            const rules = validator.getValidationRules();
+            const errorMessage =
+                rules.error_messages?.configuration_validation_failed ||
+                'Configuration validation failed:\n{errors}';
+            throw new Error(errorMessage.replace('{errors}', errors.join('\n')));
         }
     }
 
@@ -248,6 +250,35 @@ class ConfigManager {
         this.config.base.apiKey = apiKey;
         this.config.smart.apiKey = this.config.smart.apiKey || apiKey;
         this.config.fast.apiKey = this.config.fast.apiKey || apiKey;
+    }
+
+    /**
+     * Reload configuration from environment and CLI options
+     * @returns {Promise<void>}
+     */
+    async reloadConfiguration() {
+        this.config = this._loadConfiguration();
+        this.isValidated = false;
+        await this.initialize();
+    }
+
+    /**
+     * Validate configuration files existence
+     * @param {string[]} requiredFiles - Array of required configuration file paths
+     * @returns {Object} Validation result
+     */
+    validateConfigurationFiles(requiredFiles = []) {
+        const validator = getConfigurationValidator();
+        return validator.validateConfigurationFiles(requiredFiles);
+    }
+
+    /**
+     * Get configuration validation rules
+     * @returns {Object} Validation rules
+     */
+    getValidationRules() {
+        const validator = getConfigurationValidator();
+        return validator.getValidationRules();
     }
 }
 

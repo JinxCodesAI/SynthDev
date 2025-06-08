@@ -107,12 +107,18 @@ config/
 - [x] Replace 15+ hardcoded error messages with configurable ones
 - [x] Tool descriptions now load from configuration
 
-### Phase 6: Configuration Validation
+### Phase 6: Configuration Validation ✅ COMPLETED
 
-- [ ] Implement configuration validation using validation rules
-- [ ] Update ConfigManager to use validation configuration
-- [ ] Add configuration file existence checks
-- [ ] Implement configuration reload functionality
+- [x] Implement configuration validation using validation rules with ConfigurationValidator
+- [x] Update ConfigManager to use validation configuration and integrate validator
+- [x] Add configuration file existence checks and JSON validation
+- [x] Implement configuration reload functionality in ConfigManager
+- [x] Create ConfigurationChecker for comprehensive configuration health checks
+- [x] Add validation for API keys, URLs, models, and numeric limits
+- [x] Implement detailed configuration status reporting
+- [x] Add missing configuration file detection and reporting
+- [x] Create validation error messages with parameter substitution
+- [x] Integrate validation system throughout the application
 
 ### Phase 7: Testing and Documentation
 
@@ -207,5 +213,5 @@ Edit `config/tools/safety-patterns.json`:
 
 ## Current Status
 
-**✅ Phases 1-5 Complete**: Core infrastructure, SystemMessages, Console Interface, Command System, and Tool System migration finished
-**🚧 Next**: Phase 6 - Configuration Validation
+**✅ Phases 1-6 Complete**: Core infrastructure, SystemMessages, Console Interface, Command System, Tool System, and Configuration Validation migration finished
+**🚧 Next**: Phase 7 - Testing and Documentation
