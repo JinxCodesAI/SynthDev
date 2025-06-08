@@ -17,6 +17,7 @@ import RoleCommand from '../role/RoleCommand.js';
 import RolesCommand from '../role/RolesCommand.js';
 import SnapshotsCommand from '../snapshots/SnapshotsCommand.js';
 import IndexCommand from '../indexing/IndexCommand.js';
+import CmdCommand from '../terminal/CmdCommand.js';
 
 /**
  * Create and configure a command registry with all available commands
@@ -49,6 +50,9 @@ export function createCommandRegistry() {
 
         // Indexing
         registry.register(new IndexCommand());
+
+        // Terminal commands
+        registry.register(new CmdCommand());
 
         logger.debug(`✅ Registered ${registry.getAllCommands().length} commands successfully`);
 
