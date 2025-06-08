@@ -6,13 +6,12 @@
 
 import { readFileSync, statSync } from 'fs';
 import { FileBaseTool } from '../common/base-tool.js';
+import { getToolConfigManager } from '../../toolConfigManager.js';
 
 class ReadFileTool extends FileBaseTool {
     constructor() {
-        super(
-            'read_file',
-            'Read the contents of a file from the file system using a relative path'
-        );
+        const toolConfig = getToolConfigManager();
+        super('read_file', toolConfig.getToolDescription('read_file'));
 
         // Define parameter validation
         this.requiredParams = ['file_path'];
@@ -22,6 +21,8 @@ class ReadFileTool extends FileBaseTool {
             start_line: 'number',
             end_line: 'number',
         };
+
+        this.toolConfig = toolConfig;
     }
 
     async implementation(params) {

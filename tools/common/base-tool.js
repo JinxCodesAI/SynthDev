@@ -5,6 +5,7 @@
 
 import { join, resolve, relative } from 'path';
 import costsManager from '../../costsManager.js';
+import { getToolConfigManager } from '../../toolConfigManager.js';
 
 export class BaseTool {
     constructor(name, description) {
@@ -51,11 +52,15 @@ export class BaseTool {
      * @returns {Object|null} Error response if validation fails, null if valid
      */
     validateRequiredParams(params, requiredFields) {
+        const toolConfig = getToolConfigManager();
         for (const field of requiredFields) {
             if (params[field] === undefined || params[field] === null) {
-                return this.createErrorResponse(`${field} parameter is required`, {
-                    missing_parameter: field,
-                });
+                return this.createErrorResponse(
+                    toolConfig.getValidationMessage('required_parameter_missing', {
+                        parameter: field,
+                    }),
+                    { missing_parameter: field }
+                );
             }
         }
         return null;
@@ -82,8 +87,13 @@ export class BaseTool {
                     const actualType = Array.isArray(params[param])
                         ? 'array'
                         : typeof params[param];
+                    const toolConfig = getToolConfigManager();
                     return this.createErrorResponse(
-                        `${param} parameter must be of type ${expectedType}`,
+                        toolConfig.getValidationMessage('invalid_parameter_type', {
+                            parameter: param,
+                            expected: expectedType,
+                            actual: actualType,
+                        }),
                         {
                             invalid_parameter: param,
                             expected_type: expectedType,

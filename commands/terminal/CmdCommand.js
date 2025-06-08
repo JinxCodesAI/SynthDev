@@ -2,6 +2,7 @@ import { InteractiveCommand } from '../base/BaseCommand.js';
 import CommandGenerator from './CommandGenerator.js';
 import { getLogger } from '../../logger.js';
 import executeTerminal from '../../tools/execute_terminal/implementation.js';
+import { getUIConfigManager } from '../../uiConfigManager.js';
 
 /**
  * Command for executing terminal commands with AI assistance
@@ -12,6 +13,7 @@ export class CmdCommand extends InteractiveCommand {
         super('cmd', 'Execute terminal commands with AI assistance', ['command', 'terminal']);
         this.commandHistory = [];
         this.contextIntegrationEnabled = false; // Can be toggled by user
+        this.uiConfig = getUIConfigManager();
     }
 
     /**
@@ -46,23 +48,20 @@ export class CmdCommand extends InteractiveCommand {
 
         if (trimmedArgs === 'context on') {
             this.contextIntegrationEnabled = true;
-            logger.raw(
-                '✅ Context integration enabled - commands and results will be added to chat history\n'
-            );
+            logger.raw(this.uiConfig.getMessage('cmd.context_enabled'));
             return true;
         }
 
         if (trimmedArgs === 'context off') {
             this.contextIntegrationEnabled = false;
-            logger.raw('❌ Context integration disabled\n');
+            logger.raw(this.uiConfig.getMessage('cmd.context_disabled'));
             return true;
         }
 
         if (trimmedArgs.startsWith('context')) {
-            logger.raw(
-                `ℹ️  Context integration is currently ${this.contextIntegrationEnabled ? 'enabled' : 'disabled'}`
-            );
-            logger.raw('   Use "/cmd context on" or "/cmd context off" to toggle\n');
+            const status = this.contextIntegrationEnabled ? 'enabled' : 'disabled';
+            logger.raw(this.uiConfig.getMessage('cmd.context_status', { status }));
+            logger.raw(this.uiConfig.getMessage('cmd.context_toggle_help'));
             return true;
         }
 
@@ -89,12 +88,12 @@ export class CmdCommand extends InteractiveCommand {
         const description = request.replace(/\?\?\?/g, '').trim();
 
         if (!description) {
-            logger.raw('❌ Please provide a description of what you want to do after ???\n');
-            logger.raw('   Example: /cmd ??? add all files to git\n');
+            logger.raw(this.uiConfig.getMessage('cmd.no_description'));
+            logger.raw(this.uiConfig.getMessage('cmd.description_example'));
             return true;
         }
 
-        logger.raw('🤖 Generating command...\n');
+        logger.raw(this.uiConfig.getMessage('cmd.ai_generating'));
 
         // Initialize command generator
         const commandGenerator = new CommandGenerator(context.costsManager, context.toolManager);
@@ -103,7 +102,7 @@ export class CmdCommand extends InteractiveCommand {
         const result = await commandGenerator.generateCommand(description);
 
         if (!result.success) {
-            logger.raw(`❌ Failed to generate command: ${result.error}\n`);
+            logger.raw(this.uiConfig.getMessage('cmd.generation_failed', { error: result.error }));
             return true;
         }
 
@@ -111,25 +110,26 @@ export class CmdCommand extends InteractiveCommand {
         const originalInput = `/cmd ??? ${description}`;
         const generatedCommand = `/cmd ${result.command}`;
 
-        logger.raw('🔄 Press Esc to revert to original or ENTER to submit current command');
+        logger.raw(this.uiConfig.getMessage('cmd.generation_instruction'));
 
         // Show the generated command as editable input
+        const userPrompt = this.uiConfig.getMessage('prompts.user');
         const userInput = await context.consoleInterface.promptForEditableInput(
-            '💭 You: ',
+            userPrompt,
             generatedCommand,
             originalInput
         );
 
         if (userInput === null) {
             // User pressed Escape - revert to original
-            logger.raw('🚫 Command generation cancelled\n');
+            logger.raw(this.uiConfig.getMessage('cmd.generation_cancelled'));
             return true;
         }
 
         // Parse the final user input
         const finalInput = userInput.trim();
         if (!finalInput.startsWith('/cmd ')) {
-            logger.raw('❌ Invalid command format\n');
+            logger.raw(this.uiConfig.getMessage('cmd.invalid_format'));
             return true;
         }
 
@@ -137,7 +137,7 @@ export class CmdCommand extends InteractiveCommand {
         const finalCommand = finalInput.substring(5).trim(); // Remove '/cmd '
 
         if (!finalCommand) {
-            logger.raw('❌ No command to execute\n');
+            logger.raw(this.uiConfig.getMessage('cmd.no_command'));
             return true;
         }
 
@@ -167,7 +167,7 @@ export class CmdCommand extends InteractiveCommand {
     async _executeCommand(command, context, originalRequest = null) {
         const logger = getLogger();
 
-        logger.raw(`⚡ Executing: ${command}\n`);
+        logger.raw(this.uiConfig.getMessage('cmd.executing', { command }));
 
         try {
             // Execute the command using the execute_terminal tool
@@ -191,7 +191,8 @@ export class CmdCommand extends InteractiveCommand {
 
             return true;
         } catch (error) {
-            logger.error(error, `Failed to execute command: ${command}`);
+            const errorMessage = this.uiConfig.getMessage('cmd.execution_failed', { command });
+            logger.error(error, errorMessage);
             return true;
         }
     }
@@ -203,42 +204,43 @@ export class CmdCommand extends InteractiveCommand {
      */
     _displayCommandResult(result) {
         const logger = getLogger();
+        const separator = this.uiConfig.getMessage('cmd.separator').repeat(50);
 
         if (result.success) {
-            logger.raw('✅ Command completed successfully\n');
+            logger.raw(this.uiConfig.getMessage('cmd.success'));
 
             if (result.stdout && result.stdout.trim()) {
-                logger.raw('📤 Output:');
-                logger.raw('─'.repeat(50));
+                logger.raw(this.uiConfig.getMessage('cmd.output_header'));
+                logger.raw(separator);
                 logger.raw(result.stdout.trim());
-                logger.raw('─'.repeat(50));
+                logger.raw(separator);
             }
 
             if (result.stderr && result.stderr.trim()) {
-                logger.raw('⚠️  Warnings/Info:');
-                logger.raw('─'.repeat(50));
+                logger.raw(this.uiConfig.getMessage('cmd.warnings_header'));
+                logger.raw(separator);
                 logger.raw(result.stderr.trim());
-                logger.raw('─'.repeat(50));
+                logger.raw(separator);
             }
         } else {
-            logger.raw('❌ Command failed\n');
+            logger.raw(this.uiConfig.getMessage('cmd.failed'));
 
             if (result.stdout && result.stdout.trim()) {
-                logger.raw('📤 Output:');
-                logger.raw('─'.repeat(50));
+                logger.raw(this.uiConfig.getMessage('cmd.output_header'));
+                logger.raw(separator);
                 logger.raw(result.stdout.trim());
-                logger.raw('─'.repeat(50));
+                logger.raw(separator);
             }
 
             if (result.stderr && result.stderr.trim()) {
-                logger.raw('❌ Error:');
-                logger.raw('─'.repeat(50));
+                logger.raw(this.uiConfig.getMessage('cmd.error_header'));
+                logger.raw(separator);
                 logger.raw(result.stderr.trim());
-                logger.raw('─'.repeat(50));
+                logger.raw(separator);
             }
 
             if (result.error) {
-                logger.raw(`💥 Error details: ${result.error}`);
+                logger.raw(this.uiConfig.getMessage('cmd.error_details', { error: result.error }));
             }
         }
 
@@ -259,7 +261,7 @@ export class CmdCommand extends InteractiveCommand {
         // If context integration is enabled globally, add automatically
         if (this.contextIntegrationEnabled) {
             await this._addToContext(command, result, context, originalRequest);
-            logger.raw('📝 Command and results added to chat history\n');
+            logger.raw(this.uiConfig.getMessage('cmd.context_auto_added'));
             return;
         }
 
@@ -271,7 +273,7 @@ export class CmdCommand extends InteractiveCommand {
 
         if (shouldAdd) {
             await this._addToContext(command, result, context, originalRequest);
-            logger.raw('📝 Command and results added to chat history\n');
+            logger.raw(this.uiConfig.getMessage('cmd.context_auto_added'));
         }
     }
 
@@ -320,24 +322,24 @@ export class CmdCommand extends InteractiveCommand {
      */
     _showUsage() {
         const logger = getLogger();
-        logger.raw('🔧 Terminal Command Execution\n');
+        const cmdHelp = this.uiConfig.getCommandHelp().cmd;
+
+        logger.raw(`${cmdHelp.title}\n`);
         logger.raw('Usage:');
-        logger.raw('  /cmd <command>           - Execute command directly');
-        logger.raw('  /cmd ??? <description>    - Generate command with AI (editable)');
-        logger.raw('  /cmd history             - Show command history');
-        logger.raw('  /cmd context on/off      - Toggle auto context integration');
-        logger.raw('  /cmd context             - Show context status\n');
+        cmdHelp.usage.forEach(usage => logger.raw(`  ${usage}`));
+        logger.raw('');
+
         logger.raw('AI Generation:');
-        logger.raw('  - Generated command replaces your input');
-        logger.raw('  - Edit the command before pressing ENTER');
-        logger.raw('  - Press ESC to cancel and revert\n');
+        cmdHelp.ai_generation.forEach(info => logger.raw(`  ${info}`));
+        logger.raw('');
+
         logger.raw('Context Integration:');
-        logger.raw('  - When disabled: asks after each command');
-        logger.raw('  - When enabled: automatically adds to chat history\n');
+        cmdHelp.context_integration.forEach(info => logger.raw(`  ${info}`));
+        logger.raw('');
+
         logger.raw('Examples:');
-        logger.raw('  /cmd git status');
-        logger.raw('  /cmd ??? add all files to git');
-        logger.raw('  /cmd ??? list all JavaScript files\n');
+        cmdHelp.examples.forEach(example => logger.raw(`  ${example}`));
+        logger.raw('');
     }
 
     /**
@@ -348,11 +350,11 @@ export class CmdCommand extends InteractiveCommand {
         const logger = getLogger();
 
         if (this.commandHistory.length === 0) {
-            logger.raw('📜 No commands in history\n');
+            logger.raw(this.uiConfig.getMessage('cmd.no_history'));
             return;
         }
 
-        logger.raw('📜 Command History:\n');
+        logger.raw(this.uiConfig.getMessage('cmd.history_title'));
 
         this.commandHistory.slice(-10).forEach((entry, index) => {
             const timestamp = new Date(entry.timestamp).toLocaleTimeString();

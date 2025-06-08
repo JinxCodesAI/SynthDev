@@ -7,10 +7,12 @@
 import { writeFileSync, existsSync, statSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { FileBaseTool } from '../common/base-tool.js';
+import { getToolConfigManager } from '../../toolConfigManager.js';
 
 class WriteFileTool extends FileBaseTool {
     constructor() {
-        super('write_file', 'Write content to a file in the file system using a relative path');
+        const toolConfig = getToolConfigManager();
+        super('write_file', toolConfig.getToolDescription('write_file'));
 
         // Define parameter validation
         this.requiredParams = ['file_path', 'content'];
@@ -21,6 +23,8 @@ class WriteFileTool extends FileBaseTool {
             create_directories: 'boolean',
             overwrite: 'boolean',
         };
+
+        this.toolConfig = toolConfig;
     }
 
     async implementation(params) {
@@ -47,10 +51,13 @@ class WriteFileTool extends FileBaseTool {
             let wasOverwritten = false;
 
             if (fileExists && !overwrite) {
-                return this.createErrorResponse('File already exists and overwrite is disabled', {
-                    file_path,
-                    overwrite_disabled: true,
-                });
+                return this.createErrorResponse(
+                    this.toolConfig.getErrorMessage('file_already_exists'),
+                    {
+                        file_path,
+                        overwrite_disabled: true,
+                    }
+                );
             }
 
             if (fileExists) {
@@ -59,7 +66,7 @@ class WriteFileTool extends FileBaseTool {
                     const stats = statSync(resolvedPath);
                     if (!stats.isFile()) {
                         return this.createErrorResponse(
-                            'Path exists but is not a file (may be a directory)',
+                            this.toolConfig.getErrorMessage('path_not_directory'),
                             { file_path, path_type: 'directory' }
                         );
                     }

@@ -6,19 +6,20 @@
 import { join } from 'path';
 import { scanDirectory, safeReadFile } from '../common/fs_utils.js';
 import { BaseTool } from '../common/base-tool.js';
+import { getToolConfigManager } from '../../toolConfigManager.js';
 
 class ExactSearchTool extends BaseTool {
     constructor() {
-        super(
-            'exact_search',
-            'Searches for exact occurrences of a given string in all files listed by list_directory tool, returning matching fragments with context lines'
-        );
+        const toolConfig = getToolConfigManager();
+        super('exact_search', toolConfig.getToolDescription('exact_search'));
 
         // Define parameter validation
         this.requiredParams = ['search_string'];
         this.parameterTypes = {
             search_string: 'string',
         };
+
+        this.toolConfig = toolConfig;
     }
 
     async implementation(params) {

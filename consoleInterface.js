@@ -1,15 +1,17 @@
 import { createInterface } from 'readline';
 import { getLogger } from './logger.js';
+import { getUIConfigManager } from './uiConfigManager.js';
 
 /**
  * Handles all console interface operations
  */
 class ConsoleInterface {
     constructor() {
+        this.uiConfig = getUIConfigManager();
         this.rl = createInterface({
             input: process.stdin,
             output: process.stdout,
-            prompt: '💭 You: ',
+            prompt: this.uiConfig.getMessage('prompts.user'),
         });
         this.isPaused = false;
         this.logger = getLogger();
@@ -37,27 +39,32 @@ class ConsoleInterface {
         this.rl.prompt();
     }
 
-    showMessage(message, prefix = '🤖 Synth-Dev:') {
-        this.logger.user(message, prefix);
+    showMessage(message, prefix = null) {
+        const actualPrefix = prefix || this.uiConfig.getMessage('prefixes.assistant');
+        this.logger.user(message, actualPrefix);
     }
 
     showThinking() {
-        this.logger.status('\n🧠 Synth-Dev is thinking...\n');
+        this.logger.status(this.uiConfig.getMessage('status.thinking'));
     }
 
     showChainOfThought(content) {
-        this.logger.raw('💭 Chain of Thought:');
-        this.logger.raw('─'.repeat(50));
+        const prefix = this.uiConfig.getMessage('prefixes.chain_of_thought');
+        const separator = this.uiConfig.getMessage('prefixes.separator').repeat(50);
+        this.logger.raw(prefix);
+        this.logger.raw(separator);
         this.logger.raw(content);
-        this.logger.raw('─'.repeat(50));
+        this.logger.raw(separator);
         this.logger.raw();
     }
 
     showFinalChainOfThought(content) {
-        this.logger.raw('💭 Final Chain of Thought:');
-        this.logger.raw('─'.repeat(50));
+        const prefix = this.uiConfig.getMessage('prefixes.final_chain_of_thought');
+        const separator = this.uiConfig.getMessage('prefixes.separator').repeat(50);
+        this.logger.raw(prefix);
+        this.logger.raw(separator);
         this.logger.raw(content);
-        this.logger.raw('─'.repeat(50));
+        this.logger.raw(separator);
         this.logger.raw();
     }
 
@@ -70,11 +77,11 @@ class ConsoleInterface {
     }
 
     showToolError(error) {
-        this.logger.error(error, 'Tool execution failed');
+        this.logger.error(error, this.uiConfig.getMessage('errors.tool_execution_failed'));
     }
 
     showExecutingTools() {
-        this.logger.status('🔧 Executing tools...\n');
+        this.logger.status(this.uiConfig.getMessage('status.executing_tools'));
     }
 
     showError(error) {
@@ -88,26 +95,36 @@ class ConsoleInterface {
         allToolsCount = null,
         filteredToolsCount = null
     ) {
-        const roleInfo = role ? `\n🎭 Role: ${role.charAt(0).toUpperCase() + role.slice(1)}` : '';
+        const title = this.uiConfig.getMessage('startup.title');
+        const modelInfo = this.uiConfig.getMessage('startup.model_info', { model });
+        const roleInfo = role
+            ? `\n${this.uiConfig.getMessage('startup.role_info', { role: role.charAt(0).toUpperCase() + role.slice(1) })}`
+            : '';
+
         const toolInfo =
             allToolsCount !== null &&
             filteredToolsCount !== null &&
             allToolsCount !== filteredToolsCount
-                ? `🔧 Tools: ${filteredToolsCount}/${allToolsCount} available (${allToolsCount - filteredToolsCount} filtered for role)`
-                : `🔧 Tools: ${totalToolsCount} loaded`;
+                ? this.uiConfig.getMessage('startup.tools_filtered_info', {
+                      filtered: filteredToolsCount,
+                      total: allToolsCount,
+                      excluded: allToolsCount - filteredToolsCount,
+                  })
+                : this.uiConfig.getMessage('startup.tools_info', { count: totalToolsCount });
+
+        const instructions = this.uiConfig.getMessage('startup.instructions');
 
         this.logger.raw(`
-🚀 Synth-Dev Console Application Started!
-🤖 Model: ${model}${roleInfo}
+${title}
+${modelInfo}${roleInfo}
 ${toolInfo}
 
-Type your message and press Enter to chat.
-Use /help for commands.
+${instructions}
         `);
     }
 
     showGoodbye() {
-        this.logger.raw('👋 Goodbye!');
+        this.logger.raw(this.uiConfig.getMessage('goodbye'));
     }
 
     newLine() {
@@ -120,8 +137,10 @@ Use /help for commands.
 
     async promptForConfirmation(prompt) {
         return new Promise(resolve => {
-            this.logger.raw(`\n❓ ${prompt}`);
-            this.logger.raw('   Type "y" or "yes" to proceed, anything else to cancel:');
+            const confirmationMessage = this.uiConfig.getMessage('prompts.confirmation', {
+                prompt,
+            });
+            this.logger.raw(confirmationMessage);
 
             // Store current paused state
             const wasPaused = this.isPaused;
@@ -166,24 +185,28 @@ Use /help for commands.
     }
 
     showToolCancelled(toolName) {
-        this.logger.warn(`Tool execution cancelled: ${toolName}\n`, '🚫');
+        const message = this.uiConfig.getMessage('tools.cancelled', { toolName });
+        this.logger.warn(message, '🚫');
     }
 
     showEnhancingPrompt() {
-        this.logger.status('\n🔄 \x1b[33mEnhancing prompt...\x1b[0m');
+        this.logger.status(this.uiConfig.getMessage('status.enhancing_prompt'));
     }
 
     showEnhancementError(error) {
-        this.logger.warn(`\n⚠️  \x1b[33mPrompt enhancement failed: ${error}\x1b[0m`);
-        this.logger.info('📝 Proceeding with original prompt...\n');
+        const errorMessage = this.uiConfig.getMessage('enhancement.failure_message', { error });
+        const proceedingMessage = this.uiConfig.getMessage('enhancement.proceeding_message');
+        this.logger.warn(errorMessage);
+        this.logger.info(proceedingMessage);
     }
 
     async promptForEnhancedPromptApproval(enhancedPrompt, originalPrompt) {
-        this.logger.raw('🔄 Press Esc to revert to original or ENTER to submit current prompt');
+        this.logger.raw(this.uiConfig.getMessage('enhancement.approval_instruction'));
 
         // Show the enhanced prompt as editable input
+        const userPrompt = this.uiConfig.getMessage('prompts.user');
         const userInput = await this.promptForEditableInput(
-            '💭 You: ',
+            userPrompt,
             enhancedPrompt,
             originalPrompt
         );
@@ -343,20 +366,23 @@ Use /help for commands.
     }
 
     async promptForEnhancementFailureAction(error, originalPrompt) {
-        this.logger.raw('\n⚠️  \x1b[33mPrompt enhancement failed:\x1b[0m');
+        this.logger.raw(this.uiConfig.getMessage('enhancement.failure_header'));
         this.logger.raw(`   ${error}`);
-        this.logger.raw('\n📝 \x1b[36mOriginal prompt:\x1b[0m');
-        this.logger.raw('─'.repeat(60));
+        this.logger.raw(this.uiConfig.getMessage('enhancement.original_prompt_header'));
+        this.logger.raw(this.uiConfig.getMessage('enhancement.separator').repeat(60));
         this.logger.raw(originalPrompt);
-        this.logger.raw('─'.repeat(60));
-        this.logger.raw('\n📝 You can:');
-        this.logger.raw('   • Press ENTER to use your original prompt');
-        this.logger.raw('   • Type your modifications and press ENTER');
-        this.logger.raw('   • Type "cancel" to cancel the operation');
+        this.logger.raw(this.uiConfig.getMessage('enhancement.separator').repeat(60));
+        this.logger.raw(this.uiConfig.getMessage('enhancement.options_header'));
+        this.logger.raw(this.uiConfig.getMessage('enhancement.option_enter'));
+        this.logger.raw(this.uiConfig.getMessage('enhancement.option_modify'));
+        this.logger.raw(this.uiConfig.getMessage('enhancement.option_cancel'));
 
-        const userInput = await this.promptForInput('\n💭 Your choice: ');
+        const userInput = await this.promptForInput(
+            this.uiConfig.getMessage('enhancement.choice_prompt')
+        );
 
-        if (userInput.trim().toLowerCase() === 'cancel') {
+        const cancelKeyword = this.uiConfig.getMessage('enhancement.cancel_keyword');
+        if (userInput.trim().toLowerCase() === cancelKeyword) {
             return { cancel: true };
         } else if (userInput.trim() === '') {
             return { useOriginal: true };

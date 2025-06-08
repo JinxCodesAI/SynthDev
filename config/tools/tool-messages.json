@@ -1,0 +1,55 @@
+{
+    "common_errors": {
+        "file_not_found": "File not found: {path}",
+        "path_not_file": "Path is not a file: {path}",
+        "path_not_directory": "Path exists but is not a file (may be a directory)",
+        "file_already_exists": "File already exists and overwrite is disabled",
+        "invalid_encoding": "Invalid encoding specified",
+        "file_too_large": "File too large to process",
+        "permission_denied": "Permission denied accessing file",
+        "invalid_path": "Invalid file path provided",
+        "boundary_not_found": "Boundary string not found in file",
+        "multiple_boundaries": "Boundary string found multiple times",
+        "invalid_operation": "Invalid operation specified"
+    },
+    "validation_messages": {
+        "start_line_invalid": "start_line must be a positive integer",
+        "end_line_invalid": "end_line must be a positive integer greater than or equal to start_line",
+        "required_parameter_missing": "Required parameter missing: {parameter}",
+        "invalid_parameter_type": "Invalid parameter type for {parameter}: expected {expected}, got {actual}"
+    },
+    "success_messages": {
+        "file_read_success": "File read successfully",
+        "file_written_success": "File written successfully",
+        "file_edited_success": "File edited successfully",
+        "directory_created": "Directory created successfully",
+        "operation_completed": "Operation completed successfully"
+    },
+    "tool_descriptions": {
+        "read_file": "Read the contents of a file from the file system using a relative path",
+        "write_file": "Write content to a file in the file system using a relative path",
+        "edit_file": "Edit content of a file by replacing text between two unique boundary strings",
+        "list_directory": "List files and directories in a specified path",
+        "exact_search": "Search for exact text patterns in files within the project",
+        "execute_terminal": "Execute a terminal command and return its output",
+        "execute_script": "Execute a JavaScript script as a child process for calculations, text transformations, and data aggregation",
+        "calculate": "Perform mathematical calculations and return the result",
+        "get_time": "Get current date and time information",
+        "explain_codebase": "Provides AI-generated explanations in markdown format for natural language questions about the indexed codebase summaries"
+    },
+    "parameter_descriptions": {
+        "file_path": "Relative path to the file. Must be within the current project directory. Use forward slashes (/) for path separation.",
+        "content": "Content to write to the file",
+        "encoding": "Character encoding to use. Common options: 'utf8' for standard text files, 'ascii' for basic ASCII text, 'base64' for binary representation",
+        "start_line": "Starting line number (1-based) for partial file reading",
+        "end_line": "Ending line number (1-based) for partial file reading",
+        "boundary_start": "Unique string that marks the beginning of the section to edit",
+        "boundary_end": "Unique string that marks the end of the section to edit",
+        "new_content": "New content to insert between the boundaries",
+        "operation": "Type of edit operation: 'replace' or 'delete'",
+        "search_text": "Text pattern to search for in files",
+        "command": "Terminal command to execute",
+        "script": "JavaScript code to execute in sandboxed environment",
+        "timeout": "Maximum execution time in milliseconds"
+    }
+}

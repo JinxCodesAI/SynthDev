@@ -7,13 +7,12 @@ import { statSync, readdirSync } from 'fs';
 import { join, relative, extname } from 'path';
 import { scanDirectory } from '../common/fs_utils.js';
 import { FileBaseTool } from '../common/base-tool.js';
+import { getToolConfigManager } from '../../toolConfigManager.js';
 
 class ListDirectoryTool extends FileBaseTool {
     constructor() {
-        super(
-            'list_directory',
-            'List the contents of a directory and provide detailed information about files and subdirectories'
-        );
+        const toolConfig = getToolConfigManager();
+        super('list_directory', toolConfig.getToolDescription('list_directory'));
 
         // Define parameter validation
         this.requiredParams = ['directory_path'];
@@ -24,6 +23,8 @@ class ListDirectoryTool extends FileBaseTool {
             max_depth: 'number',
             exclusion_list: 'array',
         };
+
+        this.toolConfig = toolConfig;
     }
 
     async implementation(params) {
