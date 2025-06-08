@@ -362,8 +362,7 @@ export class IndexCommand extends InteractiveCommand {
         let directorySummarizerClient = null;
         if (hasAIConfig) {
             const config = ConfigManager.getInstance();
-            const modelType = config.hasDirectoryModelConfig() ? 'directory' : (config.hasSmartModelConfig() ? 'smart' : 'base');
-            const modelConfig = config.getModel(modelType);
+            const modelConfig = config.getModel('fast');
             directorySummarizerClient = new AIAPIClient(costsManager, modelConfig.apiKey, modelConfig.baseURL, modelConfig.model || modelConfig.baseModel);
             await directorySummarizerClient.setSystemMessage(SystemMessages.getSystemMessage('directory_summarizer'), 'directory_summarizer');
         }
