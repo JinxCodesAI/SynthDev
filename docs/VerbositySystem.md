@@ -7,19 +7,22 @@ The AI Coder Console Application now includes a comprehensive verbosity system t
 The system supports 6 verbosity levels (0-5), each building upon the previous level:
 
 ### Level 0 - User Only
+
 - Only information directly affecting the user is visible
 - User messages from AI
 - Error messages (always visible regardless of level)
 
 ### Level 1 - Status Messages
+
 - All Level 0 output
 - Short status messages like:
-  - 🔄 Enhancing prompt...
-  - 🧠 AI Coder is thinking...
-  - 🔧 Executing tools...
+    - 🔄 Enhancing prompt...
+    - 🧠 AI Coder is thinking...
+    - 🔧 Executing tools...
 - Warning messages
 
 ### Level 2 - Compressed Tool Arguments (Default)
+
 - All Level 1 output
 - Tool execution information with compressed arguments
 - Arguments longer than 50 characters are truncated with "..."
@@ -28,16 +31,19 @@ The system supports 6 verbosity levels (0-5), each building upon the previous le
 - Info messages
 
 ### Level 3 - Uncompressed Arguments
+
 - All Level 2 output
 - Tool execution with full, uncompressed arguments
 - Debug messages
 - Tool results are NOT shown at this level
 
 ### Level 4 - Tool Results
+
 - All Level 3 output
 - Tool execution results are displayed
 
 ### Level 5 - HTTP Requests/Responses
+
 - All Level 4 output
 - Complete HTTP request and response logging
 - Detailed API call information with timestamps
@@ -45,6 +51,7 @@ The system supports 6 verbosity levels (0-5), each building upon the previous le
 ## Configuration
 
 ### Environment Variable
+
 Set the verbosity level using the `VERBOSITY_LEVEL` environment variable:
 
 ```bash
@@ -52,6 +59,7 @@ export VERBOSITY_LEVEL=2
 ```
 
 ### .env File
+
 Add to your `.env` file:
 
 ```env
@@ -59,6 +67,7 @@ VERBOSITY_LEVEL=2
 ```
 
 ### Valid Values
+
 - `0` - User only
 - `1` - Status messages
 - `2` - Compressed tool arguments (default)
@@ -69,9 +78,11 @@ VERBOSITY_LEVEL=2
 ## Implementation
 
 ### Centralized Logging
+
 All console output is now centralized through the `logger.js` module, eliminating scattered `console.log` statements throughout the codebase.
 
 ### Logger Methods
+
 - `logger.user(message, prefix)` - Level 0: User messages
 - `logger.status(message)` - Level 1: Status messages
 - `logger.toolExecution(toolName, args)` - Level 2: Compressed tool execution
@@ -85,6 +96,7 @@ All console output is now centralized through the `logger.js` module, eliminatin
 - `logger.raw(...args)` - Always visible: Raw console output
 
 ### Integration
+
 The logger is automatically initialized when the application starts and respects the configured verbosity level. All major components have been updated to use the centralized logging system:
 
 - `consoleInterface.js` - UI interactions
@@ -104,11 +116,13 @@ The logger is automatically initialized when the application starts and respects
 ## Examples
 
 ### Level 0 Output
+
 ```
 🤖 AI Coder: Your file has been created successfully.
 ```
 
 ### Level 2 Output (Default)
+
 ```
 🤖 AI Coder: Your file has been created successfully.
 🔧 Executing tool: write_file
@@ -116,6 +130,7 @@ The logger is automatically initialized when the application starts and respects
 ```
 
 ### Level 5 Output
+
 ```
 🤖 AI Coder: Your file has been created successfully.
 🔧 Executing tool: write_file

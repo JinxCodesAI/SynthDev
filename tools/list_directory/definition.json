@@ -1,55 +1,66 @@
 {
-  "name": "list_directory",
-  "description": "List the contents of a directory and provide detailed information about files and subdirectories",
-  "auto_run": true,
-  "requires_backup": false,
-  "backup_resource_path_property_name": "",
-  "category": "file",
-  "version": "2.0.0",
-  "tags": ["directory", "file", "list", "filesystem"],
-  "schema": {
-    "type": "function",
-    "function": {
-      "name": "list_directory",
-      "description": "Comprehensively lists directory contents with detailed file information including names, types, sizes, and modification dates. Supports recursive scanning, filtering options, and various output formats. Handles permission errors gracefully and provides extensive metadata for each entry. Useful for file system exploration, project analysis, and content discovery. Includes safety features like depth limiting and exclusion patterns to prevent infinite recursion and filter out unwanted files.",
-      "parameters": {
-        "type": "object",
-        "properties": {
-          "directory_path": {
-            "type": "string",
-            "description": "Relative path to the directory to list, starting from the current working directory. Use '.' for current directory or a relative path like 'src/components'. Path must be relative and cannot access directories outside the project directory for security. Supports forward slashes (/) and backslashes (\\) for cross-platform compatibility. Examples: '.' (current directory), 'src' (subdirectory), 'docs/api' (nested path)"
-          },
-          "recursive": {
-            "type": "boolean",
-            "description": "Whether to recursively scan subdirectories. When true, lists all files in the directory tree. When false, only lists immediate contents. Use with caution on large directory structures as it may return extensive results",
-            "default": false
-          },
-          "include_hidden": {
-            "type": "boolean",
-            "description": "Whether to include hidden files and directories (those starting with a dot). When false, skips hidden entries for cleaner output. When true, shows all entries including system and configuration files",
-            "default": false
-          },
-          "max_depth": {
-            "type": "integer",
-            "description": "Maximum recursion depth when recursive is true. Controls how many levels deep to scan. 1 = immediate children only, 2 = children and grandchildren, etc. Use to prevent excessive scanning of deep directory structures",
-            "default": 5,
-            "minimum": 1,
-            "maximum": 10
-          },
-          "exclusion_list": {
-            "type": "array",
-            "description": "List of directory and file names to exclude from the listing. Commonly excluded items include build artifacts, version control directories, and system files. Default excludes node_modules, .git, build, dist, cache directories, and common system files",
-            "items": {
-              "type": "string"
+    "name": "list_directory",
+    "description": "List the contents of a directory and provide detailed information about files and subdirectories",
+    "auto_run": true,
+    "requires_backup": false,
+    "backup_resource_path_property_name": "",
+    "category": "file",
+    "version": "2.0.0",
+    "tags": ["directory", "file", "list", "filesystem"],
+    "schema": {
+        "type": "function",
+        "function": {
+            "name": "list_directory",
+            "description": "Comprehensively lists directory contents with detailed file information including names, types, sizes, and modification dates. Supports recursive scanning, filtering options, and various output formats. Handles permission errors gracefully and provides extensive metadata for each entry. Useful for file system exploration, project analysis, and content discovery. Includes safety features like depth limiting and exclusion patterns to prevent infinite recursion and filter out unwanted files.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "directory_path": {
+                        "type": "string",
+                        "description": "Relative path to the directory to list, starting from the current working directory. Use '.' for current directory or a relative path like 'src/components'. Path must be relative and cannot access directories outside the project directory for security. Supports forward slashes (/) and backslashes (\\) for cross-platform compatibility. Examples: '.' (current directory), 'src' (subdirectory), 'docs/api' (nested path)"
+                    },
+                    "recursive": {
+                        "type": "boolean",
+                        "description": "Whether to recursively scan subdirectories. When true, lists all files in the directory tree. When false, only lists immediate contents. Use with caution on large directory structures as it may return extensive results",
+                        "default": false
+                    },
+                    "include_hidden": {
+                        "type": "boolean",
+                        "description": "Whether to include hidden files and directories (those starting with a dot). When false, skips hidden entries for cleaner output. When true, shows all entries including system and configuration files",
+                        "default": false
+                    },
+                    "max_depth": {
+                        "type": "integer",
+                        "description": "Maximum recursion depth when recursive is true. Controls how many levels deep to scan. 1 = immediate children only, 2 = children and grandchildren, etc. Use to prevent excessive scanning of deep directory structures",
+                        "default": 5,
+                        "minimum": 1,
+                        "maximum": 10
+                    },
+                    "exclusion_list": {
+                        "type": "array",
+                        "description": "List of directory and file names to exclude from the listing. Commonly excluded items include build artifacts, version control directories, and system files. Default excludes node_modules, .git, build, dist, cache directories, and common system files",
+                        "items": {
+                            "type": "string"
+                        },
+                        "default": [
+                            "node_modules",
+                            ".git",
+                            ".svn",
+                            "build",
+                            "dist",
+                            ".cache",
+                            "__pycache__",
+                            ".DS_Store",
+                            "Thumbs.db",
+                            ".index"
+                        ]
+                    }
+                },
+                "required": ["directory_path"]
             },
-            "default": ["node_modules", ".git", ".svn", "build", "dist", ".cache", "__pycache__", ".DS_Store", "Thumbs.db", ".index"]
-          }
-        },
-        "required": ["directory_path"]
-      },
-      "response_format": {
-        "description": "Returns JSON object with 'success' (boolean), 'timestamp' (ISO string), 'tool_name' (string), 'directory_path' (scanned path), 'total_items' (count), 'directories' (array of directory objects), and 'files' (array of file objects). Each entry includes name, path, size (for files), and modified date. Error responses include 'error' field with detailed message."
-      }
+            "response_format": {
+                "description": "Returns JSON object with 'success' (boolean), 'timestamp' (ISO string), 'tool_name' (string), 'directory_path' (scanned path), 'total_items' (count), 'directories' (array of directory objects), and 'files' (array of file objects). Each entry includes name, path, size (for files), and modified date. Error responses include 'error' field with detailed message."
+            }
+        }
     }
-  }
-} 
+}

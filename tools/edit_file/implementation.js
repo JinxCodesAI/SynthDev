@@ -19,8 +19,11 @@ import { FileBaseTool } from '../common/base-tool.js';
 
 class EditFileTool extends FileBaseTool {
     constructor() {
-        super('edit_file', 'Edit content of a file by replacing text between two unique boundary strings');
-        
+        super(
+            'edit_file',
+            'Edit content of a file by replacing text between two unique boundary strings'
+        );
+
         // Define parameter validation
         this.requiredParams = ['file_path', 'operation', 'boundary_start', 'boundary_end'];
         this.parameterTypes = {
@@ -29,19 +32,27 @@ class EditFileTool extends FileBaseTool {
             boundary_start: 'string',
             boundary_end: 'string',
             new_content: 'string',
-            encoding: 'string'
+            encoding: 'string',
         };
     }
 
     async implementation(params) {
-        const { file_path, operation, boundary_start, boundary_end, new_content = '', encoding = 'utf8' } = params;
+        const {
+            file_path,
+            operation,
+            boundary_start,
+            boundary_end,
+            new_content = '',
+            encoding = 'utf8',
+        } = params;
 
         // Additional validation for operation
         if (!['replace', 'delete'].includes(operation)) {
-            return this.createErrorResponse(
-                "operation must be 'replace' or 'delete'",
-                { file_path, operation, valid_operations: ['replace', 'delete'] }
-            );
+            return this.createErrorResponse("operation must be 'replace' or 'delete'", {
+                file_path,
+                operation,
+                valid_operations: ['replace', 'delete'],
+            });
         }
 
         if (operation === 'replace' && typeof new_content !== 'string') {
@@ -62,10 +73,10 @@ class EditFileTool extends FileBaseTool {
         try {
             // Check file existence
             if (!existsSync(resolvedPath)) {
-                return this.createErrorResponse(
-                    'File does not exist',
-                    { file_path, resolved_path: resolvedPath }
-                );
+                return this.createErrorResponse('File does not exist', {
+                    file_path,
+                    resolved_path: resolvedPath,
+                });
             }
 
             // Read file content
@@ -83,14 +94,18 @@ class EditFileTool extends FileBaseTool {
             let idx = -1;
             while (true) {
                 idx = content.indexOf(boundary_start, idx + 1);
-                if (idx === -1) break;
+                if (idx === -1) {
+                    break;
+                }
                 startIndices.push(idx);
             }
 
             idx = -1;
             while (true) {
                 idx = content.indexOf(boundary_end, idx + 1);
-                if (idx === -1) break;
+                if (idx === -1) {
+                    break;
+                }
                 endIndices.push(idx);
             }
 
@@ -102,14 +117,14 @@ class EditFileTool extends FileBaseTool {
                 boundaryErrors.push({
                     boundary: 'boundary_start',
                     error: 'boundary_start string not found in file',
-                    found_count: 0
+                    found_count: 0,
                 });
             } else if (startIndices.length > 1) {
                 boundaryErrors.push({
                     boundary: 'boundary_start',
                     error: `boundary_start string found ${startIndices.length} times, must be unique`,
                     found_count: startIndices.length,
-                    indices: startIndices
+                    indices: startIndices,
                 });
             }
 
@@ -118,14 +133,14 @@ class EditFileTool extends FileBaseTool {
                 boundaryErrors.push({
                     boundary: 'boundary_end',
                     error: 'boundary_end string not found in file',
-                    found_count: 0
+                    found_count: 0,
                 });
             } else if (endIndices.length > 1) {
                 boundaryErrors.push({
                     boundary: 'boundary_end',
                     error: `boundary_end string found ${endIndices.length} times, must be unique`,
                     found_count: endIndices.length,
-                    indices: endIndices
+                    indices: endIndices,
                 });
             }
 
@@ -155,18 +170,15 @@ class EditFileTool extends FileBaseTool {
             // If there are still boundary errors after recovery attempt, return enhanced error
             if (boundaryErrors.length > 0) {
                 const errorMessages = boundaryErrors.map(err => err.error).join('; ');
-                return this.createErrorResponse(
-                    errorMessages,
-                    {
-                        file_path,
-                        boundary_errors: boundaryErrors,
-                        boundary_start,
-                        boundary_end,
-                        original_file_content: content,
-                        recovery_attempted: operation === 'replace' && recoveredBoundaries !== null,
-                        recovery_result: recoveredBoundaries
-                    }
-                );
+                return this.createErrorResponse(errorMessages, {
+                    file_path,
+                    boundary_errors: boundaryErrors,
+                    boundary_start,
+                    boundary_end,
+                    original_file_content: content,
+                    recovery_attempted: operation === 'replace' && recoveredBoundaries !== null,
+                    recovery_result: recoveredBoundaries,
+                });
             }
 
             // Get the final boundary indices (either original or recovered)
@@ -188,7 +200,7 @@ class EditFileTool extends FileBaseTool {
                         start_index: startIdx,
                         end_index: endIdx,
                         original_file_content: content,
-                        recovery_used: recoveredBoundaries && recoveredBoundaries.success
+                        recovery_used: recoveredBoundaries && recoveredBoundaries.success,
                     }
                 );
             }
@@ -202,10 +214,14 @@ class EditFileTool extends FileBaseTool {
             let newContent;
             if (operation === 'replace') {
                 // Replace everything from boundary_start to boundary_end (inclusive) with new_content
-                newContent = content.slice(0, startIdx) + new_content + content.slice(endIdx + actualBoundaryEnd.length);
+                newContent =
+                    content.slice(0, startIdx) +
+                    new_content +
+                    content.slice(endIdx + actualBoundaryEnd.length);
             } else if (operation === 'delete') {
                 // Delete everything from boundary_start to boundary_end (inclusive)
-                newContent = content.slice(0, startIdx) + content.slice(endIdx + actualBoundaryEnd.length);
+                newContent =
+                    content.slice(0, startIdx) + content.slice(endIdx + actualBoundaryEnd.length);
             }
 
             // Write back to file
@@ -224,7 +240,7 @@ class EditFileTool extends FileBaseTool {
                 encoding,
                 edited: true,
                 operation,
-                bytes_changed: content.length - newContent.length
+                bytes_changed: content.length - newContent.length,
             };
 
             // Add recovery information if recovery was used
@@ -232,21 +248,20 @@ class EditFileTool extends FileBaseTool {
                 successResponse.boundary_recovery_used = true;
                 successResponse.original_boundaries = {
                     start: boundary_start,
-                    end: boundary_end
+                    end: boundary_end,
                 };
                 successResponse.recovered_boundaries = {
                     start: recoveredBoundaries.recoveredStart,
-                    end: recoveredBoundaries.recoveredEnd
+                    end: recoveredBoundaries.recoveredEnd,
                 };
             }
 
             return this.createSuccessResponse(successResponse);
-
         } catch (error) {
-            return this.createErrorResponse(
-                `Unexpected error: ${error.message}`,
-                { file_path, stack: error.stack }
-            );
+            return this.createErrorResponse(`Unexpected error: ${error.message}`, {
+                file_path,
+                stack: error.stack,
+            });
         }
     }
 
@@ -260,7 +275,14 @@ class EditFileTool extends FileBaseTool {
      * @param {number[]} endIndices - All found end boundary indices
      * @returns {Object} Recovery result with success flag and recovered indices
      */
-    attemptBoundaryRecovery(content, boundary_start, boundary_end, new_content, startIndices, endIndices) {
+    attemptBoundaryRecovery(
+        content,
+        boundary_start,
+        boundary_end,
+        new_content,
+        startIndices,
+        endIndices
+    ) {
         try {
             let recoveredStart = boundary_start;
             let recoveredEnd = boundary_end;
@@ -274,7 +296,9 @@ class EditFileTool extends FileBaseTool {
                     // Try extending the boundary by adding characters after it from new_content
                     for (let extendLength = 1; extendLength <= 50; extendLength++) {
                         const endPos = startInNewContent + boundary_start.length + extendLength;
-                        if (endPos > new_content.length) break;
+                        if (endPos > new_content.length) {
+                            break;
+                        }
 
                         const extendedBoundary = new_content.substring(startInNewContent, endPos);
                         const extendedIndices = [];
@@ -282,7 +306,9 @@ class EditFileTool extends FileBaseTool {
                         let idx = -1;
                         while (true) {
                             idx = content.indexOf(extendedBoundary, idx + 1);
-                            if (idx === -1) break;
+                            if (idx === -1) {
+                                break;
+                            }
                             extendedIndices.push(idx);
                         }
 
@@ -302,15 +328,22 @@ class EditFileTool extends FileBaseTool {
                     // Try extending the boundary by adding characters before it from new_content
                     for (let extendLength = 1; extendLength <= 50; extendLength++) {
                         const startPos = endInNewContent - extendLength;
-                        if (startPos < 0) break;
+                        if (startPos < 0) {
+                            break;
+                        }
 
-                        const extendedBoundary = new_content.substring(startPos, endInNewContent + boundary_end.length);
+                        const extendedBoundary = new_content.substring(
+                            startPos,
+                            endInNewContent + boundary_end.length
+                        );
                         const extendedIndices = [];
 
                         let idx = -1;
                         while (true) {
                             idx = content.indexOf(extendedBoundary, idx + 1);
-                            if (idx === -1) break;
+                            if (idx === -1) {
+                                break;
+                            }
                             extendedIndices.push(idx);
                         }
 
@@ -340,7 +373,7 @@ class EditFileTool extends FileBaseTool {
                         recoveredStart,
                         recoveredEnd,
                         originalStart: boundary_start,
-                        originalEnd: boundary_end
+                        originalEnd: boundary_end,
                     };
                 }
             }
@@ -353,17 +386,20 @@ class EditFileTool extends FileBaseTool {
                 recoveredEnd,
                 recoveredStartIndices,
                 recoveredEndIndices,
-                reason: !startRecovered && !endRecovered ? 'Both boundaries could not be made unique' :
-                        !startRecovered ? 'Start boundary could not be made unique' :
-                        !endRecovered ? 'End boundary could not be made unique' :
-                        'Start boundary appears after end boundary'
+                reason:
+                    !startRecovered && !endRecovered
+                        ? 'Both boundaries could not be made unique'
+                        : !startRecovered
+                          ? 'Start boundary could not be made unique'
+                          : !endRecovered
+                            ? 'End boundary could not be made unique'
+                            : 'Start boundary appears after end boundary',
             };
-
         } catch (error) {
             return {
                 success: false,
                 error: error.message,
-                reason: 'Recovery procedure failed with error'
+                reason: 'Recovery procedure failed with error',
             };
         }
     }

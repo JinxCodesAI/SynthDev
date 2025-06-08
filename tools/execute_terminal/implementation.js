@@ -9,11 +9,11 @@ import { CommandBaseTool } from '../common/base-tool.js';
 class ExecuteTerminalTool extends CommandBaseTool {
     constructor() {
         super('execute_terminal', 'Executes a terminal command and returns its output');
-        
+
         // Define parameter validation
         this.requiredParams = ['command'];
         this.parameterTypes = {
-            command: 'string'
+            command: 'string',
         };
     }
 
@@ -26,21 +26,12 @@ class ExecuteTerminalTool extends CommandBaseTool {
             return commandValidation;
         }
 
-        return new Promise((resolve) => {
+        return new Promise(resolve => {
             exec(command, (error, stdout, stderr) => {
                 if (error) {
-                    resolve(this.createCommandResponse(
-                        false,
-                        stdout,
-                        stderr,
-                        error.message
-                    ));
+                    resolve(this.createCommandResponse(false, stdout, stderr, error.message));
                 } else {
-                    resolve(this.createCommandResponse(
-                        true,
-                        stdout,
-                        stderr
-                    ));
+                    resolve(this.createCommandResponse(true, stdout, stderr));
                 }
             });
         });

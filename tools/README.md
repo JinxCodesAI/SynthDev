@@ -20,20 +20,26 @@ The tool system has been redesigned with standardization and abstraction in mind
 The system provides three main base classes in `tools/common/base-tool.js`:
 
 #### 1. BaseTool
+
 The foundational class for all tools providing:
+
 - Standardized response creation (`createSuccessResponse`, `createErrorResponse`)
 - Parameter validation (`validateRequiredParams`, `validateParameterTypes`)
 - Path security validation (`validateAndResolvePath`)
 - Error handling wrapper (`execute`)
 
 #### 2. FileBaseTool (extends BaseTool)
+
 Specialized for file system operations:
+
 - File size validation (`validateFileSize`)
 - File system error handling (`handleFileSystemError`)
 - Common file operation patterns
 
 #### 3. CommandBaseTool (extends BaseTool)
+
 Specialized for command execution:
+
 - Command validation (`validateCommand`)
 - Standardized command responses (`createCommandResponse`)
 
@@ -101,7 +107,6 @@ Tool definitions follow a standardized schema defined in `tools/common/tool-sche
 
 ## Creating New Tools
 
-
 1. Create tool directory: `tools/my_tool/`
 2. Create `definition.json` using the schema
 3. Create `implementation.js` extending appropriate base class
@@ -120,7 +125,7 @@ class MyTool extends FileBaseTool {
 
     async implementation(params) {
         const { file_path } = params;
-        
+
         // Validate file path
         const pathValidation = this.validateAndResolvePath(file_path);
         if (pathValidation.error) {
@@ -131,7 +136,7 @@ class MyTool extends FileBaseTool {
             // Tool logic here
             return this.createSuccessResponse({
                 message: 'Success',
-                file_path
+                file_path,
             });
         } catch (error) {
             return this.createErrorResponse(error.message);
@@ -159,6 +164,7 @@ Tools are organized into categories for better discovery:
 ## Enhanced Features
 
 ### Tool Discovery
+
 The ToolManager now provides enhanced discovery features:
 
 ```javascript
@@ -176,6 +182,7 @@ const errors = toolManager.getLoadingErrors();
 ```
 
 ### Validation
+
 Comprehensive validation at multiple levels:
 
 1. **Schema Validation**: Tool definitions are validated against the standard schema
@@ -184,6 +191,7 @@ Comprehensive validation at multiple levels:
 4. **Business Logic Validation**: Tool-specific validation rules
 
 ### Error Handling
+
 Standardized error handling provides:
 
 - Consistent error response format
@@ -196,30 +204,33 @@ Standardized error handling provides:
 ### Updating Existing Tools
 
 1. **Update definition.json**:
-   - Add new required fields: `category`, `version`, `author`, `tags`
-   - Update response_format description to include new standard fields
+
+    - Add new required fields: `category`, `version`, `author`, `tags`
+    - Update response_format description to include new standard fields
 
 2. **Update implementation.js**:
-   - Import appropriate base class
-   - Extend base class instead of direct implementation
-   - Use standardized response methods
-   - Remove custom validation code (use base class methods)
+
+    - Import appropriate base class
+    - Extend base class instead of direct implementation
+    - Use standardized response methods
+    - Remove custom validation code (use base class methods)
 
 3. **Test the tool**:
-   - Ensure all functionality still works
-   - Check that responses follow new format
-   - Verify parameter validation works correctly
+    - Ensure all functionality still works
+    - Check that responses follow new format
+    - Verify parameter validation works correctly
 
 ### Example Migration
 
 **Before** (old pattern):
+
 ```javascript
 export default async function readFile(params) {
     if (!params.file_path) {
         return {
             error: 'file_path required',
             success: false,
-            timestamp: new Date().toISOString()
+            timestamp: new Date().toISOString(),
         };
     }
     // ... implementation
@@ -227,6 +238,7 @@ export default async function readFile(params) {
 ```
 
 **After** (new pattern):
+
 ```javascript
 import { FileBaseTool } from '../common/base-tool.js';
 
@@ -267,19 +279,21 @@ The `tools/common/` directory provides shared utilities:
 ### Common Issues
 
 1. **Tool Not Loading**:
-   - Check definition.json syntax
-   - Ensure all required fields are present
-   - Verify implementation.js exports default function
+
+    - Check definition.json syntax
+    - Ensure all required fields are present
+    - Verify implementation.js exports default function
 
 2. **Validation Errors**:
-   - Check parameter types match schema
-   - Ensure required parameters are provided
-   - Verify schema structure is correct
+
+    - Check parameter types match schema
+    - Ensure required parameters are provided
+    - Verify schema structure is correct
 
 3. **Import Errors**:
-   - Check relative import paths
-   - Ensure base classes are properly imported
-   - Verify Node.js module syntax
+    - Check relative import paths
+    - Ensure base classes are properly imported
+    - Verify Node.js module syntax
 
 ### Debug Tips
 
@@ -296,4 +310,4 @@ Planned improvements include:
 - **Tool Versioning**: Support for multiple tool versions
 - **Performance Monitoring**: Tool execution metrics and optimization
 - **Enhanced Security**: Additional security controls and sandboxing
-- **Tool Dependencies**: Support for tool dependencies and composition 
+- **Tool Dependencies**: Support for tool dependencies and composition

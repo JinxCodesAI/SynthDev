@@ -1,30 +1,30 @@
 {
-  "name": "execute_terminal",
-  "description": "Executes a terminal command and returns its output.",
-  "auto_run": false,
-  "requires_backup": false,
-  "backup_resource_path_property_name": "",
-  "category": "command",
-  "version": "2.0.0",
-  "tags": ["terminal", "command", "execution", "system"],
-  "schema": {
-    "type": "function",
-    "function": {
-      "name": "execute_terminal",
-      "description": "Executes a terminal command. This tool can run any command available in the system's terminal. Use it for tasks like listing files, running scripts, installing packages, or any other command-line operation. Be specific about the command and any arguments.",
-      "parameters": {
-        "type": "object",
-        "properties": {
-          "command": {
-            "type": "string",
-            "description": "The terminal command to execute, including any arguments. Example: 'ls -la', 'npm install', 'node script.js'."
-          }
-        },
-        "required": ["command"]
-      },
-      "response_format": {
-        "description": "JSON object with 'success' (boolean), 'timestamp' (ISO string), 'tool_name' (string), 'stdout' (string, command's standard output), 'stderr' (string, command's standard error), and 'error' (string, if any error occurred during execution)."
-      }
+    "name": "execute_terminal",
+    "description": "Executes a terminal command and returns its output.",
+    "auto_run": false,
+    "requires_backup": false,
+    "backup_resource_path_property_name": "",
+    "category": "command",
+    "version": "2.0.0",
+    "tags": ["terminal", "command", "execution", "system"],
+    "schema": {
+        "type": "function",
+        "function": {
+            "name": "execute_terminal",
+            "description": "Executes a terminal command. This tool can run any command available in the system's terminal. Use it for tasks like listing files, running scripts, installing packages, or any other command-line operation. Be specific about the command and any arguments.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "command": {
+                        "type": "string",
+                        "description": "The terminal command to execute, including any arguments. Example: 'ls -la', 'npm install', 'node script.js'."
+                    }
+                },
+                "required": ["command"]
+            },
+            "response_format": {
+                "description": "JSON object with 'success' (boolean), 'timestamp' (ISO string), 'tool_name' (string), 'stdout' (string, command's standard output), 'stderr' (string, command's standard error), and 'error' (string, if any error occurred during execution)."
+            }
+        }
     }
-  }
 }

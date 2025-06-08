@@ -28,7 +28,7 @@ export class RolesCommand extends BaseCommand {
      */
     async implementation(args, context) {
         const { apiClient } = context;
-        
+
         const roles = SystemMessages.getAvailableRoles();
         const currentRole = apiClient.getCurrentRole();
         const logger = getLogger();
@@ -56,13 +56,16 @@ export class RolesCommand extends BaseCommand {
             // Get reminder message
             const reminder = SystemMessages.getReminder(role);
             if (reminder) {
-                const reminderPreview = reminder.length > 80 ? reminder.substring(0, 80) + '...' : reminder;
+                const reminderPreview =
+                    reminder.length > 80 ? `${reminder.substring(0, 80)}...` : reminder;
                 logger.raw(`   💭 Reminder: ${reminderPreview}`);
             }
 
             const excludedTools = SystemMessages.getExcludedTools(role);
             if (excludedTools.length > 0) {
-                logger.raw(`   🚫 Excludes: ${excludedTools.slice(0, 3).join(', ')}${excludedTools.length > 3 ? '...' : ''}`);
+                logger.raw(
+                    `   🚫 Excludes: ${excludedTools.slice(0, 3).join(', ')}${excludedTools.length > 3 ? '...' : ''}`
+                );
             }
             logger.raw();
         });

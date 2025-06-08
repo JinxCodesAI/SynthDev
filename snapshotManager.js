@@ -35,10 +35,14 @@ class SnapshotManager {
                 const branchResult = await this.gitUtils.getCurrentBranch();
                 if (branchResult.success) {
                     this.originalBranch = branchResult.branch;
-                    this.logger.info(`Git integration enabled. Original branch: ${this.originalBranch}`);
+                    this.logger.info(
+                        `Git integration enabled. Original branch: ${this.originalBranch}`
+                    );
                 }
             } else {
-                this.logger.info(`Git integration disabled. Available: ${this.gitAvailable}, Repo: ${this.isGitRepo}`);
+                this.logger.info(
+                    `Git integration disabled. Available: ${this.gitAvailable}, Repo: ${this.isGitRepo}`
+                );
             }
         } catch (error) {
             this.logger.warn(`Git initialization failed: ${error.message}`);
@@ -87,7 +91,7 @@ class SnapshotManager {
             files: {}, // Map of file_path -> original_content
             modifiedFiles: new Set(), // Track which files were modified
             gitBranch: null, // Git branch for this snapshot
-            isFirstSnapshot: this.snapshots.length === 0
+            isFirstSnapshot: this.snapshots.length === 0,
         };
 
         // Handle Git integration for first snapshot
@@ -135,7 +139,7 @@ class SnapshotManager {
         }
 
         // If file already backed up in current snapshot, skip
-        if (this.currentSnapshot.files.hasOwnProperty(filePath)) {
+        if (Object.prototype.hasOwnProperty.call(this.currentSnapshot.files, filePath)) {
             return;
         }
 
@@ -163,14 +167,15 @@ class SnapshotManager {
         try {
             // Create commit message with timestamp and affected files
             const timestamp = new Date().toISOString().slice(0, 19).replace('T', ' ');
-            const fileList = modifiedFiles.length <= 3
-                ? modifiedFiles.join(', ')
-                : `${modifiedFiles.slice(0, 3).join(', ')} and ${modifiedFiles.length - 3} more`;
+            const fileList =
+                modifiedFiles.length <= 3
+                    ? modifiedFiles.join(', ')
+                    : `${modifiedFiles.slice(0, 3).join(', ')} and ${modifiedFiles.length - 3} more`;
 
             // Sanitize the instruction to avoid shell command issues
             const sanitizedInstruction = this.currentSnapshot.instruction
-                .replace(/[\r\n]+/g, ' ')  // Replace newlines with spaces
-                .replace(/\s+/g, ' ')      // Normalize whitespace
+                .replace(/[\r\n]+/g, ' ') // Replace newlines with spaces
+                .replace(/\s+/g, ' ') // Normalize whitespace
                 .trim();
 
             // Create structured commit message
@@ -201,7 +206,7 @@ Original instruction: ${sanitizedInstruction}`;
             instruction: snapshot.instruction,
             timestamp: snapshot.timestamp,
             fileCount: Object.keys(snapshot.files).length,
-            modifiedFiles: Array.from(snapshot.modifiedFiles)
+            modifiedFiles: Array.from(snapshot.modifiedFiles),
         }));
     }
 
@@ -224,7 +229,7 @@ Original instruction: ${sanitizedInstruction}`;
         if (!snapshot) {
             return {
                 success: false,
-                error: `Snapshot ${snapshotId} not found`
+                error: `Snapshot ${snapshotId} not found`,
             };
         }
 
@@ -234,7 +239,7 @@ Original instruction: ${sanitizedInstruction}`;
         for (const [filePath, originalContent] of Object.entries(snapshot.files)) {
             try {
                 // Import write_file tool dynamically
-                const writeFileModule = await import(`./tools/write_file/implementation.js`);
+                const writeFileModule = await import('./tools/write_file/implementation.js');
                 const writeFile = writeFileModule.default;
 
                 const result = await writeFile({
@@ -242,7 +247,7 @@ Original instruction: ${sanitizedInstruction}`;
                     content: originalContent,
                     encoding: 'utf8',
                     create_directories: true,
-                    overwrite: true
+                    overwrite: true,
                 });
 
                 if (result.success) {
@@ -259,7 +264,7 @@ Original instruction: ${sanitizedInstruction}`;
             success: errors.length === 0,
             restoredFiles,
             errors,
-            totalFiles: Object.keys(snapshot.files).length
+            totalFiles: Object.keys(snapshot.files).length,
         };
     }
 
@@ -275,7 +280,7 @@ Original instruction: ${sanitizedInstruction}`;
         }
 
         this.snapshots.splice(index, 1);
-        
+
         // If we deleted the current snapshot, reset current snapshot
         if (this.currentSnapshot && this.currentSnapshot.id === snapshotId) {
             this.currentSnapshot = null;
@@ -318,7 +323,7 @@ Original instruction: ${sanitizedInstruction}`;
             isGitRepo: this.isGitRepo,
             gitMode: this.gitMode,
             originalBranch: this.originalBranch,
-            featureBranch: this.featureBranch
+            featureBranch: this.featureBranch,
         };
     }
 
@@ -335,13 +340,19 @@ Original instruction: ${sanitizedInstruction}`;
             // Switch back to original branch
             const switchResult = await this.gitUtils.switchBranch(this.originalBranch);
             if (!switchResult.success) {
-                return { success: false, error: `Failed to switch to ${this.originalBranch}: ${switchResult.error}` };
+                return {
+                    success: false,
+                    error: `Failed to switch to ${this.originalBranch}: ${switchResult.error}`,
+                };
             }
 
             // Merge feature branch
             const mergeResult = await this.gitUtils.mergeBranch(this.featureBranch);
             if (!mergeResult.success) {
-                return { success: false, error: `Failed to merge ${this.featureBranch}: ${mergeResult.error}` };
+                return {
+                    success: false,
+                    error: `Failed to merge ${this.featureBranch}: ${mergeResult.error}`,
+                };
             }
 
             // Reset Git mode
@@ -349,7 +360,10 @@ Original instruction: ${sanitizedInstruction}`;
             this.gitMode = false;
             this.featureBranch = null;
 
-            this.logger.user(`🔀 Successfully merged ${mergedBranch} into ${this.originalBranch}`, '🌿 Git:');
+            this.logger.user(
+                `🔀 Successfully merged ${mergedBranch} into ${this.originalBranch}`,
+                '🌿 Git:'
+            );
             return { success: true };
         } catch (error) {
             return { success: false, error: error.message };
@@ -379,4 +393,4 @@ Original instruction: ${sanitizedInstruction}`;
     }
 }
 
-export default SnapshotManager; 
+export default SnapshotManager;

@@ -18,7 +18,7 @@ function parseCommandLineArgs() {
     for (const arg of args) {
         if (arg.startsWith('--api-key=') || arg.startsWith('--api_key=')) {
             options.apiKey = arg.split('=')[1];
-        } else if (arg.startsWith('--base-model=') ) {
+        } else if (arg.startsWith('--base-model=')) {
             options.baseModel = arg.split('=')[1];
         } else if (arg.startsWith('--url=')) {
             options.baseUrl = arg.split('=')[1];
@@ -93,7 +93,7 @@ class AICoderConsole {
         initializeLogger(config.getConfig());
         this.logger = getLogger();
 
-        this.costsManager = costsManager
+        this.costsManager = costsManager;
         const baseModel = config.getModel('base');
         this.apiClient = new AIAPIClient(
             this.costsManager,
@@ -106,7 +106,13 @@ class AICoderConsole {
         this.toolManager = new ToolManager();
         this.snapshotManager = new SnapshotManager();
         this.promptEnhancer = new PromptEnhancer(this.costsManager, this.toolManager);
-        this.commandHandler = new CommandHandler(this.apiClient, this.toolManager, this.consoleInterface, this.costsManager, this.snapshotManager);
+        this.commandHandler = new CommandHandler(
+            this.apiClient,
+            this.toolManager,
+            this.consoleInterface,
+            this.costsManager,
+            this.snapshotManager
+        );
 
         // State management for input blocking
         this.isProcessing = false;
@@ -121,66 +127,77 @@ class AICoderConsole {
                 this.consoleInterface.showThinking();
                 this.consoleInterface.pauseInput();
             },
-            
-            onChainOfThought: (content) => {
+
+            onChainOfThought: content => {
                 this.consoleInterface.showChainOfThought(content);
             },
-            
-            onFinalChainOfThought: (content) => {
+
+            onFinalChainOfThought: content => {
                 this.consoleInterface.showFinalChainOfThought(content);
             },
-            
-            onToolExecution: async (toolCall) => {
+
+            onToolExecution: async toolCall => {
                 // Show that tools are being executed (only once)
                 if (!this._toolsExecutionShown) {
                     this.consoleInterface.showExecutingTools();
                     this._toolsExecutionShown = true;
                 }
-                
-                return await this.toolManager.executeToolCall(toolCall, this.consoleInterface, this.snapshotManager);
-            },
-            
-            onResponse: (response, role = null) => {
 
-                const content = response && response.choices && response.choices[0] && response.choices[0].message && response.choices[0].message.content;
+                return await this.toolManager.executeToolCall(
+                    toolCall,
+                    this.consoleInterface,
+                    this.snapshotManager
+                );
+            },
+
+            onResponse: (response, role = null) => {
+                const content =
+                    response &&
+                    response.choices &&
+                    response.choices[0] &&
+                    response.choices[0].message &&
+                    response.choices[0].message.content;
                 if (content) {
-                    this.consoleInterface.showMessage(content, role ? `🤖 ${role}:` : '🤖 Synth-Dev:');
+                    this.consoleInterface.showMessage(
+                        content,
+                        role ? `🤖 ${role}:` : '🤖 Synth-Dev:'
+                    );
                     this.consoleInterface.newLine();
                     this._toolsExecutionShown = false; // Reset for next interaction
                     this.isProcessing = false; // Unblock input
                     this.consoleInterface.resumeInput();
                 }
             },
-            
-            onError: (error) => {
+
+            onError: error => {
                 this.consoleInterface.showError(error);
                 this.consoleInterface.newLine();
                 this._toolsExecutionShown = false; // Reset for next interaction
                 this.isProcessing = false; // Unblock input
                 this.consoleInterface.resumeInput();
-            }
+            },
         });
     }
 
     async start() {
         await this.toolManager.loadTools();
-        
+
         // Set tools in API client
         this.apiClient.setTools(this.toolManager.getTools());
-        
+
         // Set default role and system message
         await this.apiClient.setSystemMessage(SystemMessages.getSystemMessage('coder'), 'coder');
 
         await this.snapshotManager.initialize();
-        
+
         this.consoleInterface.setupEventHandlers(
-            async (input) => await this.handleInput(input),
+            async input => await this.handleInput(input),
             () => {
                 this.consoleInterface.showGoodbye();
                 process.exit(0);
             }
         );
-        
+
         this.consoleInterface.showStartupMessage(
             this.apiClient.getModel(),
             this.toolManager.getToolsCount(),
@@ -188,7 +205,7 @@ class AICoderConsole {
             this.apiClient.getTotalToolCount(),
             this.apiClient.getFilteredToolCount()
         );
-        
+
         this.consoleInterface.prompt();
     }
 
@@ -285,7 +302,6 @@ class AICoderConsole {
 
             // Fallback to original if something went wrong
             return originalPrompt;
-
         } catch (error) {
             // Any unexpected error during enhancement
             this.consoleInterface.showEnhancementError(error.message);
@@ -311,7 +327,6 @@ async function main() {
         // Start the application
         const app = new AICoderConsole(config);
         await app.start();
-
     } catch (error) {
         // Use raw console.error for startup errors since logger may not be initialized
         console.error(`

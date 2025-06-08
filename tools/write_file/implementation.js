@@ -11,7 +11,7 @@ import { FileBaseTool } from '../common/base-tool.js';
 class WriteFileTool extends FileBaseTool {
     constructor() {
         super('write_file', 'Write content to a file in the file system using a relative path');
-        
+
         // Define parameter validation
         this.requiredParams = ['file_path', 'content'];
         this.parameterTypes = {
@@ -19,19 +19,19 @@ class WriteFileTool extends FileBaseTool {
             content: 'string',
             encoding: 'string',
             create_directories: 'boolean',
-            overwrite: 'boolean'
+            overwrite: 'boolean',
         };
     }
 
     async implementation(params) {
-        const { 
-            file_path, 
-            content, 
+        const {
+            file_path,
+            content,
             encoding = 'utf8',
             create_directories = true,
-            overwrite = true
+            overwrite = true,
         } = params;
-        
+
         // Validate and resolve the file path
         const pathValidation = this.validateAndResolvePath(file_path);
         if (pathValidation.error) {
@@ -40,19 +40,19 @@ class WriteFileTool extends FileBaseTool {
 
         const { resolvedPath } = pathValidation;
         const cwd = process.cwd();
-        
+
         try {
             // Check if file already exists
             const fileExists = existsSync(resolvedPath);
             let wasOverwritten = false;
-            
+
             if (fileExists && !overwrite) {
-                return this.createErrorResponse(
-                    'File already exists and overwrite is disabled',
-                    { file_path, overwrite_disabled: true }
-                );
+                return this.createErrorResponse('File already exists and overwrite is disabled', {
+                    file_path,
+                    overwrite_disabled: true,
+                });
             }
-            
+
             if (fileExists) {
                 // Check if it's actually a file (not a directory)
                 try {
@@ -68,7 +68,7 @@ class WriteFileTool extends FileBaseTool {
                     return this.handleFileSystemError(statError, file_path);
                 }
             }
-            
+
             // Create directories if needed
             const createdDirectories = [];
             if (create_directories) {
@@ -76,14 +76,19 @@ class WriteFileTool extends FileBaseTool {
                 if (!existsSync(dirPath)) {
                     try {
                         // Get all directories that need to be created
-                        const pathParts = join(dirPath).replace(cwd, '').split(/[/\\]/).filter(part => part);
+                        const pathParts = join(dirPath)
+                            .replace(cwd, '')
+                            .split(/[/\\]/)
+                            .filter(part => part);
                         let currentPath = cwd;
-                        
+
                         for (const part of pathParts) {
                             currentPath = join(currentPath, part);
                             if (!existsSync(currentPath)) {
                                 mkdirSync(currentPath);
-                                createdDirectories.push(currentPath.replace(cwd + '/', '').replace(cwd + '\\', ''));
+                                createdDirectories.push(
+                                    currentPath.replace(`${cwd}/`, '').replace(`${cwd}\\`, '')
+                                );
                             }
                         }
                     } catch (mkdirError) {
@@ -94,19 +99,19 @@ class WriteFileTool extends FileBaseTool {
                     }
                 }
             }
-            
+
             // Write the file content
             try {
                 writeFileSync(resolvedPath, content, encoding);
             } catch (writeError) {
                 return this.handleFileSystemError(writeError, file_path);
             }
-            
+
             // Get file statistics after writing
             let stats;
             try {
                 stats = statSync(resolvedPath);
-            } catch (statError) {
+            } catch (_statsError) {
                 // File was written but we can't get stats (shouldn't happen)
                 return this.createSuccessResponse({
                     file_path,
@@ -114,24 +119,23 @@ class WriteFileTool extends FileBaseTool {
                     encoding,
                     created_directories: createdDirectories,
                     overwritten: wasOverwritten,
-                    warning: 'File written but metadata unavailable'
+                    warning: 'File written but metadata unavailable',
                 });
             }
-            
+
             // Return successful result with file metadata
             return this.createSuccessResponse({
                 file_path,
                 size: stats.size,
                 encoding,
                 created_directories: createdDirectories,
-                overwritten: wasOverwritten
+                overwritten: wasOverwritten,
             });
-            
         } catch (error) {
-            return this.createErrorResponse(
-                `Unexpected error: ${error.message}`,
-                { file_path, stack: error.stack }
-            );
+            return this.createErrorResponse(`Unexpected error: ${error.message}`, {
+                file_path,
+                stack: error.stack,
+            });
         }
     }
 }
@@ -141,4 +145,4 @@ const writeFileTool = new WriteFileTool();
 
 export default async function writeFile(params) {
     return await writeFileTool.execute(params);
-} 
+}

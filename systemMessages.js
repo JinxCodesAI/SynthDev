@@ -18,11 +18,9 @@ class SystemMessages {
 - Make sure you task is finished, if it's not continue using tools to gain more information, check your work and do next stages
 
 You have access to development tools to help with file operations, code analysis, and implementation tasks. Always write production-ready code with proper error handling and documentation.`,
-            excludedTools: [
-                'get_time',
-                'calculate'
-            ],
-            reminder: `Remember, follow strictly your system prompt most importantly, Following precisely instructions provided by the user or an architect, continue tool calling if required`
+            excludedTools: ['get_time', 'calculate'],
+            reminder:
+                'Remember, follow strictly your system prompt most importantly, Following precisely instructions provided by the user or an architect, continue tool calling if required',
         },
 
         reviewer: {
@@ -34,13 +32,9 @@ You have access to development tools to help with file operations, code analysis
 - Identify any divergences from the instructions provided by the user and or architect
 
 You have access to code analysis tools to thoroughly examine codebases. List all missing elements or introduced bugs, prompt to continue or use mark_completed tool`,
-            excludedTools: [
-                'get_time',
-                'calculate',
-                'edit_file',
-                'write_file'
-            ],
-            reminder: `Remember, follow strictly your system prompt most importantly, Identifying bugs and missing elements, continue tool calling if required`
+            excludedTools: ['get_time', 'calculate', 'edit_file', 'write_file'],
+            reminder:
+                'Remember, follow strictly your system prompt most importantly, Identifying bugs and missing elements, continue tool calling if required',
         },
 
         architect: {
@@ -61,13 +55,13 @@ current codebase. Use tools such as functions.read_file and functions.list_direc
 - Always use your access to research and analysis tools to make well-informed, context-aware architectural decisions.
 
 Failure to follow these guidelines (such as skipping codebase familiarization) will be seen as a critical error in your role.`,
-            excludedTools: [
-            ],
-            reminder: `Remember, follow strictly your system prompt most importantly, most importantly, USE TOOLS TO UNDERSTAND CONTEXT, DO NOT PLAN WITHOUT USING TOOLS FIRST and NEVER use the tools that make file modifications (functions.edit_file, functions.write_file), continue read-only tools calling if required`
+            excludedTools: [],
+            reminder:
+                'Remember, follow strictly your system prompt most importantly, most importantly, USE TOOLS TO UNDERSTAND CONTEXT, DO NOT PLAN WITHOUT USING TOOLS FIRST and NEVER use the tools that make file modifications (functions.edit_file, functions.write_file), continue read-only tools calling if required',
         },
         dude: {
             level: 'fast',
-            systemMessage: `You are a helpful assistant that can help with a wide range of tasks.`,
+            systemMessage: 'You are a helpful assistant that can help with a wide range of tasks.',
             excludedTools: [],
         },
 
@@ -88,9 +82,10 @@ Your summaries should be clear, technical, and useful for developers who need to
                 'delete_file',
                 'list_directory',
                 'exact_search',
-                'read_file'
+                'read_file',
             ],
-            reminder: `Remember to focus on concise, technical summaries that capture the file's primary purpose, key components, and relationships to other code. Summary should be tailored to software developers. Keep summaries under 150 words and maintain consistent quality.`
+            reminder:
+                "Remember to focus on concise, technical summaries that capture the file's primary purpose, key components, and relationships to other code. Summary should be tailored to software developers. Keep summaries under 150 words and maintain consistent quality.",
         },
 
         directory_summarizer: {
@@ -110,9 +105,10 @@ Your summaries should provide a high-level view of what the directory contains a
                 'delete_file',
                 'list_directory',
                 'exact_search',
-                'read_file'
+                'read_file',
             ],
-            reminder: `Remember to focus on high-level directory purpose and organization. Synthesize information from file summaries to explain the directory's role in the codebase. Summary should be tailored to software developers.Keep summaries under 150 words.`
+            reminder:
+                "Remember to focus on high-level directory purpose and organization. Synthesize information from file summaries to explain the directory's role in the codebase. Summary should be tailored to software developers.Keep summaries under 150 words.",
         },
 
         codebase_explainer: {
@@ -125,12 +121,9 @@ Your summaries should provide a high-level view of what the directory contains a
 - when user refers to root directory/main directory, consider it as the directory where the ".index" directory is located
 
 You have access to tools like exact_search, read_file, list_directory, explain_codebase to gather more information if the indexed summaries are insufficient. Always provide thorough, well-structured explanations that help users understand their codebase.`,
-            excludedTools: [
-                'edit_file',
-                'write_file',
-                'execute_terminal'
-            ],
-            reminder: `Remember follow strictly your system prompt most importantly, Providing clear, detailed answers to user's question in markdown format, continue tool calling if required`
+            excludedTools: ['edit_file', 'write_file', 'execute_terminal'],
+            reminder:
+                "Remember follow strictly your system prompt most importantly, Providing clear, detailed answers to user's question in markdown format, continue tool calling if required",
         },
 
         prompt_enhancer: {
@@ -153,12 +146,9 @@ Guidelines for enhancement:
 
 Your response should contain ONLY the enhanced prompt, nothing else. Do not add explanations, comments, or any other text.
 You can use function-calling before responding use functions like  functions.exact_search, functions.read_file, functions.list_directory, functions.explain_codebase to gather more information if needed better understanding of user's intent. Sometimes returning original prompt is the best option, in that case return the original prompt.`,
-            excludedTools: [
-                'edit_file',
-                'write_file',
-                'execute_terminal'
-            ],
-            reminder: `Remember to preserve the original intent completely while making the prompt more clear and specific. Prompt needs to be written from User perspective not yours. Most likely in form of instruction. Return ONLY the enhanced prompt, nothing else. Sometimes returning original prompt is the best option, in that case return the original prompt.`
+            excludedTools: ['edit_file', 'write_file', 'execute_terminal'],
+            reminder:
+                'Remember to preserve the original intent completely while making the prompt more clear and specific. Prompt needs to be written from User perspective not yours. Most likely in form of instruction. Return ONLY the enhanced prompt, nothing else. Sometimes returning original prompt is the best option, in that case return the original prompt.',
         },
 
         command_generator: {
@@ -181,13 +171,10 @@ Guidelines:
 - If the request is unclear or potentially dangerous, generate a safer informational command
 
 Your response should contain ONLY the terminal command, nothing else. Do not add explanations, prefixes, or any other text.`,
-            excludedTools: [
-                'edit_file',
-                'write_file',
-                'execute_terminal'
-            ],
-            reminder: `Remember to generate ONLY the terminal command, nothing else. Focus on safety and accuracy. Return just the command that should be executed.`
-        }
+            excludedTools: ['edit_file', 'write_file', 'execute_terminal'],
+            reminder:
+                'Remember to generate ONLY the terminal command, nothing else. Focus on safety and accuracy. Return just the command that should be executed.',
+        },
     };
 
     /**
@@ -224,7 +211,9 @@ Environment Information:
     static getSystemMessage(role) {
         const roleConfig = this.roles[role];
         if (!roleConfig) {
-            throw new Error(`Unknown role: ${role}. Available roles: ${Object.keys(this.roles).join(', ')}`);
+            throw new Error(
+                `Unknown role: ${role}. Available roles: ${Object.keys(this.roles).join(', ')}`
+            );
         }
 
         // Append environment information to the system message
@@ -240,7 +229,9 @@ Environment Information:
     static getExcludedTools(role) {
         const roleConfig = this.roles[role];
         if (!roleConfig) {
-            throw new Error(`Unknown role: ${role}. Available roles: ${Object.keys(this.roles).join(', ')}`);
+            throw new Error(
+                `Unknown role: ${role}. Available roles: ${Object.keys(this.roles).join(', ')}`
+            );
         }
         return roleConfig.excludedTools || [];
     }
@@ -261,7 +252,9 @@ Environment Information:
     static getLevel(role) {
         const roleConfig = this.roles[role];
         if (!roleConfig) {
-            throw new Error(`Unknown role: ${role}. Available roles: ${Object.keys(this.roles).join(', ')}`);
+            throw new Error(
+                `Unknown role: ${role}. Available roles: ${Object.keys(this.roles).join(', ')}`
+            );
         }
         return roleConfig.level;
     }
@@ -274,7 +267,9 @@ Environment Information:
     static getReminder(role) {
         const roleConfig = this.roles[role];
         if (!roleConfig) {
-            throw new Error(`Unknown role: ${role}. Available roles: ${Object.keys(this.roles).join(', ')}`);
+            throw new Error(
+                `Unknown role: ${role}. Available roles: ${Object.keys(this.roles).join(', ')}`
+            );
         }
         return roleConfig.reminder || '';
     }
@@ -289,4 +284,4 @@ Environment Information:
     }
 }
 
-export default SystemMessages; 
+export default SystemMessages;

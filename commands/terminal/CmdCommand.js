@@ -30,7 +30,7 @@ export class CmdCommand extends InteractiveCommand {
      */
     async implementation(args, context) {
         const logger = getLogger();
-        
+
         if (!args || args.trim() === '') {
             this._showUsage();
             return true;
@@ -46,7 +46,9 @@ export class CmdCommand extends InteractiveCommand {
 
         if (trimmedArgs === 'context on') {
             this.contextIntegrationEnabled = true;
-            logger.raw('✅ Context integration enabled - commands and results will be added to chat history\n');
+            logger.raw(
+                '✅ Context integration enabled - commands and results will be added to chat history\n'
+            );
             return true;
         }
 
@@ -57,7 +59,9 @@ export class CmdCommand extends InteractiveCommand {
         }
 
         if (trimmedArgs.startsWith('context')) {
-            logger.raw(`ℹ️  Context integration is currently ${this.contextIntegrationEnabled ? 'enabled' : 'disabled'}`);
+            logger.raw(
+                `ℹ️  Context integration is currently ${this.contextIntegrationEnabled ? 'enabled' : 'disabled'}`
+            );
             logger.raw('   Use "/cmd context on" or "/cmd context off" to toggle\n');
             return true;
         }
@@ -110,7 +114,11 @@ export class CmdCommand extends InteractiveCommand {
         logger.raw('🔄 Press Esc to revert to original or ENTER to submit current command');
 
         // Show the generated command as editable input
-        const userInput = await context.consoleInterface.promptForEditableInput('💭 You: ', generatedCommand, originalInput);
+        const userInput = await context.consoleInterface.promptForEditableInput(
+            '💭 You: ',
+            generatedCommand,
+            originalInput
+        );
 
         if (userInput === null) {
             // User pressed Escape - revert to original
@@ -158,13 +166,13 @@ export class CmdCommand extends InteractiveCommand {
      */
     async _executeCommand(command, context, originalRequest = null) {
         const logger = getLogger();
-        
+
         logger.raw(`⚡ Executing: ${command}\n`);
-        
+
         try {
             // Execute the command using the execute_terminal tool
             const result = await executeTerminal({ command });
-            
+
             // Add to command history
             this.commandHistory.push({
                 command,
@@ -172,7 +180,7 @@ export class CmdCommand extends InteractiveCommand {
                 timestamp: new Date().toISOString(),
                 success: result.success,
                 stdout: result.stdout,
-                stderr: result.stderr
+                stderr: result.stderr,
             });
 
             // Display results
@@ -182,7 +190,6 @@ export class CmdCommand extends InteractiveCommand {
             await this._handleContextIntegration(command, result, context, originalRequest);
 
             return true;
-
         } catch (error) {
             logger.error(error, `Failed to execute command: ${command}`);
             return true;
@@ -196,17 +203,17 @@ export class CmdCommand extends InteractiveCommand {
      */
     _displayCommandResult(result) {
         const logger = getLogger();
-        
+
         if (result.success) {
             logger.raw('✅ Command completed successfully\n');
-            
+
             if (result.stdout && result.stdout.trim()) {
                 logger.raw('📤 Output:');
                 logger.raw('─'.repeat(50));
                 logger.raw(result.stdout.trim());
                 logger.raw('─'.repeat(50));
             }
-            
+
             if (result.stderr && result.stderr.trim()) {
                 logger.raw('⚠️  Warnings/Info:');
                 logger.raw('─'.repeat(50));
@@ -215,26 +222,26 @@ export class CmdCommand extends InteractiveCommand {
             }
         } else {
             logger.raw('❌ Command failed\n');
-            
+
             if (result.stdout && result.stdout.trim()) {
                 logger.raw('📤 Output:');
                 logger.raw('─'.repeat(50));
                 logger.raw(result.stdout.trim());
                 logger.raw('─'.repeat(50));
             }
-            
+
             if (result.stderr && result.stderr.trim()) {
                 logger.raw('❌ Error:');
                 logger.raw('─'.repeat(50));
                 logger.raw(result.stderr.trim());
                 logger.raw('─'.repeat(50));
             }
-            
+
             if (result.error) {
                 logger.raw(`💥 Error details: ${result.error}`);
             }
         }
-        
+
         logger.raw(); // Add spacing
     }
 
@@ -278,7 +285,7 @@ export class CmdCommand extends InteractiveCommand {
      */
     async _addToContext(command, result, context, originalRequest = null) {
         try {
-            let contextMessage = `Terminal command executed:\n`;
+            let contextMessage = 'Terminal command executed:\n';
 
             if (originalRequest) {
                 contextMessage += `Original request: ${originalRequest}\n`;
@@ -301,7 +308,6 @@ export class CmdCommand extends InteractiveCommand {
 
             // Add as user message to preserve context without triggering AI response
             context.apiClient.addUserMessage(contextMessage);
-
         } catch (error) {
             const logger = getLogger();
             logger.debug('Failed to add command to context:', error.message);
@@ -340,25 +346,25 @@ export class CmdCommand extends InteractiveCommand {
      */
     _showHistory() {
         const logger = getLogger();
-        
+
         if (this.commandHistory.length === 0) {
             logger.raw('📜 No commands in history\n');
             return;
         }
 
         logger.raw('📜 Command History:\n');
-        
+
         this.commandHistory.slice(-10).forEach((entry, index) => {
             const timestamp = new Date(entry.timestamp).toLocaleTimeString();
             const status = entry.success ? '✅' : '❌';
-            
+
             logger.raw(`${index + 1}. ${status} [${timestamp}] ${entry.command}`);
-            
+
             if (entry.originalRequest) {
                 logger.raw(`   Request: ${entry.originalRequest}`);
             }
         });
-        
+
         logger.raw();
     }
 

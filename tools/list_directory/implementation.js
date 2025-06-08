@@ -10,8 +10,11 @@ import { FileBaseTool } from '../common/base-tool.js';
 
 class ListDirectoryTool extends FileBaseTool {
     constructor() {
-        super('list_directory', 'List the contents of a directory and provide detailed information about files and subdirectories');
-        
+        super(
+            'list_directory',
+            'List the contents of a directory and provide detailed information about files and subdirectories'
+        );
+
         // Define parameter validation
         this.requiredParams = ['directory_path'];
         this.parameterTypes = {
@@ -19,20 +22,32 @@ class ListDirectoryTool extends FileBaseTool {
             recursive: 'boolean',
             include_hidden: 'boolean',
             max_depth: 'number',
-            exclusion_list: 'array'
+            exclusion_list: 'array',
         };
     }
 
     async implementation(params) {
+        let { directory_path = '.' } = params;
+
         const {
-            directory_path = '.',
             recursive = false,
             include_hidden = false,
             max_depth = 5,
-            exclusion_list = ["node_modules", ".git", ".svn", "build", "dist", ".cache", "__pycache__", ".DS_Store", "Thumbs.db", ".index"]
+            exclusion_list = [
+                'node_modules',
+                '.git',
+                '.svn',
+                'build',
+                'dist',
+                '.cache',
+                '__pycache__',
+                '.DS_Store',
+                'Thumbs.db',
+                '.index',
+            ],
         } = params;
 
-        if(!directory_path || directory_path.trim() === '') {
+        if (!directory_path || directory_path.trim() === '') {
             directory_path = '.';
         }
 
@@ -62,10 +77,10 @@ class ListDirectoryTool extends FileBaseTool {
             }
 
             if (!stats.isDirectory()) {
-                return this.createErrorResponse(
-                    'Path is not a directory',
-                    { directory_path, path_type: 'file' }
-                );
+                return this.createErrorResponse('Path is not a directory', {
+                    directory_path,
+                    path_type: 'file',
+                });
             }
 
             // Use scanDirectory for recursive scanning
@@ -74,7 +89,7 @@ class ListDirectoryTool extends FileBaseTool {
                     const scanResults = scanDirectory(resolvedPath, {
                         depth: max_depth,
                         includeHidden: include_hidden,
-                        exclusionList: exclusion_list
+                        exclusionList: exclusion_list,
                     });
 
                     const directories = scanResults.filter(entry => entry.type === 'directory');
@@ -87,7 +102,7 @@ class ListDirectoryTool extends FileBaseTool {
                             name: dir.name,
                             path: dir.path.replace(/\\/g, '/'),
                             type: 'directory',
-                            depth: dir.lvl
+                            depth: dir.lvl,
                         })),
                         files: files.map(file => ({
                             name: file.name,
@@ -95,8 +110,8 @@ class ListDirectoryTool extends FileBaseTool {
                             type: 'file',
                             size: file.size,
                             extension: extname(file.name),
-                            depth: file.lvl
-                        }))
+                            depth: file.lvl,
+                        })),
                     });
                 } catch (scanError) {
                     return this.createErrorResponse(
@@ -145,7 +160,7 @@ class ListDirectoryTool extends FileBaseTool {
                             name: item,
                             path: relativeName,
                             type: 'directory',
-                            depth: 0
+                            depth: 0,
                         });
                     } else if (itemStats.isFile()) {
                         files.push({
@@ -154,7 +169,7 @@ class ListDirectoryTool extends FileBaseTool {
                             type: 'file',
                             size: itemStats.size,
                             extension: extname(item),
-                            depth: 0
+                            depth: 0,
                         });
                     }
                 }
@@ -164,15 +179,14 @@ class ListDirectoryTool extends FileBaseTool {
                     total_items: directories.length + files.length,
                     directories,
                     files,
-                    excluded_items: excludedItems
+                    excluded_items: excludedItems,
                 });
             }
-
         } catch (error) {
-            return this.createErrorResponse(
-                `Unexpected error: ${error.message}`,
-                { directory_path, stack: error.stack }
-            );
+            return this.createErrorResponse(`Unexpected error: ${error.message}`, {
+                directory_path,
+                stack: error.stack,
+            });
         }
     }
 }

@@ -1,4 +1,3 @@
-
 class CostsManager {
     constructor() {
         this.modelCosts = {}; // Use an object to store costs per model
@@ -16,7 +15,7 @@ class CostsManager {
                 prompt_tokens: 0,
                 completion_tokens: 0,
                 total_tokens: 0,
-                reasoning_tokens: 0
+                reasoning_tokens: 0,
             };
         }
 

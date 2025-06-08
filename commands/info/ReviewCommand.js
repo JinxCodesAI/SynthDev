@@ -27,7 +27,7 @@ export class ReviewCommand extends BaseCommand {
      */
     async implementation(args, context) {
         const { apiClient } = context;
-        
+
         const lastCall = apiClient.getLastAPICall();
         const logger = getLogger();
 

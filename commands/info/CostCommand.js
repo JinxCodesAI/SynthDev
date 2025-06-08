@@ -4,7 +4,6 @@
  */
 
 import { BaseCommand } from '../base/BaseCommand.js';
-import { getLogger } from '../../logger.js';
 
 export class CostCommand extends BaseCommand {
     constructor() {
@@ -27,7 +26,7 @@ export class CostCommand extends BaseCommand {
      */
     async implementation(args, context) {
         const { costsManager, consoleInterface } = context;
-        
+
         const costs = costsManager.getTotalCosts();
         const modelNames = Object.keys(costs);
 
@@ -39,13 +38,22 @@ export class CostCommand extends BaseCommand {
 
             for (const modelName of modelNames) {
                 const modelCost = costs[modelName];
-                consoleInterface.showMessage(`
-${modelName}:`, "Model:");
-                consoleInterface.showMessage(`  Cached Tokens: ${modelCost.cached_tokens}`, " ");
-                consoleInterface.showMessage(`  Prompt Tokens: ${modelCost.prompt_tokens}`, " ");
-                consoleInterface.showMessage(`  Completion Tokens: ${modelCost.completion_tokens}`, " ");
-                consoleInterface.showMessage(`  Total Tokens: ${modelCost.total_tokens}`, " ");
-                consoleInterface.showMessage(`  Reasoning Tokens: ${modelCost.reasoning_tokens}`, " ");
+                consoleInterface.showMessage(
+                    `
+${modelName}:`,
+                    'Model:'
+                );
+                consoleInterface.showMessage(`  Cached Tokens: ${modelCost.cached_tokens}`, ' ');
+                consoleInterface.showMessage(`  Prompt Tokens: ${modelCost.prompt_tokens}`, ' ');
+                consoleInterface.showMessage(
+                    `  Completion Tokens: ${modelCost.completion_tokens}`,
+                    ' '
+                );
+                consoleInterface.showMessage(`  Total Tokens: ${modelCost.total_tokens}`, ' ');
+                consoleInterface.showMessage(
+                    `  Reasoning Tokens: ${modelCost.reasoning_tokens}`,
+                    ' '
+                );
             }
             consoleInterface.newLine();
         }
