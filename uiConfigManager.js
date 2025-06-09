@@ -1,4 +1,5 @@
 import { getConfigurationLoader } from './configurationLoader.js';
+import ConfigManager from './configManager.js';
 
 /**
  * UI Configuration Manager
@@ -47,6 +48,20 @@ class UIConfigManager {
      */
     getMessage(path, params = {}) {
         const messages = this._loadConsoleMessages();
+
+        // Override prompt prefix with application config if available
+        if (path === 'prompts.user') {
+            try {
+                const configManager = ConfigManager.getInstance();
+                const config = configManager.getConfig();
+                if (config.ui && config.ui.promptPrefix) {
+                    return config.ui.promptPrefix;
+                }
+            } catch (error) {
+                // Fall back to console-messages.json if config manager not available
+            }
+        }
+
         const message = this._getNestedValue(messages, path);
 
         if (!message) {

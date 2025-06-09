@@ -1,6 +1,5 @@
 {
     "prompts": {
-        "user": "💭 You: ",
         "confirmation": "❓ {prompt}\n   Type \"y\" or \"yes\" to proceed, anything else to cancel:"
     },
     "status": {

@@ -58,7 +58,7 @@ describe('ConsoleInterface', () => {
         mockUIConfigManager = {
             getMessage: vi.fn((path, params = {}) => {
                 const messages = {
-                    'prompts.user': '💭 You: ',
+                    'prompts.user': '💭 You: ', // This will be overridden by application config
                     'prefixes.assistant': '🤖 Synth-Dev:',
                     'status.thinking': '\n🧠 Synth-Dev is thinking...\n',
                     'status.executing_tools': '🔧 Executing tools...\n',

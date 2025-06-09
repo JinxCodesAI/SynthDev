@@ -1,6 +1,7 @@
 import { config } from 'dotenv';
 import { createInterface } from 'readline';
 import { getConfigurationValidator } from './configurationValidator.js';
+import { getConfigurationLoader } from './configurationLoader.js';
 
 /**
  * Singleton ConfigManager class that loads and manages all application configuration
@@ -13,6 +14,10 @@ class ConfigManager {
 
         // Load environment variables from .env file
         config();
+
+        // Load application defaults
+        this.configLoader = getConfigurationLoader();
+        this.applicationDefaults = this._loadApplicationDefaults();
 
         // Store command line provided options
         this.cliOptions = {
@@ -67,6 +72,21 @@ class ConfigManager {
     }
 
     /**
+     * Load application defaults from configuration file
+     * @private
+     * @returns {Object} Application defaults
+     */
+    _loadApplicationDefaults() {
+        try {
+            return this.configLoader.loadConfig('defaults/application.json', {}, true);
+        } catch (error) {
+            // If application.json doesn't exist, return empty defaults
+            console.warn('Warning: Could not load application.json defaults:', error.message);
+            return {};
+        }
+    }
+
+    /**
      * Load all configuration from environment variables and CLI options
      * @private
      * @returns {Object} Configuration object
@@ -75,38 +95,117 @@ class ConfigManager {
         // Prioritize CLI API key over environment variable
         const apiKey = this.cliOptions.apiKey || process.env.API_KEY;
 
+        // Get defaults from application.json
+        const defaults = this.applicationDefaults;
+        const modelDefaults = defaults.models || {};
+        const globalDefaults = defaults.global_settings || {};
+        const uiDefaults = defaults.ui_settings || {};
+        const toolDefaults = defaults.tool_settings || {};
+        const loggingDefaults = defaults.logging || {};
+        const safetyDefaults = defaults.safety || {};
+        const featureDefaults = defaults.features || {};
+
         const config = {
             // OpenAI/General AI Provider Configuration
             base: {
                 apiKey: apiKey,
-                baseModel: this.cliOptions.baseModel || process.env.BASE_MODEL || 'gpt-4.1-mini',
+                baseModel:
+                    this.cliOptions.baseModel ||
+                    process.env.BASE_MODEL ||
+                    modelDefaults.base?.model ||
+                    'gpt-4.1-mini',
                 baseUrl:
-                    this.cliOptions.baseUrl || process.env.BASE_URL || 'https://api.openai.com/v1',
+                    this.cliOptions.baseUrl ||
+                    process.env.BASE_URL ||
+                    modelDefaults.base?.baseUrl ||
+                    'https://api.openai.com/v1',
             },
 
             // Smart Model Configuration (Optional)
             smart: {
                 apiKey: this.cliOptions.smartApiKey || process.env.SMART_API_KEY || apiKey,
                 model:
-                    this.cliOptions.smartModel || process.env.SMART_MODEL || process.env.BASE_MODEL,
+                    this.cliOptions.smartModel ||
+                    process.env.SMART_MODEL ||
+                    modelDefaults.smart?.model ||
+                    process.env.BASE_MODEL,
                 baseUrl:
-                    this.cliOptions.smartUrl || process.env.SMART_BASE_URL || process.env.BASE_URL,
+                    this.cliOptions.smartUrl ||
+                    process.env.SMART_BASE_URL ||
+                    modelDefaults.smart?.baseUrl ||
+                    process.env.BASE_URL,
             },
 
             // Fast Model Configuration (Optional)
             fast: {
                 apiKey: this.cliOptions.fastApiKey || process.env.FAST_API_KEY || apiKey,
                 model:
-                    this.cliOptions.fastModel || process.env.FAST_MODEL || process.env.BASE_MODEL,
+                    this.cliOptions.fastModel ||
+                    process.env.FAST_MODEL ||
+                    modelDefaults.fast?.model ||
+                    process.env.BASE_MODEL,
                 baseUrl:
-                    this.cliOptions.fastUrl || process.env.FAST_BASE_URL || process.env.BASE_URL,
+                    this.cliOptions.fastUrl ||
+                    process.env.FAST_BASE_URL ||
+                    modelDefaults.fast?.baseUrl ||
+                    process.env.BASE_URL,
             },
 
-            // Global Settings
+            // Global Settings (prioritize env vars, then application.json, then hardcoded defaults)
             global: {
-                maxToolCalls: parseInt(process.env.MAX_TOOL_CALLS) || 50,
-                enablePromptEnhancement: process.env.ENABLE_PROMPT_ENHANCEMENT === 'true' || false,
-                verbosityLevel: parseInt(process.env.VERBOSITY_LEVEL) || 2,
+                maxToolCalls:
+                    parseInt(process.env.MAX_TOOL_CALLS) || globalDefaults.maxToolCalls || 50,
+                enablePromptEnhancement:
+                    process.env.ENABLE_PROMPT_ENHANCEMENT === 'true' ||
+                    globalDefaults.enablePromptEnhancement ||
+                    false,
+                verbosityLevel:
+                    parseInt(process.env.VERBOSITY_LEVEL) || globalDefaults.verbosityLevel || 2,
+            },
+
+            // UI Settings
+            ui: {
+                defaultRole: uiDefaults.defaultRole || 'coder',
+                showStartupBanner: uiDefaults.showStartupBanner !== false,
+                enableColors: uiDefaults.enableColors !== false,
+                promptPrefix: uiDefaults.promptPrefix || '💭 You: ',
+            },
+
+            // Tool Settings
+            tool: {
+                autoRun: toolDefaults.autoRun !== false,
+                requiresBackup: toolDefaults.requiresBackup || false,
+                defaultEncoding: toolDefaults.defaultEncoding || 'utf8',
+                maxFileSize: toolDefaults.maxFileSize || 10485760,
+                defaultTimeout: toolDefaults.defaultTimeout || 10000,
+            },
+
+            // Logging Settings
+            logging: {
+                defaultLevel: loggingDefaults.defaultLevel || 2,
+                enableHttpLogging: loggingDefaults.enableHttpLogging || false,
+                enableToolLogging: loggingDefaults.enableToolLogging !== false,
+                enableErrorLogging: loggingDefaults.enableErrorLogging !== false,
+            },
+
+            // Safety Settings
+            safety: {
+                enableAISafetyCheck: safetyDefaults.enableAISafetyCheck !== false,
+                fallbackToPatternMatching: safetyDefaults.fallbackToPatternMatching !== false,
+                maxScriptSize: safetyDefaults.maxScriptSize || 50000,
+                scriptTimeout: safetyDefaults.scriptTimeout || {
+                    min: 1000,
+                    max: 30000,
+                    default: 10000,
+                },
+            },
+
+            // Feature Settings
+            features: {
+                enableSnapshots: featureDefaults.enableSnapshots !== false,
+                enableIndexing: featureDefaults.enableIndexing !== false,
+                enableCommandHistory: featureDefaults.enableCommandHistory !== false,
+                enableContextIntegration: featureDefaults.enableContextIntegration || false,
             },
         };
         return config;
