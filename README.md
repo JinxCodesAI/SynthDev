@@ -47,4 +47,4 @@ or maybe even supporting it on [GitHub Sponsors](https://github.com/sponsors/ada
 
 ## License
 
-Apache License 2.0
+MIT
