@@ -17,6 +17,7 @@
         "test:integration": "vitest run tests/e2e/",
         "test:e2e": "vitest run tests/e2e/",
         "test:ui": "vitest --ui",
+        "test:minimal": "vitest run --reporter=dot",
         "lint": "eslint .",
         "lint:fix": "eslint . --fix",
         "format": "prettier --write .",

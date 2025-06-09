@@ -208,7 +208,7 @@ MARKER`;
             });
 
             expect(result.success).toBe(false);
-            expect(result.error).toContain("operation must be 'replace' or 'delete'");
+            expect(result.error).toContain('Invalid operation specified');
         });
 
         // Note: This test is implementation-dependent and may vary based on validation order

@@ -37,7 +37,7 @@ Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris.
 
 const words = text.trim().split(/\\s+/);
 const sentences = text.split(/[.!?]+/).filter(s => s.trim().length > 0);
-const paragraphs = text.split(/\\n\\s*\\n/).filter(p => p.trim().length > 0);
+const paragraphs = text.split(/\n\\s*\n/).filter(p => p.trim().length > 0);
 
 console.log('Text Analysis Results:');
 console.log('Characters:', text.length);
@@ -95,11 +95,11 @@ const avgMonthlySales = Object.values(monthlyTotals).reduce((a, b) => a + b, 0) 
 console.log('Sales Analysis:');
 console.log('Total Sales:', totalSales.toLocaleString());
 console.log('Average Monthly Sales:', avgMonthlySales.toLocaleString());
-console.log('\\nMonthly Breakdown:');
+console.log('\nMonthly Breakdown:');
 Object.entries(monthlyTotals).forEach(([month, total]) => {
     console.log(\`  \${month}: $\${total.toLocaleString()}\`);
 });
-console.log('\\nRegional Breakdown:');
+console.log('\nRegional Breakdown:');
 Object.entries(regionalTotals).forEach(([region, total]) => {
     console.log(\`  \${region}: $\${total.toLocaleString()}\`);
 });
@@ -126,7 +126,7 @@ try {
     // List JavaScript files in current directory
     const files = fs.readdirSync('.');
     const jsFiles = files.filter(file => file.endsWith('.js'));
-    console.log('\\nJavaScript files found:', jsFiles.length);
+    console.log('\nJavaScript files found:', jsFiles.length);
     jsFiles.forEach(file => {
         const stats = fs.statSync(file);
         console.log(\`  \${file}: \${stats.size} bytes\`);
@@ -164,7 +164,7 @@ const departmentStats = rawData.users.reduce((acc, user) => {
 console.log('Department Statistics:');
 Object.entries(departmentStats).forEach(([dept, stats]) => {
     const avgAge = (stats.totalAge / stats.count).toFixed(1);
-    console.log(\`\\n\${dept}:\`);
+    console.log(\`\n\${dept}:\`);
     console.log(\`  Employees: \${stats.count}\`);
     console.log(\`  Average Age: \${avgAge}\`);
     console.log(\`  Members: \${stats.users.join(', ')}\`);
@@ -180,7 +180,7 @@ const summary = {
     )
 };
 
-console.log('\\nSummary Report:');
+console.log('\nSummary Report:');
 console.log(JSON.stringify(summary, null, 2));
 `;
 

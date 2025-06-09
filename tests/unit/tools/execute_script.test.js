@@ -27,6 +27,74 @@ vi.mock('../../../logger.js', () => ({
     getLogger: vi.fn(),
 }));
 
+vi.mock('../../../toolConfigManager.js', () => ({
+    getToolConfigManager: vi.fn().mockReturnValue({
+        getToolDescription: vi.fn().mockReturnValue('Execute JavaScript code safely'),
+        getErrorMessage: vi.fn((key, params = {}) => {
+            const messages = {
+                timeout_invalid: 'Timeout must be between 1000 and 30000 milliseconds',
+                safety_validation_failed: 'Script failed AI safety validation',
+                execution_failed: `Failed to execute script: ${params?.error || 'unknown error'}`,
+                ai_assessment_failed:
+                    'AI safety assessment failed, falling back to pattern matching',
+                script_too_large: 'Script too large (max 50KB)',
+                parse_error: 'AI safety assessment failed - could not parse response',
+            };
+            return messages[key] || 'Error message';
+        }),
+        getValidationMessage: vi.fn((key, params = {}) => {
+            if (key === 'required_parameter_missing') {
+                return `Required parameter missing: ${params.parameter}`;
+            }
+            if (key === 'invalid_parameter_type') {
+                return `Invalid parameter type for ${params.parameter}: expected ${params.expected}, got ${params.actual}`;
+            }
+            return 'Validation message';
+        }),
+        getSafetyPrompt: vi
+            .fn()
+            .mockReturnValue('You are a security expert analyzing JavaScript code...'),
+        getSafetyLimits: vi.fn().mockReturnValue({
+            max_script_size: 50000,
+            min_timeout: 1000,
+            max_timeout: 30000,
+            default_timeout: 10000,
+            fallback_recommendations: ['Remove dangerous operations and try again'],
+        }),
+        getDangerousPatterns: vi.fn().mockReturnValue([
+            { pattern: /eval\s*\(/, reason: 'Dynamic code execution' },
+            { pattern: /spawn|exec|fork/, reason: 'Process execution functions' },
+            { pattern: /writeFileSync|writeFile/, reason: 'File writing operations' },
+        ]),
+    }),
+}));
+
+vi.mock('../../../configurationLoader.js', () => ({
+    getConfigurationLoader: vi.fn(),
+}));
+
+// Mock ConfigManager
+vi.mock('../../../configManager.js', () => ({
+    default: {
+        getInstance: vi.fn().mockReturnValue({
+            getConfig: vi.fn().mockReturnValue({
+                ai: {
+                    model: 'gpt-3.5-turbo',
+                    apiKey: 'test-key',
+                },
+            }),
+        }),
+    },
+}));
+
+// Mock costs manager
+vi.mock('../../../costsManager.js', () => ({
+    default: {
+        addUsage: vi.fn(),
+        getTotalCosts: vi.fn().mockReturnValue({}),
+    },
+}));
+
 describe('Execute Script Tool', () => {
     let mockSpawn;
     let mockOpenAI;
@@ -81,7 +149,9 @@ describe('Execute Script Tool', () => {
             const result = await executeScript({ script: 123 });
 
             expect(result.success).toBe(false);
-            expect(result.error).toContain('must be of type string');
+            expect(result.error).toContain(
+                'Invalid parameter type for script: expected string, got number'
+            );
         });
 
         it('should reject invalid timeout range', async () => {
@@ -91,7 +161,7 @@ describe('Execute Script Tool', () => {
             });
 
             expect(result.success).toBe(false);
-            expect(result.error).toContain('Timeout must be between 1000 and 30000');
+            expect(result.error).toContain('Timeout must be between 1000 and 30000 milliseconds');
         });
 
         it('should reject timeout too high', async () => {
@@ -101,7 +171,7 @@ describe('Execute Script Tool', () => {
             });
 
             expect(result.success).toBe(false);
-            expect(result.error).toContain('Timeout must be between 1000 and 30000');
+            expect(result.error).toContain('Timeout must be between 1000 and 30000 milliseconds');
         });
     });
 

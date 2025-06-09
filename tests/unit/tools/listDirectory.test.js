@@ -101,14 +101,16 @@ describe('ListDirectory Tool - Fixed Tests', () => {
             const result = await listDirectory({});
 
             expect(result.success).toBe(false);
-            expect(result.error).toContain('directory_path parameter is required');
+            expect(result.error).toContain('Required parameter missing: directory_path');
         });
 
         it('should validate directory_path type', async () => {
             const result = await listDirectory({ directory_path: 123 });
 
             expect(result.success).toBe(false);
-            expect(result.error).toContain('directory_path parameter must be of type string');
+            expect(result.error).toContain(
+                'Invalid parameter type for directory_path: expected string, got number'
+            );
         });
 
         it('should validate boolean parameters', async () => {
@@ -118,7 +120,9 @@ describe('ListDirectory Tool - Fixed Tests', () => {
             });
 
             expect(result.success).toBe(false);
-            expect(result.error).toContain('include_hidden parameter must be of type boolean');
+            expect(result.error).toContain(
+                'Invalid parameter type for include_hidden: expected boolean, got string'
+            );
         });
     });
 

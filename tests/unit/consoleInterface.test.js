@@ -11,11 +11,20 @@ vi.mock('../../logger.js', () => ({
     getLogger: vi.fn(),
 }));
 
+vi.mock('../../uiConfigManager.js', () => ({
+    getUIConfigManager: vi.fn(),
+}));
+
+vi.mock('../../configurationLoader.js', () => ({
+    getConfigurationLoader: vi.fn(),
+}));
+
 describe('ConsoleInterface', () => {
     let consoleInterface;
     let mockReadline;
     let mockLogger;
     let mockRl;
+    let mockUIConfigManager;
 
     beforeEach(async () => {
         vi.clearAllMocks();
@@ -40,8 +49,50 @@ describe('ConsoleInterface', () => {
             error: vi.fn(),
             warn: vi.fn(),
             info: vi.fn(),
+            debug: vi.fn(),
             toolExecutionDetailed: vi.fn(),
             toolResult: vi.fn(),
+        };
+
+        // Create mock UI config manager
+        mockUIConfigManager = {
+            getMessage: vi.fn((path, params = {}) => {
+                const messages = {
+                    'prompts.user': '💭 You: ',
+                    'prefixes.assistant': '🤖 Synth-Dev:',
+                    'status.thinking': '\n🧠 Synth-Dev is thinking...\n',
+                    'status.executing_tools': '🔧 Executing tools...\n',
+                    'status.enhancing_prompt': '\n🔄 \x1b[33mEnhancing prompt...\x1b[0m',
+                    'prefixes.chain_of_thought': '💭 Chain of Thought:',
+                    'prefixes.final_chain_of_thought': '💭 Final Chain of Thought:',
+                    'prefixes.separator': '─',
+                    'errors.tool_execution_failed': 'Tool execution failed',
+                    'startup.title': '🚀 Synth-Dev Console Application Started!',
+                    'startup.model_info': `🤖 Model: ${params.model || '{model}'}`,
+                    'startup.role_info': `🎭 Role: ${params.role || '{role}'}`,
+                    'startup.tools_info': `🔧 Tools: ${params.count || '{count}'} loaded`,
+                    'startup.tools_filtered_info': `🔧 Tools: ${params.filtered || '{filtered}'}/${params.total || '{total}'} available (${params.excluded || '{excluded}'} filtered for role)`,
+                    'startup.instructions':
+                        'Type your message and press Enter to chat.\nUse /help for commands.',
+                    goodbye: '👋 Goodbye!',
+                    'prompts.confirmation': `\n❓ ${params.prompt || '{prompt}'}\n   Type "y" or "yes" to proceed, anything else to cancel:`,
+                    'tools.cancelled': `Tool execution cancelled: ${params.toolName || '{toolName}'}\n`,
+                    'enhancement.failure_message': `\n⚠️  \x1b[33mPrompt enhancement failed: ${params.error || '{error}'}\x1b[0m`,
+                    'enhancement.proceeding_message': '📝 Proceeding with original prompt...\n',
+                    'enhancement.approval_instruction':
+                        '🔄 Press Esc to revert to original or ENTER to submit current prompt',
+                    'enhancement.failure_header': '\n⚠️  \x1b[33mPrompt enhancement failed:\x1b[0m',
+                    'enhancement.original_prompt_header': '\n📝 \x1b[36mOriginal prompt:\x1b[0m',
+                    'enhancement.separator': '─',
+                    'enhancement.options_header': '\n📝 You can:',
+                    'enhancement.option_enter': '   • Press ENTER to use your original prompt',
+                    'enhancement.option_modify': '   • Type your modifications and press ENTER',
+                    'enhancement.option_cancel': '   • Type "cancel" to cancel the operation',
+                    'enhancement.choice_prompt': '\n💭 Your choice: ',
+                    'enhancement.cancel_keyword': 'cancel',
+                };
+                return messages[path] || `[Missing message: ${path}]`;
+            }),
         };
 
         // Setup mocks
@@ -51,6 +102,9 @@ describe('ConsoleInterface', () => {
 
         const loggerModule = await import('../../logger.js');
         loggerModule.getLogger.mockReturnValue(mockLogger);
+
+        const uiConfigModule = await import('../../uiConfigManager.js');
+        uiConfigModule.getUIConfigManager.mockReturnValue(mockUIConfigManager);
 
         // Create ConsoleInterface instance
         consoleInterface = new ConsoleInterface();
@@ -352,9 +406,8 @@ describe('ConsoleInterface', () => {
             const result = await consoleInterface.promptForConfirmation(prompt);
 
             expect(result).toBe(true);
-            expect(mockLogger.raw).toHaveBeenCalledWith('\n❓ Are you sure?');
             expect(mockLogger.raw).toHaveBeenCalledWith(
-                '   Type "y" or "yes" to proceed, anything else to cancel:'
+                '\n❓ Are you sure?\n   Type "y" or "yes" to proceed, anything else to cancel:'
             );
         });
 

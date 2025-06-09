@@ -249,7 +249,9 @@ Just regular content`;
             const result = await exactSearch({ search_string: 123 });
 
             expect(result.success).toBe(false);
-            expect(result.error).toContain('must be of type string');
+            expect(result.error).toContain(
+                'Invalid parameter type for search_string: expected string, got number'
+            );
         });
 
         it('should handle directory scan errors', async () => {

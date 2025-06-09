@@ -17,7 +17,7 @@
                 "properties": {
                     "script": {
                         "type": "string",
-                        "description": "JavaScript code to execute. Must be self-contained and not require external parameters. Can use built-in Node.js modules for file reading (fs.readFileSync), path operations, and data processing. Cannot use modules that modify files, execute commands, or access network. Examples: 'console.log(Math.sqrt(16) + Math.pow(2, 3))' (calculation), 'const fs = require(\"fs\"); const data = fs.readFileSync(\"data.txt\", \"utf8\"); console.log(data.split(\"\\n\").length)' (file processing)"
+                        "description": "JavaScript code to execute. Must be self-contained and not require external parameters. Can use built-in Node.js modules for file reading (fs.readFileSync), path operations, and data processing. Cannot use modules that modify files, execute commands, or access network. Examples: 'console.log(Math.sqrt(16) + Math.pow(2, 3))' (calculation), 'const fs = require(\"fs\"); const data = fs.readFileSync(\"data.txt\", \"utf8\"); console.log(data.split(\"\n\").length)' (file processing)"
                     },
                     "timeout": {
                         "type": "integer",

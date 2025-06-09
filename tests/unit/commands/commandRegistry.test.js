@@ -10,7 +10,25 @@ vi.mock('../../../logger.js', () => ({
         error: vi.fn(),
         warn: vi.fn(),
         info: vi.fn(),
+        debug: vi.fn(),
     }),
+}));
+
+// Mock UI config manager
+vi.mock('../../../uiConfigManager.js', () => ({
+    getUIConfigManager: vi.fn().mockReturnValue({
+        getMessage: vi.fn((path, params = {}) => {
+            if (path === 'errors.command_error') {
+                return `❌ Unknown command: /${params.command}\n📖 Type /help to see available commands`;
+            }
+            return `[Missing message: ${path}]`;
+        }),
+    }),
+}));
+
+// Mock configuration loader
+vi.mock('../../../configurationLoader.js', () => ({
+    getConfigurationLoader: vi.fn(),
 }));
 
 // Create test command classes
@@ -122,7 +140,9 @@ describe('CommandRegistry', () => {
             const result = await registry.executeCommand('nonexistent', '', context);
 
             expect(result).toBe('invalid');
-            expect(mockLogger.raw).toHaveBeenCalledWith('❌ Unknown command: /nonexistent');
+            expect(mockLogger.raw).toHaveBeenCalledWith(
+                '❌ Unknown command: /nonexistent\n📖 Type /help to see available commands'
+            );
         });
     });
 

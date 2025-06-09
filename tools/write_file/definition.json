@@ -21,7 +21,7 @@
                     },
                     "content": {
                         "type": "string",
-                        "description": "Complete content to write to the file as a string. Can include any text data such as code, configuration data, documentation, logs, or plain text. Supports Unicode characters, line breaks (\\n), special characters, and formatting. For structured data like JSON or YAML, pass the properly formatted string representation. Large content is supported up to reasonable file size limits."
+                        "description": "Complete content to write to the file as a string. Can include any text data such as code, configuration data, documentation, logs, or plain text. Supports Unicode characters, line breaks (\n), special characters, and formatting. For structured data like JSON or YAML, pass the properly formatted string representation. Large content is supported up to reasonable file size limits."
                     },
                     "encoding": {
                         "type": "string",

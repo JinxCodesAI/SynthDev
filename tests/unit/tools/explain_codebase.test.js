@@ -5,6 +5,9 @@ import explainCodebase from '../../../tools/explain_codebase/implementation.js';
 // Mock dependencies
 vi.mock('fs', () => ({
     readFileSync: vi.fn(),
+    existsSync: vi.fn(),
+    writeFileSync: vi.fn(),
+    mkdirSync: vi.fn(),
 }));
 
 vi.mock('openai', () => ({
@@ -15,6 +18,26 @@ vi.mock('../../../configManager.js', () => ({
     default: {
         getInstance: vi.fn(),
     },
+}));
+
+vi.mock('../../../toolConfigManager.js', () => ({
+    getToolConfigManager: vi.fn().mockReturnValue({
+        getToolDescription: vi.fn().mockReturnValue('Explain codebase tool'),
+        getErrorMessage: vi.fn().mockReturnValue('Error message'),
+        getValidationMessage: vi.fn((key, params = {}) => {
+            if (key === 'required_parameter_missing') {
+                return `Required parameter missing: ${params.parameter}`;
+            }
+            if (key === 'invalid_parameter_type') {
+                return `Invalid parameter type for ${params.parameter}: expected ${params.expected}, got ${params.actual}`;
+            }
+            return 'Validation message';
+        }),
+    }),
+}));
+
+vi.mock('../../../configurationLoader.js', () => ({
+    getConfigurationLoader: vi.fn(),
 }));
 
 vi.mock('path', async importOriginal => {
@@ -66,28 +89,34 @@ describe('Explain Codebase Tool', () => {
             const result = await explainCodebase({});
 
             expect(result.success).toBe(false);
-            expect(result.error).toContain('question parameter is required');
+            expect(result.error).toContain('Required parameter missing: question');
         });
 
         it('should reject empty question', async () => {
             const result = await explainCodebase({ question: '' });
 
             expect(result.success).toBe(false);
-            expect(result.error).toContain('question parameter is required');
+            expect(result.error).toContain(
+                'question parameter is required and must be a non-empty string'
+            );
         });
 
         it('should reject whitespace-only question', async () => {
             const result = await explainCodebase({ question: '   ' });
 
             expect(result.success).toBe(false);
-            expect(result.error).toContain('question parameter is required');
+            expect(result.error).toContain(
+                'question parameter is required and must be a non-empty string'
+            );
         });
 
         it('should reject non-string question', async () => {
             const result = await explainCodebase({ question: 123 });
 
             expect(result.success).toBe(false);
-            expect(result.error).toContain('must be of type string');
+            expect(result.error).toContain(
+                'Invalid parameter type for question: expected string, got number'
+            );
         });
     });
 

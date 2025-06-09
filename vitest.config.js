@@ -1,5 +1,9 @@
 import { defineConfig } from 'vitest/config';
 
+// Read the environment variable. Defaults to `true` (showing failures)
+// if the variable is unset or not exactly 'false'.
+const showFailures = process.env.REPORTER_SHOW_FAILURES !== 'false';
+
 export default defineConfig({
     test: {
         globals: true,
@@ -25,5 +29,11 @@ export default defineConfig({
                 singleFork: true,
             },
         },
+
+        // This is the definitive reporter configuration.
+        // It passes the `showFailures` option to your custom reporter.
+        reporters: [
+            //     ['./scripts/reporter.js', { showFailures: true }]
+        ],
     },
 });

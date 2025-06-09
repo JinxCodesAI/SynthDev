@@ -56,7 +56,7 @@ class ConfigurationLoader {
         } catch (error) {
             if (required) {
                 throw new Error(
-                    `Failed to load required configuration ${configPath}: ${error.message}`
+                    `Failed to load required configuration ${configPath}: ${error.message} details: ${fullPath}`
                 );
             }
 

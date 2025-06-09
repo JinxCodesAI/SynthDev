@@ -7,6 +7,27 @@ vi.mock('../../../logger.js', () => ({
     getLogger: vi.fn(),
 }));
 
+// Mock UI config manager
+vi.mock('../../../uiConfigManager.js', () => ({
+    getUIConfigManager: vi.fn().mockReturnValue({
+        getCommandHelp: vi.fn().mockReturnValue({
+            help: {
+                title: '📖 Available Commands:',
+                commands: {
+                    help: 'Show this help message',
+                    tools: 'List available tools',
+                    exit: 'Exit the application',
+                },
+            },
+        }),
+    }),
+}));
+
+// Mock configuration loader
+vi.mock('../../../configurationLoader.js', () => ({
+    getConfigurationLoader: vi.fn(),
+}));
+
 describe('HelpCommand', () => {
     let helpCommand;
     let mockLogger;
@@ -26,6 +47,21 @@ describe('HelpCommand', () => {
         // Setup logger mock
         const { getLogger } = await import('../../../logger.js');
         getLogger.mockReturnValue(mockLogger);
+
+        // Setup UI config mock
+        const { getUIConfigManager } = await import('../../../uiConfigManager.js');
+        getUIConfigManager.mockReturnValue({
+            getCommandHelp: vi.fn().mockReturnValue({
+                help: {
+                    title: '📖 Available Commands:',
+                    commands: {
+                        help: 'Show this help message',
+                        tools: 'List available tools',
+                        exit: 'Exit the application',
+                    },
+                },
+            }),
+        });
 
         // Create mock context
         mockContext = {
@@ -116,13 +152,10 @@ describe('HelpCommand', () => {
 
             // Should display fallback help text
             expect(mockLogger.raw).toHaveBeenCalledWith(
-                expect.stringContaining('/help     - Show this help message')
+                expect.stringContaining('📖 Available Commands:')
             );
             expect(mockLogger.raw).toHaveBeenCalledWith(
-                expect.stringContaining('/tools    - List available tools')
-            );
-            expect(mockLogger.raw).toHaveBeenCalledWith(
-                expect.stringContaining('/exit     - Exit the application')
+                expect.stringContaining('/help         - Show this help message')
             );
         });
 
