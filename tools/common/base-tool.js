@@ -6,6 +6,7 @@
 import { join, resolve, relative } from 'path';
 import costsManager from '../../costsManager.js';
 import { getToolConfigManager } from '../../toolConfigManager.js';
+import { getLogger } from '../../logger.js';
 
 export class BaseTool {
     constructor(name, description) {
@@ -13,6 +14,7 @@ export class BaseTool {
         this.description = description;
         this.timestamp = new Date().toISOString();
         this.costsManager = costsManager;
+        this.logger = getLogger();
     }
 
     /**
@@ -300,6 +302,9 @@ export class CommandBaseTool extends BaseTool {
         if (!success) {
             response.success = false;
             response.error = error || 'Command execution failed';
+            this.logger.debug(
+                `Command failed: ${response.error}, stdout: ${stdout}, stderr: ${stderr}`
+            );
         }
 
         return response;

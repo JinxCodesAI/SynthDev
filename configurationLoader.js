@@ -4,8 +4,13 @@
  */
 
 import { readFileSync, existsSync } from 'fs';
-import { join } from 'path';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
 import { getLogger } from './logger.js';
+
+// Get the directory where this module is located (synth-dev installation directory)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 /**
  * Centralized configuration loader that manages external config files
@@ -13,7 +18,8 @@ import { getLogger } from './logger.js';
 class ConfigurationLoader {
     constructor() {
         this.configCache = new Map();
-        this.configDir = join(process.cwd(), 'config');
+        // Use the synth-dev installation directory instead of current working directory
+        this.configDir = join(__dirname, 'config');
         this.logger = getLogger();
     }
 

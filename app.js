@@ -7,6 +7,7 @@
 import ConfigManager from './configManager.js';
 import SystemMessages from './systemMessages.js';
 import { getUIConfigManager } from './uiConfigManager.js';
+import { getConfigurationLoader } from './configurationLoader.js';
 
 /**
  * Parse command line arguments
@@ -184,6 +185,11 @@ class AICoderConsole {
                 process.exit(0);
             }
         );
+
+        // Log config path at verbosity level 1
+        const configLoader = getConfigurationLoader();
+        const configPath = configLoader.getConfigDir();
+        this.logger.info(`📁 Configuration files location: ${configPath}`);
 
         this.consoleInterface.showStartupMessage(
             this.apiClient.getModel(),
