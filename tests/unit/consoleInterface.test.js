@@ -25,8 +25,36 @@ describe('ConsoleInterface', () => {
     let mockLogger;
     let mockRl;
     let mockUIConfigManager;
+    let realConfigMessages;
+    let realApplicationConfig;
+
+    // Helper function to load real configuration values
+    const loadRealConfigValues = async () => {
+        // Import the actual configuration loader to get real config values
+        const { readFileSync } = await import('fs');
+        const { join } = await import('path');
+        const { fileURLToPath } = await import('url');
+        const { dirname } = await import('path');
+
+        const __filename = fileURLToPath(import.meta.url);
+        const __dirname = dirname(__filename);
+        const configDir = join(__dirname, '../../config');
+
+        try {
+            realConfigMessages = JSON.parse(
+                readFileSync(join(configDir, 'ui/console-messages.json'), 'utf8')
+            );
+            realApplicationConfig = JSON.parse(
+                readFileSync(join(configDir, 'defaults/application.json'), 'utf8')
+            );
+        } catch (error) {
+            throw new Error(`Failed to load configuration files: ${error.message}`);
+        }
+    };
 
     beforeEach(async () => {
+        // Load real configuration values
+        await loadRealConfigValues();
         vi.clearAllMocks();
 
         // Create mock readline interface
@@ -54,44 +82,46 @@ describe('ConsoleInterface', () => {
             toolResult: vi.fn(),
         };
 
-        // Create mock UI config manager
+        // Create mock UI config manager that uses real config values
         mockUIConfigManager = {
             getMessage: vi.fn((path, params = {}) => {
-                const messages = {
-                    'prompts.user': '💭 You: ', // This will be overridden by application config
-                    'prefixes.assistant': '🤖 Synth-Dev:',
-                    'status.thinking': '\n🧠 Synth-Dev is thinking...\n',
-                    'status.executing_tools': '🔧 Executing tools...\n',
-                    'status.enhancing_prompt': '\n🔄 \x1b[33mEnhancing prompt...\x1b[0m',
-                    'prefixes.chain_of_thought': '💭 Chain of Thought:',
-                    'prefixes.final_chain_of_thought': '💭 Final Chain of Thought:',
-                    'prefixes.separator': '─',
-                    'errors.tool_execution_failed': 'Tool execution failed',
-                    'startup.title': '🚀 Synth-Dev Console Application Started!',
-                    'startup.model_info': `🤖 Model: ${params.model || '{model}'}`,
-                    'startup.role_info': `🎭 Role: ${params.role || '{role}'}`,
-                    'startup.tools_info': `🔧 Tools: ${params.count || '{count}'} loaded`,
-                    'startup.tools_filtered_info': `🔧 Tools: ${params.filtered || '{filtered}'}/${params.total || '{total}'} available (${params.excluded || '{excluded}'} filtered for role)`,
-                    'startup.instructions':
-                        'Type your message and press Enter to chat.\nUse /help for commands.',
-                    goodbye: '👋 Goodbye!',
-                    'prompts.confirmation': `\n❓ ${params.prompt || '{prompt}'}\n   Type "y" or "yes" to proceed, anything else to cancel:`,
-                    'tools.cancelled': `Tool execution cancelled: ${params.toolName || '{toolName}'}\n`,
-                    'enhancement.failure_message': `\n⚠️  \x1b[33mPrompt enhancement failed: ${params.error || '{error}'}\x1b[0m`,
-                    'enhancement.proceeding_message': '📝 Proceeding with original prompt...\n',
-                    'enhancement.approval_instruction':
-                        '🔄 Press Esc to revert to original or ENTER to submit current prompt',
-                    'enhancement.failure_header': '\n⚠️  \x1b[33mPrompt enhancement failed:\x1b[0m',
-                    'enhancement.original_prompt_header': '\n📝 \x1b[36mOriginal prompt:\x1b[0m',
-                    'enhancement.separator': '─',
-                    'enhancement.options_header': '\n📝 You can:',
-                    'enhancement.option_enter': '   • Press ENTER to use your original prompt',
-                    'enhancement.option_modify': '   • Type your modifications and press ENTER',
-                    'enhancement.option_cancel': '   • Type "cancel" to cancel the operation',
-                    'enhancement.choice_prompt': '\n💭 Your choice: ',
-                    'enhancement.cancel_keyword': 'cancel',
+                // Helper function to get nested value from config
+                const getNestedValue = (obj, path) => {
+                    return path.split('.').reduce((current, key) => current?.[key], obj);
                 };
-                return messages[path] || `[Missing message: ${path}]`;
+
+                // Helper function to format message with parameters
+                const formatMessage = (message, params) => {
+                    if (typeof message !== 'string') {
+                        return message;
+                    }
+                    return message.replace(/\{(\w+)\}/g, (match, key) => {
+                        return params[key] !== undefined ? params[key] : match;
+                    });
+                };
+
+                // Special case for prompts.user - get from application config
+                if (path === 'prompts.user') {
+                    const promptPrefix = realApplicationConfig?.ui_settings?.promptPrefix;
+                    if (!promptPrefix) {
+                        throw new Error(
+                            'Missing required configuration: ui_settings.promptPrefix in defaults/application.json'
+                        );
+                    }
+                    return promptPrefix;
+                }
+
+                // Try to get value from real config
+                const message = getNestedValue(realConfigMessages, path);
+
+                // If not found in config, that's an error
+                if (message === undefined) {
+                    throw new Error(
+                        `Missing required configuration: ${path} in ui/console-messages.json`
+                    );
+                }
+
+                return formatMessage(message, params);
             }),
         };
 
@@ -116,10 +146,12 @@ describe('ConsoleInterface', () => {
 
     describe('constructor', () => {
         it('should initialize with correct properties', () => {
+            const expectedPrompt = realApplicationConfig.ui_settings.promptPrefix;
+            expect(expectedPrompt).toBeDefined(); // Ensure config value exists
             expect(mockReadline.createInterface).toHaveBeenCalledWith({
                 input: process.stdin,
                 output: process.stdout,
-                prompt: '💭 You: ',
+                prompt: expectedPrompt,
             });
             expect(consoleInterface.rl).toBe(mockRl);
             expect(consoleInterface.isPaused).toBe(false);
@@ -181,10 +213,12 @@ describe('ConsoleInterface', () => {
     describe('showMessage', () => {
         it('should show message with default prefix', () => {
             const message = 'Test message';
+            const expectedPrefix = realConfigMessages.prefixes.assistant;
+            expect(expectedPrefix).toBeDefined(); // Ensure config value exists
 
             consoleInterface.showMessage(message);
 
-            expect(mockLogger.user).toHaveBeenCalledWith(message, '🤖 Synth-Dev:');
+            expect(mockLogger.user).toHaveBeenCalledWith(message, expectedPrefix);
         });
 
         it('should show message with custom prefix', () => {
@@ -199,22 +233,29 @@ describe('ConsoleInterface', () => {
 
     describe('showThinking', () => {
         it('should show thinking message', () => {
+            const expectedMessage = realConfigMessages.status.thinking;
+            expect(expectedMessage).toBeDefined(); // Ensure config value exists
+
             consoleInterface.showThinking();
 
-            expect(mockLogger.status).toHaveBeenCalledWith('\n🧠 Synth-Dev is thinking...\n');
+            expect(mockLogger.status).toHaveBeenCalledWith(expectedMessage);
         });
     });
 
     describe('showChainOfThought', () => {
         it('should show chain of thought with formatting', () => {
             const content = 'Test thought process';
+            const expectedPrefix = realConfigMessages.prefixes.chain_of_thought;
+            const expectedSeparator = realConfigMessages.prefixes.separator;
+            expect(expectedPrefix).toBeDefined(); // Ensure config value exists
+            expect(expectedSeparator).toBeDefined(); // Ensure config value exists
 
             consoleInterface.showChainOfThought(content);
 
-            expect(mockLogger.raw).toHaveBeenCalledWith('💭 Chain of Thought:');
-            expect(mockLogger.raw).toHaveBeenCalledWith('─'.repeat(50));
+            expect(mockLogger.raw).toHaveBeenCalledWith(expectedPrefix);
+            expect(mockLogger.raw).toHaveBeenCalledWith(expectedSeparator.repeat(50));
             expect(mockLogger.raw).toHaveBeenCalledWith(content);
-            expect(mockLogger.raw).toHaveBeenCalledWith('─'.repeat(50));
+            expect(mockLogger.raw).toHaveBeenCalledWith(expectedSeparator.repeat(50));
             expect(mockLogger.raw).toHaveBeenCalledWith();
         });
     });
@@ -286,12 +327,12 @@ describe('ConsoleInterface', () => {
         it('should show basic startup message', () => {
             const model = 'gpt-4';
             const totalToolsCount = 10;
+            const expectedTitle = realConfigMessages.startup.title;
+            expect(expectedTitle).toBeDefined(); // Ensure config value exists
 
             consoleInterface.showStartupMessage(model, totalToolsCount);
 
-            expect(mockLogger.raw).toHaveBeenCalledWith(
-                expect.stringContaining('🚀 Synth-Dev Console Application Started!')
-            );
+            expect(mockLogger.raw).toHaveBeenCalledWith(expect.stringContaining(expectedTitle));
             expect(mockLogger.raw).toHaveBeenCalledWith(expect.stringContaining('🤖 Model: gpt-4'));
             expect(mockLogger.raw).toHaveBeenCalledWith(
                 expect.stringContaining('🔧 Tools: 10 loaded')
@@ -333,9 +374,12 @@ describe('ConsoleInterface', () => {
 
     describe('showGoodbye', () => {
         it('should show goodbye message', () => {
+            const expectedMessage = realConfigMessages.goodbye;
+            expect(expectedMessage).toBeDefined(); // Ensure config value exists
+
             consoleInterface.showGoodbye();
 
-            expect(mockLogger.raw).toHaveBeenCalledWith('👋 Goodbye!');
+            expect(mockLogger.raw).toHaveBeenCalledWith(expectedMessage);
         });
     });
 
@@ -370,11 +414,12 @@ describe('ConsoleInterface', () => {
 
     describe('showEnhancingPrompt', () => {
         it('should show enhancing prompt message', () => {
+            const expectedMessage = realConfigMessages.status.enhancing_prompt;
+            expect(expectedMessage).toBeDefined(); // Ensure config value exists
+
             consoleInterface.showEnhancingPrompt();
 
-            expect(mockLogger.status).toHaveBeenCalledWith(
-                '\n🔄 \x1b[33mEnhancing prompt...\x1b[0m'
-            );
+            expect(mockLogger.status).toHaveBeenCalledWith(expectedMessage);
         });
     });
 
@@ -406,9 +451,12 @@ describe('ConsoleInterface', () => {
             const result = await consoleInterface.promptForConfirmation(prompt);
 
             expect(result).toBe(true);
-            expect(mockLogger.raw).toHaveBeenCalledWith(
-                '\n❓ Are you sure?\n   Type "y" or "yes" to proceed, anything else to cancel:'
+            // Check that the confirmation message was displayed (using real config value)
+            const expectedMessage = realConfigMessages.prompts.confirmation.replace(
+                '{prompt}',
+                prompt
             );
+            expect(mockLogger.raw).toHaveBeenCalledWith(expectedMessage);
         });
 
         it('should return true for "yes" input', async () => {

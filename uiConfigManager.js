@@ -49,17 +49,11 @@ class UIConfigManager {
     getMessage(path, params = {}) {
         const messages = this._loadConsoleMessages();
 
-        // Override prompt prefix with application config if available
+        // Override prompt prefix with application config
         if (path === 'prompts.user') {
-            try {
-                const configManager = ConfigManager.getInstance();
-                const config = configManager.getConfig();
-                if (config.ui && config.ui.promptPrefix) {
-                    return config.ui.promptPrefix;
-                }
-            } catch (error) {
-                // Fall back to console-messages.json if config manager not available
-            }
+            const configManager = ConfigManager.getInstance();
+            const config = configManager.getConfig();
+            return config.ui.promptPrefix;
         }
 
         const message = this._getNestedValue(messages, path);

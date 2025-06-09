@@ -77,13 +77,7 @@ class ConfigManager {
      * @returns {Object} Application defaults
      */
     _loadApplicationDefaults() {
-        try {
-            return this.configLoader.loadConfig('defaults/application.json', {}, true);
-        } catch (error) {
-            // If application.json doesn't exist, return empty defaults
-            console.warn('Warning: Could not load application.json defaults:', error.message);
-            return {};
-        }
+        return this.configLoader.loadConfig('defaults/application.json', {}, true);
     }
 
     /**
@@ -165,10 +159,36 @@ class ConfigManager {
 
             // UI Settings
             ui: {
-                defaultRole: uiDefaults.defaultRole || 'coder',
-                showStartupBanner: uiDefaults.showStartupBanner !== false,
-                enableColors: uiDefaults.enableColors !== false,
-                promptPrefix: uiDefaults.promptPrefix || '💭 You: ',
+                defaultRole:
+                    uiDefaults.defaultRole ||
+                    (() => {
+                        throw new Error(
+                            'Missing required configuration: ui_settings.defaultRole in defaults/application.json'
+                        );
+                    })(),
+                showStartupBanner:
+                    uiDefaults.showStartupBanner !== undefined
+                        ? uiDefaults.showStartupBanner
+                        : (() => {
+                              throw new Error(
+                                  'Missing required configuration: ui_settings.showStartupBanner in defaults/application.json'
+                              );
+                          })(),
+                enableColors:
+                    uiDefaults.enableColors !== undefined
+                        ? uiDefaults.enableColors
+                        : (() => {
+                              throw new Error(
+                                  'Missing required configuration: ui_settings.enableColors in defaults/application.json'
+                              );
+                          })(),
+                promptPrefix:
+                    uiDefaults.promptPrefix ||
+                    (() => {
+                        throw new Error(
+                            'Missing required configuration: ui_settings.promptPrefix in defaults/application.json'
+                        );
+                    })(),
             },
 
             // Tool Settings

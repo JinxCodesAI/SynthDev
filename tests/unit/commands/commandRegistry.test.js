@@ -14,14 +14,44 @@ vi.mock('../../../logger.js', () => ({
     }),
 }));
 
-// Mock UI config manager
+// Mock UI config manager with real config loading
 vi.mock('../../../uiConfigManager.js', () => ({
     getUIConfigManager: vi.fn().mockReturnValue({
         getMessage: vi.fn((path, params = {}) => {
-            if (path === 'errors.command_error') {
-                return `❌ Unknown command: /${params.command}\n📖 Type /help to see available commands`;
+            // Load real config values
+            const { getConfigurationLoader } = require('../../../configurationLoader.js');
+            const configLoader = getConfigurationLoader();
+            const realConfigMessages = configLoader.loadConfig(
+                'ui/console-messages.json',
+                {},
+                true
+            );
+
+            // Helper function to get nested value from config
+            const getNestedValue = (obj, path) => {
+                return path.split('.').reduce((current, key) => current?.[key], obj);
+            };
+
+            // Helper function to format message with parameters
+            const formatMessage = (message, params) => {
+                if (typeof message !== 'string') {
+                    return message;
+                }
+                return message.replace(/\{(\w+)\}/g, (match, key) => {
+                    return params[key] !== undefined ? params[key] : match;
+                });
+            };
+
+            // Get value from real config - throw error if missing
+            const message = getNestedValue(realConfigMessages, path);
+
+            if (message === undefined) {
+                throw new Error(
+                    `Missing required configuration: ${path} in ui/console-messages.json`
+                );
             }
-            return `[Missing message: ${path}]`;
+
+            return formatMessage(message, params);
         }),
     }),
 }));
