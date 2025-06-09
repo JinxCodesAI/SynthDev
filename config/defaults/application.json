@@ -16,7 +16,7 @@
     "global_settings": {
         "maxToolCalls": 50,
         "enablePromptEnhancement": false,
-        "verbosityLevel": 2
+        "verbosityLevel": 4
     },
     "ui_settings": {
         "defaultRole": "coder",
