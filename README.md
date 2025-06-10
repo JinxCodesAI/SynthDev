@@ -47,4 +47,4 @@ or maybe even supporting it on [GitHub Sponsors](https://github.com/sponsors/ada
 
 ## License
 
-MIT License
+MIT

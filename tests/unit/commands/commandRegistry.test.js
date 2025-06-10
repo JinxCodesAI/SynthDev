@@ -10,7 +10,55 @@ vi.mock('../../../logger.js', () => ({
         error: vi.fn(),
         warn: vi.fn(),
         info: vi.fn(),
+        debug: vi.fn(),
     }),
+}));
+
+// Mock UI config manager with real config loading
+vi.mock('../../../uiConfigManager.js', () => ({
+    getUIConfigManager: vi.fn().mockReturnValue({
+        getMessage: vi.fn((path, params = {}) => {
+            // Load real config values
+            const { getConfigurationLoader } = require('../../../configurationLoader.js');
+            const configLoader = getConfigurationLoader();
+            const realConfigMessages = configLoader.loadConfig(
+                'ui/console-messages.json',
+                {},
+                true
+            );
+
+            // Helper function to get nested value from config
+            const getNestedValue = (obj, path) => {
+                return path.split('.').reduce((current, key) => current?.[key], obj);
+            };
+
+            // Helper function to format message with parameters
+            const formatMessage = (message, params) => {
+                if (typeof message !== 'string') {
+                    return message;
+                }
+                return message.replace(/\{(\w+)\}/g, (match, key) => {
+                    return params[key] !== undefined ? params[key] : match;
+                });
+            };
+
+            // Get value from real config - throw error if missing
+            const message = getNestedValue(realConfigMessages, path);
+
+            if (message === undefined) {
+                throw new Error(
+                    `Missing required configuration: ${path} in ui/console-messages.json`
+                );
+            }
+
+            return formatMessage(message, params);
+        }),
+    }),
+}));
+
+// Mock configuration loader
+vi.mock('../../../configurationLoader.js', () => ({
+    getConfigurationLoader: vi.fn(),
 }));
 
 // Create test command classes
@@ -122,7 +170,9 @@ describe('CommandRegistry', () => {
             const result = await registry.executeCommand('nonexistent', '', context);
 
             expect(result).toBe('invalid');
-            expect(mockLogger.raw).toHaveBeenCalledWith('❌ Unknown command: /nonexistent');
+            expect(mockLogger.raw).toHaveBeenCalledWith(
+                '❌ Unknown command: /nonexistent\n📖 Type /help to see available commands'
+            );
         });
     });
 

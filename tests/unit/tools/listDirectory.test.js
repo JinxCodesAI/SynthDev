@@ -1,6 +1,6 @@
 // tests/unit/tools/listDirectory.test.js
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
-import { writeFileSync, existsSync, mkdirSync } from 'fs';
+import { writeFileSync, existsSync, mkdirSync, rmSync } from 'fs';
 import { join } from 'path';
 import listDirectory from '../../../tools/list_directory/implementation.js';
 import { cleanupTestDirectory } from '../../helpers/testUtils.js';
@@ -101,14 +101,16 @@ describe('ListDirectory Tool - Fixed Tests', () => {
             const result = await listDirectory({});
 
             expect(result.success).toBe(false);
-            expect(result.error).toContain('directory_path parameter is required');
+            expect(result.error).toContain('Required parameter missing: directory_path');
         });
 
         it('should validate directory_path type', async () => {
             const result = await listDirectory({ directory_path: 123 });
 
             expect(result.success).toBe(false);
-            expect(result.error).toContain('directory_path parameter must be of type string');
+            expect(result.error).toContain(
+                'Invalid parameter type for directory_path: expected string, got number'
+            );
         });
 
         it('should validate boolean parameters', async () => {
@@ -118,7 +120,9 @@ describe('ListDirectory Tool - Fixed Tests', () => {
             });
 
             expect(result.success).toBe(false);
-            expect(result.error).toContain('include_hidden parameter must be of type boolean');
+            expect(result.error).toContain(
+                'Invalid parameter type for include_hidden: expected boolean, got string'
+            );
         });
     });
 
@@ -282,6 +286,226 @@ describe('ListDirectory Tool - Fixed Tests', () => {
             const names1 = result1.files.map(f => f.name).sort();
             const names2 = result2.files.map(f => f.name).sort();
             expect(names1).toEqual(names2);
+        });
+    });
+
+    describe('AI summaries functionality', () => {
+        const indexDir = join(process.cwd(), '.index');
+        const indexFile = join(indexDir, 'codebase-index.json');
+
+        beforeEach(() => {
+            // Create test files
+            writeFileSync(join(testDir, 'file1.txt'), 'content1');
+            writeFileSync(join(testDir, 'file2.js'), 'content2');
+            mkdirSync(join(testDir, 'subdir1'));
+        });
+
+        afterEach(() => {
+            // Clean up index directory if it was created for testing
+            if (existsSync(indexDir)) {
+                try {
+                    rmSync(indexDir, { recursive: true, force: true });
+                } catch (error) {
+                    // Ignore cleanup errors
+                }
+            }
+        });
+
+        it('should work without summaries when include_summaries is false', async () => {
+            const result = await listDirectory({
+                directory_path: 'test-temp',
+                include_summaries: false,
+            });
+
+            expect(result.success).toBe(true);
+            expect(result.files).toBeDefined();
+
+            // Ensure no ai_summary fields are present
+            result.files.forEach(file => {
+                expect(file.ai_summary).toBeUndefined();
+            });
+        });
+
+        it('should work without summaries when include_summaries is true but no index exists', async () => {
+            const result = await listDirectory({
+                directory_path: 'test-temp',
+                include_summaries: true,
+            });
+
+            expect(result.success).toBe(true);
+            expect(result.files).toBeDefined();
+
+            // Ensure no ai_summary fields are present when index doesn't exist
+            result.files.forEach(file => {
+                expect(file.ai_summary).toBeUndefined();
+            });
+        });
+
+        it('should include AI summaries when available and requested', async () => {
+            // Create mock index data
+            const mockIndexData = {
+                metadata: {
+                    generated: new Date().toISOString(),
+                    version: '1.0.0',
+                },
+                files: {
+                    'test-temp/file1.txt': {
+                        path: 'test-temp/file1.txt',
+                        name: 'file1.txt',
+                        type: 'file',
+                        ai_summary: 'This is a test file containing sample content.',
+                    },
+                    'test-temp\\file2.js': {
+                        path: 'test-temp\\file2.js',
+                        name: 'file2.js',
+                        type: 'file',
+                        ai_summary: 'This is a JavaScript file with test content.',
+                    },
+                },
+            };
+
+            // Create .index directory and file
+            mkdirSync(indexDir, { recursive: true });
+            writeFileSync(indexFile, JSON.stringify(mockIndexData, null, 2));
+
+            const result = await listDirectory({
+                directory_path: 'test-temp',
+                include_summaries: true,
+            });
+
+            expect(result.success).toBe(true);
+            expect(result.files).toBeDefined();
+            expect(result.files.length).toBeGreaterThan(0);
+
+            // Check that summaries are included for files that have them
+            const file1 = result.files.find(f => f.name === 'file1.txt');
+            const file2 = result.files.find(f => f.name === 'file2.js');
+
+            expect(file1).toBeDefined();
+            expect(file1.ai_summary).toBe('This is a test file containing sample content.');
+
+            expect(file2).toBeDefined();
+            expect(file2.ai_summary).toBe('This is a JavaScript file with test content.');
+        });
+
+        it('should handle corrupted index file gracefully', async () => {
+            // Create .index directory with corrupted JSON
+            mkdirSync(indexDir, { recursive: true });
+            writeFileSync(indexFile, '{ invalid json content');
+
+            const result = await listDirectory({
+                directory_path: 'test-temp',
+                include_summaries: true,
+            });
+
+            expect(result.success).toBe(true);
+            expect(result.files).toBeDefined();
+
+            // Should work without summaries when index is corrupted
+            result.files.forEach(file => {
+                expect(file.ai_summary).toBeUndefined();
+            });
+        });
+
+        it('should handle mixed scenarios with some files having summaries', async () => {
+            // Create mock index data with only some files having summaries
+            const mockIndexData = {
+                metadata: {
+                    generated: new Date().toISOString(),
+                    version: '1.0.0',
+                },
+                files: {
+                    'test-temp/file1.txt': {
+                        path: 'test-temp/file1.txt',
+                        name: 'file1.txt',
+                        type: 'file',
+                        ai_summary: 'This file has a summary.',
+                    },
+                    // file2.js intentionally omitted - no summary
+                },
+            };
+
+            mkdirSync(indexDir, { recursive: true });
+            writeFileSync(indexFile, JSON.stringify(mockIndexData, null, 2));
+
+            const result = await listDirectory({
+                directory_path: 'test-temp',
+                include_summaries: true,
+            });
+
+            expect(result.success).toBe(true);
+
+            const file1 = result.files.find(f => f.name === 'file1.txt');
+            const file2 = result.files.find(f => f.name === 'file2.js');
+
+            expect(file1).toBeDefined();
+            expect(file1.ai_summary).toBe('This file has a summary.');
+
+            expect(file2).toBeDefined();
+            expect(file2.ai_summary).toBeUndefined();
+        });
+
+        it('should validate include_summaries parameter type', async () => {
+            const result = await listDirectory({
+                directory_path: 'test-temp',
+                include_summaries: 'yes',
+            });
+
+            expect(result.success).toBe(false);
+            expect(result.error).toContain(
+                'Invalid parameter type for include_summaries: expected boolean, got string'
+            );
+        });
+
+        it('should include AI summaries in recursive mode', async () => {
+            // Create nested structure
+            mkdirSync(join(testDir, 'subdir1', 'nested'), { recursive: true });
+            writeFileSync(join(testDir, 'subdir1', 'nested', 'deep.txt'), 'deep content');
+
+            // Create mock index data with nested file
+            const mockIndexData = {
+                metadata: {
+                    generated: new Date().toISOString(),
+                    version: '1.0.0',
+                },
+                files: {
+                    'test-temp/file1.txt': {
+                        path: 'test-temp/file1.txt',
+                        name: 'file1.txt',
+                        type: 'file',
+                        ai_summary: 'Root level file summary.',
+                    },
+                    'test-temp/subdir1/nested/deep.txt': {
+                        path: 'test-temp/subdir1/nested/deep.txt',
+                        name: 'deep.txt',
+                        type: 'file',
+                        ai_summary: 'Deep nested file summary.',
+                    },
+                },
+            };
+
+            mkdirSync(indexDir, { recursive: true });
+            writeFileSync(indexFile, JSON.stringify(mockIndexData, null, 2));
+
+            const result = await listDirectory({
+                directory_path: 'test-temp',
+                recursive: true,
+                include_summaries: true,
+                max_depth: 3,
+            });
+
+            expect(result.success).toBe(true);
+            expect(result.files).toBeDefined();
+
+            // Find the files and check their summaries
+            const rootFile = result.files.find(f => f.name === 'file1.txt');
+            const deepFile = result.files.find(f => f.name === 'deep.txt');
+
+            expect(rootFile).toBeDefined();
+            expect(rootFile.ai_summary).toBe('Root level file summary.');
+
+            expect(deepFile).toBeDefined();
+            expect(deepFile.ai_summary).toBe('Deep nested file summary.');
         });
     });
 });

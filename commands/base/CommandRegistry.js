@@ -4,6 +4,7 @@
  */
 
 import { getLogger } from '../../logger.js';
+import { getUIConfigManager } from '../../uiConfigManager.js';
 
 export class CommandRegistry {
     constructor() {
@@ -93,8 +94,11 @@ export class CommandRegistry {
 
         if (!command) {
             const logger = getLogger();
-            logger.raw(`❌ Unknown command: /${commandName}`);
-            logger.raw('📖 Type /help to see available commands\n');
+            const uiConfig = getUIConfigManager();
+            const errorMessage = uiConfig.getMessage('errors.command_error', {
+                command: commandName,
+            });
+            logger.raw(errorMessage);
             return 'invalid';
         }
 

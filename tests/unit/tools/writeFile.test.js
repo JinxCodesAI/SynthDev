@@ -124,14 +124,14 @@ describe('WriteFile Tool - Fixed Tests', () => {
             const result = await writeFile({ content: 'Hello' });
 
             expect(result.success).toBe(false);
-            expect(result.error).toContain('file_path parameter is required');
+            expect(result.error).toContain('Required parameter missing: file_path');
         });
 
         it('should require content parameter', async () => {
             const result = await writeFile({ file_path: 'test-temp/test.txt' });
 
             expect(result.success).toBe(false);
-            expect(result.error).toContain('content parameter is required');
+            expect(result.error).toContain('Required parameter missing: content');
         });
 
         it('should validate file_path type', async () => {
@@ -141,7 +141,9 @@ describe('WriteFile Tool - Fixed Tests', () => {
             });
 
             expect(result.success).toBe(false);
-            expect(result.error).toContain('file_path parameter must be of type string');
+            expect(result.error).toContain(
+                'Invalid parameter type for file_path: expected string, got number'
+            );
         });
 
         it('should validate content type', async () => {
@@ -151,7 +153,9 @@ describe('WriteFile Tool - Fixed Tests', () => {
             });
 
             expect(result.success).toBe(false);
-            expect(result.error).toContain('content parameter must be of type string');
+            expect(result.error).toContain(
+                'Invalid parameter type for content: expected string, got number'
+            );
         });
 
         it('should validate boolean parameters', async () => {
@@ -162,7 +166,9 @@ describe('WriteFile Tool - Fixed Tests', () => {
             });
 
             expect(result.success).toBe(false);
-            expect(result.error).toContain('create_directories parameter must be of type boolean');
+            expect(result.error).toContain(
+                'Invalid parameter type for create_directories: expected boolean, got string'
+            );
         });
     });
 

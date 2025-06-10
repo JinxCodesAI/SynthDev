@@ -81,14 +81,16 @@ describe('ReadFile Tool - Fixed Tests', () => {
             const result = await readFile({});
 
             expect(result.success).toBe(false);
-            expect(result.error).toContain('file_path parameter is required');
+            expect(result.error).toContain('Required parameter missing: file_path');
         });
 
         it('should validate file_path type', async () => {
             const result = await readFile({ file_path: 123 });
 
             expect(result.success).toBe(false);
-            expect(result.error).toContain('file_path parameter must be of type string');
+            expect(result.error).toContain(
+                'Invalid parameter type for file_path: expected string, got number'
+            );
         });
 
         it('should validate start_line parameter', async () => {

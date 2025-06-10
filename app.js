@@ -6,6 +6,8 @@
 // import { fileURLToPath } from 'url';
 import ConfigManager from './configManager.js';
 import SystemMessages from './systemMessages.js';
+import { getUIConfigManager } from './uiConfigManager.js';
+import { getConfigurationLoader } from './configurationLoader.js';
 
 /**
  * Parse command line arguments
@@ -36,32 +38,18 @@ function parseCommandLineArgs() {
             options.fastUrl = arg.split('=')[1];
         } else if (arg === '--help' || arg === '-h') {
             // Use raw console.log for help since logger isn't initialized yet
+            const uiConfig = getUIConfigManager();
+            const cliHelp = uiConfig.getCliHelp();
+
             console.log(`
-Usage: synth-dev [options]
+${cliHelp.title}
+${cliHelp.usage}
 
 Options:
-  --api-key=<key>        Provide base API key via command line
-  --api_key=<key>        Alternative format for base API key
-  --smart-model=<model>  Provide smart model name via command line
-  --smart_model=<model>  Alternative format for smart model name
-  --fast-model=<model>   Provide fast model name via command line
-  --fast_model=<model>   Alternative format for fast model name
-  --smart-api-key=<key>  Provide smart model API key via command line
-  --smart_api_key=<key>  Alternative format for smart model API key
-  --fast-api-key=<key>   Provide fast model API key via command line
-  --fast_api_key=<key>   Alternative format for fast model API key
-  --smart-url=<url>      Provide smart model base URL via command line
-  --smart_url=<url>      Alternative format for smart model base URL
-  --fast-url=<url>       Provide fast model base URL via command line
-  --fast_url=<url>       Alternative format for fast model base URL
-  --help, -h             Show this help message
+${cliHelp.options.map(opt => `  ${opt}`).join('\n')}
 
 Examples:
-  synth-dev
-  synth-dev --api-key=sk-your-api-key-here
-  synth-dev --smart-model=gpt-4.1 --fast-model=gpt-4.1-mini
-  synth-dev --smart-api-key=sk-smart-key --fast-api-key=sk-fast-key
-  synth-dev --smart-url=https://api.openai.com/v1 --fast-url=https://api.openai.com/v1
+${cliHelp.examples.map(ex => `  ${ex}`).join('\n')}
             `);
             process.exit(0);
         }
@@ -198,6 +186,11 @@ class AICoderConsole {
             }
         );
 
+        // Log config path at verbosity level 1
+        const configLoader = getConfigurationLoader();
+        const configPath = configLoader.getConfigDir();
+        this.logger.info(`📁 Configuration files location: ${configPath}`);
+
         this.consoleInterface.showStartupMessage(
             this.apiClient.getModel(),
             this.toolManager.getToolsCount(),
@@ -329,16 +322,17 @@ async function main() {
         await app.start();
     } catch (error) {
         // Use raw console.error for startup errors since logger may not be initialized
-        console.error(`
-❌ Error: ${error.message}
-
-Please:
-1. Copy env.template to .env and add your API key, OR
-2. Use --api-key=<your-key> command line argument, OR
-3. Enter your API key when prompted
-
-Get your API key from: https://platform.openai.com/api-keys
-        `);
+        try {
+            const uiConfig = getUIConfigManager();
+            const errorMessage = uiConfig.getMessage('errors.startup_error', {
+                message: error.message,
+            });
+            const errorDetails = uiConfig.getMessage('errors.startup_error_details');
+            console.error(`\n${errorMessage}${errorDetails}\n`);
+        } catch (_configError) {
+            // Fallback if configuration loading fails
+            console.error(`\n❌ Error: ${error.message}\n`);
+        }
         process.exit(1);
     }
 }

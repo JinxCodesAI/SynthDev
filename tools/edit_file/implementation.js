@@ -16,13 +16,12 @@
 
 import { readFileSync, writeFileSync, existsSync, statSync } from 'fs';
 import { FileBaseTool } from '../common/base-tool.js';
+import { getToolConfigManager } from '../../toolConfigManager.js';
 
 class EditFileTool extends FileBaseTool {
     constructor() {
-        super(
-            'edit_file',
-            'Edit content of a file by replacing text between two unique boundary strings'
-        );
+        const toolConfig = getToolConfigManager();
+        super('edit_file', toolConfig.getToolDescription('edit_file'));
 
         // Define parameter validation
         this.requiredParams = ['file_path', 'operation', 'boundary_start', 'boundary_end'];
@@ -34,6 +33,8 @@ class EditFileTool extends FileBaseTool {
             new_content: 'string',
             encoding: 'string',
         };
+
+        this.toolConfig = toolConfig;
     }
 
     async implementation(params) {
@@ -48,7 +49,7 @@ class EditFileTool extends FileBaseTool {
 
         // Additional validation for operation
         if (!['replace', 'delete'].includes(operation)) {
-            return this.createErrorResponse("operation must be 'replace' or 'delete'", {
+            return this.createErrorResponse(this.toolConfig.getErrorMessage('invalid_operation'), {
                 file_path,
                 operation,
                 valid_operations: ['replace', 'delete'],
@@ -57,7 +58,9 @@ class EditFileTool extends FileBaseTool {
 
         if (operation === 'replace' && typeof new_content !== 'string') {
             return this.createErrorResponse(
-                'new_content parameter is required for replace operation and must be a string',
+                this.toolConfig.getValidationMessage('required_parameter_missing', {
+                    parameter: 'new_content',
+                }),
                 { file_path, operation }
             );
         }

@@ -52,7 +52,7 @@ The `execute_script` tool allows AI agents to execute JavaScript code in a sandb
 
 ```javascript
 {
-  "script": "const fs = require('fs'); const data = fs.readFileSync('data.txt', 'utf8'); console.log('Lines:', data.split('\\n').length);"
+  "script": "const fs = require('fs'); const data = fs.readFileSync('data.txt', 'utf8'); console.log('Lines:', data.split('\n').length);"
 }
 ```
 

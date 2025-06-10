@@ -119,14 +119,18 @@ describe('GetTime Tool', () => {
             const result = await getTime({ format: 123 });
 
             expect(result.success).toBe(false);
-            expect(result.error).toContain('format parameter must be of type string');
+            expect(result.error).toContain(
+                'Invalid parameter type for format: expected string, got number'
+            );
         });
 
         it('should validate timezone parameter type', async () => {
             const result = await getTime({ timezone: 123 });
 
             expect(result.success).toBe(false);
-            expect(result.error).toContain('timezone parameter must be of type string');
+            expect(result.error).toContain(
+                'Invalid parameter type for timezone: expected string, got number'
+            );
         });
 
         it('should handle invalid format values', async () => {

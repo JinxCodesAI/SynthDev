@@ -27,6 +27,7 @@ class ExecuteTerminalTool extends CommandBaseTool {
         }
 
         return new Promise(resolve => {
+            this.logger.debug(`Executing terminal command: ${command}`);
             exec(command, (error, stdout, stderr) => {
                 if (error) {
                     resolve(this.createCommandResponse(false, stdout, stderr, error.message));

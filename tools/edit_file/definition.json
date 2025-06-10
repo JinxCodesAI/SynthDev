@@ -11,7 +11,7 @@
         "type": "function",
         "function": {
             "name": "edit_file",
-            "description": "Edit file content by replacing text between two unique boundary strings. This tool works by finding two unique strings in the file that mark the beginning and end of the section to be replaced. CRITICAL: Both boundary strings must exist exactly once in the file. Use read_file first to identify suitable unique boundary strings. The boundary strings themselves are included in the replacement - they will be removed and replaced by the new content.\n\nRECOVERY FEATURE: For 'replace' operations, if boundary strings are found multiple times, the tool attempts automatic recovery by extending the boundaries using content from new_content to make them unique. This helps when AI gets confused about boundary selection.\n\nExample usage:\nIf file contains: 'function test() {\\n  console.log(\"old\");\\n}'\nTo replace the console.log line:\n- boundary_start: 'function test() {\\n  '\n- boundary_end: '\\n}'\n- new_content: 'function test() {\\n  console.log(\"new\");\\n}'\n\nThe result will be: 'function test() {\\n  console.log(\"new\");\\n}'\n\nALWAYS use read_file first to see the exact content and line breaks before using this tool.",
+            "description": "Edit file content by replacing text between two unique boundary strings. This tool works by finding two unique strings in the file that mark the beginning and end of the section to be replaced. CRITICAL: Both boundary strings must exist exactly once in the file. Use read_file first to identify suitable unique boundary strings. The boundary strings themselves are included in the replacement - they will be removed and replaced by the new content.\n\nRECOVERY FEATURE: For 'replace' operations, if boundary strings are found multiple times, the tool attempts automatic recovery by extending the boundaries using content from new_content to make them unique. This helps when AI gets confused about boundary selection.\n\nExample usage:\nIf file contains: 'function test() {\n  console.log(\"old\");\n}'\nTo replace the console.log line:\n- boundary_start: 'function test() {\n  '\n- boundary_end: '\n}'\n- new_content: 'function test() {\n  console.log(\"new\");\n}'\n\nThe result will be: 'function test() {\n  console.log(\"new\");\n}'\n\nALWAYS use read_file first to see the exact content and line breaks before using this tool.",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -26,15 +26,15 @@
                     },
                     "boundary_start": {
                         "type": "string",
-                        "description": "Unique string that marks the beginning of the section to edit. This exact string must appear exactly once in the file. Include newlines (\\n) as they appear in the file. This string will be part of what gets replaced."
+                        "description": "Unique string that marks the beginning of the section to edit. This exact string must appear exactly once in the file. Include newlines (\n) as they appear in the file. This string will be part of what gets replaced."
                     },
                     "boundary_end": {
                         "type": "string",
-                        "description": "Unique string that marks the end of the section to edit. This exact string must appear exactly once in the file. Include newlines (\\n) as they appear in the file. This string will be part of what gets replaced."
+                        "description": "Unique string that marks the end of the section to edit. This exact string must appear exactly once in the file. Include newlines (\n) as they appear in the file. This string will be part of what gets replaced."
                     },
                     "new_content": {
                         "type": "string",
-                        "description": "New content to insert between the boundaries (for 'replace' operation only). This content completely replaces everything from boundary_start to boundary_end inclusive. Include proper newlines (\\n) and indentation as needed."
+                        "description": "New content to insert between the boundaries (for 'replace' operation only). This content completely replaces everything from boundary_start to boundary_end inclusive. Include proper newlines (\n) and indentation as needed."
                     },
                     "encoding": {
                         "type": "string",

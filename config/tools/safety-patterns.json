@@ -1,0 +1,68 @@
+{
+    "ai_safety_prompt": "You are a security expert analyzing JavaScript code for potential safety issues. Evaluate this script for dangerous operations:\n\n```javascript\n{script}\n```\n\nALLOWED operations:\n- Reading files with fs.readFileSync() from current directory\n- Basic math calculations and data processing\n- String manipulation and JSON parsing\n- Console output for results\n- Path operations (path.join, path.resolve, etc.)\n- Basic Node.js built-in modules (fs for reading, path, util, etc.)\n\nFORBIDDEN operations:\n- Writing, modifying, or deleting files\n- Executing shell commands or spawning processes\n- Network requests or external connections\n- Importing external packages or modules\n- Accessing environment variables or system information\n- Using eval() or similar dynamic code execution\n- File system operations outside current directory\n\nRespond with a JSON object in this exact format:\n{\n  \"safe\": true/false,\n  \"confidence\": 0.0-1.0,\n  \"issues\": [\"list of specific security issues found\"],\n  \"reasoning\": \"brief explanation of the assessment\",\n  \"recommendations\": [\"suggestions if unsafe\"]\n}\n\nMark as SAFE if script only uses allowed operations. Mark as UNSAFE only if it uses forbidden operations. Be precise and focus on actual security violations.",
+    "dangerous_patterns": [
+        {
+            "pattern": "require\\s*\\(\\s*['\"]child_process['\"]\\s*\\)",
+            "reason": "Attempts to spawn child processes"
+        },
+        {
+            "pattern": "spawn|exec|fork",
+            "reason": "Process execution functions"
+        },
+        {
+            "pattern": "writeFileSync|writeFile|appendFileSync|appendFile",
+            "reason": "File writing operations"
+        },
+        {
+            "pattern": "unlinkSync|unlink|rmSync|rm",
+            "reason": "File deletion operations"
+        },
+        {
+            "pattern": "mkdirSync|mkdir|rmdirSync|rmdir",
+            "reason": "Directory manipulation"
+        },
+        {
+            "pattern": "eval\\s*\\(",
+            "reason": "Dynamic code execution"
+        },
+        {
+            "pattern": "Function\\s*\\(",
+            "reason": "Dynamic function creation"
+        },
+        {
+            "pattern": "process\\.exit",
+            "reason": "Process termination"
+        },
+        {
+            "pattern": "require\\s*\\(\\s*['\"]http['\"]\\s*\\)|require\\s*\\(\\s*['\"]https['\"]\\s*\\)",
+            "reason": "Network access modules"
+        },
+        {
+            "pattern": "require\\s*\\(\\s*['\"]net['\"]\\s*\\)",
+            "reason": "Network socket access"
+        },
+        {
+            "pattern": "process\\.env",
+            "reason": "Environment variable access"
+        },
+        {
+            "pattern": "\\.\\./",
+            "reason": "Directory traversal attempt"
+        }
+    ],
+    "error_messages": {
+        "timeout_invalid": "Timeout must be between 1000 and 30000 milliseconds",
+        "safety_validation_failed": "Script failed AI safety validation",
+        "execution_failed": "Failed to execute script: {error}",
+        "ai_assessment_failed": "AI safety assessment failed, falling back to pattern matching",
+        "script_too_large": "Script too large (max 50KB)",
+        "parse_error": "AI safety assessment failed - could not parse response",
+        "fallback_recommendations": ["Remove dangerous operations and try again"]
+    },
+    "limits": {
+        "max_script_size": 50000,
+        "min_timeout": 1000,
+        "max_timeout": 30000,
+        "default_timeout": 10000
+    }
+}
