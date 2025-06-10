@@ -1,13 +1,13 @@
 # Git Integration for SnapshotManager
 
-The SnapshotManager now includes comprehensive Git integration that automatically manages feature branches and commits when Git is available.
+The SnapshotManager includes comprehensive Git integration that leverages Git's native capabilities for snapshot management when Git is available.
 
 ## Overview
 
-The enhanced SnapshotManager provides two modes of operation:
+The enhanced SnapshotManager provides two distinct modes of operation:
 
-1. **Legacy Mode**: Traditional in-memory file backup (when Git is not available)
-2. **Git Mode**: Automatic Git branch management with commits (when Git is available)
+1. **Legacy Mode**: Traditional in-memory file backup and restoration (when Git is not available)
+2. **Git Mode**: Git-powered snapshots using commits and git reset for restoration (when Git is available)
 
 ## Features
 
@@ -29,6 +29,14 @@ The enhanced SnapshotManager provides two modes of operation:
 - Commit messages include timestamp and affected files: `Synth-Dev [YYYY-MM-DD HH:MM:SS]: Modified file1.js, file2.py`
 - Multi-line commit messages include the original user instruction
 - Only commits files that were actually modified
+
+### Git-Powered Snapshots
+
+- **Snapshots are Git commits**: Each user instruction creates a Git commit that serves as a snapshot
+- **Restoration uses git reset**: Restoring a snapshot performs `git reset --hard` to the target commit
+- **No file-based backup**: Git's native history tracking replaces in-memory file storage
+- **Commit history as snapshot list**: The `/snapshots` command displays Git commit history
+- **No snapshot deletion**: Individual commits cannot be "deleted" (use Git commands if needed)
 
 ### Merge Operations
 
@@ -52,10 +60,21 @@ Git integration works automatically when:
 /snapshots
 ```
 
-The snapshots interface now includes Git-specific commands when in Git mode:
+The snapshots interface adapts based on the current mode:
 
+**Git Mode Commands:**
+
+- `r[number]` - Restore snapshot using `git reset --hard` to the commit
 - `m` or `merge` - Merge feature branch to original branch
 - `s` or `switch` - Switch back to original branch without merging
+- `[number]` - View detailed commit information
+
+**Legacy Mode Commands:**
+
+- `r[number]` - Restore snapshot using file-based restoration
+- `d[number]` - Delete snapshot from memory
+- `c` - Clear all snapshots
+- `[number]` - View detailed snapshot information
 
 ### Git Status Display
 
@@ -64,6 +83,7 @@ The snapshots interface shows Git status information:
 - Git availability and mode status
 - Original branch name
 - Current feature branch name (if active)
+- Commit history with hashes and authors (in Git mode)
 
 ## Implementation Details
 
@@ -81,17 +101,25 @@ Provides Git operations using the existing ExecuteTerminalTool:
 - `commit(message)` - Commit staged changes
 - `mergeBranch(name)` - Merge branch into current branch
 - `generateBranchName(instruction)` - Generate safe branch names
+- `getCommitHistory(limit)` - Get commit history for snapshot display
+- `resetToCommit(hash)` - Perform hard reset to specific commit
+- `getCommitDetails(hash)` - Get detailed information about a commit
+- `commitExists(hash)` - Check if a commit exists
 
 #### Enhanced SnapshotManager
 
 - Automatic Git initialization on startup
-- Git-aware snapshot creation
+- Git-aware snapshot creation and management
 - Automatic file backup and commit workflow
+- Git-powered restoration using `git reset`
+- Dual-mode operation (Git vs Legacy)
 - Branch management methods
 
 #### Updated SnapshotsCommand
 
-- Git status display in interactive interface
+- Mode-aware interface (Git vs Legacy commands)
+- Git commit history display
+- Git reset-based restoration
 - Merge and switch commands
 - User-friendly Git operation confirmations
 
@@ -139,16 +167,40 @@ The Git integration follows the established verbosity system:
     Original instruction: Create a new configuration file
     ```
 
-4. **User can manage branches via `/snapshots`**
+4. **User can manage snapshots via `/snapshots`**
 
     ```
+    📸 Available Snapshots:
+    ════════════════════════════════════════════════════════════════════════════════
     🌿 Git Status: Active
        Original branch: main
        Feature branch: synth-dev/20250607T123456-create-new-configuration-file
 
+    1. [2025-06-07 12:34:56] Create a new configuration file
+       🔗 Git: a1b2c3d | Author: John Doe
+    2. [2025-06-07 12:35:30] Update configuration with new settings
+       🔗 Git: e4f5g6h | Author: John Doe
+
     Commands:
+      [number] - View detailed snapshot info
+      r[number] - Restore snapshot (e.g., r1)
+      🔗 Git mode: Restore uses git reset to commit
       m - Merge feature branch to original branch
       s - Switch back to original branch (without merge)
+      q - Quit snapshots view
+    ```
+
+5. **User can restore to any commit**
+
+    ```
+    User: r1
+    Reset to Git commit a1b2c3d?
+      🔗 Commit: Create a new configuration file
+      ⚠️  This will discard all changes after this commit!
+
+    ✅ Successfully reset to commit a1b2c3d
+       🔗 Create a new configuration file
+       📝 Successfully reset to commit a1b2c3d
     ```
 
 ## Configuration
@@ -168,12 +220,14 @@ The enhanced SnapshotManager maintains full backward compatibility:
 
 ## Benefits
 
-1. **Version Control Integration**: Seamless integration with existing Git workflows
+1. **Native Git Integration**: Leverages Git's powerful history and reset capabilities
 2. **Automatic Branch Management**: No manual Git operations required
 3. **Safe Experimentation**: Changes are isolated in feature branches
-4. **Easy Rollback**: Git history provides additional rollback options
+4. **Powerful Restoration**: Git reset provides instant, complete state restoration
 5. **Team Collaboration**: Feature branches can be shared and reviewed
-6. **Audit Trail**: Git commits provide detailed change history
+6. **Comprehensive Audit Trail**: Git commits provide detailed change history
+7. **No Storage Overhead**: Uses Git's native storage instead of duplicating file content
+8. **Familiar Git Workflow**: Developers can use standard Git commands alongside Synth-Dev
 
 ## Limitations
 
@@ -181,6 +235,9 @@ The enhanced SnapshotManager maintains full backward compatibility:
 - Only works in Git repositories
 - Does not handle Git conflicts automatically
 - Feature branches are created locally (not pushed to remote)
+- Git reset discards uncommitted changes (by design)
+- Cannot "delete" individual commits (use Git commands if needed)
+- Restoration in Git mode affects the entire working directory
 
 ## Future Enhancements
 

@@ -290,8 +290,8 @@ describe('SnapshotManager', () => {
     });
 
     describe('getSnapshotSummaries', () => {
-        it('should return empty array when no snapshots', () => {
-            const summaries = snapshotManager.getSnapshotSummaries();
+        it('should return empty array when no snapshots', async () => {
+            const summaries = await snapshotManager.getSnapshotSummaries();
             expect(summaries).toEqual([]);
         });
 
@@ -305,7 +305,7 @@ describe('SnapshotManager', () => {
             snapshotManager.currentSnapshot.modifiedFiles.add('test1.js');
             snapshotManager.currentSnapshot.modifiedFiles.add('test2.js');
 
-            const summaries = snapshotManager.getSnapshotSummaries();
+            const summaries = await snapshotManager.getSnapshotSummaries();
 
             expect(summaries).toHaveLength(1);
             expect(summaries[0]).toEqual({
@@ -314,13 +314,14 @@ describe('SnapshotManager', () => {
                 timestamp: expect.any(String),
                 fileCount: 2,
                 modifiedFiles: ['test1.js', 'test2.js'],
+                isGitCommit: false,
             });
         });
     });
 
     describe('getSnapshot', () => {
-        it('should return null for non-existent snapshot', () => {
-            const snapshot = snapshotManager.getSnapshot(999);
+        it('should return null for non-existent snapshot', async () => {
+            const snapshot = await snapshotManager.getSnapshot(999);
             expect(snapshot).toBeNull();
         });
 
@@ -328,7 +329,7 @@ describe('SnapshotManager', () => {
             await snapshotManager.initialize();
             await snapshotManager.createSnapshot('Test snapshot');
 
-            const snapshot = snapshotManager.getSnapshot(1);
+            const snapshot = await snapshotManager.getSnapshot(1);
 
             expect(snapshot).toBeDefined();
             expect(snapshot.id).toBe(1);
@@ -396,9 +397,10 @@ describe('SnapshotManager', () => {
     });
 
     describe('deleteSnapshot', () => {
-        it('should return false for non-existent snapshot', () => {
-            const result = snapshotManager.deleteSnapshot(999);
-            expect(result).toBe(false);
+        it('should return error for non-existent snapshot', async () => {
+            const result = await snapshotManager.deleteSnapshot(999);
+            expect(result.success).toBe(false);
+            expect(result.error).toContain('not found');
         });
 
         it('should delete snapshot by ID', async () => {
@@ -410,9 +412,9 @@ describe('SnapshotManager', () => {
 
             await snapshotManager.createSnapshot('Test snapshot 2');
 
-            const result = snapshotManager.deleteSnapshot(1);
+            const result = await snapshotManager.deleteSnapshot(1);
 
-            expect(result).toBe(true);
+            expect(result.success).toBe(true);
             expect(snapshotManager.snapshots).toHaveLength(1);
             expect(snapshotManager.snapshots[0].id).toBe(2);
         });
@@ -421,9 +423,9 @@ describe('SnapshotManager', () => {
             await snapshotManager.initialize();
             await snapshotManager.createSnapshot('Test snapshot');
 
-            const result = snapshotManager.deleteSnapshot(1);
+            const result = await snapshotManager.deleteSnapshot(1);
 
-            expect(result).toBe(true);
+            expect(result.success).toBe(true);
             expect(snapshotManager.currentSnapshot).toBeNull();
         });
     });
@@ -459,8 +461,8 @@ describe('SnapshotManager', () => {
     });
 
     describe('getSnapshotCount', () => {
-        it('should return 0 when no snapshots', () => {
-            const count = snapshotManager.getSnapshotCount();
+        it('should return 0 when no snapshots', async () => {
+            const count = await snapshotManager.getSnapshotCount();
             expect(count).toBe(0);
         });
 
@@ -473,7 +475,7 @@ describe('SnapshotManager', () => {
 
             await snapshotManager.createSnapshot('Test snapshot 2');
 
-            const count = snapshotManager.getSnapshotCount();
+            const count = await snapshotManager.getSnapshotCount();
             expect(count).toBe(2);
         });
     });

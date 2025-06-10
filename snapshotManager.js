@@ -209,96 +209,196 @@ Original instruction: ${sanitizedInstruction}`;
 
     /**
      * Gets all snapshots with summary information
-     * @returns {Array} Array of snapshot summaries
+     * In Git mode, returns Git commits; in legacy mode, returns in-memory snapshots
+     * @returns {Promise<Array>} Array of snapshot summaries
      */
-    getSnapshotSummaries() {
-        return this.snapshots.map(snapshot => ({
-            id: snapshot.id,
-            instruction: snapshot.instruction,
-            timestamp: snapshot.timestamp,
-            fileCount: Object.keys(snapshot.files).length,
-            modifiedFiles: Array.from(snapshot.modifiedFiles),
-        }));
+    async getSnapshotSummaries() {
+        if (this.gitMode) {
+            // In Git mode, return commit history as snapshots
+            const historyResult = await this.gitUtils.getCommitHistory(20);
+            if (historyResult.success) {
+                return historyResult.commits.map((commit, index) => ({
+                    id: index + 1,
+                    gitHash: commit.hash,
+                    shortHash: commit.shortHash,
+                    instruction: commit.subject,
+                    timestamp: commit.date,
+                    author: commit.author,
+                    isGitCommit: true,
+                }));
+            }
+            return [];
+        } else {
+            // Legacy mode - return in-memory snapshots
+            return this.snapshots.map(snapshot => ({
+                id: snapshot.id,
+                instruction: snapshot.instruction,
+                timestamp: snapshot.timestamp,
+                fileCount: Object.keys(snapshot.files).length,
+                modifiedFiles: Array.from(snapshot.modifiedFiles),
+                isGitCommit: false,
+            }));
+        }
     }
 
     /**
      * Gets a specific snapshot by ID
+     * In Git mode, retrieves commit by position; in legacy mode, retrieves in-memory snapshot
      * @param {number} snapshotId - ID of the snapshot to retrieve
-     * @returns {Object|null} Snapshot object or null if not found
+     * @returns {Promise<Object|null>} Snapshot object or null if not found
      */
-    getSnapshot(snapshotId) {
-        return this.snapshots.find(snapshot => snapshot.id === snapshotId) || null;
+    async getSnapshot(snapshotId) {
+        if (this.gitMode) {
+            // In Git mode, get commit by position in history
+            const summaries = await this.getSnapshotSummaries();
+            const snapshot = summaries.find(s => s.id === snapshotId);
+            if (snapshot) {
+                // Get detailed commit information
+                const detailsResult = await this.gitUtils.getCommitDetails(snapshot.gitHash);
+                if (detailsResult.success) {
+                    return {
+                        ...snapshot,
+                        files: detailsResult.commit.files,
+                        message: detailsResult.commit.message,
+                    };
+                }
+            }
+            return null;
+        } else {
+            // Legacy mode - return in-memory snapshot
+            return this.snapshots.find(snapshot => snapshot.id === snapshotId) || null;
+        }
     }
 
     /**
      * Restores all files from a specific snapshot
+     * In Git mode, uses git reset; in legacy mode, uses file-based restoration
      * @param {number} snapshotId - ID of the snapshot to restore
-     * @returns {Object} Result object with success status and details
+     * @returns {Promise<Object>} Result object with success status and details
      */
     async restoreSnapshot(snapshotId) {
-        const snapshot = this.getSnapshot(snapshotId);
-        if (!snapshot) {
+        if (this.gitMode) {
+            // Git mode - use git reset to restore to specific commit
+            const summaries = await this.getSnapshotSummaries();
+            const snapshot = summaries.find(s => s.id === snapshotId);
+
+            if (!snapshot) {
+                return {
+                    success: false,
+                    error: `Snapshot ${snapshotId} not found`,
+                };
+            }
+
+            // Verify the commit exists
+            const existsResult = await this.gitUtils.commitExists(snapshot.gitHash);
+            if (!existsResult.success || !existsResult.exists) {
+                return {
+                    success: false,
+                    error: `Git commit ${snapshot.shortHash} not found or inaccessible`,
+                };
+            }
+
+            // Perform git reset to the commit
+            const resetResult = await this.gitUtils.resetToCommit(snapshot.gitHash);
+            if (resetResult.success) {
+                this.logger.info(
+                    `🔄 Reset to commit ${snapshot.shortHash}: ${snapshot.instruction}`
+                );
+                return {
+                    success: true,
+                    method: 'git-reset',
+                    commitHash: snapshot.gitHash,
+                    shortHash: snapshot.shortHash,
+                    instruction: snapshot.instruction,
+                    message: `Successfully reset to commit ${snapshot.shortHash}`,
+                };
+            } else {
+                return {
+                    success: false,
+                    error: `Git reset failed: ${resetResult.error}`,
+                };
+            }
+        } else {
+            // Legacy mode - file-based restoration
+            const snapshot = await this.getSnapshot(snapshotId);
+            if (!snapshot) {
+                return {
+                    success: false,
+                    error: `Snapshot ${snapshotId} not found`,
+                };
+            }
+
+            const restoredFiles = [];
+            const deletedFiles = [];
+            const errors = [];
+
+            for (const [filePath, originalContent] of Object.entries(snapshot.files)) {
+                try {
+                    if (originalContent === null) {
+                        // File didn't exist in the snapshot - delete it if it exists now
+                        if (existsSync(filePath)) {
+                            const { unlinkSync } = await import('fs');
+                            unlinkSync(filePath);
+                            deletedFiles.push(filePath);
+                        }
+                    } else {
+                        // File existed in the snapshot - restore its content
+                        const writeFileModule = await import(
+                            './tools/write_file/implementation.js'
+                        );
+                        const writeFile = writeFileModule.default;
+
+                        const result = await writeFile({
+                            file_path: filePath,
+                            content: originalContent,
+                            encoding: 'utf8',
+                            create_directories: true,
+                            overwrite: true,
+                        });
+
+                        if (result.success) {
+                            restoredFiles.push(filePath);
+                        } else {
+                            errors.push(`${filePath}: ${result.error}`);
+                        }
+                    }
+                } catch (error) {
+                    errors.push(`${filePath}: ${error.message}`);
+                }
+            }
+
             return {
-                success: false,
-                error: `Snapshot ${snapshotId} not found`,
+                success: errors.length === 0,
+                method: 'file-based',
+                restoredFiles,
+                deletedFiles,
+                errors,
+                totalFiles: Object.keys(snapshot.files).length,
             };
         }
-
-        const restoredFiles = [];
-        const deletedFiles = [];
-        const errors = [];
-
-        for (const [filePath, originalContent] of Object.entries(snapshot.files)) {
-            try {
-                if (originalContent === null) {
-                    // File didn't exist in the snapshot - delete it if it exists now
-                    if (existsSync(filePath)) {
-                        const { unlinkSync } = await import('fs');
-                        unlinkSync(filePath);
-                        deletedFiles.push(filePath);
-                    }
-                } else {
-                    // File existed in the snapshot - restore its content
-                    const writeFileModule = await import('./tools/write_file/implementation.js');
-                    const writeFile = writeFileModule.default;
-
-                    const result = await writeFile({
-                        file_path: filePath,
-                        content: originalContent,
-                        encoding: 'utf8',
-                        create_directories: true,
-                        overwrite: true,
-                    });
-
-                    if (result.success) {
-                        restoredFiles.push(filePath);
-                    } else {
-                        errors.push(`${filePath}: ${result.error}`);
-                    }
-                }
-            } catch (error) {
-                errors.push(`${filePath}: ${error.message}`);
-            }
-        }
-
-        return {
-            success: errors.length === 0,
-            restoredFiles,
-            deletedFiles,
-            errors,
-            totalFiles: Object.keys(snapshot.files).length,
-        };
     }
 
     /**
      * Deletes a specific snapshot
+     * In Git mode, this operation is not supported (commits cannot be easily deleted)
+     * In legacy mode, removes the in-memory snapshot
      * @param {number} snapshotId - ID of the snapshot to delete
-     * @returns {boolean} True if deleted successfully
+     * @returns {Promise<{success: boolean, error?: string}>} Result object
      */
-    deleteSnapshot(snapshotId) {
+    async deleteSnapshot(snapshotId) {
+        if (this.gitMode) {
+            return {
+                success: false,
+                error: 'Snapshot deletion is not supported in Git mode. Use Git commands to manage commit history.',
+            };
+        }
+
         const index = this.snapshots.findIndex(snapshot => snapshot.id === snapshotId);
         if (index === -1) {
-            return false;
+            return {
+                success: false,
+                error: `Snapshot ${snapshotId} not found`,
+            };
         }
 
         this.snapshots.splice(index, 1);
@@ -308,7 +408,7 @@ Original instruction: ${sanitizedInstruction}`;
             this.currentSnapshot = null;
         }
 
-        return true;
+        return { success: true };
     }
 
     /**
@@ -329,9 +429,14 @@ Original instruction: ${sanitizedInstruction}`;
 
     /**
      * Gets total number of snapshots
-     * @returns {number} Number of snapshots
+     * In Git mode, returns number of commits; in legacy mode, returns number of in-memory snapshots
+     * @returns {Promise<number>} Number of snapshots
      */
-    getSnapshotCount() {
+    async getSnapshotCount() {
+        if (this.gitMode) {
+            const summaries = await this.getSnapshotSummaries();
+            return summaries.length;
+        }
         return this.snapshots.length;
     }
 

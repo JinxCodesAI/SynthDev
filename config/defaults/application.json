@@ -32,7 +32,7 @@
         "defaultTimeout": 10000
     },
     "logging": {
-        "defaultLevel": 2,
+        "defaultLevel": 4,
         "enableHttpLogging": false,
         "enableToolLogging": true,
         "enableErrorLogging": true
