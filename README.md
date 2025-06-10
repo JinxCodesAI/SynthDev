@@ -4,6 +4,15 @@
 
 A Node.js console based AI coding assistant.
 
+> **Note:** Please clone this repository from the `stable` branch to ensure stability.
+> The `main` branch is currently under active development and may contain experimental features.
+
+To clone the repository from the `stable` branch, use the following command:
+
+```bash
+git clone --branch stable https://github.com/your-repo-url.git
+```
+
 Deeply inspired by [Aider](https://github.com/Aider-AI/aider), [Cline](https://github.com/cline/cline), [Roo-Code](https://github.com/RooCodeInc/Roo-Code), [Augument Code](https://www.augmentcode.com/) and [Cursor](https://www.cursor.com/).
 
 Shamelessly vibe-coded with use of Cursor and Augument Code, blissfully in JavaScript, like [Dylan's Beattie's song](https://www.youtube.com/watch?v=jxi0ETwDvws&t=250s) never existed.
