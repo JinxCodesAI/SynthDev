@@ -76,8 +76,13 @@ class SnapshotManager {
         // Ensure Git is initialized before proceeding
         await this.ensureGitInitialized();
 
-        // If current snapshot is empty (no files backed up), override it
-        if (this.currentSnapshot && Object.keys(this.currentSnapshot.files).length === 0) {
+        // If current snapshot is truly empty (no files tracked at all), override it
+        // This handles the case where a snapshot was created but no tools were executed
+        if (
+            this.currentSnapshot &&
+            Object.keys(this.currentSnapshot.files).length === 0 &&
+            this.currentSnapshot.modifiedFiles.size === 0
+        ) {
             this.currentSnapshot.instruction = userInstruction;
             this.currentSnapshot.timestamp = new Date().toISOString();
             return;
@@ -88,7 +93,7 @@ class SnapshotManager {
             id: this.snapshots.length + 1,
             instruction: userInstruction,
             timestamp: new Date().toISOString(),
-            files: {}, // Map of file_path -> original_content
+            files: {}, // Map of file_path -> original_content (null for non-existent files)
             modifiedFiles: new Set(), // Track which files were modified
             gitBranch: null, // Git branch for this snapshot
             isFirstSnapshot: this.snapshots.length === 0,
@@ -144,10 +149,16 @@ class SnapshotManager {
         }
 
         try {
-            // Read original content (for fallback restore)
+            // Always track the file, even if it doesn't exist
             if (existsSync(filePath)) {
+                // File exists - backup its content
                 const originalContent = readFileSync(filePath, 'utf8');
                 this.currentSnapshot.files[filePath] = originalContent;
+                this.currentSnapshot.modifiedFiles.add(filePath);
+            } else {
+                // File doesn't exist - record this fact with null value
+                // This allows us to delete the file during restoration
+                this.currentSnapshot.files[filePath] = null;
                 this.currentSnapshot.modifiedFiles.add(filePath);
             }
         } catch (error) {
@@ -234,26 +245,36 @@ Original instruction: ${sanitizedInstruction}`;
         }
 
         const restoredFiles = [];
+        const deletedFiles = [];
         const errors = [];
 
         for (const [filePath, originalContent] of Object.entries(snapshot.files)) {
             try {
-                // Import write_file tool dynamically
-                const writeFileModule = await import('./tools/write_file/implementation.js');
-                const writeFile = writeFileModule.default;
-
-                const result = await writeFile({
-                    file_path: filePath,
-                    content: originalContent,
-                    encoding: 'utf8',
-                    create_directories: true,
-                    overwrite: true,
-                });
-
-                if (result.success) {
-                    restoredFiles.push(filePath);
+                if (originalContent === null) {
+                    // File didn't exist in the snapshot - delete it if it exists now
+                    if (existsSync(filePath)) {
+                        const { unlinkSync } = await import('fs');
+                        unlinkSync(filePath);
+                        deletedFiles.push(filePath);
+                    }
                 } else {
-                    errors.push(`${filePath}: ${result.error}`);
+                    // File existed in the snapshot - restore its content
+                    const writeFileModule = await import('./tools/write_file/implementation.js');
+                    const writeFile = writeFileModule.default;
+
+                    const result = await writeFile({
+                        file_path: filePath,
+                        content: originalContent,
+                        encoding: 'utf8',
+                        create_directories: true,
+                        overwrite: true,
+                    });
+
+                    if (result.success) {
+                        restoredFiles.push(filePath);
+                    } else {
+                        errors.push(`${filePath}: ${result.error}`);
+                    }
                 }
             } catch (error) {
                 errors.push(`${filePath}: ${error.message}`);
@@ -263,6 +284,7 @@ Original instruction: ${sanitizedInstruction}`;
         return {
             success: errors.length === 0,
             restoredFiles,
+            deletedFiles,
             errors,
             totalFiles: Object.keys(snapshot.files).length,
         };

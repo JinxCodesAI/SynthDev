@@ -172,11 +172,27 @@ export class SnapshotsCommand extends InteractiveCommand {
             return;
         }
 
-        const fileList = Object.keys(snapshot.files).join(', ');
-        const confirmed = await this.promptForConfirmation(
-            `Restore snapshot ${snapshotId}? This will overwrite: ${fileList}`,
-            context
-        );
+        // Separate files that existed vs didn't exist in the snapshot
+        const existingFiles = [];
+        const nonExistentFiles = [];
+
+        for (const [filePath, content] of Object.entries(snapshot.files)) {
+            if (content === null) {
+                nonExistentFiles.push(filePath);
+            } else {
+                existingFiles.push(filePath);
+            }
+        }
+
+        let confirmMessage = `Restore snapshot ${snapshotId}?`;
+        if (existingFiles.length > 0) {
+            confirmMessage += `\n  📄 Will restore: ${existingFiles.join(', ')}`;
+        }
+        if (nonExistentFiles.length > 0) {
+            confirmMessage += `\n  🗑️ Will delete: ${nonExistentFiles.join(', ')} (didn't exist in snapshot)`;
+        }
+
+        const confirmed = await this.promptForConfirmation(confirmMessage, context);
 
         if (!confirmed) {
             logger.raw('❌ Restore cancelled');
@@ -187,11 +203,23 @@ export class SnapshotsCommand extends InteractiveCommand {
         const result = await snapshotManager.restoreSnapshot(snapshotId);
 
         if (result.success) {
-            logger.raw(`✅ Successfully restored ${result.restoredFiles.length} files:`);
-            result.restoredFiles.forEach(file => logger.raw(`   ✓ ${file}`));
+            logger.raw(`✅ Successfully restored snapshot ${snapshotId}:`);
+            if (result.restoredFiles.length > 0) {
+                logger.raw(`   📄 Restored ${result.restoredFiles.length} files:`);
+                result.restoredFiles.forEach(file => logger.raw(`      ✓ ${file}`));
+            }
+            if (result.deletedFiles && result.deletedFiles.length > 0) {
+                logger.raw(
+                    `   🗑️ Deleted ${result.deletedFiles.length} files (didn't exist in snapshot):`
+                );
+                result.deletedFiles.forEach(file => logger.raw(`      ✗ ${file}`));
+            }
         } else {
             logger.raw('❌ Restore completed with errors:');
             logger.raw(`   ✓ Restored: ${result.restoredFiles.length} files`);
+            if (result.deletedFiles && result.deletedFiles.length > 0) {
+                logger.raw(`   🗑️ Deleted: ${result.deletedFiles.length} files`);
+            }
             logger.raw(`   ❌ Errors: ${result.errors.length}`);
             result.errors.forEach(error => logger.raw(`      - ${error}`));
         }

@@ -276,7 +276,7 @@ describe('SnapshotManager', () => {
             );
         });
 
-        it('should skip backup if file does not exist', async () => {
+        it('should track non-existent files with null value', async () => {
             const filePath = 'nonexistent.js';
 
             mockFs.existsSync.mockReturnValue(false);
@@ -284,7 +284,8 @@ describe('SnapshotManager', () => {
             await snapshotManager.backupFileIfNeeded(filePath);
 
             expect(mockFs.readFileSync).not.toHaveBeenCalled();
-            expect(snapshotManager.currentSnapshot.files[filePath]).toBeUndefined();
+            expect(snapshotManager.currentSnapshot.files[filePath]).toBe(null);
+            expect(snapshotManager.currentSnapshot.modifiedFiles.has(filePath)).toBe(true);
         });
     });
 
