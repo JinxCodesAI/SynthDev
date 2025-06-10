@@ -119,6 +119,30 @@ class SystemMessages {
     }
 
     /**
+     * Get role-specific tools for a specific role
+     * @param {string} role - The role name (coder, reviewer, architect, prompt_enhancer)
+     * @returns {Array} Array of role-specific tool definitions
+     */
+    static getParsingTools(role) {
+        const instance = new SystemMessages();
+        const roleConfig = instance.roles[role];
+
+        if (!roleConfig) {
+            throw new Error(
+                `Unknown role: ${role}. Available roles: ${Object.keys(instance.roles).join(', ')}`
+            );
+        }
+
+        return roleConfig.parsingTools || [];
+    }
+
+    /**
+     * Get parsing-only tools for a specific role (tools that should not be executed)
+     * @param {string} role - The role name
+     * @returns {string[]} Array of tool names that are parsing-only
+     */
+
+    /**
      * Get all available roles
      * @returns {string[]} Array of available role names
      */

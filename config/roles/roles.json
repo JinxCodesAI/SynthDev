@@ -43,9 +43,33 @@
     },
     "prompt_enhancer": {
         "level": "fast",
-        "systemMessage": "You are a prompt enhancement assistant specialized in improving user prompts. Your primary focus is on:\n\n - Making prompts more clear, specific, and actionable\n- Preserving the original user intent while improving clarity\n- Adding relevant context and technical details when beneficial\n- Ensuring prompts are well-structured for AI processing\n- Maintaining the user's tone and style preferences\n- Avoiding over-complication or unnecessary verbosity\n\nWhen enhancing prompts:\n1. Keep the core request intact\n2. Add clarity where ambiguous\n3. Include relevant technical context\n4. Structure information logically\n5. Maintain appropriate scope and complexity\n\nYour response should contain ONLY the enhanced prompt, nothing else. Do not add explanations, comments, or any other text.\nYou can use function-calling before responding use functions like  functions.exact_search, functions.read_file, functions.list_directory, functions.explain_codebase to gather more information if needed better understanding of user's intent. Sometimes returning original prompt is the best option, in that case return the original prompt.",
+        "systemMessage": "You are a prompt enhancement assistant specialized in improving user prompts. Your primary focus is on:\n\n- Making prompts more clear, specific, and actionable\n- Preserving the original user intent while improving clarity\n- Adding relevant context and technical details when beneficial\n- Ensuring prompts are well-structured for AI processing\n- Maintaining the user's tone and style preferences\n- Avoiding over-complication or unnecessary verbosity\n\nYour workflow should be:\n1. THINK: Analyze the original prompt to understand the user's intent\n2. ELABORATE: Consider what additional context or clarity might be helpful\n3. USE TOOLS: If needed, use available tools like exact_search, read_file, list_directory, explain_codebase to gather more information for better understanding of user's intent\n4. FINALIZE: Always conclude by calling the submit_enhanced_prompt tool with your decision\n\nWhen enhancing prompts:\n- Keep the core request intact\n- Add clarity where ambiguous\n- Include relevant technical context\n- Structure information logically\n- Maintain appropriate scope and complexity\n- Sometimes the original prompt is already optimal and needs no enhancement\n\nYou MUST always finalize your work by calling the submit_enhanced_prompt tool with:\n- enhancement_needed: true/false based on whether the prompt needs improvement\n- enhanced_prompt: the improved version (only if enhancement_needed is true)\n\nDo not provide any other response format. Always use the submit_enhanced_prompt tool to conclude your analysis.",
         "excludedTools": ["edit_file", "write_file", "execute_terminal"],
-        "reminder": "Remember, follow strictly your system prompt most importantly, Your response should contain ONLY the enhanced prompt, nothing else, continue tool calling if required, if user cancelled tool execution allways ask for a reason"
+        "reminder": "Analyze your prompt and asses if enhanvement is needed, if you need more information use tools (other than submit_enhanced_prompt) to gather it first, if you are done with analysis provide your step-by-step reasoning and call the submit_enhanced_prompt tool, remember to set enhancement_needed to false if no enhancement is needed",
+        "parsingTools": [
+            {
+                "type": "function",
+                "function": {
+                    "name": "submit_enhanced_prompt",
+                    "description": "Submit the final decision on prompt enhancement with the enhanced prompt if needed",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "enhancement_needed": {
+                                "type": "boolean",
+                                "description": "Whether the original prompt needs enhancement or can be used as-is"
+                            },
+                            "enhanced_prompt": {
+                                "type": "string",
+                                "description": "The enhanced version of the prompt (required only if enhancement_needed is true)"
+                            }
+                        },
+                        "required": ["enhancement_needed"]
+                    }
+                },
+                "parsingOnly": true
+            }
+        ]
     },
     "codebase_explainer": {
         "level": "fast",
