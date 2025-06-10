@@ -271,7 +271,11 @@ class AIAPIClient {
                 message.reasoning_content = null;
             }
 
-            const parsingTools = SystemMessages.getParsingTools(this.role).map(tool => tool.name);
+            const parsingTools = SystemMessages.getParsingTools(this.role).map(
+                tool => tool.function.name
+            );
+            this.logger.debug('Parsing tools:', parsingTools);
+
             const toolCalls = message.tool_calls || [];
             const parsingToolCalls = toolCalls.filter(call =>
                 parsingTools.includes(call.function.name)
@@ -290,6 +294,8 @@ class AIAPIClient {
 
             // Handle tool calls if present
             if (nonParsingToolCalls.length > 0) {
+                this.logger.debug('AI response contains tool calls');
+
                 // Display content immediately if present (before tool execution)
                 if (message.content && this.onContentDisplay) {
                     this.onContentDisplay(message.content, this.role);
@@ -298,8 +304,10 @@ class AIAPIClient {
             } else {
                 let content = null;
                 if (parsingToolCalls.length > 0) {
+                    this.logger.debug('AI response contains parsing tool calls');
                     if (this.onParseResponse) {
                         const parsedResponse = this.onParseResponse(message);
+                        this.logger.debug('Parsed response:', parsedResponse);
                         if (parsedResponse.success) {
                             content = parsedResponse.content;
                         } else {
@@ -310,11 +318,12 @@ class AIAPIClient {
                         this.onError(new Error('No parsing response handler defined'));
                     }
                 } else {
+                    this.logger.debug('AI response contains no tool calls');
                     content = message.content;
                 }
                 // Regular response without tools
                 this.messages.push({ role: 'assistant', content: content });
-                if (this.onResponse) {
+                if (this.onResponse && !this.onParseResponse) {
                     this.onResponse(response, this.role);
                 }
             }

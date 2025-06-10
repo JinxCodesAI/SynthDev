@@ -2,6 +2,7 @@ import ConfigManager from './configManager.js';
 import AIAPIClient from './aiAPIClient.js';
 import SystemMessages from './systemMessages.js';
 import { getLogger } from './logger.js';
+import { type } from 'os';
 
 /**
  * Handles prompt enhancement using a fast AI model
@@ -60,13 +61,10 @@ class PromptEnhancer {
             const enhancementPrompt = this._createEnhancementPrompt(originalPrompt);
 
             // Set up response capture
-            let responseMessage = null;
             let responseError = null;
+            let enhancedPrompt = null;
 
             aiClient.setCallbacks({
-                onResponse: response => {
-                    responseMessage = response;
-                },
                 onError: error => {
                     responseError = error;
                 },
@@ -74,6 +72,7 @@ class PromptEnhancer {
                     return `${reminder}\n Original prompt was: ${originalPrompt}`;
                 },
                 onParseResponse: message => {
+                    this.logger.debug('Parsing AI response for prompt enhancement', message);
                     if (
                         !message.tool_calls ||
                         !Array.isArray(message.tool_calls) ||
@@ -82,12 +81,19 @@ class PromptEnhancer {
                     ) {
                         return { success: false, error: 'No tool calls found in AI response' };
                     }
-                    const status = message.tool_calls[0].function.arguments['enhancement_needed'];
-                    if (status === 'false') {
+                    this.logger.debug('Function arguments:', message.tool_calls[0].function);
+                    const args =
+                        typeof message.tool_calls[0].function.arguments === 'string'
+                            ? JSON.parse(message.tool_calls[0].function.arguments)
+                            : message.tool_calls[0].function.arguments;
+                    const status = args['enhancement_needed'];
+                    if (status === false) {
+                        enhancedPrompt = originalPrompt;
+                        this.logger.debug('Enhancement not needed');
                         return { success: true, content: originalPrompt };
                     } else {
-                        const enhancedPrompt =
-                            message.tool_calls[0].function.arguments['enhanced_prompt'];
+                        enhancedPrompt = args['enhanced_prompt'];
+                        this.logger.debug('Enhancement needed');
                         return { success: true, content: enhancedPrompt };
                     }
                 },
@@ -102,18 +108,11 @@ class PromptEnhancer {
             }
 
             // Check if we got a response
-            if (!responseMessage) {
+            if (!enhancedPrompt) {
                 return { success: false, error: 'No response received from AI' };
             }
 
-            // Parse the tool call response
-            const result = this._parseToolCallResponse(responseMessage, originalPrompt);
-
-            if (!result.success) {
-                return result;
-            }
-
-            return result;
+            return { success: true, enhancedPrompt };
         } catch (error) {
             return { success: false, error: `Enhancement failed: ${error.message}` };
         }
@@ -126,11 +125,8 @@ class PromptEnhancer {
      * @returns {string} The prompt to send to the AI for enhancement
      */
     _createEnhancementPrompt(originalPrompt) {
-        return `Please enhance the following user prompt to make it more clear, specific, and effective while preserving the original intent:
-
-Original prompt: "${originalPrompt}"
-
-Enhanced prompt:`;
+        return `Follow your system message and decide if and how you should enhance the following user prompt:
+        "${originalPrompt}" \n\n Call tools to gather more information if needed, then call the submit_enhanced_prompt tool with your final decision.`;
     }
 }
 

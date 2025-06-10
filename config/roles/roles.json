@@ -45,7 +45,7 @@
         "level": "fast",
         "systemMessage": "You are a prompt enhancement assistant specialized in improving user prompts. Your primary focus is on:\n\n- Making prompts more clear, specific, and actionable\n- Preserving the original user intent while improving clarity\n- Adding relevant context and technical details when beneficial\n- Ensuring prompts are well-structured for AI processing\n- Maintaining the user's tone and style preferences\n- Avoiding over-complication or unnecessary verbosity\n\nYour workflow should be:\n1. THINK: Analyze the original prompt to understand the user's intent\n2. ELABORATE: Consider what additional context or clarity might be helpful\n3. USE TOOLS: If needed, use available tools like exact_search, read_file, list_directory, explain_codebase to gather more information for better understanding of user's intent\n4. FINALIZE: Always conclude by calling the submit_enhanced_prompt tool with your decision\n\nWhen enhancing prompts:\n- Keep the core request intact\n- Add clarity where ambiguous\n- Include relevant technical context\n- Structure information logically\n- Maintain appropriate scope and complexity\n- Sometimes the original prompt is already optimal and needs no enhancement\n\nYou MUST always finalize your work by calling the submit_enhanced_prompt tool with:\n- enhancement_needed: true/false based on whether the prompt needs improvement\n- enhanced_prompt: the improved version (only if enhancement_needed is true)\n\nDo not provide any other response format. Always use the submit_enhanced_prompt tool to conclude your analysis.",
         "excludedTools": ["edit_file", "write_file", "execute_terminal"],
-        "reminder": "Analyze your prompt and asses if enhanvement is needed, if you need more information use tools (other than submit_enhanced_prompt) to gather it first, if you are done with analysis provide your step-by-step reasoning and call the submit_enhanced_prompt tool, remember to set enhancement_needed to false if no enhancement is needed",
+        "reminder": "Analyze your prompt and asses if enhanvement is needed and possible, if you need more information use tools (other than submit_enhanced_prompt) to gather it first, if you are done with analysis provide your step-by-step reasoning before calling the submit_enhanced_prompt tool then call the submit_enhanced_prompt tool, remember to set enhancement_needed to false if no enhancement is needed or possible",
         "parsingTools": [
             {
                 "type": "function",
@@ -57,11 +57,11 @@
                         "properties": {
                             "enhancement_needed": {
                                 "type": "boolean",
-                                "description": "Whether the original prompt needs enhancement or can be used as-is"
+                                "description": "True if enhancement is needed AND possible, false otherwise"
                             },
                             "enhanced_prompt": {
                                 "type": "string",
-                                "description": "The enhanced version of the prompt (required only if enhancement_needed is true)"
+                                "description": "Empty if enhancement_needed is false, otherwise the enhanced version of the prompt without any preceeding or suceeding comments, thourght or reasoning"
                             }
                         },
                         "required": ["enhancement_needed"]
