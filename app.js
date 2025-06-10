@@ -99,7 +99,8 @@ class AICoderConsole {
             this.toolManager,
             this.consoleInterface,
             this.costsManager,
-            this.snapshotManager
+            this.snapshotManager,
+            this
         );
 
         // State management for input blocking
@@ -190,12 +191,12 @@ class AICoderConsole {
 
         await this.snapshotManager.initialize();
 
+        // Set up signal handlers for graceful shutdown
+        this.setupSignalHandlers();
+
         this.consoleInterface.setupEventHandlers(
             async input => await this.handleInput(input),
-            () => {
-                this.consoleInterface.showGoodbye();
-                process.exit(0);
-            }
+            () => this.handleExit()
         );
 
         // Log config path at verbosity level 1
@@ -297,6 +298,63 @@ class AICoderConsole {
             // Any unexpected error during enhancement
             this.consoleInterface.showEnhancementError(error.message);
             return originalPrompt;
+        }
+    }
+
+    /**
+     * Set up signal handlers for graceful shutdown
+     * @private
+     */
+    setupSignalHandlers() {
+        // Handle SIGINT (Ctrl+C)
+        process.on('SIGINT', () => {
+            this.logger.info('\n🛑 Received SIGINT (Ctrl+C), shutting down gracefully...');
+            this.handleExit();
+        });
+
+        // Handle SIGTERM (process termination)
+        process.on('SIGTERM', () => {
+            this.logger.info('\n🛑 Received SIGTERM, shutting down gracefully...');
+            this.handleExit();
+        });
+
+        // Handle uncaught exceptions
+        process.on('uncaughtException', error => {
+            this.logger.error('💥 Uncaught exception:', error);
+            this.handleExit(1);
+        });
+
+        // Handle unhandled promise rejections
+        process.on('unhandledRejection', (reason, promise) => {
+            this.logger.error('💥 Unhandled promise rejection at:', promise, 'reason:', reason);
+            this.handleExit(1);
+        });
+    }
+
+    /**
+     * Handle application exit with cleanup
+     * @param {number} exitCode - Exit code (default: 0)
+     */
+    async handleExit(exitCode = 0) {
+        try {
+            // Show goodbye message
+            this.consoleInterface.showGoodbye();
+
+            // Perform automatic cleanup if conditions are met
+            const cleanupResult = await this.snapshotManager.performCleanup();
+            if (cleanupResult.success) {
+                this.logger.info('✅ Automatic cleanup completed successfully');
+            } else if (
+                cleanupResult.error &&
+                !cleanupResult.error.includes('Git integration not active')
+            ) {
+                this.logger.warn(`⚠️ Cleanup failed: ${cleanupResult.error}`);
+            }
+        } catch (error) {
+            this.logger.error('❌ Error during exit cleanup:', error.message);
+        } finally {
+            // Ensure we exit even if cleanup fails
+            process.exit(exitCode);
         }
     }
 }

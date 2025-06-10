@@ -518,6 +518,91 @@ Original instruction: ${sanitizedInstruction}`;
             return { success: false, error: error.message };
         }
     }
+
+    /**
+     * Check if automatic cleanup should be performed
+     * @returns {Promise<{shouldCleanup: boolean, reason?: string}>}
+     */
+    async shouldPerformCleanup() {
+        try {
+            // Ensure Git is initialized
+            await this.ensureGitInitialized();
+
+            // Check if Git integration is active
+            if (!this.gitAvailable || !this.isGitRepo || !this.gitMode) {
+                return { shouldCleanup: false, reason: 'Git integration not active' };
+            }
+
+            // Check if we're on a temporary branch
+            if (!this.featureBranch || !this.originalBranch) {
+                return { shouldCleanup: false, reason: 'Not on a temporary branch' };
+            }
+
+            // Check if current branch has zero uncommitted changes relative to source branch
+            const statusResult = await this.gitUtils.hasUncommittedChanges();
+            if (!statusResult.success) {
+                return {
+                    shouldCleanup: false,
+                    reason: `Failed to check Git status: ${statusResult.error}`,
+                };
+            }
+
+            if (statusResult.hasUncommittedChanges) {
+                return { shouldCleanup: false, reason: 'Branch has uncommitted changes' };
+            }
+
+            return { shouldCleanup: true };
+        } catch (error) {
+            return {
+                shouldCleanup: false,
+                reason: `Error checking cleanup conditions: ${error.message}`,
+            };
+        }
+    }
+
+    /**
+     * Perform automatic cleanup by switching to original branch and deleting temporary branch
+     * @returns {Promise<{success: boolean, error?: string}>}
+     */
+    async performCleanup() {
+        try {
+            const cleanupCheck = await this.shouldPerformCleanup();
+            if (!cleanupCheck.shouldCleanup) {
+                return { success: false, error: cleanupCheck.reason };
+            }
+
+            const branchToDelete = this.featureBranch;
+
+            // Switch back to original branch
+            const switchResult = await this.switchToOriginalBranch();
+            if (!switchResult.success) {
+                return {
+                    success: false,
+                    error: `Failed to switch to original branch: ${switchResult.error}`,
+                };
+            }
+
+            // Delete the temporary branch
+            const deleteResult = await this.gitUtils.deleteBranch(branchToDelete);
+            if (!deleteResult.success) {
+                this.logger.warn(
+                    `Failed to delete temporary branch ${branchToDelete}: ${deleteResult.error}`
+                );
+                // Don't fail the cleanup if branch deletion fails - the important part is switching back
+            }
+
+            // Reset state
+            this.featureBranch = null;
+            this.gitMode = false;
+
+            this.logger.info(
+                `🧹 Automatic cleanup completed: switched to ${this.originalBranch} and deleted ${branchToDelete}`
+            );
+            return { success: true };
+        } catch (error) {
+            return { success: false, error: error.message };
+        }
+    }
 }
 
 export default SnapshotManager;

@@ -16,6 +16,9 @@ describe('ExitCommand', () => {
 
         // Create mock context
         mockContext = {
+            app: {
+                handleExit: vi.fn(),
+            },
             consoleInterface: {
                 showGoodbye: vi.fn(),
             },
@@ -42,40 +45,35 @@ describe('ExitCommand', () => {
     describe('getRequiredDependencies', () => {
         it('should return required dependencies', () => {
             const dependencies = exitCommand.getRequiredDependencies();
-            expect(dependencies).toContain('consoleInterface');
+            expect(dependencies).toContain('app');
         });
     });
 
     describe('implementation', () => {
-        it('should show goodbye message and exit', async () => {
+        it('should call app.handleExit', async () => {
             await exitCommand.implementation('', mockContext);
 
-            // Should call showGoodbye
-            expect(mockContext.consoleInterface.showGoodbye).toHaveBeenCalled();
-
-            // Should call process.exit with code 0
-            expect(process.exit).toHaveBeenCalledWith(0);
+            // Should call app.handleExit
+            expect(mockContext.app.handleExit).toHaveBeenCalled();
         });
 
         it('should handle args parameter (unused)', async () => {
             await exitCommand.implementation('some args', mockContext);
 
             // Args should be ignored, but command should still work
-            expect(mockContext.consoleInterface.showGoodbye).toHaveBeenCalled();
-            expect(process.exit).toHaveBeenCalledWith(0);
+            expect(mockContext.app.handleExit).toHaveBeenCalled();
         });
 
         it('should work with minimal context', async () => {
             const minimalContext = {
-                consoleInterface: {
-                    showGoodbye: vi.fn(),
+                app: {
+                    handleExit: vi.fn(),
                 },
             };
 
             await exitCommand.implementation('', minimalContext);
 
-            expect(minimalContext.consoleInterface.showGoodbye).toHaveBeenCalled();
-            expect(process.exit).toHaveBeenCalledWith(0);
+            expect(minimalContext.app.handleExit).toHaveBeenCalled();
         });
     });
 
@@ -87,24 +85,22 @@ describe('ExitCommand', () => {
     });
 
     describe('error handling', () => {
-        it('should handle consoleInterface errors', async () => {
-            mockContext.consoleInterface.showGoodbye.mockImplementation(() => {
-                throw new Error('Console error');
+        it('should handle app.handleExit errors', async () => {
+            mockContext.app.handleExit.mockImplementation(() => {
+                throw new Error('App error');
             });
 
             // The command doesn't have error handling, so it will throw
-            await expect(exitCommand.implementation('', mockContext)).rejects.toThrow(
-                'Console error'
-            );
+            await expect(exitCommand.implementation('', mockContext)).rejects.toThrow('App error');
         });
 
-        it('should handle missing consoleInterface', async () => {
-            const contextWithoutConsole = {
-                consoleInterface: null,
+        it('should handle missing app', async () => {
+            const contextWithoutApp = {
+                app: null,
             };
 
-            // The command doesn't check for null consoleInterface, so it will throw
-            await expect(exitCommand.implementation('', contextWithoutConsole)).rejects.toThrow();
+            // The command doesn't check for null app, so it will throw
+            await expect(exitCommand.implementation('', contextWithoutApp)).rejects.toThrow();
         });
     });
 
@@ -117,14 +113,16 @@ describe('ExitCommand', () => {
             // The implementation doesn't change based on how it was called
             await exitCommand.implementation('', mockContext);
 
-            expect(mockContext.consoleInterface.showGoodbye).toHaveBeenCalled();
-            expect(process.exit).toHaveBeenCalledWith(0);
+            expect(mockContext.app.handleExit).toHaveBeenCalled();
         });
     });
 
     describe('integration scenarios', () => {
         it('should work in a complete application context', async () => {
             const fullContext = {
+                app: {
+                    handleExit: vi.fn(),
+                },
                 consoleInterface: {
                     showGoodbye: vi.fn(),
                     showMessage: vi.fn(),
@@ -140,9 +138,8 @@ describe('ExitCommand', () => {
 
             await exitCommand.implementation('', fullContext);
 
-            // Should only use the consoleInterface
-            expect(fullContext.consoleInterface.showGoodbye).toHaveBeenCalled();
-            expect(process.exit).toHaveBeenCalledWith(0);
+            // Should only use the app
+            expect(fullContext.app.handleExit).toHaveBeenCalled();
         });
 
         it('should exit immediately without waiting', async () => {
@@ -155,16 +152,16 @@ describe('ExitCommand', () => {
 
             // Should execute very quickly (less than 100ms)
             expect(executionTime).toBeLessThan(100);
-            expect(process.exit).toHaveBeenCalledWith(0);
+            expect(mockContext.app.handleExit).toHaveBeenCalled();
         });
     });
 
     describe('process exit behavior', () => {
-        it('should exit with code 0 (success)', async () => {
+        it('should call app.handleExit', async () => {
             await exitCommand.implementation('', mockContext);
 
-            expect(process.exit).toHaveBeenCalledWith(0);
-            expect(process.exit).toHaveBeenCalledTimes(1);
+            expect(mockContext.app.handleExit).toHaveBeenCalled();
+            expect(mockContext.app.handleExit).toHaveBeenCalledTimes(1);
         });
 
         it('should not return a value (void function)', async () => {
