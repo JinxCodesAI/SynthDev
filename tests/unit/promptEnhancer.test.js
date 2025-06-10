@@ -48,6 +48,7 @@ describe('PromptEnhancer', () => {
             info: vi.fn(),
             warn: vi.fn(),
             error: vi.fn(),
+            debug: vi.fn(),
             raw: vi.fn(),
         };
 
@@ -176,7 +177,7 @@ describe('PromptEnhancer', () => {
 
         it('should successfully enhance a valid prompt', async () => {
             const originalPrompt = 'test prompt';
-            const enhancedResponse = 'Enhanced prompt: This is a much better test prompt';
+            const enhancedPrompt = 'This is a much better test prompt';
             let storedCallbacks;
 
             // Mock AI response - callbacks are called during sendUserMessage
@@ -185,17 +186,22 @@ describe('PromptEnhancer', () => {
             });
 
             mockAIAPIClient.sendUserMessage.mockImplementation(async () => {
-                // Simulate the AI response during the sendUserMessage call
-                if (storedCallbacks) {
-                    storedCallbacks.onResponse({
-                        choices: [
+                // Simulate the AI response with tool calls during the sendUserMessage call
+                if (storedCallbacks && storedCallbacks.onParseResponse) {
+                    const mockMessage = {
+                        tool_calls: [
                             {
-                                message: {
-                                    content: enhancedResponse,
+                                function: {
+                                    name: 'submit_enhanced_prompt',
+                                    arguments: JSON.stringify({
+                                        enhancement_needed: true,
+                                        enhanced_prompt: enhancedPrompt,
+                                    }),
                                 },
                             },
                         ],
-                    });
+                    };
+                    storedCallbacks.onParseResponse(mockMessage);
                 }
             });
 
@@ -203,7 +209,7 @@ describe('PromptEnhancer', () => {
 
             expect(result).toEqual({
                 success: true,
-                enhancedPrompt: 'This is a much better test prompt',
+                enhancedPrompt: enhancedPrompt,
             });
 
             // Verify AI client setup
@@ -224,7 +230,7 @@ describe('PromptEnhancer', () => {
             });
 
             const originalPrompt = 'test prompt';
-            const enhancedResponse = 'Enhanced version: Better test prompt';
+            const enhancedPrompt = 'Better test prompt';
             let storedCallbacks;
 
             mockAIAPIClient.setCallbacks.mockImplementation(callbacks => {
@@ -232,10 +238,21 @@ describe('PromptEnhancer', () => {
             });
 
             mockAIAPIClient.sendUserMessage.mockImplementation(async () => {
-                if (storedCallbacks) {
-                    storedCallbacks.onResponse({
-                        choices: [{ message: { content: enhancedResponse } }],
-                    });
+                if (storedCallbacks && storedCallbacks.onParseResponse) {
+                    const mockMessage = {
+                        tool_calls: [
+                            {
+                                function: {
+                                    name: 'submit_enhanced_prompt',
+                                    arguments: JSON.stringify({
+                                        enhancement_needed: true,
+                                        enhanced_prompt: enhancedPrompt,
+                                    }),
+                                },
+                            },
+                        ],
+                    };
+                    storedCallbacks.onParseResponse(mockMessage);
                 }
             });
 
@@ -271,7 +288,7 @@ describe('PromptEnhancer', () => {
         it('should handle no response from AI', async () => {
             const originalPrompt = 'test prompt';
 
-            mockAIAPIClient.setCallbacks.mockImplementation(callbacks => {
+            mockAIAPIClient.setCallbacks.mockImplementation(() => {
                 // Simulate no response
             });
 
@@ -292,11 +309,16 @@ describe('PromptEnhancer', () => {
             });
 
             mockAIAPIClient.sendUserMessage.mockImplementation(async () => {
-                if (storedCallbacks) {
-                    // Send empty content that will fail extraction
-                    storedCallbacks.onResponse({
-                        choices: [{ message: { content: '   ' } }], // whitespace only
-                    });
+                if (storedCallbacks && storedCallbacks.onParseResponse) {
+                    // Send invalid tool call response - no tool calls
+                    const mockMessage = {
+                        tool_calls: [], // No tool calls - should trigger error
+                    };
+                    const parseResult = storedCallbacks.onParseResponse(mockMessage);
+                    // Simulate the error being thrown
+                    if (!parseResult.success) {
+                        throw new Error('No tool calls found in AI response');
+                    }
                 }
             });
 
@@ -304,7 +326,7 @@ describe('PromptEnhancer', () => {
 
             expect(result).toEqual({
                 success: false,
-                error: 'Failed to extract enhanced prompt from AI response',
+                error: 'Enhancement failed: No tool calls found in AI response',
             });
         });
 
@@ -328,11 +350,25 @@ describe('PromptEnhancer', () => {
 
             mockAIAPIClient.setCallbacks.mockImplementation(callbacks => {
                 reminderCallback = callbacks.onReminder;
-                setTimeout(() => {
-                    callbacks.onResponse({
-                        choices: [{ message: { content: 'Enhanced: Better prompt' } }],
-                    });
-                }, 0);
+                // Simulate successful parsing response instead of onResponse
+                if (callbacks.onParseResponse) {
+                    setTimeout(() => {
+                        const mockMessage = {
+                            tool_calls: [
+                                {
+                                    function: {
+                                        name: 'submit_enhanced_prompt',
+                                        arguments: JSON.stringify({
+                                            enhancement_needed: true,
+                                            enhanced_prompt: 'Enhanced: Better prompt',
+                                        }),
+                                    },
+                                },
+                            ],
+                        };
+                        callbacks.onParseResponse(mockMessage);
+                    }, 0);
+                }
             });
 
             await promptEnhancer.enhancePrompt(originalPrompt);
@@ -343,50 +379,6 @@ describe('PromptEnhancer', () => {
         });
     });
 
-    describe('_extractEnhancedPrompt', () => {
-        it('should extract prompt without prefix', () => {
-            const response = 'This is a clean enhanced prompt';
-            const result = promptEnhancer._extractEnhancedPrompt(response);
-            expect(result).toBe('This is a clean enhanced prompt');
-        });
-
-        it('should remove "Enhanced prompt:" prefix', () => {
-            const response = 'Enhanced prompt: This is the enhanced version';
-            const result = promptEnhancer._extractEnhancedPrompt(response);
-            expect(result).toBe('This is the enhanced version');
-        });
-
-        it('should remove "Here is the enhanced prompt:" prefix', () => {
-            const response = 'Here is the enhanced prompt: Better version';
-            const result = promptEnhancer._extractEnhancedPrompt(response);
-            expect(result).toBe('Better version');
-        });
-
-        it('should handle case insensitive prefixes', () => {
-            const response = 'ENHANCED PROMPT: Uppercase prefix';
-            const result = promptEnhancer._extractEnhancedPrompt(response);
-            expect(result).toBe('Uppercase prefix');
-        });
-
-        it('should return null for null input', () => {
-            const result = promptEnhancer._extractEnhancedPrompt(null);
-            expect(result).toBeNull();
-        });
-
-        it('should return null for non-string input', () => {
-            const result = promptEnhancer._extractEnhancedPrompt(123);
-            expect(result).toBeNull();
-        });
-
-        it('should handle empty string', () => {
-            const result = promptEnhancer._extractEnhancedPrompt('');
-            expect(result).toBeNull();
-        });
-
-        it('should trim whitespace', () => {
-            const response = '   Enhanced prompt:   Trimmed content   ';
-            const result = promptEnhancer._extractEnhancedPrompt(response);
-            expect(result).toBe('Trimmed content');
-        });
-    });
+    // Note: _extractEnhancedPrompt method has been removed in favor of tool-based parsing
+    // The enhancement now uses submit_enhanced_prompt tool calls instead of content parsing
 });

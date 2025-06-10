@@ -214,7 +214,8 @@ describe('SnapshotsCommand', () => {
                     modifiedFiles: ['test.js'],
                 },
             ]);
-            mockContext.snapshotManager.getSnapshot.mockReturnValue(snapshot);
+            mockContext.snapshotManager.getSnapshot.mockResolvedValue(snapshot);
+            mockContext.snapshotManager.deleteSnapshot.mockResolvedValue({ success: true });
             mockContext.consoleInterface.promptForInput
                 .mockResolvedValueOnce('d1')
                 .mockResolvedValueOnce('q');
@@ -326,7 +327,7 @@ describe('SnapshotsCommand', () => {
     });
 
     describe('showSnapshotDetail', () => {
-        it('should display detailed snapshot information', () => {
+        it('should display detailed snapshot information', async () => {
             const snapshot = {
                 id: 1,
                 timestamp: '2024-01-15T10:30:00.000Z',
@@ -336,17 +337,19 @@ describe('SnapshotsCommand', () => {
                     'src/utils.js': 'content2',
                 },
             };
-            mockContext.snapshotManager.getSnapshot.mockReturnValue(snapshot);
+            mockContext.snapshotManager.getSnapshot.mockResolvedValue(snapshot);
 
-            snapshotsCommand.showSnapshotDetail(1, mockContext);
+            await snapshotsCommand.showSnapshotDetail(1, mockContext);
 
             expect(mockLogger.raw).toHaveBeenCalledWith('\n📸 Snapshot 1 Details:');
             expect(mockLogger.raw).toHaveBeenCalledWith('📝 Instruction: Add new feature');
             expect(mockLogger.raw).toHaveBeenCalledWith('📁 Files backed up: 2');
         });
 
-        it('should handle snapshot not found', () => {
-            snapshotsCommand.showSnapshotDetail(999, mockContext);
+        it('should handle snapshot not found', async () => {
+            mockContext.snapshotManager.getSnapshot.mockResolvedValue(null);
+
+            await snapshotsCommand.showSnapshotDetail(999, mockContext);
 
             expect(mockLogger.raw).toHaveBeenCalledWith('❌ Snapshot 999 not found');
         });

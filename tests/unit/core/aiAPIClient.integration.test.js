@@ -25,6 +25,7 @@ vi.mock('../../../systemMessages.js', () => ({
         getLevel: vi.fn(),
         getExcludedTools: vi.fn(),
         getReminder: vi.fn(),
+        getParsingTools: vi.fn(),
     },
 }));
 
@@ -71,6 +72,7 @@ describe('AIAPIClient Integration Tests', () => {
             getLevel: vi.fn().mockReturnValue('base'),
             getExcludedTools: vi.fn().mockReturnValue([]),
             getReminder: vi.fn().mockReturnValue(null),
+            getParsingTools: vi.fn().mockReturnValue([]),
         };
 
         // Setup module mocks
@@ -85,6 +87,7 @@ describe('AIAPIClient Integration Tests', () => {
         SystemMessages.default.getLevel = mockSystemMessages.getLevel;
         SystemMessages.default.getExcludedTools = mockSystemMessages.getExcludedTools;
         SystemMessages.default.getReminder = mockSystemMessages.getReminder;
+        SystemMessages.default.getParsingTools = mockSystemMessages.getParsingTools;
 
         const { getLogger } = await import('../../../logger.js');
         getLogger.mockReturnValue(mockLogger);
