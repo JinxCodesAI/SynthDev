@@ -5,6 +5,17 @@ import getTime from '../../../tools/get_time/implementation.js';
 describe('GetTime Tool', () => {
     let originalDate;
 
+    // Mock logger
+    vi.mock('../../../logger.js', () => ({
+        getLogger: vi.fn().mockReturnValue({
+            raw: vi.fn(),
+            error: vi.fn(),
+            warn: vi.fn(),
+            info: vi.fn(),
+            debug: vi.fn(),
+        }),
+    }));
+
     beforeEach(() => {
         // Mock Date to have consistent test results
         originalDate = global.Date;
