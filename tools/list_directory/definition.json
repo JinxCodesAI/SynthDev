@@ -54,12 +54,17 @@
                             "Thumbs.db",
                             ".index"
                         ]
+                    },
+                    "include_summaries": {
+                        "type": "boolean",
+                        "description": "Set to true if you want to enritch each file and directory record with ai_summary generated during codebase indexing. Has no effect if codebase is not indexed or file is missing from index",
+                        "default": false
                     }
                 },
                 "required": ["directory_path"]
             },
             "response_format": {
-                "description": "Returns JSON object with 'success' (boolean), 'timestamp' (ISO string), 'tool_name' (string), 'directory_path' (scanned path), 'total_items' (count), 'directories' (array of directory objects), and 'files' (array of file objects). Each entry includes name, path, size (for files), and modified date. Error responses include 'error' field with detailed message."
+                "description": "Returns JSON object with 'success' (boolean), 'timestamp' (ISO string), 'tool_name' (string), 'directory_path' (scanned path), 'total_items' (count), 'directories' (array of directory objects), and 'files' (array of file objects). Each entry includes name, path, size (for files), and modified date. When include_summaries is true, file objects may also include an 'ai_summary' field with AI-generated content descriptions. Error responses include 'error' field with detailed message."
             }
         }
     }

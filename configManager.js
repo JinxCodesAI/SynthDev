@@ -1,7 +1,13 @@
 import { config } from 'dotenv';
 import { createInterface } from 'readline';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
 import { getConfigurationValidator } from './configurationValidator.js';
 import { getConfigurationLoader } from './configurationLoader.js';
+
+// Get the directory where this module is located (synth-dev installation directory)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 /**
  * Singleton ConfigManager class that loads and manages all application configuration
@@ -12,8 +18,8 @@ class ConfigManager {
             return ConfigManager.instance;
         }
 
-        // Load environment variables from .env file
-        config();
+        // Load environment variables from .env file in synth-dev installation directory
+        config({ path: join(__dirname, '.env') });
 
         // Load application defaults
         this.configLoader = getConfigurationLoader();
