@@ -267,25 +267,11 @@ class AICoderConsole {
 
             // Attempt to enhance the prompt
             const enhancementResult = await this.promptEnhancer.enhancePrompt(originalPrompt);
+            this.logger.debug('Enhancement result:', enhancementResult);
 
             if (!enhancementResult.success) {
-                // Enhancement failed, ask user what to do
-                const userChoice = await this.consoleInterface.promptForEnhancementFailureAction(
-                    enhancementResult.error,
-                    originalPrompt
-                );
-
-                if (userChoice.useOriginal) {
-                    this.logger.info('\n📝 Using original prompt...\n');
-                    return originalPrompt;
-                } else if (userChoice.useModified) {
-                    this.logger.info('\n📝 Using your modified prompt...\n');
-                    return userChoice.finalPrompt;
-                } else {
-                    // User chose to cancel
-                    this.logger.info('\n🚫 Operation cancelled.\n');
-                    return null; // Signal to cancel the operation
-                }
+                this.consoleInterface.showEnhancementError(enhancementResult.error);
+                return originalPrompt;
             }
 
             // Enhancement succeeded, get user approval

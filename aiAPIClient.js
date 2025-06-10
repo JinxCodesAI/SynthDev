@@ -128,6 +128,7 @@ class AIAPIClient {
         onError = null,
         onReminder = null,
         onContentDisplay = null,
+        onParseResponse = null,
     }) {
         this.onThinking = onThinking;
         this.onChainOfThought = onChainOfThought;
@@ -137,6 +138,7 @@ class AIAPIClient {
         this.onError = onError;
         this.onReminder = onReminder;
         this.onContentDisplay = onContentDisplay;
+        this.onParseResponse = onParseResponse;
     }
 
     setTools(tools) {
@@ -187,7 +189,7 @@ class AIAPIClient {
     }
 
     /**
-     * Apply tool filtering based on current role's excluded tools
+     * Apply tool filtering based on current role's excluded tools and add role-specific tools
      * @private
      */
     _applyToolFiltering() {
@@ -197,12 +199,16 @@ class AIAPIClient {
 
         try {
             const excludedTools = SystemMessages.getExcludedTools(this.role);
+            const parsingTools = SystemMessages.getParsingTools(this.role);
 
             // Filter out excluded tools
-            this.tools = this.allTools.filter(tool => {
+            const filteredTools = this.allTools.filter(tool => {
                 const toolName = tool.function?.name || tool.name;
                 return !excludedTools.includes(toolName);
             });
+
+            // Add role-specific tools
+            this.tools = [...filteredTools, ...parsingTools];
         } catch (error) {
             this.logger.warn(
                 `Could not apply tool filtering for role '${this.role}': ${error.message}`
@@ -265,17 +271,59 @@ class AIAPIClient {
                 message.reasoning_content = null;
             }
 
+            const parsingTools = SystemMessages.getParsingTools(this.role).map(
+                tool => tool.function.name
+            );
+            this.logger.debug('Parsing tools:', parsingTools);
+
+            const toolCalls = message.tool_calls || [];
+            const parsingToolCalls = toolCalls.filter(call =>
+                parsingTools.includes(call.function.name)
+            );
+            const nonParsingToolCalls = toolCalls.filter(
+                call => !parsingTools.includes(call.function.name)
+            );
+
+            if (parsingToolCalls.length > 0 && nonParsingToolCalls.length > 0) {
+                this.onError(
+                    new Error(
+                        'AI response contains both parsing and non-parsing tool calls. This is not supported.'
+                    )
+                );
+            }
+
             // Handle tool calls if present
-            if (message.tool_calls && message.tool_calls.length > 0) {
+            if (nonParsingToolCalls.length > 0) {
+                this.logger.debug('AI response contains tool calls');
+
                 // Display content immediately if present (before tool execution)
                 if (message.content && this.onContentDisplay) {
                     this.onContentDisplay(message.content, this.role);
                 }
                 await this._handleToolCalls(message);
             } else {
+                let content = null;
+                if (parsingToolCalls.length > 0) {
+                    this.logger.debug('AI response contains parsing tool calls');
+                    if (this.onParseResponse) {
+                        const parsedResponse = this.onParseResponse(message);
+                        this.logger.debug('Parsed response:', parsedResponse);
+                        if (parsedResponse.success) {
+                            content = parsedResponse.content;
+                        } else {
+                            this.onError(new Error(parsedResponse.error));
+                        }
+                    } else {
+                        this.logger.error('No parsing response handler defined');
+                        this.onError(new Error('No parsing response handler defined'));
+                    }
+                } else {
+                    this.logger.debug('AI response contains no tool calls');
+                    content = message.content;
+                }
                 // Regular response without tools
-                this.messages.push({ role: 'assistant', content: message.content });
-                if (this.onResponse) {
+                this.messages.push({ role: 'assistant', content: content });
+                if (this.onResponse && !this.onParseResponse) {
                     this.onResponse(response, this.role);
                 }
             }
