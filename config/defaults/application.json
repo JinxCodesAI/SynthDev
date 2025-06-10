@@ -15,7 +15,7 @@
     },
     "global_settings": {
         "maxToolCalls": 50,
-        "enablePromptEnhancement": true,
+        "enablePromptEnhancement": false,
         "verbosityLevel": 2
     },
     "ui_settings": {
