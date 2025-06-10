@@ -123,6 +123,7 @@ describe('AIAPIClient', () => {
             expect(aiClient.onToolExecution).toBeNull();
             expect(aiClient.onResponse).toBeNull();
             expect(aiClient.onError).toBeNull();
+            expect(aiClient.onContentDisplay).toBeNull();
         });
     });
 
@@ -136,6 +137,7 @@ describe('AIAPIClient', () => {
                 onResponse: vi.fn(),
                 onError: vi.fn(),
                 onReminder: vi.fn(),
+                onContentDisplay: vi.fn(),
             };
 
             aiClient.setCallbacks(callbacks);
@@ -147,6 +149,7 @@ describe('AIAPIClient', () => {
             expect(aiClient.onResponse).toBe(callbacks.onResponse);
             expect(aiClient.onError).toBe(callbacks.onError);
             expect(aiClient.onReminder).toBe(callbacks.onReminder);
+            expect(aiClient.onContentDisplay).toBe(callbacks.onContentDisplay);
         });
 
         it('should handle partial callback setting', () => {
@@ -161,6 +164,7 @@ describe('AIAPIClient', () => {
             expect(aiClient.onResponse).toBe(callbacks.onResponse);
             expect(aiClient.onChainOfThought).toBeNull();
             expect(aiClient.onToolExecution).toBeNull();
+            expect(aiClient.onContentDisplay).toBeNull();
         });
     });
 
@@ -361,6 +365,188 @@ describe('AIAPIClient', () => {
             aiClient.lastAPICall = mockAPICall;
 
             expect(aiClient.getLastAPICall()).toBe(mockAPICall);
+        });
+    });
+
+    describe('sendUserMessage', () => {
+        beforeEach(() => {
+            // Setup mock API response
+            mockOpenAI.chat.completions.create.mockResolvedValue({
+                choices: [
+                    {
+                        message: {
+                            role: 'assistant',
+                            content: 'Test response content',
+                        },
+                    },
+                ],
+                usage: {
+                    total_tokens: 100,
+                    prompt_tokens: 50,
+                    completion_tokens: 50,
+                },
+            });
+        });
+
+        it('should display content when both content and tool_calls are present', async () => {
+            const onContentDisplayCallback = vi.fn();
+            const onResponseCallback = vi.fn();
+            const onToolExecutionCallback = vi.fn().mockResolvedValue({
+                role: 'tool',
+                tool_call_id: 'call_123',
+                content: 'Tool result',
+            });
+
+            aiClient.setCallbacks({
+                onContentDisplay: onContentDisplayCallback,
+                onResponse: onResponseCallback,
+                onToolExecution: onToolExecutionCallback,
+            });
+
+            // Mock API response with both content and tool_calls
+            mockOpenAI.chat.completions.create.mockResolvedValueOnce({
+                choices: [
+                    {
+                        message: {
+                            role: 'assistant',
+                            content: 'I will help you with that. Let me use a tool.',
+                            tool_calls: [
+                                {
+                                    id: 'call_123',
+                                    type: 'function',
+                                    function: {
+                                        name: 'test_tool',
+                                        arguments: '{"param": "value"}',
+                                    },
+                                },
+                            ],
+                        },
+                    },
+                ],
+                usage: { total_tokens: 100, prompt_tokens: 50, completion_tokens: 50 },
+            });
+
+            // Mock final response after tool execution
+            mockOpenAI.chat.completions.create.mockResolvedValueOnce({
+                choices: [
+                    {
+                        message: {
+                            role: 'assistant',
+                            content: 'Task completed successfully.',
+                        },
+                    },
+                ],
+                usage: { total_tokens: 80, prompt_tokens: 40, completion_tokens: 40 },
+            });
+
+            await aiClient.sendUserMessage('Test user input');
+
+            // Verify that onContentDisplay was called for the initial content
+            expect(onContentDisplayCallback).toHaveBeenCalledWith(
+                'I will help you with that. Let me use a tool.',
+                null
+            );
+
+            // Verify that tool execution was called
+            expect(onToolExecutionCallback).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    id: 'call_123',
+                    function: expect.objectContaining({
+                        name: 'test_tool',
+                    }),
+                })
+            );
+        });
+
+        it('should display content immediately for regular responses without tools', async () => {
+            const onResponseCallback = vi.fn();
+            aiClient.setCallbacks({ onResponse: onResponseCallback });
+
+            await aiClient.sendUserMessage('Test user input');
+
+            expect(onResponseCallback).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    choices: [
+                        expect.objectContaining({
+                            message: expect.objectContaining({
+                                content: 'Test response content',
+                            }),
+                        }),
+                    ],
+                }),
+                null
+            );
+        });
+
+        it('should display both initial content and final response', async () => {
+            const onContentDisplayCallback = vi.fn();
+            const onResponseCallback = vi.fn();
+            const onToolExecutionCallback = vi.fn().mockResolvedValue({
+                role: 'tool',
+                tool_call_id: 'call_123',
+                content: 'Tool result',
+            });
+
+            aiClient.setCallbacks({
+                onContentDisplay: onContentDisplayCallback,
+                onResponse: onResponseCallback,
+                onToolExecution: onToolExecutionCallback,
+            });
+
+            // Mock initial response with content and tool_calls
+            mockOpenAI.chat.completions.create.mockResolvedValueOnce({
+                choices: [
+                    {
+                        message: {
+                            role: 'assistant',
+                            content: 'Initial content with tools',
+                            tool_calls: [
+                                {
+                                    id: 'call_123',
+                                    type: 'function',
+                                    function: { name: 'test_tool', arguments: '{}' },
+                                },
+                            ],
+                        },
+                    },
+                ],
+                usage: { total_tokens: 100, prompt_tokens: 50, completion_tokens: 50 },
+            });
+
+            // Mock final response with different content
+            mockOpenAI.chat.completions.create.mockResolvedValueOnce({
+                choices: [
+                    {
+                        message: {
+                            role: 'assistant',
+                            content: 'Task completed successfully.',
+                        },
+                    },
+                ],
+                usage: { total_tokens: 50, prompt_tokens: 30, completion_tokens: 20 },
+            });
+
+            await aiClient.sendUserMessage('Test user input');
+
+            // Should be called once for initial content display
+            expect(onContentDisplayCallback).toHaveBeenCalledWith(
+                'Initial content with tools',
+                null
+            );
+
+            // Should be called once for final response
+            expect(onResponseCallback).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    choices: [
+                        expect.objectContaining({
+                            message: expect.objectContaining({
+                                content: 'Task completed successfully.',
+                            }),
+                        }),
+                    ],
+                }),
+                null
+            );
         });
     });
 

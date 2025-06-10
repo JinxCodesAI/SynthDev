@@ -334,6 +334,11 @@ class ToolManager {
         const pathPropertyName = toolDefinition.backup_resource_path_property_name;
         const filePath = toolArgs[pathPropertyName];
 
+        this.logger.debug(
+            `Handling file backup for tool ${toolName} with file path ${filePath}`,
+            'File Backup'
+        );
+
         if (filePath) {
             await snapshotManager.backupFileIfNeeded(filePath);
         }

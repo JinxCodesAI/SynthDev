@@ -61,6 +61,7 @@ class AIAPIClient {
         this.onToolExecution = null;
         this.onResponse = null;
         this.onError = null;
+        this.onContentDisplay = null;
 
         // Initialize logger
         this.logger = getLogger();
@@ -126,6 +127,7 @@ class AIAPIClient {
         onResponse = null,
         onError = null,
         onReminder = null,
+        onContentDisplay = null,
     }) {
         this.onThinking = onThinking;
         this.onChainOfThought = onChainOfThought;
@@ -134,6 +136,7 @@ class AIAPIClient {
         this.onResponse = onResponse;
         this.onError = onError;
         this.onReminder = onReminder;
+        this.onContentDisplay = onContentDisplay;
     }
 
     setTools(tools) {
@@ -264,6 +267,10 @@ class AIAPIClient {
 
             // Handle tool calls if present
             if (message.tool_calls && message.tool_calls.length > 0) {
+                // Display content immediately if present (before tool execution)
+                if (message.content && this.onContentDisplay) {
+                    this.onContentDisplay(message.content, this.role);
+                }
                 await this._handleToolCalls(message);
             } else {
                 // Regular response without tools

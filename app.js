@@ -124,6 +124,17 @@ class AICoderConsole {
                 this.consoleInterface.showFinalChainOfThought(content);
             },
 
+            onContentDisplay: (content, role = null) => {
+                // Display content immediately without affecting UI state
+                if (content) {
+                    this.consoleInterface.showMessage(
+                        content,
+                        role ? `🤖 ${role}:` : '🤖 Synth-Dev:'
+                    );
+                    this.consoleInterface.newLine();
+                }
+            },
+
             onToolExecution: async toolCall => {
                 // Show that tools are being executed (only once)
                 if (!this._toolsExecutionShown) {
@@ -151,10 +162,11 @@ class AICoderConsole {
                         role ? `🤖 ${role}:` : '🤖 Synth-Dev:'
                     );
                     this.consoleInterface.newLine();
-                    this._toolsExecutionShown = false; // Reset for next interaction
-                    this.isProcessing = false; // Unblock input
-                    this.consoleInterface.resumeInput();
                 }
+                // Always reset state and unblock input when response is complete
+                this._toolsExecutionShown = false; // Reset for next interaction
+                this.isProcessing = false; // Unblock input
+                this.consoleInterface.resumeInput();
             },
 
             onError: error => {
