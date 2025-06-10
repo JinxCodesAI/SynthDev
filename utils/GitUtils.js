@@ -306,6 +306,27 @@ class GitUtils {
             return { success: false, error: error.message };
         }
     }
+
+    /**
+     * Delete a Git branch
+     * @param {string} branchName - Name of the branch to delete
+     * @param {boolean} force - Whether to force delete the branch (default: false)
+     * @returns {Promise<{success: boolean, error?: string}>}
+     */
+    async deleteBranch(branchName, force = false) {
+        try {
+            const forceFlag = force ? '-D' : '-d';
+            const result = await executeTerminal({
+                command: `git branch ${forceFlag} "${branchName}"`,
+            });
+            if (result.success) {
+                return { success: true };
+            }
+            return { success: false, error: result.error || 'Failed to delete branch' };
+        } catch (error) {
+            return { success: false, error: error.message };
+        }
+    }
 }
 
 export default GitUtils;

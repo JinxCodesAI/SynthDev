@@ -6,12 +6,20 @@ import { getLogger } from './logger.js';
  * Now uses a modular command system with individual command classes
  */
 class CommandHandler {
-    constructor(apiClient, toolManager, consoleInterface, costsManager, snapshotManager) {
+    constructor(
+        apiClient,
+        toolManager,
+        consoleInterface,
+        costsManager,
+        snapshotManager,
+        app = null
+    ) {
         this.apiClient = apiClient;
         this.toolManager = toolManager;
         this.consoleInterface = consoleInterface;
         this.costsManager = costsManager;
         this.snapshotManager = snapshotManager;
+        this.app = app;
         this.logger = getLogger();
 
         // Initialize the new command registry
@@ -38,6 +46,7 @@ class CommandHandler {
                 costsManager: this.costsManager,
                 snapshotManager: this.snapshotManager,
                 commandRegistry: this.commandRegistry,
+                app: this.app,
             };
 
             // Use the new command registry to handle the command

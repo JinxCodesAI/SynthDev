@@ -15,7 +15,7 @@ export class ExitCommand extends BaseCommand {
      * @returns {string[]} Required dependencies
      */
     getRequiredDependencies() {
-        return ['consoleInterface'];
+        return ['app'];
     }
 
     /**
@@ -25,10 +25,10 @@ export class ExitCommand extends BaseCommand {
      * @returns {void} This method doesn't return as it exits the process
      */
     async implementation(args, context) {
-        const { consoleInterface } = context;
+        const { app } = context;
 
-        consoleInterface.showGoodbye();
-        process.exit(0);
+        // Use the centralized exit handler for cleanup
+        await app.handleExit();
     }
 
     /**
