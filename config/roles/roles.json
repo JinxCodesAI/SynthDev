@@ -69,6 +69,28 @@
                 },
                 "parsingOnly": true
             }
+        ],
+        "examples": [
+            {
+                "role": "user",
+                "content": "review @e:\\AI\\projects\\synth-dev\\systemMessages.js @e:\\AI\\projects\\synth-dev\\config\\roles\\roles.json I want to make \"excludedTools\" more flexible I want to be able to use wildcards and ideally regular expressions like \"*file\" excluding all 3 \"read_file\" \"write_file\" \"edit_file\" "
+            },
+            {
+                "role": "function",
+                "name": "submit_enhanced_prompt",
+                "content": "",
+                "arguments": "{\"enhancement_needed\":true,\"enhanced_prompt\":\"Review the systemMessages.js file and the config/roles/roles.json configuration file to understand how the \\\"excludedTools\\\" feature currently works. I want to enhance the excludedTools functionality to support pattern matching instead of just exact tool name matches. \\n\\n Specifically, I want to implement: \\n\\n- Wildcard support using * (e.g., \"*file\" matches \"read_file\", \"write_file\")\n- Regular expression support with /pattern/flags syntax\n- Maintain backward compatibility with existing exact string matches \n\n Please analyze the current implementation, create a detailed plan for enhancing the excludedTools pattern matching, and implement the changes while preserving the existing functionality for roles that use exact tool names.\"}"
+            },
+            {
+                "role": "user",
+                "content": "Hi"
+            },
+            {
+                "role": "function",
+                "name": "submit_enhanced_prompt",
+                "content": "User, just said hi, no enhancement needed",
+                "arguments": "{\"enhancement_needed\":false}"
+            }
         ]
     },
     "codebase_explainer": {
