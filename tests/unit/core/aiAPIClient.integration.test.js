@@ -97,7 +97,12 @@ describe('AIAPIClient Integration Tests', () => {
             mockCostsManager,
             'test-api-key',
             'https://api.test.com/v1',
-            'test-model'
+            'test-model',
+            // New arguments for constructor
+            mockConfig.getConfig().global.maxToolCalls, // maxToolCalls
+            null, // smartModelConfig (or mock if needed for specific tests)
+            null, // fastModelConfig (or mock if needed for specific tests)
+            modelName => mockConfig.getMaxTokens(modelName) // getMaxTokensFunc
         );
     });
 
@@ -140,7 +145,16 @@ describe('AIAPIClient Integration Tests', () => {
             const { OpenAI } = await import('openai');
             OpenAI.mockImplementation(() => mockOpenAIWithReasoning);
 
-            aiClient = new AIAPIClient(mockCostsManager, 'test-key');
+            aiClient = new AIAPIClient(
+                mockCostsManager,
+                'test-key',
+                'https://api.test.com/v1',
+                'test-model-reasoning',
+                10,
+                null,
+                null,
+                modelName => mockConfig.getMaxTokens(modelName)
+            );
 
             const onChainOfThought = vi.fn();
             aiClient.setCallbacks({ onChainOfThought });
@@ -155,7 +169,16 @@ describe('AIAPIClient Integration Tests', () => {
             const { OpenAI } = await import('openai');
             OpenAI.mockImplementation(() => mockOpenAIWithTools);
 
-            aiClient = new AIAPIClient(mockCostsManager, 'test-key');
+            aiClient = new AIAPIClient(
+                mockCostsManager,
+                'test-key',
+                'https://api.test.com/v1',
+                'test-model-tools',
+                10,
+                null,
+                null,
+                modelName => mockConfig.getMaxTokens(modelName)
+            );
 
             const onToolExecution = vi.fn().mockResolvedValue({
                 role: 'tool',
@@ -188,7 +211,16 @@ describe('AIAPIClient Integration Tests', () => {
             const { OpenAI } = await import('openai');
             OpenAI.mockImplementation(() => mockOpenAIWithTools);
 
-            aiClient = new AIAPIClient(mockCostsManager, 'test-key');
+            aiClient = new AIAPIClient(
+                mockCostsManager,
+                'test-key',
+                'https://api.test.com/v1',
+                'test-model-tool-error',
+                10,
+                null,
+                null,
+                modelName => mockConfig.getMaxTokens(modelName)
+            );
 
             const onToolExecution = vi.fn().mockRejectedValue(new Error('Tool execution failed'));
             aiClient.setCallbacks({ onToolExecution });
@@ -211,7 +243,16 @@ describe('AIAPIClient Integration Tests', () => {
             const { OpenAI } = await import('openai');
             OpenAI.mockImplementation(() => mockOpenAIWithError);
 
-            aiClient = new AIAPIClient(mockCostsManager, 'test-key');
+            aiClient = new AIAPIClient(
+                mockCostsManager,
+                'test-key',
+                'https://api.test.com/v1',
+                'test-model-api-error',
+                10,
+                null,
+                null,
+                modelName => mockConfig.getMaxTokens(modelName)
+            );
 
             const onError = vi.fn();
             aiClient.setCallbacks({ onError });
@@ -337,8 +378,17 @@ describe('AIAPIClient Integration Tests', () => {
             const { OpenAI } = await import('openai');
             OpenAI.mockImplementation(() => mockOpenAIInfinite);
 
-            aiClient = new AIAPIClient(mockCostsManager, 'test-key');
-            aiClient.maxToolCalls = 2; // Set low limit for testing
+            aiClient = new AIAPIClient(
+                mockCostsManager,
+                'test-key',
+                'https://api.test.com/v1',
+                'test-model-infinite-tools',
+                2, // maxToolCalls set low for this test
+                null,
+                null,
+                modelName => mockConfig.getMaxTokens(modelName)
+            );
+            // aiClient.maxToolCalls = 2; // This is now set via constructor
 
             const onToolExecution = vi.fn().mockResolvedValue({
                 role: 'tool',
@@ -364,7 +414,16 @@ describe('AIAPIClient Integration Tests', () => {
             const { OpenAI } = await import('openai');
             OpenAI.mockImplementation(() => mockOpenAIWithTools);
 
-            aiClient = new AIAPIClient(mockCostsManager, 'test-key');
+            aiClient = new AIAPIClient(
+                mockCostsManager,
+                'test-key',
+                'https://api.test.com/v1',
+                'test-model-reminder',
+                10,
+                null,
+                null,
+                modelName => mockConfig.getMaxTokens(modelName)
+            );
             aiClient.role = 'test-role';
 
             mockSystemMessages.getReminder.mockReturnValue('Remember to be helpful');
@@ -392,7 +451,16 @@ describe('AIAPIClient Integration Tests', () => {
             const { OpenAI } = await import('openai');
             OpenAI.mockImplementation(() => mockOpenAIWithTools);
 
-            aiClient = new AIAPIClient(mockCostsManager, 'test-key');
+            aiClient = new AIAPIClient(
+                mockCostsManager,
+                'test-key',
+                'https://api.test.com/v1',
+                'test-model-custom-reminder',
+                10,
+                null,
+                null,
+                modelName => mockConfig.getMaxTokens(modelName)
+            );
             aiClient.role = 'test-role';
 
             mockSystemMessages.getReminder.mockReturnValue('Original reminder');

@@ -82,12 +82,26 @@ class AICoderConsole {
         this.logger = getLogger();
 
         this.costsManager = costsManager;
-        const baseModel = config.getModel('base');
+        const fullConfig = this.config.getConfig();
+        const smartModelConfig = this.config.hasSmartModelConfig()
+            ? this.config.getModel('smart')
+            : null;
+        const fastModelConfig = this.config.hasFastModelConfig()
+            ? this.config.getModel('fast')
+            : null;
+        const getMaxTokensFunc = modelName => this.config.getMaxTokens(modelName);
+
+        const baseModel = this.config.getModel('base');
         this.apiClient = new AIAPIClient(
             this.costsManager,
             baseModel.apiKey,
             baseModel.baseUrl,
-            baseModel.baseModel
+            baseModel.baseModel,
+            // New arguments:
+            fullConfig.global.maxToolCalls,
+            smartModelConfig,
+            fastModelConfig,
+            getMaxTokensFunc
         );
 
         this.consoleInterface = new ConsoleInterface();

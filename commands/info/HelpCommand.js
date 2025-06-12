@@ -17,7 +17,7 @@ export class HelpCommand extends BaseCommand {
      * @returns {string[]} Required dependencies
      */
     getRequiredDependencies() {
-        return ['apiClient'];
+        return ['apiClient', 'commandRegistry'];
     }
 
     /**
