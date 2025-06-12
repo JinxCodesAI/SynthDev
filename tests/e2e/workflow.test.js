@@ -58,11 +58,25 @@ describe('End-to-End Workflow Tests', () => {
             addUsage: vi.fn(),
         };
 
+        // Prepare dependencies for AIAPIClient from configManager
+        const globalConfig = configManager.getConfig().global;
+        const smartConfig = configManager.hasSmartModelConfig()
+            ? configManager.getModel('smart')
+            : null;
+        const fastConfig = configManager.hasFastModelConfig()
+            ? configManager.getModel('fast')
+            : null;
+        const getMaxTokens = modelName => configManager.getMaxTokens(modelName);
+
         aiClient = new AIAPIClient(
             mockCostsManager,
-            'test-api-key',
-            'https://api.test.com/v1',
-            'test-model'
+            'test-api-key', // Base model API key
+            'https://api.test.com/v1', // Base model baseURL
+            'test-model', // Base model name
+            globalConfig.maxToolCalls,
+            smartConfig,
+            fastConfig,
+            getMaxTokens
         );
     });
 

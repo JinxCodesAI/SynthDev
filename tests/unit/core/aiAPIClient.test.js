@@ -92,7 +92,12 @@ describe('AIAPIClient', () => {
             mockCostsManager,
             'test-api-key',
             'https://api.test.com/v1',
-            'test-model'
+            'test-model',
+            // New arguments for constructor
+            mockConfig.getConfig().global.maxToolCalls, // maxToolCalls
+            mockConfig.hasSmartModelConfig() ? mockConfig.getModel('smart') : null, // smartModelConfig
+            mockConfig.hasFastModelConfig() ? mockConfig.getModel('fast') : null, // fastModelConfig
+            modelName => mockConfig.getMaxTokens(modelName) // getMaxTokensFunc
         );
     });
 
@@ -233,14 +238,24 @@ describe('AIAPIClient', () => {
         it('should switch model based on role level', async () => {
             mockSystemMessages.getLevel.mockReturnValue('smart');
             mockConfig.hasSmartModelConfig.mockReturnValue(true);
-            mockConfig.getModel = vi.fn().mockReturnValue({
+            const smartModelCfg = {
                 apiKey: 'smart-key',
                 baseUrl: 'https://smart.api.com',
                 model: 'smart-model',
-            });
+            };
+            mockConfig.getModel = vi.fn().mockReturnValue(smartModelCfg);
 
             // Reinitialize to set up smart model config
-            aiClient = new AIAPIClient(mockCostsManager, 'test-key');
+            aiClient = new AIAPIClient(
+                mockCostsManager,
+                'test-key',
+                'https://api.test.com/v1', // baseUrl for base model
+                'base-model-name', // base model name
+                10, // maxToolCalls
+                smartModelCfg, // smartModelConfig
+                null, // fastModelConfig
+                modelName => mockConfig.getMaxTokens(modelName) // getMaxTokensFunc
+            );
 
             await aiClient.setSystemMessage('Test message', 'smart-role');
 

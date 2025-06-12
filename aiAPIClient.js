@@ -1,7 +1,7 @@
 import { OpenAI } from 'openai';
 import { dirname } from 'path';
 import { fileURLToPath } from 'url';
-import ConfigManager from './configManager.js';
+// import ConfigManager from './configManager.js'; // Removed as per instructions
 import SystemMessages from './systemMessages.js';
 import { getLogger } from './logger.js';
 
@@ -14,9 +14,14 @@ const __dirname = dirname(__filename);
 class AIAPIClient {
     constructor(
         costsManager,
-        apiKey,
-        baseURL = 'https://api.openai.com/v1',
-        model = 'gpt-4.1-mini'
+        apiKey, // Base model API key
+        baseURL = 'https://api.openai.com/v1', // Base model baseURL
+        model = 'gpt-4.1-mini', // Base model name
+        // New injected configuration dependencies
+        maxToolCalls,
+        smartModelConfig, // Optional: { apiKey, model, baseUrl }
+        fastModelConfig, // Optional: { apiKey, model, baseUrl }
+        getMaxTokensFunc // Function: (modelName) => number
     ) {
         // Store initial configuration as base model
         this.baseClient = new OpenAI({
@@ -49,9 +54,12 @@ class AIAPIClient {
             timestamp: null,
         };
 
-        // Safety limits from config
-        const config = ConfigManager.getInstance();
-        this.maxToolCalls = config.getConfig().global.maxToolCalls;
+        // Store injected dependencies
+        this.maxToolCalls = maxToolCalls;
+        this.injectedSmartModelConfig = smartModelConfig;
+        this.injectedFastModelConfig = fastModelConfig;
+        this.getMaxTokens = getMaxTokensFunc;
+
         this.toolCallCount = 0;
 
         // Callbacks for UI interaction
@@ -75,27 +83,33 @@ class AIAPIClient {
      * @private
      */
     _initializeModelConfigs() {
-        const config = ConfigManager.getInstance();
-
         // Initialize smart model if configured
-        if (config.hasSmartModelConfig()) {
-            const smartConfig = config.getModel('smart');
+        if (
+            this.injectedSmartModelConfig &&
+            this.injectedSmartModelConfig.apiKey &&
+            this.injectedSmartModelConfig.model
+        ) {
+            const smartConfig = this.injectedSmartModelConfig;
             this.modelConfigs.smart = {
                 client: new OpenAI({
                     apiKey: smartConfig.apiKey,
-                    baseURL: smartConfig.baseUrl,
+                    baseURL: smartConfig.baseUrl, // Assuming 'baseUrl' is the correct property name
                 }),
                 model: smartConfig.model,
             };
         }
 
         // Initialize fast model if configured
-        if (config.hasFastModelConfig()) {
-            const fastConfig = config.getModel('fast');
+        if (
+            this.injectedFastModelConfig &&
+            this.injectedFastModelConfig.apiKey &&
+            this.injectedFastModelConfig.model
+        ) {
+            const fastConfig = this.injectedFastModelConfig;
             this.modelConfigs.fast = {
                 client: new OpenAI({
                     apiKey: fastConfig.apiKey,
-                    baseURL: fastConfig.baseUrl,
+                    baseURL: fastConfig.baseUrl, // Assuming 'baseUrl' is the correct property name
                 }),
                 model: fastConfig.model,
             };
@@ -339,14 +353,12 @@ class AIAPIClient {
     }
 
     async _makeAPICall() {
-        const config = ConfigManager.getInstance();
-
         // Prepare API request
         const requestData = {
             model: this.model,
             messages: this.messages,
             tools: this.tools.length > 0 ? this.tools : undefined,
-            max_completion_tokens: config.getMaxTokens(this.model),
+            max_completion_tokens: this.getMaxTokens(this.model),
         };
 
         // Store request data for review
