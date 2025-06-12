@@ -1,11 +1,11 @@
 {
-	"folders": [
-		{
-			"path": ".."
-		},
-		{
-			"path": "../../snapshot_test1"
-		}
-	],
-	"settings": {}
+    "folders": [
+        {
+            "path": "..",
+        },
+        {
+            "path": "../../snapshot_test1",
+        },
+    ],
+    "settings": {},
 }
