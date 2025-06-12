@@ -259,6 +259,24 @@ class SystemMessages {
     }
 
     /**
+     * Get examples for a specific role (for few-shot prompting)
+     * @param {string} role - The role name
+     * @returns {Array} Array of example messages for few-shot prompting
+     */
+    static getExamples(role) {
+        const instance = new SystemMessages();
+        const roleConfig = instance.roles[role];
+
+        if (!roleConfig) {
+            throw new Error(
+                `Unknown role: ${role}. Available roles: ${Object.keys(instance.roles).join(', ')}`
+            );
+        }
+
+        return roleConfig.examples || [];
+    }
+
+    /**
      * Check if a role exists
      * @param {string} role - The role name to check
      * @returns {boolean} True if role exists
