@@ -1,6 +1,6 @@
 # Synth-Dev Documentation
 
-**Synth-Dev** is a powerful Node.js console-based AI coding assistant with an extensible tool system and command interface. It provides comprehensive development tools, multi-model support, and sophisticated conversation management capabilities.
+**Synth-Dev** is a powerful Node.js console-based AI coding assistant with an extensible tool system and command interface. It provides comprehensive development tools, multi-model support, and sophisticated conversation management capabilities. It's main intention is to **explore agentic capabilities** of **less powerful AI models**
 
 ## What is Synth-Dev?
 
@@ -16,6 +16,7 @@ Synth-Dev is an AI-powered development assistant that provides:
 
 - **Node.js**: Version 20.10.0 or higher (ES Modules support required)
 - **Operating System**: Tested on Windows, WSL and Linux docker container, never tested on macOS (Sorry \*)
+- **AI API**: Tested on less powerful models like google-Flash-2.5 ad gpt-4.1-mini/nano(fast)
 
 ## Installation & Setup
 
