@@ -26,14 +26,16 @@ export class SnapshotsCommand extends InteractiveCommand {
      * @returns {boolean} Always returns true
      */
     async implementation(args, context) {
-        const { snapshotManager, consoleInterface } = context;
-        
-        const snapshots = snapshotManager.getSnapshotSummaries();
+        const { snapshotManager } = context;
+
+        const snapshots = await snapshotManager.getSnapshotSummaries();
         const logger = getLogger();
 
         if (snapshots.length === 0) {
             logger.raw('\n📸 No snapshots available');
-            logger.raw('💡 Snapshots are automatically created when you give new instructions to the AI\n');
+            logger.raw(
+                '💡 Snapshots are automatically created when you give new instructions to the AI\n'
+            );
             return true;
         }
 
@@ -54,25 +56,35 @@ export class SnapshotsCommand extends InteractiveCommand {
                 logger.raw();
             }
 
-            snapshots.forEach((snapshot, index) => {
+            snapshots.forEach((snapshot, _index) => {
                 const date = new Date(snapshot.timestamp).toLocaleString();
-                const instructionPreview = snapshot.instruction.length > 60
-                    ? snapshot.instruction.substring(0, 60) + '...'
-                    : snapshot.instruction;
+                const instructionPreview =
+                    snapshot.instruction.length > 60
+                        ? `${snapshot.instruction.substring(0, 60)}...`
+                        : snapshot.instruction;
 
                 logger.raw(`${snapshot.id}. [${date}] ${instructionPreview}`);
-                logger.raw(`   📁 Files: ${snapshot.fileCount} | Modified: ${snapshot.modifiedFiles.join(', ')}`);
+
+                if (snapshot.isGitCommit) {
+                    logger.raw(`   🔗 Git: ${snapshot.shortHash} | Author: ${snapshot.author}`);
+                } else {
+                    logger.raw(
+                        `   📁 Files: ${snapshot.fileCount} | Modified: ${snapshot.modifiedFiles.join(', ')}`
+                    );
+                }
                 logger.raw();
             });
 
             logger.raw('Commands:');
             logger.raw('  [number] - View detailed snapshot info');
             logger.raw('  r[number] - Restore snapshot (e.g., r1)');
-            logger.raw('  d[number] - Delete snapshot (e.g., d1)');
-            logger.raw('  c - Clear all snapshots');
             if (gitStatus.gitMode) {
+                logger.raw('  🔗 Git mode: Restore uses git reset to commit');
                 logger.raw('  m - Merge feature branch to original branch');
                 logger.raw('  s - Switch back to original branch (without merge)');
+            } else {
+                logger.raw('  d[number] - Delete snapshot (e.g., d1)');
+                logger.raw('  c - Clear all snapshots');
             }
             logger.raw('  q - Quit snapshots view');
             logger.raw();
@@ -83,14 +95,20 @@ export class SnapshotsCommand extends InteractiveCommand {
             if (trimmed === 'q' || trimmed === 'quit') {
                 break;
             } else if (trimmed === 'c' || trimmed === 'clear') {
-                const confirmed = await this.promptForConfirmation(
-                    'Are you sure you want to clear all snapshots? This cannot be undone.',
-                    context
-                );
-                if (confirmed) {
-                    snapshotManager.clearAllSnapshots();
-                    logger.raw('🧹 All snapshots cleared');
-                    break;
+                const gitStatus = snapshotManager.getGitStatus();
+                if (gitStatus.gitMode) {
+                    logger.raw('❌ Clear snapshots is not supported in Git mode.');
+                    logger.raw('💡 Use Git commands to manage commit history if needed.');
+                } else {
+                    const confirmed = await this.promptForConfirmation(
+                        'Are you sure you want to clear all snapshots? This cannot be undone.',
+                        context
+                    );
+                    if (confirmed) {
+                        snapshotManager.clearAllSnapshots();
+                        logger.raw('🧹 All snapshots cleared');
+                        break;
+                    }
                 }
             } else if (trimmed === 'm' || trimmed === 'merge') {
                 await this.mergeFeatureBranch(context);
@@ -112,7 +130,7 @@ export class SnapshotsCommand extends InteractiveCommand {
                 }
             } else if (!isNaN(parseInt(trimmed))) {
                 const snapshotId = parseInt(trimmed);
-                this.showSnapshotDetail(snapshotId, context);
+                await this.showSnapshotDetail(snapshotId, context);
             } else {
                 logger.raw('❌ Invalid command. Use q to quit, or see commands above.');
             }
@@ -126,9 +144,9 @@ export class SnapshotsCommand extends InteractiveCommand {
      * @param {number} snapshotId - Snapshot ID
      * @param {Object} context - Execution context
      */
-    showSnapshotDetail(snapshotId, context) {
+    async showSnapshotDetail(snapshotId, context) {
         const { snapshotManager } = context;
-        const snapshot = snapshotManager.getSnapshot(snapshotId);
+        const snapshot = await snapshotManager.getSnapshot(snapshotId);
         const logger = getLogger();
 
         if (!snapshot) {
@@ -141,12 +159,25 @@ export class SnapshotsCommand extends InteractiveCommand {
         logger.raw('─'.repeat(50));
         logger.raw(`🕒 Created: ${date}`);
         logger.raw(`📝 Instruction: ${snapshot.instruction}`);
-        logger.raw(`📁 Files backed up: ${Object.keys(snapshot.files).length}`);
 
-        if (Object.keys(snapshot.files).length > 0) {
-            logger.raw('\n📂 Backed up files:');
-            for (const filePath of Object.keys(snapshot.files)) {
-                logger.raw(`   - ${filePath}`);
+        if (snapshot.isGitCommit) {
+            logger.raw(`🔗 Git Hash: ${snapshot.gitHash}`);
+            logger.raw(`👤 Author: ${snapshot.author}`);
+            if (snapshot.message) {
+                logger.raw(`💬 Message: ${snapshot.message}`);
+            }
+            if (snapshot.files && snapshot.files.length > 0) {
+                logger.raw(`📁 Files changed: ${snapshot.files.length}`);
+                logger.raw('\n📂 Changed files:');
+                snapshot.files.forEach(file => logger.raw(`   - ${file}`));
+            }
+        } else {
+            logger.raw(`📁 Files backed up: ${Object.keys(snapshot.files).length}`);
+            if (Object.keys(snapshot.files).length > 0) {
+                logger.raw('\n📂 Backed up files:');
+                for (const filePath of Object.keys(snapshot.files)) {
+                    logger.raw(`   - ${filePath}`);
+                }
             }
         }
         logger.raw();
@@ -159,36 +190,105 @@ export class SnapshotsCommand extends InteractiveCommand {
      */
     async restoreSnapshot(snapshotId, context) {
         const { snapshotManager } = context;
-        const snapshot = snapshotManager.getSnapshot(snapshotId);
+        const gitStatus = snapshotManager.getGitStatus();
         const logger = getLogger();
 
-        if (!snapshot) {
-            logger.raw(`❌ Snapshot ${snapshotId} not found`);
-            return;
-        }
+        if (gitStatus.gitMode) {
+            // Git mode - confirm git reset operation
+            const summaries = await snapshotManager.getSnapshotSummaries();
+            const snapshot = summaries.find(s => s.id === snapshotId);
 
-        const fileList = Object.keys(snapshot.files).join(', ');
-        const confirmed = await this.promptForConfirmation(
-            `Restore snapshot ${snapshotId}? This will overwrite: ${fileList}`,
-            context
-        );
+            if (!snapshot) {
+                logger.raw(`❌ Snapshot ${snapshotId} not found`);
+                return;
+            }
 
-        if (!confirmed) {
-            logger.raw('❌ Restore cancelled');
-            return;
-        }
+            const confirmMessage =
+                `Reset to Git commit ${snapshot.shortHash}?\n` +
+                `  🔗 Commit: ${snapshot.instruction}\n` +
+                '  ⚠️  This will discard all changes after this commit!';
 
-        logger.raw(`🔄 Restoring snapshot ${snapshotId}...`);
-        const result = await snapshotManager.restoreSnapshot(snapshotId);
+            const confirmed = await this.promptForConfirmation(confirmMessage, context);
 
-        if (result.success) {
-            logger.raw(`✅ Successfully restored ${result.restoredFiles.length} files:`);
-            result.restoredFiles.forEach(file => logger.raw(`   ✓ ${file}`));
+            if (!confirmed) {
+                logger.raw('❌ Reset cancelled');
+                return;
+            }
+
+            logger.raw(`🔄 Resetting to commit ${snapshot.shortHash}...`);
+            const result = await snapshotManager.restoreSnapshot(snapshotId);
+
+            if (result.success) {
+                logger.raw(`✅ Successfully reset to commit ${result.shortHash}`);
+                logger.raw(`   🔗 ${result.instruction}`);
+                logger.raw(`   📝 ${result.message}`);
+            } else {
+                logger.raw(`❌ Reset failed: ${result.error}`);
+            }
         } else {
-            logger.raw(`❌ Restore completed with errors:`);
-            logger.raw(`   ✓ Restored: ${result.restoredFiles.length} files`);
-            logger.raw(`   ❌ Errors: ${result.errors.length}`);
-            result.errors.forEach(error => logger.raw(`      - ${error}`));
+            // Legacy mode - file-based restoration
+            const snapshot = await snapshotManager.getSnapshot(snapshotId);
+
+            if (!snapshot) {
+                logger.raw(`❌ Snapshot ${snapshotId} not found`);
+                return;
+            }
+
+            // Separate files that existed vs didn't exist in the snapshot
+            const existingFiles = [];
+            const nonExistentFiles = [];
+
+            for (const [filePath, content] of Object.entries(snapshot.files)) {
+                if (content === null) {
+                    nonExistentFiles.push(filePath);
+                } else {
+                    existingFiles.push(filePath);
+                }
+            }
+
+            let confirmMessage = `Restore snapshot ${snapshotId}?`;
+            if (existingFiles.length > 0) {
+                confirmMessage += `\n  📄 Will restore: ${existingFiles.join(', ')}`;
+            }
+            if (nonExistentFiles.length > 0) {
+                confirmMessage += `\n  🗑️ Will delete: ${nonExistentFiles.join(', ')} (didn't exist in snapshot)`;
+            }
+
+            const confirmed = await this.promptForConfirmation(confirmMessage, context);
+
+            if (!confirmed) {
+                logger.raw('❌ Restore cancelled');
+                return;
+            }
+
+            logger.raw(`🔄 Restoring snapshot ${snapshotId}...`);
+            const result = await snapshotManager.restoreSnapshot(snapshotId);
+
+            if (result.success) {
+                logger.raw(`✅ Successfully restored snapshot ${snapshotId}:`);
+                if (result.restoredFiles && result.restoredFiles.length > 0) {
+                    logger.raw(`   📄 Restored ${result.restoredFiles.length} files:`);
+                    result.restoredFiles.forEach(file => logger.raw(`      ✓ ${file}`));
+                }
+                if (result.deletedFiles && result.deletedFiles.length > 0) {
+                    logger.raw(
+                        `   🗑️ Deleted ${result.deletedFiles.length} files (didn't exist in snapshot):`
+                    );
+                    result.deletedFiles.forEach(file => logger.raw(`      ✗ ${file}`));
+                }
+            } else {
+                logger.raw('❌ Restore completed with errors:');
+                if (result.restoredFiles) {
+                    logger.raw(`   ✓ Restored: ${result.restoredFiles.length} files`);
+                }
+                if (result.deletedFiles && result.deletedFiles.length > 0) {
+                    logger.raw(`   🗑️ Deleted: ${result.deletedFiles.length} files`);
+                }
+                if (result.errors) {
+                    logger.raw(`   ❌ Errors: ${result.errors.length}`);
+                    result.errors.forEach(error => logger.raw(`      - ${error}`));
+                }
+            }
         }
     }
 
@@ -199,8 +299,16 @@ export class SnapshotsCommand extends InteractiveCommand {
      */
     async deleteSnapshot(snapshotId, context) {
         const { snapshotManager } = context;
-        const snapshot = snapshotManager.getSnapshot(snapshotId);
+        const gitStatus = snapshotManager.getGitStatus();
         const logger = getLogger();
+
+        if (gitStatus.gitMode) {
+            logger.raw('❌ Snapshot deletion is not supported in Git mode.');
+            logger.raw('💡 Use Git commands to manage commit history if needed.');
+            return;
+        }
+
+        const snapshot = await snapshotManager.getSnapshot(snapshotId);
 
         if (!snapshot) {
             logger.raw(`❌ Snapshot ${snapshotId} not found`);
@@ -217,10 +325,11 @@ export class SnapshotsCommand extends InteractiveCommand {
             return;
         }
 
-        if (snapshotManager.deleteSnapshot(snapshotId)) {
+        const result = await snapshotManager.deleteSnapshot(snapshotId);
+        if (result.success) {
             logger.raw(`🗑️ Snapshot ${snapshotId} deleted`);
         } else {
-            logger.raw(`❌ Failed to delete snapshot ${snapshotId}`);
+            logger.raw(`❌ Failed to delete snapshot ${snapshotId}: ${result.error}`);
         }
     }
 
@@ -252,7 +361,10 @@ export class SnapshotsCommand extends InteractiveCommand {
         const result = await snapshotManager.mergeFeatureBranch();
 
         if (result.success) {
-            logger.user(`✅ Successfully merged ${gitStatus.featureBranch} into ${gitStatus.originalBranch}`, '🔀 Git:');
+            logger.user(
+                `✅ Successfully merged ${gitStatus.featureBranch} into ${gitStatus.originalBranch}`,
+                '🔀 Git:'
+            );
             logger.user('🌿 Switched back to original branch', '🔀 Git:');
         } else {
             logger.error(`Merge failed: ${result.error}`, 'Git merge');

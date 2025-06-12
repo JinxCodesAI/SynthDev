@@ -10,6 +10,8 @@ import { join, resolve } from 'path';
 import ConfigManager from '../../configManager.js';
 import { safeWriteFile, fileExists } from '../../tools/common/fs_utils.js';
 import { getLogger } from '../../logger.js';
+import AIAPIClient from '../../aiAPIClient.js';
+import SystemMessages from '../../systemMessages.js';
 
 export class IndexCommand extends InteractiveCommand {
     constructor() {
@@ -45,7 +47,7 @@ export class IndexCommand extends InteractiveCommand {
                 ? config.getModel('fast')
                 : config.getModel('base');
             hasAIConfig = !!(modelConfig && modelConfig.apiKey);
-        } catch (error) {
+        } catch (_error) {
             hasAIConfig = false;
         }
 
@@ -61,7 +63,9 @@ export class IndexCommand extends InteractiveCommand {
 
         // Get user preferences
         const maxFileSize = await this.promptForFileSize(context);
-        if (maxFileSize === null) return true; // User cancelled
+        if (maxFileSize === null) {
+            return true;
+        } // User cancelled
 
         const includeHidden = await this.promptForConfirmation(
             'Include hidden files and directories?',
@@ -83,7 +87,7 @@ export class IndexCommand extends InteractiveCommand {
                 const existingContent = readFileSync(indexFilePath, 'utf8');
                 existingIndex = JSON.parse(existingContent);
                 this.logger.raw('📂 Found existing index, will update changed files only');
-            } catch (error) {
+            } catch (_error) {
                 this.logger.warn('Could not load existing index, starting fresh');
             }
         }
@@ -96,19 +100,32 @@ export class IndexCommand extends InteractiveCommand {
         const files = entries.filter(entry => entry.type === 'file');
         const directories = entries.filter(entry => entry.type === 'directory');
 
-        this.logger.raw(`📁 Found ${files.length} files and ${directories.length} directories to process`);
+        this.logger.raw(
+            `📁 Found ${files.length} files and ${directories.length} directories to process`
+        );
 
         // Analyze files and detect changes using checksums
         this.logger.raw('\n🔍 Analyzing file changes...');
-        const fileAnalysisResult = await IndexingUtils.analyzeFileChanges(files, existingIndex, maxFileSize);
+        const fileAnalysisResult = await IndexingUtils.analyzeFileChanges(
+            files,
+            existingIndex,
+            maxFileSize
+        );
 
         // Analyze directories and detect changes
         this.logger.raw('\n🔍 Analyzing directory changes...');
-        const directoryAnalysisResult = await IndexingUtils.analyzeDirectoryChanges(directories, existingIndex);
+        const directoryAnalysisResult = await IndexingUtils.analyzeDirectoryChanges(
+            directories,
+            existingIndex
+        );
 
         // Detect deleted entries
         this.logger.raw('\n🔍 Detecting deleted entries...');
-        const deletionResult = IndexingUtils.detectDeletedEntries(files, directories, existingIndex);
+        const deletionResult = IndexingUtils.detectDeletedEntries(
+            files,
+            directories,
+            existingIndex
+        );
 
         // Combine results
         const analysisResult = {
@@ -121,7 +138,7 @@ export class IndexCommand extends InteractiveCommand {
             unchangedDirectories: directoryAnalysisResult.unchangedDirectories,
             directoriesToSummarize: directoryAnalysisResult.directoriesToSummarize,
             deletedFiles: deletionResult.deletedFiles,
-            deletedDirectories: deletionResult.deletedDirectories
+            deletedDirectories: deletionResult.deletedDirectories,
         };
 
         this.logger.raw('\n📊 Analysis Results:');
@@ -132,12 +149,19 @@ export class IndexCommand extends InteractiveCommand {
         this.logger.raw(`   • Files to summarize: ${analysisResult.filesToSummarize.length}`);
         this.logger.raw(`   • Total directories: ${directories.length}`);
         this.logger.raw(`   • New directories: ${analysisResult.newDirectories.length}`);
-        this.logger.raw(`   • Directories to summarize: ${analysisResult.directoriesToSummarize.length}`);
+        this.logger.raw(
+            `   • Directories to summarize: ${analysisResult.directoriesToSummarize.length}`
+        );
 
         // Report deletions if any
-        if (analysisResult.deletedFiles.length > 0 || analysisResult.deletedDirectories.length > 0) {
+        if (
+            analysisResult.deletedFiles.length > 0 ||
+            analysisResult.deletedDirectories.length > 0
+        ) {
             this.logger.raw(`   • Deleted files: ${analysisResult.deletedFiles.length}`);
-            this.logger.raw(`   • Deleted directories: ${analysisResult.deletedDirectories.length}`);
+            this.logger.raw(
+                `   • Deleted directories: ${analysisResult.deletedDirectories.length}`
+            );
 
             // Show deleted items
             if (analysisResult.deletedFiles.length > 0) {
@@ -156,12 +180,21 @@ export class IndexCommand extends InteractiveCommand {
 
         // Estimate costs before processing
         if (hasAIConfig && analysisResult.filesToSummarize.length > 0) {
-            const costEstimate = IndexingUtils.estimateIndexingCostsForFiles(analysisResult.filesToSummarize, maxFileSize);
+            const costEstimate = IndexingUtils.estimateIndexingCostsForFiles(
+                analysisResult.filesToSummarize,
+                maxFileSize
+            );
             this.logger.raw('\n💰 Cost Estimation:');
             this.logger.raw(`   • Files to summarize: ${costEstimate.filesToSummarize}`);
-            this.logger.raw(`   • Estimated input tokens: ${costEstimate.estimatedInputTokens.toLocaleString()}`);
-            this.logger.raw(`   • Estimated output tokens: ${costEstimate.estimatedOutputTokens.toLocaleString()}`);
-            this.logger.raw(`   • Total estimated tokens: ${costEstimate.totalEstimatedTokens.toLocaleString()}`);
+            this.logger.raw(
+                `   • Estimated input tokens: ${costEstimate.estimatedInputTokens.toLocaleString()}`
+            );
+            this.logger.raw(
+                `   • Estimated output tokens: ${costEstimate.estimatedOutputTokens.toLocaleString()}`
+            );
+            this.logger.raw(
+                `   • Total estimated tokens: ${costEstimate.totalEstimatedTokens.toLocaleString()}`
+            );
 
             const proceed = await this.promptForConfirmation(
                 'Proceed with indexing? This will consume API tokens.',
@@ -226,13 +259,21 @@ export class IndexCommand extends InteractiveCommand {
         this.logger.raw('3. Large (200KB) - Slower processing, handles very large files');
         this.logger.raw('4. No limit - Process all files (may be slow/expensive)');
 
-        const choice = await this.promptForInput('Choose option (1-4) or press Enter for default (2): ', context);
+        const choice = await this.promptForInput(
+            'Choose option (1-4) or press Enter for default (2): ',
+            context
+        );
 
         switch (choice.trim()) {
-            case '1': return 51200; // 50KB
-            case '2': case '': return 102400; // 100KB (default)
-            case '3': return 204800; // 200KB
-            case '4': return -1; // No limit
+            case '1':
+                return 51200; // 50KB
+            case '2':
+            case '':
+                return 102400; // 100KB (default)
+            case '3':
+                return 204800; // 200KB
+            case '4':
+                return -1; // No limit
             default:
                 this.logger.raw('❌ Invalid choice, using default (100KB)');
                 return 102400;
@@ -251,7 +292,16 @@ export class IndexCommand extends InteractiveCommand {
      * @param {number} startTime - Start time
      * @returns {Promise<Object>} Complete index
      */
-    async processCodebase(analysisResult, files, directories, maxFileSize, includeHidden, hasAIConfig, costsManager, startTime) {
+    async processCodebase(
+        analysisResult,
+        files,
+        directories,
+        maxFileSize,
+        includeHidden,
+        hasAIConfig,
+        costsManager,
+        startTime
+    ) {
         const index = {
             metadata: {
                 generated: new Date().toISOString(),
@@ -262,8 +312,8 @@ export class IndexCommand extends InteractiveCommand {
                 ai_summaries_enabled: hasAIConfig,
                 parameters: {
                     max_file_size: maxFileSize,
-                    include_hidden: includeHidden
-                }
+                    include_hidden: includeHidden,
+                },
             },
             files: {},
             statistics: {
@@ -275,17 +325,34 @@ export class IndexCommand extends InteractiveCommand {
                 total_tokens_used: 0,
                 total_summary_size: 0,
                 directories_processed: 0,
-                directories_summarized: 0
-            }
+                directories_summarized: 0,
+            },
         };
 
         this.logger.raw('\n📝 Processing files...');
+
+        let fileSummarizerClient = null;
+        if (hasAIConfig) {
+            const config = ConfigManager.getInstance();
+            const modelType = config.hasFastModelConfig() ? 'fast' : 'base';
+            const modelConfig = config.getModel(modelType);
+            fileSummarizerClient = new AIAPIClient(
+                costsManager,
+                modelConfig.apiKey,
+                modelConfig.baseURL,
+                modelConfig.model || modelConfig.baseModel
+            );
+            await fileSummarizerClient.setSystemMessage(
+                SystemMessages.getSystemMessage('file_summarizer'),
+                'file_summarizer'
+            );
+        }
 
         // Process each file using analysis results
         const allFilesToProcess = [
             ...analysisResult.newFiles,
             ...analysisResult.changedFiles,
-            ...analysisResult.unchangedFiles
+            ...analysisResult.unchangedFiles,
         ];
 
         for (let i = 0; i < allFilesToProcess.length; i++) {
@@ -293,7 +360,9 @@ export class IndexCommand extends InteractiveCommand {
             const progress = Math.round((i / allFilesToProcess.length) * 100);
 
             if (i % 10 === 0 || i === allFilesToProcess.length - 1) {
-                this.logger.raw(`   ${progress}% (${i + 1}/${allFilesToProcess.length}) - ${fileData.file.name}`);
+                this.logger.raw(
+                    `   ${progress}% (${i + 1}/${allFilesToProcess.length}) - ${fileData.file.name}`
+                );
             }
 
             try {
@@ -303,15 +372,18 @@ export class IndexCommand extends InteractiveCommand {
                     fileData.needsSummary,
                     maxFileSize,
                     costsManager,
-                    fileData.existingInfo
+                    fileData.existingInfo,
+                    fileSummarizerClient
                 );
+                fileSummarizerClient.clearConversation();
 
                 index.files[fileData.file.path] = fileInfo;
                 index.statistics.processed++;
 
                 if (fileInfo.ai_summary) {
                     if (fileInfo.summary_reused) {
-                        index.statistics.summaries_reused = (index.statistics.summaries_reused || 0) + 1;
+                        index.statistics.summaries_reused =
+                            (index.statistics.summaries_reused || 0) + 1;
                     } else {
                         index.statistics.summarized++;
                     }
@@ -329,7 +401,6 @@ export class IndexCommand extends InteractiveCommand {
                 // Track by file type
                 const category = IndexingUtils.getFileCategory(fileData.file.path);
                 index.statistics.by_type[category] = (index.statistics.by_type[category] || 0) + 1;
-
             } catch (error) {
                 this.logger.warn(`⚠️  Error processing ${fileData.file.path}:`, error.message);
                 index.statistics.errors++;
@@ -339,7 +410,7 @@ export class IndexCommand extends InteractiveCommand {
                     path: fileData.file.path,
                     type: fileData.file.type,
                     error: error.message,
-                    processed_at: new Date().toISOString()
+                    processed_at: new Date().toISOString(),
                 };
             }
         }
@@ -347,19 +418,39 @@ export class IndexCommand extends InteractiveCommand {
         // Process directories (after files are processed)
         this.logger.raw('\n📁 Processing directories...');
 
+        let directorySummarizerClient = null;
+        if (hasAIConfig) {
+            const config = ConfigManager.getInstance();
+            const modelConfig = config.getModel('fast');
+            directorySummarizerClient = new AIAPIClient(
+                costsManager,
+                modelConfig.apiKey,
+                modelConfig.baseURL,
+                modelConfig.model || modelConfig.baseModel
+            );
+            await directorySummarizerClient.setSystemMessage(
+                SystemMessages.getSystemMessage('directory_summarizer'),
+                'directory_summarizer'
+            );
+        }
+
         // Sort directories by level (deepest first) to ensure dependencies are processed correctly
         // Root directory (level 0) should be processed last to aggregate all other summaries
         const sortedDirectoriesToProcess = [
             ...analysisResult.newDirectories,
             ...analysisResult.changedDirectories,
-            ...analysisResult.unchangedDirectories
+            ...analysisResult.unchangedDirectories,
         ].sort((a, b) => {
             const aLevel = a.directory.lvl || 0;
             const bLevel = b.directory.lvl || 0;
 
             // Root directory (level 0) should be processed last
-            if (aLevel === 0 && bLevel !== 0) return 1;
-            if (bLevel === 0 && aLevel !== 0) return -1;
+            if (aLevel === 0 && bLevel !== 0) {
+                return 1;
+            }
+            if (bLevel === 0 && aLevel !== 0) {
+                return -1;
+            }
 
             // For non-root directories, process deepest first
             return bLevel - aLevel;
@@ -370,7 +461,9 @@ export class IndexCommand extends InteractiveCommand {
             const progress = Math.round((i / sortedDirectoriesToProcess.length) * 100);
 
             if (i % 10 === 0 || i === sortedDirectoriesToProcess.length - 1) {
-                this.logger.raw(`   ${progress}% (${i + 1}/${sortedDirectoriesToProcess.length}) - ${directoryData.directory.name}`);
+                this.logger.raw(
+                    `   ${progress}% (${i + 1}/${sortedDirectoriesToProcess.length}) - ${directoryData.directory.name}`
+                );
             }
 
             try {
@@ -382,15 +475,19 @@ export class IndexCommand extends InteractiveCommand {
                     directoryData.needsSummary,
                     costsManager,
                     directoryData.existingInfo,
-                    allProcessedEntries
+                    allProcessedEntries,
+                    directorySummarizerClient
                 );
+
+                directorySummarizerClient.clearConversation();
 
                 index.files[directoryData.directory.path] = directoryInfo;
                 index.statistics.directories_processed++;
 
                 if (directoryInfo.ai_summary) {
                     if (directoryInfo.summary_reused) {
-                        index.statistics.summaries_reused = (index.statistics.summaries_reused || 0) + 1;
+                        index.statistics.summaries_reused =
+                            (index.statistics.summaries_reused || 0) + 1;
                     } else {
                         index.statistics.directories_summarized++;
                     }
@@ -406,10 +503,13 @@ export class IndexCommand extends InteractiveCommand {
                 }
 
                 // Track by type
-                index.statistics.by_type['directory'] = (index.statistics.by_type['directory'] || 0) + 1;
-
+                index.statistics.by_type['directory'] =
+                    (index.statistics.by_type['directory'] || 0) + 1;
             } catch (error) {
-                this.logger.warn(`⚠️  Error processing directory ${directoryData.directory.path}:`, error.message);
+                this.logger.warn(
+                    `⚠️  Error processing directory ${directoryData.directory.path}:`,
+                    error.message
+                );
                 index.statistics.errors++;
 
                 // Still add basic info even if processing failed
@@ -417,7 +517,7 @@ export class IndexCommand extends InteractiveCommand {
                     path: directoryData.directory.path,
                     type: 'directory',
                     error: error.message,
-                    processed_at: new Date().toISOString()
+                    processed_at: new Date().toISOString(),
                 };
             }
         }
@@ -439,10 +539,12 @@ export class IndexCommand extends InteractiveCommand {
         this.logger.raw('\n✅ Codebase indexing completed successfully!');
         this.logger.raw('─'.repeat(50));
         this.logger.raw(`📁 Index file: ${indexFilePath}`);
-        this.logger.raw(`📊 Statistics:`);
+        this.logger.raw('📊 Statistics:');
         this.logger.raw(`   • Files processed: ${index.statistics.processed}`);
         this.logger.raw(`   • Directories processed: ${index.statistics.directories_processed}`);
-        this.logger.raw(`   • Total entries: ${index.statistics.processed + index.statistics.directories_processed}`);
+        this.logger.raw(
+            `   • Total entries: ${index.statistics.processed + index.statistics.directories_processed}`
+        );
         this.logger.raw(`   • New file summaries: ${index.statistics.summarized}`);
         this.logger.raw(`   • New directory summaries: ${index.statistics.directories_summarized}`);
         if (index.statistics.summaries_reused) {
@@ -454,9 +556,17 @@ export class IndexCommand extends InteractiveCommand {
         }
         this.logger.raw(`   • Errors: ${index.statistics.errors}`);
         this.logger.raw(`   • Processing time: ${index.metadata.processing_time_human}`);
-        this.logger.raw(`   • Tokens used this run: ${index.statistics.total_tokens_used.toLocaleString()}`);
-        this.logger.raw(`   • Total summary size: ${(index.statistics.total_summary_size / 1024).toFixed(1)} KB`);
-        this.logger.raw(`   • By type: ${Object.entries(index.statistics.by_type).map(([type, count]) => `${type}(${count})`).join(', ')}`);
+        this.logger.raw(
+            `   • Tokens used this run: ${index.statistics.total_tokens_used.toLocaleString()}`
+        );
+        this.logger.raw(
+            `   • Total summary size: ${(index.statistics.total_summary_size / 1024).toFixed(1)} KB`
+        );
+        this.logger.raw(
+            `   • By type: ${Object.entries(index.statistics.by_type)
+                .map(([type, count]) => `${type}(${count})`)
+                .join(', ')}`
+        );
         this.logger.raw();
     }
 

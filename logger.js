@@ -1,6 +1,6 @@
 /**
  * Centralized logging system with verbosity levels
- * 
+ *
  * Verbosity Levels:
  * 0 - Only information directly affecting the user is visible
  * 1 - Short messages like "🔄 Enhancing prompt...", "🧠 Synth-Dev is thinking..."
@@ -63,7 +63,7 @@ class Logger {
         if (this.verbosityLevel >= 2) {
             console.log(`🔧 Executing tool: ${toolName}`);
             const compressedArgs = this._compressArguments(args);
-            console.log(`📝 Arguments:`, compressedArgs);
+            console.log('📝 Arguments:', compressedArgs);
         }
     }
 
@@ -75,7 +75,7 @@ class Logger {
     toolExecutionDetailed(toolName, args) {
         if (this.verbosityLevel >= 3) {
             console.log(`🔧 Executing tool: ${toolName}`);
-            console.log(`📝 Arguments:`, args);
+            console.log('📝 Arguments:', args);
         } else if (this.verbosityLevel === 2) {
             this.toolExecution(toolName, args);
         }
@@ -87,7 +87,7 @@ class Logger {
      */
     toolResult(result) {
         if (this.verbosityLevel >= 4) {
-            console.log(`✅ Tool result:`, result);
+            console.log('✅ Tool result:', result);
             console.log();
         }
     }
@@ -104,21 +104,21 @@ class Logger {
             const timestamp = new Date().toISOString();
             console.log(`\n🌐 HTTP ${method} Request [${timestamp}]`);
             console.log(`📍 URL: ${url}`);
-            console.log(`📤 Request:`, JSON.stringify(requestData, null, 2));
-            
+            console.log('📤 Request:', JSON.stringify(requestData, null, 2));
+
             if (responseData) {
-                console.log(`📥 Response:`, JSON.stringify(responseData, null, 2));
+                console.log('📥 Response:', JSON.stringify(responseData, null, 2));
             }
             console.log('─'.repeat(80));
         }
-        
+
         // Store for potential later use
         this.httpRequests.push({
             timestamp: new Date().toISOString(),
             method,
             url,
             request: requestData,
-            response: responseData
+            response: responseData,
         });
     }
 
@@ -131,7 +131,7 @@ class Logger {
         const message = error instanceof Error ? error.message : error;
         const prefix = context ? `❌ ${context}:` : '❌ Error:';
         console.error(prefix, message);
-        
+
         if (error instanceof Error && error.response?.data) {
             console.error('Response data:', error.response.data);
         }
@@ -195,14 +195,14 @@ class Logger {
         const compressed = {};
         for (const [key, value] of Object.entries(args)) {
             if (typeof value === 'string' && value.length > 50) {
-                compressed[key] = value.substring(0, 47) + '...';
+                compressed[key] = `${value.substring(0, 47)}...`;
             } else if (Array.isArray(value) && value.length > 3) {
                 compressed[key] = [...value.slice(0, 3), `... (${value.length - 3} more)`];
             } else if (typeof value === 'object' && value !== null) {
                 const keys = Object.keys(value);
                 if (keys.length > 3) {
                     const sample = {};
-                    keys.slice(0, 3).forEach(k => sample[k] = value[k]);
+                    keys.slice(0, 3).forEach(k => (sample[k] = value[k]));
                     sample['...'] = `(${keys.length - 3} more properties)`;
                     compressed[key] = sample;
                 } else {

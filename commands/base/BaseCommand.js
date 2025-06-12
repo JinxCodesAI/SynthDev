@@ -16,7 +16,7 @@ export class BaseCommand {
         if (this.constructor === BaseCommand) {
             throw new Error('BaseCommand is abstract and cannot be instantiated directly');
         }
-        
+
         this.name = name;
         this.description = description;
         this.aliases = aliases;
@@ -52,11 +52,11 @@ export class BaseCommand {
 
     /**
      * Implementation method to be overridden by concrete command classes
-     * @param {string} args - Command arguments
-     * @param {Object} context - Execution context
+     * @param {string} _args - Command arguments
+     * @param {Object} _context - Execution context
      * @returns {Promise<any>} Command execution result
      */
-    async implementation(args, context) {
+    async implementation(_args, _context) {
         throw new Error(`implementation method must be overridden by ${this.constructor.name}`);
     }
 
@@ -67,13 +67,13 @@ export class BaseCommand {
      */
     validateContext(context) {
         const requiredDependencies = this.getRequiredDependencies();
-        
+
         for (const dependency of requiredDependencies) {
             if (!context[dependency]) {
                 return `Missing required dependency: ${dependency}`;
             }
         }
-        
+
         return null;
     }
 
@@ -82,7 +82,7 @@ export class BaseCommand {
      * @param {string} args - Command arguments
      * @returns {string|null} Error message if validation fails, null if valid
      */
-    validateArgs(args) {
+    validateArgs(_args) {
         // Default implementation - no validation
         // Override in concrete classes if argument validation is needed
         return null;
@@ -105,7 +105,7 @@ export class BaseCommand {
      * @param {Object} context - Execution context
      * @returns {any} Error handling result
      */
-    handleError(error, args, context) {
+    handleError(error, _args, _context) {
         const logger = getLogger();
         logger.error(error, `Error executing command '${this.name}'`);
         return 'error';
@@ -117,16 +117,16 @@ export class BaseCommand {
      */
     getHelp() {
         let help = `/${this.name} - ${this.description}`;
-        
+
         if (this.aliases.length > 0) {
             help += `\n   Aliases: ${this.aliases.map(alias => `/${alias}`).join(', ')}`;
         }
-        
+
         const usage = this.getUsage();
         if (usage) {
             help += `\n   Usage: ${usage}`;
         }
-        
+
         return help;
     }
 
@@ -193,7 +193,7 @@ export class SimpleCommand extends BaseCommand {
      * @param {Object} context - Execution context
      * @returns {any} Command result
      */
-    execute(args, context) {
+    execute(_args, _context) {
         throw new Error(`execute method must be overridden by ${this.constructor.name}`);
     }
 }

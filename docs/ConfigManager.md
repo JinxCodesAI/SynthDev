@@ -48,32 +48,37 @@ class MyService {
 ## Configuration Sections
 
 ### Base Model Configuration (Required)
+
 - `getModel('base')` returns:
-  - `apiKey` - API key (required)
-  - `baseModel` - Model name (default: default-model)
-  - `baseUrl` - Provider base URL (default: https://api.example.com/v1)
+    - `apiKey` - API key (required)
+    - `baseModel` - Model name (default: default-model)
+    - `baseUrl` - Provider base URL (default: https://api.example.com/v1)
 
 ### Smart Model Configuration (Optional)
+
 - `getModel('smart')` returns:
-  - `apiKey` - Smart model API key (fallback to base API key)
-  - `model` - Smart model name (fallback to base model)
-  - `baseUrl` - Smart model base URL (fallback to base URL)
+    - `apiKey` - Smart model API key (fallback to base API key)
+    - `model` - Smart model name (fallback to base model)
+    - `baseUrl` - Smart model base URL (fallback to base URL)
 - `hasSmartModelConfig()` - Check if smart model is configured
 
 ### Fast Model Configuration (Optional)
+
 - `getModel('fast')` returns:
-  - `apiKey` - Fast model API key (fallback to base API key)
-  - `model` - Fast model name (fallback to base model) 
-  - `baseUrl` - Fast model base URL (fallback to base URL)
+    - `apiKey` - Fast model API key (fallback to base API key)
+    - `model` - Fast model name (fallback to base model)
+    - `baseUrl` - Fast model base URL (fallback to base URL)
 - `hasFastModelConfig()` - Check if fast model is configured
 
 ### Global Settings
+
 - `getConfig().global` returns:
-  - `maxToolCalls` - Maximum tool calls per interaction (1-200)
-  - `environment` - Application environment (development/production/test)
-  - `debug` - Debug mode flag
+    - `maxToolCalls` - Maximum tool calls per interaction (1-200)
+    - `environment` - Application environment (development/production/test)
+    - `debug` - Debug mode flag
 
 ### Utility Methods
+
 - `getConfig()` - Get complete configuration object
 - `hasSmartModelConfig()` - Check if smart model is configured
 - `hasFastModelConfig()` - Check if fast model is configured
@@ -81,12 +86,14 @@ class MyService {
 ## Environment Variables
 
 ### Required Variables
+
 ```bash
 
 ```
 
 ### Optional Variables
-```bash
+
+````bash
 # Base Model Configuration (defaults in configManager.js)
 # BASE_MODEL=default-model
 # BASE_URL=https://api.example.com/v1
@@ -109,16 +116,16 @@ class MyService {
 1. **Copy the template**:
    ```bash
    cp env.template .env
-   ```
+````
 
 2. **Configure your API keys**:
    Edit `.env` and add your actual API keys
 
 3. **Import and use**:
-   ```javascript
-   import ConfigManager from './configManager.js';
-   const config = ConfigManager.getInstance();
-   ```
+    ```javascript
+    import ConfigManager from './configManager.js';
+    const config = ConfigManager.getInstance();
+    ```
 
 ## Validation
 
@@ -153,6 +160,7 @@ try {
 ## Migration from Direct `process.env` Usage
 
 ### Before (Direct Environment Access)
+
 ```javascript
 // ❌ Old way - direct environment variable access
 const apiKey = process.env.API_KEY;
@@ -161,6 +169,7 @@ const baseUrl = process.env.BASE_URL || 'https://api.example.com/v1';
 ```
 
 ### After (ConfigManager)
+
 ```javascript
 // ✅ New way - using ConfigManager
 const config = ConfigManager.getInstance();
@@ -173,6 +182,7 @@ const baseUrl = baseModel.baseUrl;
 ## Examples
 
 ### Basic Model Access
+
 ```javascript
 const config = ConfigManager.getInstance();
 
@@ -186,9 +196,9 @@ if (config.hasSmartModelConfig()) {
     console.log(`Smart model: ${smart.model}`);
 }
 
-// Use fast model if available  
+// Use fast model if available
 if (config.hasFastModelConfig()) {
     const fast = config.getModel('fast');
     console.log(`Fast model: ${fast.model}`);
 }
-``` 
+```

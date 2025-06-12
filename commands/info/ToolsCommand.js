@@ -27,7 +27,7 @@ export class ToolsCommand extends BaseCommand {
      */
     async implementation(args, context) {
         const { toolManager } = context;
-        
+
         const tools = toolManager.getTools();
 
         const logger = getLogger();
@@ -50,7 +50,9 @@ export class ToolsCommand extends BaseCommand {
             logger.raw(`📍 ${tool.function.name} ${autoRunIcon} ${autoRunText}`);
             logger.raw(`   Description: ${tool.function.description}`);
             if (tool.function.parameters?.properties) {
-                logger.raw(`   Parameters: ${Object.keys(tool.function.parameters.properties).join(', ')}`);
+                logger.raw(
+                    `   Parameters: ${Object.keys(tool.function.parameters.properties).join(', ')}`
+                );
             }
             logger.raw();
         });

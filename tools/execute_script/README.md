@@ -15,6 +15,7 @@ The `execute_script` tool allows AI agents to execute JavaScript code in a sandb
 ## Security Features
 
 ### Blocked Operations
+
 - File modification operations (write, append, create, delete)
 - Process execution and system commands
 - Network operations (HTTP, HTTPS, WebSocket)
@@ -23,6 +24,7 @@ The `execute_script` tool allows AI agents to execute JavaScript code in a sandb
 - Infinite loop patterns
 
 ### Allowed Operations
+
 - File reading operations (fs.readFileSync, fs.existsSync, fs.statSync)
 - Built-in Node.js modules (path, Math, JSON, console)
 - Data processing and calculations
@@ -31,6 +33,7 @@ The `execute_script` tool allows AI agents to execute JavaScript code in a sandb
 ## Usage
 
 ### Basic Calculation
+
 ```javascript
 {
   "script": "console.log('Result:', Math.sqrt(16) + Math.pow(2, 3));"
@@ -38,6 +41,7 @@ The `execute_script` tool allows AI agents to execute JavaScript code in a sandb
 ```
 
 ### Text Processing
+
 ```javascript
 {
   "script": "const text = 'Hello World'; console.log('Length:', text.length, 'Uppercase:', text.toUpperCase());"
@@ -45,13 +49,15 @@ The `execute_script` tool allows AI agents to execute JavaScript code in a sandb
 ```
 
 ### File Reading and Processing
+
 ```javascript
 {
-  "script": "const fs = require('fs'); const data = fs.readFileSync('data.txt', 'utf8'); console.log('Lines:', data.split('\\n').length);"
+  "script": "const fs = require('fs'); const data = fs.readFileSync('data.txt', 'utf8'); console.log('Lines:', data.split('\n').length);"
 }
 ```
 
 ### JSON Data Processing
+
 ```javascript
 {
   "script": "const data = [{name: 'Alice', age: 30}, {name: 'Bob', age: 25}]; const avgAge = data.reduce((sum, p) => sum + p.age, 0) / data.length; console.log('Average age:', avgAge);"
@@ -61,55 +67,59 @@ The `execute_script` tool allows AI agents to execute JavaScript code in a sandb
 ## Parameters
 
 ### Required
+
 - **script** (string): JavaScript code to execute
 
 ### Optional
+
 - **timeout** (integer): Maximum execution time in milliseconds (1000-30000, default: 10000)
 
 ## Response Format
 
 ### Success Response
+
 ```json
 {
-  "success": true,
-  "timestamp": "2025-06-02T20:21:59.490Z",
-  "tool_name": "execute_script",
-  "script": "console.log('Hello World');",
-  "output": "Hello World\n",
-  "stderr": "",
-  "execution_time": 115,
-  "safety_check": {
-    "safe": true,
-    "confidence": 1.0,
-    "issues": [],
-    "reasoning": "Script only performs safe mathematical calculations",
-    "recommendations": [],
-    "assessment_method": "ai_powered",
-    "model_used": "gpt-4.1-nano",
-    "tokens_used": 397
-  },
-  "exit_code": 0
+    "success": true,
+    "timestamp": "2025-06-02T20:21:59.490Z",
+    "tool_name": "execute_script",
+    "script": "console.log('Hello World');",
+    "output": "Hello World\n",
+    "stderr": "",
+    "execution_time": 115,
+    "safety_check": {
+        "safe": true,
+        "confidence": 1.0,
+        "issues": [],
+        "reasoning": "Script only performs safe mathematical calculations",
+        "recommendations": [],
+        "assessment_method": "ai_powered",
+        "model_used": "gpt-4.1-nano",
+        "tokens_used": 397
+    },
+    "exit_code": 0
 }
 ```
 
 ### Error Response
+
 ```json
 {
-  "success": false,
-  "timestamp": "2025-06-02T20:21:59.697Z",
-  "tool_name": "execute_script",
-  "error": "Script failed AI safety validation",
-  "safety_assessment": {
-    "safe": false,
-    "confidence": 1.0,
-    "issues": ["Uses fs.writeFileSync to modify a file"],
-    "reasoning": "Script attempts to write to filesystem which is forbidden",
-    "recommendations": ["Remove file writing operations"],
-    "assessment_method": "ai_powered",
-    "model_used": "gpt-4.1-nano",
-    "tokens_used": 448
-  },
-  "script_preview": "fs.writeFileSync('test.txt', 'data');"
+    "success": false,
+    "timestamp": "2025-06-02T20:21:59.697Z",
+    "tool_name": "execute_script",
+    "error": "Script failed AI safety validation",
+    "safety_assessment": {
+        "safe": false,
+        "confidence": 1.0,
+        "issues": ["Uses fs.writeFileSync to modify a file"],
+        "reasoning": "Script attempts to write to filesystem which is forbidden",
+        "recommendations": ["Remove file writing operations"],
+        "assessment_method": "ai_powered",
+        "model_used": "gpt-4.1-nano",
+        "tokens_used": 448
+    },
+    "script_preview": "fs.writeFileSync('test.txt', 'data');"
 }
 ```
 

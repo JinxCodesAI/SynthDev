@@ -12,26 +12,31 @@ const __dirname = dirname(__filename);
  * Handles all OpenAI Compatible API communication and conversation state
  */
 class AIAPIClient {
-    constructor(costsManager, apiKey, baseURL = 'https://api.openai.com/v1', model = 'gpt-4.1-mini') {
+    constructor(
+        costsManager,
+        apiKey,
+        baseURL = 'https://api.openai.com/v1',
+        model = 'gpt-4.1-mini'
+    ) {
         // Store initial configuration as base model
         this.baseClient = new OpenAI({
             apiKey: apiKey,
-            baseURL: baseURL
+            baseURL: baseURL,
         });
         this.baseModel = model;
 
         // Current active client and model (will be switched based on role level)
         this.client = this.baseClient;
         this.model = this.baseModel;
-        
+
         this.costsManager = costsManager;
 
         // Store model configurations for different levels
         this.modelConfigs = {
             base: {
                 client: this.baseClient,
-                model: this.baseModel
-            }
+                model: this.baseModel,
+            },
         };
 
         this.messages = [];
@@ -41,7 +46,7 @@ class AIAPIClient {
         this.lastAPICall = {
             request: null,
             response: null,
-            timestamp: null
+            timestamp: null,
         };
 
         // Safety limits from config
@@ -56,6 +61,7 @@ class AIAPIClient {
         this.onToolExecution = null;
         this.onResponse = null;
         this.onError = null;
+        this.onContentDisplay = null;
 
         // Initialize logger
         this.logger = getLogger();
@@ -77,9 +83,9 @@ class AIAPIClient {
             this.modelConfigs.smart = {
                 client: new OpenAI({
                     apiKey: smartConfig.apiKey,
-                    baseURL: smartConfig.baseUrl
+                    baseURL: smartConfig.baseUrl,
                 }),
-                model: smartConfig.model
+                model: smartConfig.model,
             };
         }
 
@@ -89,9 +95,9 @@ class AIAPIClient {
             this.modelConfigs.fast = {
                 client: new OpenAI({
                     apiKey: fastConfig.apiKey,
-                    baseURL: fastConfig.baseUrl
+                    baseURL: fastConfig.baseUrl,
                 }),
-                model: fastConfig.model
+                model: fastConfig.model,
             };
         }
     }
@@ -120,7 +126,9 @@ class AIAPIClient {
         onToolExecution = null,
         onResponse = null,
         onError = null,
-        onReminder = null
+        onReminder = null,
+        onContentDisplay = null,
+        onParseResponse = null,
     }) {
         this.onThinking = onThinking;
         this.onChainOfThought = onChainOfThought;
@@ -129,6 +137,8 @@ class AIAPIClient {
         this.onResponse = onResponse;
         this.onError = onError;
         this.onReminder = onReminder;
+        this.onContentDisplay = onContentDisplay;
+        this.onParseResponse = onParseResponse;
     }
 
     setTools(tools) {
@@ -149,11 +159,11 @@ class AIAPIClient {
         // Add new system message at the beginning
         this.messages.unshift({
             role: 'system',
-            content: systemMessage
+            content: systemMessage,
         });
 
         // Update current role and apply tool filtering
-        if(role === this.role) {
+        if (role === this.role) {
             return;
         }
         this.role = role;
@@ -161,18 +171,25 @@ class AIAPIClient {
 
         // Switch to appropriate model based on role level
         if (role) {
+            const previousModel = this.model;
             try {
                 const level = SystemMessages.getLevel(role);
                 this._switchToModelLevel(level);
-                this.logger.info(`🤖 Switched to ${level} model (${this.model}) for role '${role}'`);
+                if (this.model !== previousModel) {
+                    this.logger.info(
+                        `🤖 Switched to ${level} model (${this.model}) for role '${role}'`
+                    );
+                }
             } catch (error) {
-                this.logger.warn(`Could not determine model level for role '${role}': ${error.message}`);
+                this.logger.warn(
+                    `Could not determine model level for role '${role}': ${error.message}`
+                );
             }
         }
     }
 
     /**
-     * Apply tool filtering based on current role's excluded tools
+     * Apply tool filtering based on current role's excluded tools and add role-specific tools
      * @private
      */
     _applyToolFiltering() {
@@ -182,15 +199,20 @@ class AIAPIClient {
 
         try {
             const excludedTools = SystemMessages.getExcludedTools(this.role);
-            
+            const parsingTools = SystemMessages.getParsingTools(this.role);
+
             // Filter out excluded tools
-            this.tools = this.allTools.filter(tool => {
+            const filteredTools = this.allTools.filter(tool => {
                 const toolName = tool.function?.name || tool.name;
                 return !excludedTools.includes(toolName);
             });
-            
+
+            // Add role-specific tools
+            this.tools = [...filteredTools, ...parsingTools];
         } catch (error) {
-            this.logger.warn(`Could not apply tool filtering for role '${this.role}': ${error.message}`);
+            this.logger.warn(
+                `Could not apply tool filtering for role '${this.role}': ${error.message}`
+            );
             // Keep all tools if filtering fails
             this.tools = [...this.allTools];
         }
@@ -249,22 +271,71 @@ class AIAPIClient {
                 message.reasoning_content = null;
             }
 
+            const parsingTools = SystemMessages.getParsingTools(this.role).map(
+                tool => tool.function.name
+            );
+            this.logger.debug('Parsing tools:', parsingTools);
+
+            const toolCalls = message.tool_calls || [];
+            const parsingToolCalls = toolCalls.filter(call =>
+                parsingTools.includes(call.function.name)
+            );
+            const nonParsingToolCalls = toolCalls.filter(
+                call => !parsingTools.includes(call.function.name)
+            );
+
+            if (parsingToolCalls.length > 0 && nonParsingToolCalls.length > 0) {
+                this.onError(
+                    new Error(
+                        'AI response contains both parsing and non-parsing tool calls. This is not supported.'
+                    )
+                );
+            }
+
             // Handle tool calls if present
-            if (message.tool_calls && message.tool_calls.length > 0) {
+            if (nonParsingToolCalls.length > 0) {
+                this.logger.debug('AI response contains tool calls');
+
+                // Display content immediately if present (before tool execution)
+                if (message.content && this.onContentDisplay) {
+                    this.onContentDisplay(message.content, this.role);
+                }
                 await this._handleToolCalls(message);
             } else {
+                let content = null;
+                if (parsingToolCalls.length > 0) {
+                    this.logger.debug('AI response contains parsing tool calls');
+                    if (this.onParseResponse) {
+                        const parsedResponse = this.onParseResponse(message);
+                        this.logger.debug('Parsed response:', parsedResponse);
+                        if (parsedResponse.success) {
+                            content = parsedResponse.content;
+                        } else {
+                            this.onError(new Error(parsedResponse.error));
+                        }
+                    } else {
+                        this.logger.error('No parsing response handler defined');
+                        this.onError(new Error('No parsing response handler defined'));
+                    }
+                } else {
+                    this.logger.debug('AI response contains no tool calls');
+                    content = message.content;
+                }
                 // Regular response without tools
-                this.messages.push({ role: 'assistant', content: message.content });
-                if (this.onResponse) {
+                this.messages.push({ role: 'assistant', content: content });
+                if (this.onResponse && !this.onParseResponse) {
                     this.onResponse(response, this.role);
                 }
             }
-
         } catch (error) {
             if (this.onError) {
                 this.onError(error);
             }
         }
+    }
+
+    addUserMessage(userMessage) {
+        this.messages.push({ role: 'user', content: userMessage });
     }
 
     async _makeAPICall() {
@@ -275,7 +346,7 @@ class AIAPIClient {
             model: this.model,
             messages: this.messages,
             tools: this.tools.length > 0 ? this.tools : undefined,
-            max_completion_tokens: config.getMaxTokens(this.model)
+            max_completion_tokens: config.getMaxTokens(this.model),
         };
 
         // Store request data for review
@@ -284,16 +355,23 @@ class AIAPIClient {
 
         // Call OpenAI Compatible API
         const response = await this.client.chat.completions.create(requestData);
-        this.costsManager.addUsage(this.model, response.usage);
 
         // Store response data for review
         this.lastAPICall.response = JSON.parse(JSON.stringify(response));
 
         // Log HTTP request/response at verbosity level 5
-        this.logger.httpRequest('POST', `${this.client.baseURL}/chat/completions`, requestData, response);
+        this.logger.httpRequest(
+            'POST',
+            `${this.client.baseURL}/chat/completions`,
+            requestData,
+            response
+        );
 
         if (response && response.usage) {
             this.costsManager.addUsage(this.model, response.usage);
+            this.logger.debug(
+                `🤖 ${this.model} usage: ${response.usage.total_tokens} tokens, ${response.usage.prompt_tokens} prompt tokens, ${response.usage.completion_tokens} completion tokens`
+            );
         }
 
         return response;
@@ -309,7 +387,9 @@ class AIAPIClient {
         while (currentMessage.tool_calls && currentMessage.tool_calls.length > 0) {
             // Check if we've exceeded the maximum number of tool calls
             if (this.toolCallCount + currentMessage.tool_calls.length > this.maxToolCalls) {
-                throw new Error(`Maximum number of tool calls (${this.maxToolCalls}) exceeded. This may indicate an infinite loop or overly complex task.`);
+                throw new Error(
+                    `Maximum number of tool calls (${this.maxToolCalls}) exceeded. This may indicate an infinite loop or overly complex task.`
+                );
             }
 
             // Execute each tool call in the current message
@@ -325,7 +405,7 @@ class AIAPIClient {
                         this.messages.push({
                             role: 'tool',
                             tool_call_id: toolCall.id,
-                            content: `Error: ${error.message}`
+                            content: `Error: ${error.message}`,
                         });
                     }
                 }
@@ -335,17 +415,19 @@ class AIAPIClient {
             if (this.role) {
                 try {
                     let reminder = SystemMessages.getReminder(this.role);
-                    if(this.onReminder) {
+                    if (this.onReminder) {
                         reminder = this.onReminder(reminder);
                     }
                     if (reminder) {
                         this.messages.push({
                             role: 'user',
-                            content: reminder
+                            content: reminder,
                         });
                     }
                 } catch (error) {
-                    this.logger.warn(`Could not get reminder for role '${this.role}': ${error.message}`);
+                    this.logger.warn(
+                        `Could not get reminder for role '${this.role}': ${error.message}`
+                    );
                 }
             }
 
@@ -374,7 +456,9 @@ class AIAPIClient {
             if (this.lastAPICall.response) {
                 this.onResponse(this.lastAPICall.response, this.role);
             } else {
-                this.logger.error("Could not find last API response object to pass to onResponse callback.");
+                this.logger.error(
+                    'Could not find last API response object to pass to onResponse callback.'
+                );
                 this.onResponse({ choices: [{ message: currentMessage }] }, this.role);
             }
         }
@@ -400,10 +484,12 @@ class AIAPIClient {
             const systemMessage = SystemMessages.getSystemMessage(this.role);
             this.messages.unshift({
                 role: 'system',
-                content: systemMessage
+                content: systemMessage,
             });
         } catch (error) {
-            this.logger.warn(`Could not restore system message for role '${this.role}': ${error.message}`);
+            this.logger.warn(
+                `Could not restore system message for role '${this.role}': ${error.message}`
+            );
         }
     }
 
@@ -439,4 +525,4 @@ class AIAPIClient {
     }
 }
 
-export default AIAPIClient; 
+export default AIAPIClient;

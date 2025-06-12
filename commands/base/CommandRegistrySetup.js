@@ -17,6 +17,7 @@ import RoleCommand from '../role/RoleCommand.js';
 import RolesCommand from '../role/RolesCommand.js';
 import SnapshotsCommand from '../snapshots/SnapshotsCommand.js';
 import IndexCommand from '../indexing/IndexCommand.js';
+import CmdCommand from '../terminal/CmdCommand.js';
 
 /**
  * Create and configure a command registry with all available commands
@@ -50,8 +51,10 @@ export function createCommandRegistry() {
         // Indexing
         registry.register(new IndexCommand());
 
-        logger.debug(`✅ Registered ${registry.getAllCommands().length} commands successfully`);
+        // Terminal commands
+        registry.register(new CmdCommand());
 
+        logger.debug(`✅ Registered ${registry.getAllCommands().length} commands successfully`);
     } catch (error) {
         logger.error(error, 'Error registering commands');
         throw error;
@@ -68,11 +71,11 @@ export function createCommandRegistry() {
 export function getRegistryStats(registry) {
     const stats = registry.getStats();
     const categories = registry.getCommandsByCategory();
-    
+
     return {
         ...stats,
         categories: Object.keys(categories),
-        commandsByCategory: categories
+        commandsByCategory: categories,
     };
 }
 
@@ -86,7 +89,7 @@ export function validateRegistry(registry) {
         valid: true,
         errors: [],
         warnings: [],
-        stats: getRegistryStats(registry)
+        stats: getRegistryStats(registry),
     };
 
     // Check for required commands
@@ -114,11 +117,11 @@ export function validateRegistry(registry) {
                 results.errors.push(`Command ${command.name} missing execute method`);
                 results.valid = false;
             }
-            
+
             if (typeof command.getHelp !== 'function') {
                 results.warnings.push(`Command ${command.name} missing getHelp method`);
             }
-            
+
             if (typeof command.getUsage !== 'function') {
                 results.warnings.push(`Command ${command.name} missing getUsage method`);
             }

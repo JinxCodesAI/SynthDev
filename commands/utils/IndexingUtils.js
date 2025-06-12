@@ -5,10 +5,12 @@
 
 import { readFileSync } from 'fs';
 import { extname } from 'path';
-import { scanDirectory, getFileMetadata, calculateFileChecksum, calculateDirectoryChecksum } from '../../tools/common/fs_utils.js';
-import AIAPIClient from '../../aiAPIClient.js';
-import SystemMessages from '../../systemMessages.js';
-import ConfigManager from '../../configManager.js';
+import {
+    scanDirectory,
+    getFileMetadata,
+    calculateFileChecksum,
+    calculateDirectoryChecksum,
+} from '../../tools/common/fs_utils.js';
 import { getLogger } from '../../logger.js';
 
 export class IndexingUtils {
@@ -22,9 +24,17 @@ export class IndexingUtils {
             depth: -1, // Unlimited depth
             includeHidden,
             exclusionList: [
-                'node_modules', '.git', '.svn', 'build', 'dist', '.cache',
-                '__pycache__', '.DS_Store', 'Thumbs.db', '.index'
-            ]
+                'node_modules',
+                '.git',
+                '.svn',
+                'build',
+                'dist',
+                '.cache',
+                '__pycache__',
+                '.DS_Store',
+                'Thumbs.db',
+                '.index',
+            ],
         };
 
         const entries = scanDirectory('.', options);
@@ -35,7 +45,7 @@ export class IndexingUtils {
             name: '.',
             type: 'directory',
             path: '.',
-            lvl: 0
+            lvl: 0,
         };
 
         // Add root directory at the beginning
@@ -52,12 +62,27 @@ export class IndexingUtils {
     static shouldSummarizeFile(fileInfo) {
         // File type categories for better organization
         const fileTypeCategories = {
-            source: ['.js', '.ts', '.jsx', '.tsx', '.py', '.java', '.cpp', '.c', '.cs', '.php', '.rb', '.go', '.rs', '.swift'],
+            source: [
+                '.js',
+                '.ts',
+                '.jsx',
+                '.tsx',
+                '.py',
+                '.java',
+                '.cpp',
+                '.c',
+                '.cs',
+                '.php',
+                '.rb',
+                '.go',
+                '.rs',
+                '.swift',
+            ],
             config: ['.json', '.yaml', '.yml', '.toml', '.ini', '.conf', '.config', '.env'],
             documentation: ['.md', '.txt', '.rst', '.adoc', '.tex'],
             web: ['.html', '.htm', '.css', '.scss', '.sass', '.less'],
             data: ['.xml', '.csv', '.sql', '.graphql', '.proto'],
-            build: ['.dockerfile', '.makefile', '.gradle', '.maven', '.cmake']
+            build: ['.dockerfile', '.makefile', '.gradle', '.maven', '.cmake'],
         };
 
         // Process text-based files
@@ -67,7 +92,7 @@ export class IndexingUtils {
             ...fileTypeCategories.documentation,
             ...fileTypeCategories.web,
             ...fileTypeCategories.data,
-            ...fileTypeCategories.build
+            ...fileTypeCategories.build,
         ];
 
         return textExtensions.includes(fileInfo.extension) || fileInfo.extension === '';
@@ -82,12 +107,27 @@ export class IndexingUtils {
         const ext = extname(filePath).toLowerCase();
 
         const fileTypeCategories = {
-            source: ['.js', '.ts', '.jsx', '.tsx', '.py', '.java', '.cpp', '.c', '.cs', '.php', '.rb', '.go', '.rs', '.swift'],
+            source: [
+                '.js',
+                '.ts',
+                '.jsx',
+                '.tsx',
+                '.py',
+                '.java',
+                '.cpp',
+                '.c',
+                '.cs',
+                '.php',
+                '.rb',
+                '.go',
+                '.rs',
+                '.swift',
+            ],
             config: ['.json', '.yaml', '.yml', '.toml', '.ini', '.conf', '.config', '.env'],
             documentation: ['.md', '.txt', '.rst', '.adoc', '.tex'],
             web: ['.html', '.htm', '.css', '.scss', '.sass', '.less'],
             data: ['.xml', '.csv', '.sql', '.graphql', '.proto'],
-            build: ['.dockerfile', '.makefile', '.gradle', '.maven', '.cmake']
+            build: ['.dockerfile', '.makefile', '.gradle', '.maven', '.cmake'],
         };
 
         for (const [category, extensions] of Object.entries(fileTypeCategories)) {
@@ -132,7 +172,7 @@ export class IndexingUtils {
             filesToSummarize: filesToSummarize.length,
             estimatedInputTokens,
             estimatedOutputTokens: totalOutputTokens,
-            totalEstimatedTokens
+            totalEstimatedTokens,
         };
     }
 
@@ -143,7 +183,7 @@ export class IndexingUtils {
      * @param {number} maxFileSize - Maximum file size
      * @returns {Object} Analysis results
      */
-    static async analyzeFileChanges(files, existingIndex, maxFileSize) {
+    static async analyzeFileChanges(files, existingIndex, _maxFileSize) {
         const newFiles = [];
         const changedFiles = [];
         const unchangedFiles = [];
@@ -171,7 +211,7 @@ export class IndexingUtils {
                 file,
                 checksum,
                 existingInfo,
-                needsSummary: false
+                needsSummary: false,
             };
 
             if (!existingInfo) {
@@ -198,7 +238,7 @@ export class IndexingUtils {
             newFiles,
             changedFiles,
             unchangedFiles,
-            filesToSummarize
+            filesToSummarize,
         };
     }
 
@@ -264,7 +304,7 @@ export class IndexingUtils {
             const directoryData = {
                 directory,
                 existingInfo,
-                needsSummary: false
+                needsSummary: false,
             };
 
             if (!existingInfo) {
@@ -291,7 +331,7 @@ export class IndexingUtils {
             newDirectories,
             changedDirectories,
             unchangedDirectories,
-            directoriesToSummarize
+            directoriesToSummarize,
         };
     }
 
@@ -301,8 +341,12 @@ export class IndexingUtils {
      * @returns {string} Formatted duration
      */
     static formatDuration(ms) {
-        if (ms < 1000) return `${ms}ms`;
-        if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`;
+        if (ms < 1000) {
+            return `${ms}ms`;
+        }
+        if (ms < 60000) {
+            return `${(ms / 1000).toFixed(1)}s`;
+        }
         return `${(ms / 60000).toFixed(1)}m`;
     }
 
@@ -311,27 +355,14 @@ export class IndexingUtils {
      * @param {string} filePath - File path
      * @param {string} content - File content
      * @param {Object} costsManager - Costs manager instance
+     * @param {AIAPIClient} aiClient - Pre-configured AIAPIClient instance
      * @returns {Promise<Object>} Summary result
      */
-    static async generateAISummary(filePath, content, costsManager) {
+    static async generateAISummary(filePath, content, costsManager, aiClient) {
+        if (!aiClient) {
+            throw new Error('AI client is not available for summary generation.');
+        }
         try {
-            // Initialize AI client for file summarization
-            const config = ConfigManager.getInstance();
-            const modelConfig = config.hasFastModelConfig()
-                ? config.getModel('fast')
-                : config.getModel('base');
-
-            const aiClient = new AIAPIClient(
-                costsManager,
-                modelConfig.apiKey,
-                modelConfig.baseUrl,
-                modelConfig.model || modelConfig.baseModel
-            );
-
-            // Set the file_summarizer role
-            const systemMessage = SystemMessages.getSystemMessage('file_summarizer');
-            await aiClient.setSystemMessage(systemMessage, 'file_summarizer');
-
             // Construct user prompt
             const userPrompt = `Analyze this file and provide a concise summary (up to 150 words):
 
@@ -353,15 +384,20 @@ Summary:`;
 
             // Set up response callback
             aiClient.setCallbacks({
-                onResponse: (response) => {
-                    if (response && response.choices && response.choices[0] && response.choices[0].message) {
+                onResponse: response => {
+                    if (
+                        response &&
+                        response.choices &&
+                        response.choices[0] &&
+                        response.choices[0].message
+                    ) {
                         responseContent = response.choices[0].message.content;
                         responseUsage = response.usage;
                     }
                 },
-                onError: (error) => {
+                onError: error => {
                     responseError = error;
-                }
+                },
             });
 
             // Send the user message and wait for response
@@ -378,12 +414,14 @@ Summary:`;
             }
 
             const summary = responseContent.trim();
-            const tokensUsed = responseUsage ? (responseUsage.prompt_tokens + responseUsage.completion_tokens) : 0;
+            const tokensUsed = responseUsage
+                ? responseUsage.prompt_tokens + responseUsage.completion_tokens
+                : 0;
 
             return {
                 summary,
                 usage: responseUsage,
-                tokensUsed
+                tokensUsed,
             };
         } catch (error) {
             throw new Error(`AI summary generation failed: ${error.message}`);
@@ -395,30 +433,19 @@ Summary:`;
      * @param {string} dirPath - Directory path
      * @param {string} contentSummaries - Content summaries
      * @param {Object} costsManager - Costs manager instance
+     * @param {AIAPIClient} aiClient - Pre-configured AIAPIClient instance
      * @returns {Promise<Object>} Summary result
      */
-    static async generateDirectorySummary(dirPath, contentSummaries, costsManager) {
+    static async generateDirectorySummary(dirPath, contentSummaries, costsManager, aiClient) {
+        if (!aiClient) {
+            throw new Error('AI client is not available for directory summary generation.');
+        }
         try {
-            // Initialize AI client for directory summarization
-            const config = ConfigManager.getInstance();
-            const modelConfig = config.hasFastModelConfig()
-                ? config.getModel('fast')
-                : config.getModel('base');
-
-            const aiClient = new AIAPIClient(
-                costsManager,
-                modelConfig.apiKey,
-                modelConfig.baseUrl,
-                modelConfig.model || modelConfig.baseModel
-            );
-
-            // Set the directory_summarizer role
-            const systemMessage = SystemMessages.getSystemMessage('directory_summarizer');
-            await aiClient.setSystemMessage(systemMessage, 'directory_summarizer');
-
             // Construct user prompt with special handling for root directory
             const isRootDirectory = dirPath === '.';
-            const directoryDescription = isRootDirectory ? 'root directory (entire project)' : `directory: ${dirPath}`;
+            const directoryDescription = isRootDirectory
+                ? 'root directory (entire project)'
+                : `directory: ${dirPath}`;
             const focusPoints = isRootDirectory
                 ? `Focus on:
 1. Overall project purpose and architecture
@@ -447,15 +474,20 @@ Directory Summary:`;
 
             // Set up response callback
             aiClient.setCallbacks({
-                onResponse: (response) => {
-                    if (response && response.choices && response.choices[0] && response.choices[0].message) {
+                onResponse: response => {
+                    if (
+                        response &&
+                        response.choices &&
+                        response.choices[0] &&
+                        response.choices[0].message
+                    ) {
                         responseContent = response.choices[0].message.content;
                         responseUsage = response.usage;
                     }
                 },
-                onError: (error) => {
+                onError: error => {
                     responseError = error;
-                }
+                },
             });
 
             // Send the user message and wait for response
@@ -472,12 +504,14 @@ Directory Summary:`;
             }
 
             const summary = responseContent.trim();
-            const tokensUsed = responseUsage ? (responseUsage.prompt_tokens + responseUsage.completion_tokens) : 0;
+            const tokensUsed = responseUsage
+                ? responseUsage.prompt_tokens + responseUsage.completion_tokens
+                : 0;
 
             return {
                 summary,
                 usage: responseUsage,
-                tokensUsed
+                tokensUsed,
             };
         } catch (error) {
             throw new Error(`AI directory summary generation failed: ${error.message}`);
@@ -494,7 +528,15 @@ Directory Summary:`;
      * @param {Object} existingFileInfo - Existing file information
      * @returns {Promise<Object>} Processed file information
      */
-    static async processFileWithChecksum(file, checksum, needsSummary, maxFileSize, costsManager, existingFileInfo) {
+    static async processFileWithChecksum(
+        file,
+        checksum,
+        needsSummary,
+        maxFileSize,
+        costsManager,
+        existingFileInfo,
+        aiClient
+    ) {
         const filePath = file.path;
         const metadata = getFileMetadata(filePath);
 
@@ -511,14 +553,19 @@ Directory Summary:`;
             checksum: checksum,
             extension: extname(filePath).toLowerCase(),
             category: this.getFileCategory(filePath),
-            processed_at: new Date().toISOString()
+            processed_at: new Date().toISOString(),
         };
 
         // If file hasn't changed and we have existing summary, reuse it
-        if (existingFileInfo && existingFileInfo.checksum === checksum && existingFileInfo.ai_summary) {
+        if (
+            existingFileInfo &&
+            existingFileInfo.checksum === checksum &&
+            existingFileInfo.ai_summary
+        ) {
             fileInfo.ai_summary = existingFileInfo.ai_summary;
             fileInfo.summary_reused = true;
-            fileInfo.summary_size = existingFileInfo.summary_size ||
+            fileInfo.summary_size =
+                existingFileInfo.summary_size ||
                 Buffer.byteLength(existingFileInfo.ai_summary, 'utf8');
             // Don't copy tokens_used for reused summaries - we didn't use tokens in this run
             fileInfo.tokens_used_previous = existingFileInfo.tokens_used || 0;
@@ -537,17 +584,24 @@ Directory Summary:`;
                     fileInfo.original_size = metadata.size;
                 }
 
-                const summaryResult = await this.generateAISummary(filePath, content, costsManager);
+                const summaryResult = await this.generateAISummary(
+                    filePath,
+                    content,
+                    costsManager,
+                    aiClient
+                );
                 fileInfo.ai_summary = summaryResult.summary;
                 fileInfo.summary_size = Buffer.byteLength(summaryResult.summary, 'utf8');
                 fileInfo.tokens_used = summaryResult.tokensUsed;
-                fileInfo.content_preview = content.substring(0, 200) + (content.length > 200 ? '...' : '');
-
+                fileInfo.content_preview =
+                    content.substring(0, 200) + (content.length > 200 ? '...' : '');
             } catch (error) {
                 fileInfo.summary_error = error.message;
             }
         } else {
-            fileInfo.summary_skipped = needsSummary ? 'Costs manager not available' : 'File criteria not met';
+            fileInfo.summary_skipped = needsSummary
+                ? 'Costs manager not available'
+                : 'File criteria not met';
         }
 
         return fileInfo;
@@ -562,7 +616,14 @@ Directory Summary:`;
      * @param {Array} allProcessedEntries - All processed entries (files and directories)
      * @returns {Promise<Object>} Processed directory information
      */
-    static async processDirectoryWithChecksum(directory, needsSummary, costsManager, existingDirectoryInfo, allProcessedEntries) {
+    static async processDirectoryWithChecksum(
+        directory,
+        needsSummary,
+        costsManager,
+        existingDirectoryInfo,
+        allProcessedEntries,
+        aiClient
+    ) {
         const dirPath = directory.path;
         const metadata = getFileMetadata(dirPath);
 
@@ -576,8 +637,12 @@ Directory Summary:`;
             const normalizedEntryPath = entry.path.replace(/\\/g, '/');
             const normalizedDirPath = dirPath.replace(/\\/g, '/');
 
-            const entryDir = normalizedEntryPath.substring(0, normalizedEntryPath.lastIndexOf('/')) || '.';
-            return entryDir === normalizedDirPath || (normalizedDirPath === '.' && !normalizedEntryPath.includes('/'));
+            const entryDir =
+                normalizedEntryPath.substring(0, normalizedEntryPath.lastIndexOf('/')) || '.';
+            return (
+                entryDir === normalizedDirPath ||
+                (normalizedDirPath === '.' && !normalizedEntryPath.includes('/'))
+            );
         });
 
         // Calculate directory checksum from direct contents
@@ -592,14 +657,19 @@ Directory Summary:`;
             checksum: directoryChecksum,
             lvl: directory.lvl,
             processed_at: new Date().toISOString(),
-            content_count: directContents.length
+            content_count: directContents.length,
         };
 
         // If directory hasn't changed and we have existing summary, reuse it
-        if (existingDirectoryInfo && existingDirectoryInfo.checksum === directoryChecksum && existingDirectoryInfo.ai_summary) {
+        if (
+            existingDirectoryInfo &&
+            existingDirectoryInfo.checksum === directoryChecksum &&
+            existingDirectoryInfo.ai_summary
+        ) {
             directoryInfo.ai_summary = existingDirectoryInfo.ai_summary;
             directoryInfo.summary_reused = true;
-            directoryInfo.summary_size = existingDirectoryInfo.summary_size ||
+            directoryInfo.summary_size =
+                existingDirectoryInfo.summary_size ||
                 Buffer.byteLength(existingDirectoryInfo.ai_summary, 'utf8');
             directoryInfo.tokens_used_previous = existingDirectoryInfo.tokens_used || 0;
             return directoryInfo;
@@ -615,7 +685,12 @@ Directory Summary:`;
                     .join('\n\n');
 
                 if (contentSummaries) {
-                    const summaryResult = await this.generateDirectorySummary(dirPath, contentSummaries, costsManager);
+                    const summaryResult = await this.generateDirectorySummary(
+                        dirPath,
+                        contentSummaries,
+                        costsManager,
+                        aiClient
+                    );
                     directoryInfo.ai_summary = summaryResult.summary;
                     directoryInfo.summary_size = Buffer.byteLength(summaryResult.summary, 'utf8');
                     directoryInfo.tokens_used = summaryResult.tokensUsed;
@@ -626,9 +701,11 @@ Directory Summary:`;
                 directoryInfo.summary_error = error.message;
             }
         } else {
-            directoryInfo.summary_skipped = needsSummary ?
-                (directContents.length === 0 ? 'Empty directory' : 'Costs manager not available') :
-                'Summary not requested';
+            directoryInfo.summary_skipped = needsSummary
+                ? directContents.length === 0
+                    ? 'Empty directory'
+                    : 'Costs manager not available'
+                : 'Summary not requested';
         }
 
         return directoryInfo;

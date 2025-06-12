@@ -5,6 +5,7 @@
 
 import { BaseCommand } from '../base/BaseCommand.js';
 import { getLogger } from '../../logger.js';
+import { getUIConfigManager } from '../../uiConfigManager.js';
 
 export class HelpCommand extends BaseCommand {
     constructor() {
@@ -25,28 +26,24 @@ export class HelpCommand extends BaseCommand {
      * @param {Object} context - Execution context
      * @returns {boolean} Always returns true
      */
-    async implementation(args, context) {
+    async implementation(_args, context) {
         const { apiClient, commandRegistry } = context;
+        const uiConfig = getUIConfigManager();
 
         // Generate help text from command registry if available
         let commandsHelp = '';
         if (commandRegistry) {
             commandsHelp = commandRegistry.generateHelpText();
         } else {
-            // Fallback to basic command list
-            commandsHelp = `
-📖 Available Commands:
-/help     - Show this help message
-/tools    - List available tools
-/roles    - Show available roles and current role
-/role <name> - Switch to a specific role (coder, reviewer, architect)
-/review   - Show raw content of last API request/response
-/clear    - Clear conversation history
-/cost     - Show accumulated API costs
-/snapshots - Manage code checkpoints, revert AI changes
-/index    - Index codebase with AI-powered summaries
-/exit     - Exit the application
-`;
+            // Fallback to basic command list from configuration
+            const helpConfig = uiConfig.getCommandHelp();
+            const title = helpConfig.help.title;
+            const commands = helpConfig.help.commands;
+
+            commandsHelp = `\n${title}`;
+            for (const [command, description] of Object.entries(commands)) {
+                commandsHelp += `\n/${command.padEnd(12)} - ${description}`;
+            }
         }
 
         // System information

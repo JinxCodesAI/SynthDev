@@ -1,15 +1,17 @@
 import { createInterface } from 'readline';
 import { getLogger } from './logger.js';
+import { getUIConfigManager } from './uiConfigManager.js';
 
 /**
  * Handles all console interface operations
  */
 class ConsoleInterface {
     constructor() {
+        this.uiConfig = getUIConfigManager();
         this.rl = createInterface({
             input: process.stdin,
             output: process.stdout,
-            prompt: '💭 You: '
+            prompt: this.uiConfig.getMessage('prompts.user'),
         });
         this.isPaused = false;
         this.logger = getLogger();
@@ -37,27 +39,32 @@ class ConsoleInterface {
         this.rl.prompt();
     }
 
-    showMessage(message, prefix = '🤖 Synth-Dev:') {
-        this.logger.user(message, prefix);
+    showMessage(message, prefix = null) {
+        const actualPrefix = prefix || this.uiConfig.getMessage('prefixes.assistant');
+        this.logger.user(message, actualPrefix);
     }
 
     showThinking() {
-        this.logger.status('\n🧠 Synth-Dev is thinking...\n');
+        this.logger.status(this.uiConfig.getMessage('status.thinking'));
     }
 
     showChainOfThought(content) {
-        this.logger.raw('💭 Chain of Thought:');
-        this.logger.raw('─'.repeat(50));
+        const prefix = this.uiConfig.getMessage('prefixes.chain_of_thought');
+        const separator = this.uiConfig.getMessage('prefixes.separator').repeat(50);
+        this.logger.raw(prefix);
+        this.logger.raw(separator);
         this.logger.raw(content);
-        this.logger.raw('─'.repeat(50));
+        this.logger.raw(separator);
         this.logger.raw();
     }
 
     showFinalChainOfThought(content) {
-        this.logger.raw('💭 Final Chain of Thought:');
-        this.logger.raw('─'.repeat(50));
+        const prefix = this.uiConfig.getMessage('prefixes.final_chain_of_thought');
+        const separator = this.uiConfig.getMessage('prefixes.separator').repeat(50);
+        this.logger.raw(prefix);
+        this.logger.raw(separator);
         this.logger.raw(content);
-        this.logger.raw('─'.repeat(50));
+        this.logger.raw(separator);
         this.logger.raw();
     }
 
@@ -70,35 +77,54 @@ class ConsoleInterface {
     }
 
     showToolError(error) {
-        this.logger.error(error, 'Tool execution failed');
+        this.logger.error(error, this.uiConfig.getMessage('errors.tool_execution_failed'));
     }
 
     showExecutingTools() {
-        this.logger.status('🔧 Executing tools...\n');
+        this.logger.status(this.uiConfig.getMessage('status.executing_tools'));
     }
 
     showError(error) {
         this.logger.error(error);
     }
 
-    showStartupMessage(model, totalToolsCount, role = null, allToolsCount = null, filteredToolsCount = null) {
-        const roleInfo = role ? `\n🎭 Role: ${role.charAt(0).toUpperCase() + role.slice(1)}` : '';
-        const toolInfo = (allToolsCount !== null && filteredToolsCount !== null && allToolsCount !== filteredToolsCount)
-            ? `🔧 Tools: ${filteredToolsCount}/${allToolsCount} available (${allToolsCount - filteredToolsCount} filtered for role)`
-            : `🔧 Tools: ${totalToolsCount} loaded`;
+    showStartupMessage(
+        model,
+        totalToolsCount,
+        role = null,
+        allToolsCount = null,
+        filteredToolsCount = null
+    ) {
+        const title = this.uiConfig.getMessage('startup.title');
+        const modelInfo = this.uiConfig.getMessage('startup.model_info', { model });
+        const roleInfo = role
+            ? `\n${this.uiConfig.getMessage('startup.role_info', { role: role.charAt(0).toUpperCase() + role.slice(1) })}`
+            : '';
+
+        const toolInfo =
+            allToolsCount !== null &&
+            filteredToolsCount !== null &&
+            allToolsCount !== filteredToolsCount
+                ? this.uiConfig.getMessage('startup.tools_filtered_info', {
+                      filtered: filteredToolsCount,
+                      total: allToolsCount,
+                      excluded: allToolsCount - filteredToolsCount,
+                  })
+                : this.uiConfig.getMessage('startup.tools_info', { count: totalToolsCount });
+
+        const instructions = this.uiConfig.getMessage('startup.instructions');
 
         this.logger.raw(`
-🚀 Synth-Dev Console Application Started!
-🤖 Model: ${model}${roleInfo}
+${title}
+${modelInfo}${roleInfo}
 ${toolInfo}
 
-Type your message and press Enter to chat.
-Use /help for commands.
+${instructions}
         `);
     }
 
     showGoodbye() {
-        this.logger.raw('👋 Goodbye!');
+        this.logger.raw(this.uiConfig.getMessage('goodbye'));
     }
 
     newLine() {
@@ -110,9 +136,11 @@ Use /help for commands.
     }
 
     async promptForConfirmation(prompt) {
-        return new Promise((resolve) => {
-            this.logger.raw('\n❓ ' + prompt);
-            this.logger.raw('   Type "y" or "yes" to proceed, anything else to cancel:');
+        return new Promise(resolve => {
+            const confirmationMessage = this.uiConfig.getMessage('prompts.confirmation', {
+                prompt,
+            });
+            this.logger.raw(confirmationMessage);
 
             // Store current paused state
             const wasPaused = this.isPaused;
@@ -130,7 +158,7 @@ Use /help for commands.
             }
 
             // Set up one-time confirmation handler
-            const confirmationHandler = (input) => {
+            const confirmationHandler = input => {
                 const response = input.trim().toLowerCase();
                 const confirmed = response === 'y' || response === 'yes';
 
@@ -157,23 +185,31 @@ Use /help for commands.
     }
 
     showToolCancelled(toolName) {
-        this.logger.warn(`Tool execution cancelled: ${toolName}\n`, '🚫');
+        const message = this.uiConfig.getMessage('tools.cancelled', { toolName });
+        this.logger.warn(message, '🚫');
     }
 
     showEnhancingPrompt() {
-        this.logger.status('\n🔄 \x1b[33mEnhancing prompt...\x1b[0m');
+        this.logger.status(this.uiConfig.getMessage('status.enhancing_prompt'));
     }
 
     showEnhancementError(error) {
-        this.logger.warn(`\n⚠️  \x1b[33mPrompt enhancement failed: ${error}\x1b[0m`);
-        this.logger.info('📝 Proceeding with original prompt...\n');
+        const errorMessage = this.uiConfig.getMessage('enhancement.failure_message', { error });
+        const proceedingMessage = this.uiConfig.getMessage('enhancement.proceeding_message');
+        this.logger.warn(errorMessage);
+        this.logger.info(proceedingMessage);
     }
 
     async promptForEnhancedPromptApproval(enhancedPrompt, originalPrompt) {
-        this.logger.raw('🔄 Press Esc to revert to original or ENTER to submit current prompt');
+        this.logger.raw(this.uiConfig.getMessage('enhancement.approval_instruction'));
 
         // Show the enhanced prompt as editable input
-        const userInput = await this.promptForEditableInput('💭 You: ', enhancedPrompt, originalPrompt);
+        const userPrompt = this.uiConfig.getMessage('prompts.user');
+        const userInput = await this.promptForEditableInput(
+            userPrompt,
+            enhancedPrompt,
+            originalPrompt
+        );
 
         if (userInput === null) {
             // User pressed Escape - revert to original
@@ -192,7 +228,7 @@ Use /help for commands.
      * @private
      */
     async promptForEditableInput(prompt, prefillText, originalText) {
-        return new Promise((resolve) => {
+        return new Promise(resolve => {
             // Store current paused state and listeners
             const wasPaused = this.isPaused;
             const currentListeners = this.rl.listeners('line');
@@ -200,11 +236,12 @@ Use /help for commands.
             // Remove all existing 'line' listeners to prevent interference
             this.rl.removeAllListeners('line');
 
-            // Temporarily resume input
-            if (wasPaused) {
-                this.isPaused = false;
-                this.rl.resume();
-            }
+            // Pause the readline interface to prevent double input
+            this.rl.pause();
+
+            // Enable raw mode to handle individual keystrokes
+            process.stdin.setRawMode(true);
+            process.stdin.resume();
 
             // Show prompt and pre-filled text
             process.stdout.write(prompt);
@@ -212,78 +249,140 @@ Use /help for commands.
 
             // Set up input handling
             let inputBuffer = prefillText;
+            let cursorPos = prefillText.length;
             let isEscapePressed = false;
+            const promptLength = prompt.length;
 
-            const handleKeypress = (str, key) => {
-                if (!key) return;
-
-                if (key.name === 'escape') {
-                    isEscapePressed = true;
-                    // Clear the line and show original
-                    process.stdout.write('\r\x1b[K');
-                    process.stdout.write(prompt + originalText);
-                    inputBuffer = originalText;
-                    return;
-                }
-
-                // Handle basic editing
-                if (key.name === 'backspace') {
-                    if (inputBuffer.length > 0) {
-                        inputBuffer = inputBuffer.slice(0, -1);
-                        process.stdout.write('\b \b');
-                    }
-                } else if (str && str.length === 1 && !key.ctrl && !key.meta) {
-                    inputBuffer += str;
-                    process.stdout.write(str);
+            const redrawLine = () => {
+                // Clear the entire line and redraw
+                process.stdout.write('\r\x1b[K');
+                process.stdout.write(prompt + inputBuffer);
+                // Move cursor to correct position
+                const targetPos = promptLength + cursorPos;
+                const currentPos = promptLength + inputBuffer.length;
+                if (targetPos < currentPos) {
+                    process.stdout.write(`\x1b[${currentPos - targetPos}D`);
                 }
             };
 
-            const handleLine = (input) => {
-                // Clean up
-                process.stdin.removeListener('keypress', handleKeypress);
-                this.rl.removeListener('line', handleLine);
+            const handleKeypress = chunk => {
+                const key = chunk[0];
+
+                // Handle Escape key
+                if (key === 27) {
+                    isEscapePressed = true;
+                    inputBuffer = originalText;
+                    cursorPos = originalText.length;
+                    redrawLine();
+                    return;
+                }
+
+                // Handle Enter key
+                if (key === 13) {
+                    process.stdout.write('\n');
+                    cleanup();
+                    if (isEscapePressed) {
+                        resolve(null);
+                    } else {
+                        resolve(inputBuffer);
+                    }
+                    return;
+                }
+
+                // Handle Backspace
+                if (key === 127 || key === 8) {
+                    if (cursorPos > 0) {
+                        inputBuffer =
+                            inputBuffer.slice(0, cursorPos - 1) + inputBuffer.slice(cursorPos);
+                        cursorPos--;
+                        redrawLine();
+                    }
+                    return;
+                }
+
+                // Handle Delete key (ESC sequence)
+                if (key === 27 && chunk.length === 3 && chunk[1] === 91 && chunk[2] === 51) {
+                    // This is the start of a delete sequence, wait for the next chunk
+                    return;
+                }
+
+                // Handle arrow keys
+                if (key === 27 && chunk.length >= 3 && chunk[1] === 91) {
+                    if (chunk[2] === 67) {
+                        // Right arrow
+                        if (cursorPos < inputBuffer.length) {
+                            cursorPos++;
+                            process.stdout.write('\x1b[C');
+                        }
+                    } else if (chunk[2] === 68) {
+                        // Left arrow
+                        if (cursorPos > 0) {
+                            cursorPos--;
+                            process.stdout.write('\x1b[D');
+                        }
+                    }
+                    return;
+                }
+
+                // Handle Ctrl+C
+                if (key === 3) {
+                    process.stdout.write('\n');
+                    cleanup();
+                    resolve(null);
+                    return;
+                }
+
+                // Handle printable characters
+                if (key >= 32 && key <= 126) {
+                    const char = String.fromCharCode(key);
+                    inputBuffer =
+                        inputBuffer.slice(0, cursorPos) + char + inputBuffer.slice(cursorPos);
+                    cursorPos++;
+                    redrawLine();
+                }
+            };
+
+            const cleanup = () => {
+                // Restore normal mode
+                process.stdin.setRawMode(false);
+                process.stdin.pause();
+                process.stdin.removeListener('data', handleKeypress);
+
+                // Restore readline interface
+                if (!wasPaused) {
+                    this.isPaused = false;
+                    this.rl.resume();
+                }
 
                 // Restore original listeners
                 currentListeners.forEach(listener => {
                     this.rl.on('line', listener);
                 });
-
-                // Restore previous paused state
-                if (wasPaused) {
-                    this.isPaused = true;
-                    this.rl.pause();
-                }
-
-                if (isEscapePressed) {
-                    resolve(null); // Signal escape was pressed
-                } else {
-                    // Return the inputBuffer which contains the actual displayed text,
-                    // not the readline input which might be empty
-                    resolve(inputBuffer);
-                }
             };
 
-            // Set up listeners
-            process.stdin.on('keypress', handleKeypress);
-            this.rl.on('line', handleLine);
+            // Set up listener
+            process.stdin.on('data', handleKeypress);
         });
     }
 
     async promptForEnhancementFailureAction(error, originalPrompt) {
-        this.logger.raw('\n⚠️  \x1b[33mPrompt enhancement failed:\x1b[0m');
+        this.logger.raw(this.uiConfig.getMessage('enhancement.failure_header'));
         this.logger.raw(`   ${error}`);
-        this.logger.raw('\n📝 \x1b[36mOriginal prompt:\x1b[0m');
-        this.logger.raw('─'.repeat(60));
+        this.logger.raw(this.uiConfig.getMessage('enhancement.original_prompt_header'));
+        this.logger.raw(this.uiConfig.getMessage('enhancement.separator').repeat(60));
         this.logger.raw(originalPrompt);
-        this.logger.raw('─'.repeat(60));
-        this.logger.raw('\n📝 You can:');
-        this.logger.raw('   • Press ENTER to use your original prompt');
-        this.logger.raw('   • Type your modifications and press ENTER');
-        this.logger.raw('   • Type "cancel" to cancel the operation');
+        this.logger.raw(this.uiConfig.getMessage('enhancement.separator').repeat(60));
+        this.logger.raw(this.uiConfig.getMessage('enhancement.options_header'));
+        this.logger.raw(this.uiConfig.getMessage('enhancement.option_enter'));
+        this.logger.raw(this.uiConfig.getMessage('enhancement.option_modify'));
+        this.logger.raw(this.uiConfig.getMessage('enhancement.option_cancel'));
 
-        const userInput = await this.promptForInput('\n💭 Your choice: ');
+        const userInput = await this.promptForInput(
+            this.uiConfig.getMessage('enhancement.choice_prompt')
+        );
 
-        if (userInput.trim().toLowerCase() === 'cancel') {
+        const cancelKeyword = this.uiConfig.getMessage('enhancement.cancel_keyword');
+        if (userInput.trim().toLowerCase() === cancelKeyword) {
             return { cancel: true };
         } else if (userInput.trim() === '') {
             return { useOriginal: true };
@@ -293,7 +392,7 @@ Use /help for commands.
     }
 
     async promptForInput(prompt) {
-        return new Promise((resolve) => {
+        return new Promise(resolve => {
             // Store current paused state and listeners
             const wasPaused = this.isPaused;
             const currentListeners = this.rl.listeners('line');
@@ -308,7 +407,7 @@ Use /help for commands.
             }
 
             // Set up one-time input handler
-            const inputHandler = (input) => {
+            const inputHandler = input => {
                 // Remove the input handler
                 this.rl.removeListener('line', inputHandler);
 
@@ -332,8 +431,6 @@ Use /help for commands.
             process.stdout.write(prompt);
         });
     }
-
-
 }
 
-export default ConsoleInterface; 
+export default ConsoleInterface;

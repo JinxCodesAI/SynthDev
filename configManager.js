@@ -1,6 +1,13 @@
 import { config } from 'dotenv';
 import { createInterface } from 'readline';
-import { getLogger } from './logger.js';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
+import { getConfigurationValidator } from './configurationValidator.js';
+import { getConfigurationLoader } from './configurationLoader.js';
+
+// Get the directory where this module is located (synth-dev installation directory)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 /**
  * Singleton ConfigManager class that loads and manages all application configuration
@@ -11,8 +18,12 @@ class ConfigManager {
             return ConfigManager.instance;
         }
 
-        // Load environment variables from .env file
-        config();
+        // Load environment variables from .env file in synth-dev installation directory
+        config({ path: join(__dirname, '.env') });
+
+        // Load application defaults
+        this.configLoader = getConfigurationLoader();
+        this.applicationDefaults = this._loadApplicationDefaults();
 
         // Store command line provided options
         this.cliOptions = {
@@ -24,7 +35,7 @@ class ConfigManager {
             smartUrl: options.smartUrl,
             fastUrl: options.fastUrl,
             baseModel: options.baseModel,
-            baseUrl: options.baseUrl
+            baseUrl: options.baseUrl,
         };
 
         // Initialize configuration
@@ -67,6 +78,15 @@ class ConfigManager {
     }
 
     /**
+     * Load application defaults from configuration file
+     * @private
+     * @returns {Object} Application defaults
+     */
+    _loadApplicationDefaults() {
+        return this.configLoader.loadConfig('defaults/application.json', {}, true);
+    }
+
+    /**
      * Load all configuration from environment variables and CLI options
      * @private
      * @returns {Object} Configuration object
@@ -75,36 +95,146 @@ class ConfigManager {
         // Prioritize CLI API key over environment variable
         const apiKey = this.cliOptions.apiKey || process.env.API_KEY;
 
-        return {
+        // Get defaults from application.json
+        const defaults = this.applicationDefaults;
+        const modelDefaults = defaults.models || {};
+        const globalDefaults = defaults.global_settings || {};
+        const uiDefaults = defaults.ui_settings || {};
+        const toolDefaults = defaults.tool_settings || {};
+        const loggingDefaults = defaults.logging || {};
+        const safetyDefaults = defaults.safety || {};
+        const featureDefaults = defaults.features || {};
 
+        const config = {
             // OpenAI/General AI Provider Configuration
             base: {
                 apiKey: apiKey,
-                baseModel: this.cliOptions.baseModel || process.env.BASE_MODEL || 'gpt-4.1-mini',
-                baseUrl: this.cliOptions.baseUrl || process.env.BASE_URL || 'https://api.openai.com/v1'
+                baseModel:
+                    this.cliOptions.baseModel ||
+                    process.env.BASE_MODEL ||
+                    modelDefaults.base?.model ||
+                    'gpt-4.1-mini',
+                baseUrl:
+                    this.cliOptions.baseUrl ||
+                    process.env.BASE_URL ||
+                    modelDefaults.base?.baseUrl ||
+                    'https://api.openai.com/v1',
             },
 
             // Smart Model Configuration (Optional)
             smart: {
                 apiKey: this.cliOptions.smartApiKey || process.env.SMART_API_KEY || apiKey,
-                model: this.cliOptions.smartModel || process.env.SMART_MODEL || process.env.BASE_MODEL,
-                baseUrl: this.cliOptions.smartUrl || process.env.SMART_BASE_URL || process.env.BASE_URL
+                model:
+                    this.cliOptions.smartModel ||
+                    process.env.SMART_MODEL ||
+                    modelDefaults.smart?.model ||
+                    process.env.BASE_MODEL,
+                baseUrl:
+                    this.cliOptions.smartUrl ||
+                    process.env.SMART_BASE_URL ||
+                    modelDefaults.smart?.baseUrl ||
+                    process.env.BASE_URL,
             },
 
             // Fast Model Configuration (Optional)
             fast: {
                 apiKey: this.cliOptions.fastApiKey || process.env.FAST_API_KEY || apiKey,
-                model: this.cliOptions.fastModel || process.env.FAST_MODEL || process.env.BASE_MODEL,
-                baseUrl: this.cliOptions.fastUrl || process.env.FAST_BASE_URL || process.env.BASE_URL
+                model:
+                    this.cliOptions.fastModel ||
+                    process.env.FAST_MODEL ||
+                    modelDefaults.fast?.model ||
+                    process.env.BASE_MODEL,
+                baseUrl:
+                    this.cliOptions.fastUrl ||
+                    process.env.FAST_BASE_URL ||
+                    modelDefaults.fast?.baseUrl ||
+                    process.env.BASE_URL,
             },
 
-            // Global Settings
+            // Global Settings (prioritize env vars, then application.json, then hardcoded defaults)
             global: {
-                maxToolCalls: parseInt(process.env.MAX_TOOL_CALLS) || 50,
-                enablePromptEnhancement: process.env.ENABLE_PROMPT_ENHANCEMENT === 'true' || false,
-                verbosityLevel: parseInt(process.env.VERBOSITY_LEVEL) || 2
-            }
+                maxToolCalls:
+                    parseInt(process.env.MAX_TOOL_CALLS) || globalDefaults.maxToolCalls || 50,
+                enablePromptEnhancement:
+                    process.env.ENABLE_PROMPT_ENHANCEMENT === 'true' ||
+                    globalDefaults.enablePromptEnhancement ||
+                    false,
+                verbosityLevel:
+                    parseInt(process.env.VERBOSITY_LEVEL) || globalDefaults.verbosityLevel || 2,
+            },
+
+            // UI Settings
+            ui: {
+                defaultRole:
+                    uiDefaults.defaultRole ||
+                    (() => {
+                        throw new Error(
+                            'Missing required configuration: ui_settings.defaultRole in defaults/application.json'
+                        );
+                    })(),
+                showStartupBanner:
+                    uiDefaults.showStartupBanner !== undefined
+                        ? uiDefaults.showStartupBanner
+                        : (() => {
+                              throw new Error(
+                                  'Missing required configuration: ui_settings.showStartupBanner in defaults/application.json'
+                              );
+                          })(),
+                enableColors:
+                    uiDefaults.enableColors !== undefined
+                        ? uiDefaults.enableColors
+                        : (() => {
+                              throw new Error(
+                                  'Missing required configuration: ui_settings.enableColors in defaults/application.json'
+                              );
+                          })(),
+                promptPrefix:
+                    uiDefaults.promptPrefix ||
+                    (() => {
+                        throw new Error(
+                            'Missing required configuration: ui_settings.promptPrefix in defaults/application.json'
+                        );
+                    })(),
+            },
+
+            // Tool Settings
+            tool: {
+                autoRun: toolDefaults.autoRun !== false,
+                requiresBackup: toolDefaults.requiresBackup || false,
+                defaultEncoding: toolDefaults.defaultEncoding || 'utf8',
+                maxFileSize: toolDefaults.maxFileSize || 10485760,
+                defaultTimeout: toolDefaults.defaultTimeout || 10000,
+            },
+
+            // Logging Settings
+            logging: {
+                defaultLevel: loggingDefaults.defaultLevel || 2,
+                enableHttpLogging: loggingDefaults.enableHttpLogging || false,
+                enableToolLogging: loggingDefaults.enableToolLogging !== false,
+                enableErrorLogging: loggingDefaults.enableErrorLogging !== false,
+            },
+
+            // Safety Settings
+            safety: {
+                enableAISafetyCheck: safetyDefaults.enableAISafetyCheck !== false,
+                fallbackToPatternMatching: safetyDefaults.fallbackToPatternMatching !== false,
+                maxScriptSize: safetyDefaults.maxScriptSize || 50000,
+                scriptTimeout: safetyDefaults.scriptTimeout || {
+                    min: 1000,
+                    max: 30000,
+                    default: 10000,
+                },
+            },
+
+            // Feature Settings
+            features: {
+                enableSnapshots: featureDefaults.enableSnapshots !== false,
+                enableIndexing: featureDefaults.enableIndexing !== false,
+                enableCommandHistory: featureDefaults.enableCommandHistory !== false,
+                enableContextIntegration: featureDefaults.enableContextIntegration || false,
+            },
         };
+        return config;
     }
 
     /**
@@ -112,6 +242,7 @@ class ConfigManager {
      * @private
      */
     async _validateConfiguration() {
+        const validator = getConfigurationValidator();
         const errors = [];
 
         // Check for required base configuration - prompt if missing
@@ -119,59 +250,59 @@ class ConfigManager {
             try {
                 const apiKey = await this._promptForApiKey();
                 this._updateApiKey(apiKey);
-            } catch (error) {
+            } catch (_error) {
                 errors.push('API_KEY is required');
             }
         }
 
-        // Validate URLs if provided
-        if (this.config.base.baseUrl && !this._isValidUrl(this.config.base.baseUrl)) {
-            errors.push('BASE_URL must be a valid URL');
+        // Validate base configuration
+        const baseValidation = validator.validateConfiguration(this.config.base, 'base_config');
+        if (!baseValidation.success) {
+            errors.push(...baseValidation.errors);
         }
 
-        if (this.config.smart.baseUrl && !this._isValidUrl(this.config.smart.baseUrl)) {
-            errors.push('SMART_BASE_URL must be a valid URL');
+        // Validate smart configuration if it has required fields
+        if (this.config.smart.apiKey && this.config.smart.model) {
+            const smartValidation = validator.validateConfiguration(
+                this.config.smart,
+                'smart_config'
+            );
+            if (!smartValidation.success) {
+                errors.push(...smartValidation.errors.map(err => `Smart config: ${err}`));
+            }
         }
 
-        if (this.config.fast.baseUrl && !this._isValidUrl(this.config.fast.baseUrl)) {
-            errors.push('FAST_BASE_URL must be a valid URL');
+        // Validate fast configuration if it has required fields
+        if (this.config.fast.apiKey && this.config.fast.model) {
+            const fastValidation = validator.validateConfiguration(this.config.fast, 'fast_config');
+            if (!fastValidation.success) {
+                errors.push(...fastValidation.errors.map(err => `Fast config: ${err}`));
+            }
         }
 
-        // Validate max tool calls
-        if (this.config.global.maxToolCalls < 1 || this.config.global.maxToolCalls > 200) {
-            errors.push('MAX_TOOL_CALLS must be between 1 and 200');
-        }
-
-        // Validate verbosity level
-        if (this.config.global.verbosityLevel < 0 || this.config.global.verbosityLevel > 5) {
-            errors.push('VERBOSITY_LEVEL must be between 0 and 5');
+        // Validate global configuration
+        const globalValidation = validator.validateConfiguration(
+            this.config.global,
+            'global_config'
+        );
+        if (!globalValidation.success) {
+            errors.push(...globalValidation.errors.map(err => `Global config: ${err}`));
         }
 
         if (errors.length > 0) {
-            throw new Error(`Configuration validation failed:\n${errors.join('\n')}`);
-        }
-    }
-
-    /**
-     * Validate URL format
-     * @private
-     * @param {string} url - URL to validate
-     * @returns {boolean} Whether the URL is valid
-     */
-    _isValidUrl(url) {
-        try {
-            new URL(url);
-            return true;
-        } catch {
-            return false;
+            const rules = validator.getValidationRules();
+            const errorMessage =
+                rules.error_messages?.configuration_validation_failed ||
+                'Configuration validation failed:\n{errors}';
+            throw new Error(errorMessage.replace('{errors}', errors.join('\n')));
         }
     }
 
     getMaxTokens(model) {
-        if(model.indexOf('qwen3-235b-a22b') != -1) {
+        if (model.indexOf('qwen3-235b-a22b') !== -1) {
             return 16000;
         }
-        return 32000;   
+        return 32000;
     }
     getModel(model) {
         if (model === 'base') {
@@ -218,11 +349,11 @@ class ConfigManager {
 
         const rl = createInterface({
             input: process.stdin,
-            output: process.stdout
+            output: process.stdout,
         });
 
         return new Promise((resolve, reject) => {
-            rl.question('Enter your API key: ', (apiKey) => {
+            rl.question('Enter your API key: ', apiKey => {
                 rl.close();
 
                 if (!apiKey || apiKey.trim().length === 0) {
@@ -246,6 +377,34 @@ class ConfigManager {
         this.config.fast.apiKey = this.config.fast.apiKey || apiKey;
     }
 
+    /**
+     * Reload configuration from environment and CLI options
+     * @returns {Promise<void>}
+     */
+    async reloadConfiguration() {
+        this.config = this._loadConfiguration();
+        this.isValidated = false;
+        await this.initialize();
+    }
+
+    /**
+     * Validate configuration files existence
+     * @param {string[]} requiredFiles - Array of required configuration file paths
+     * @returns {Object} Validation result
+     */
+    validateConfigurationFiles(requiredFiles = []) {
+        const validator = getConfigurationValidator();
+        return validator.validateConfigurationFiles(requiredFiles);
+    }
+
+    /**
+     * Get configuration validation rules
+     * @returns {Object} Validation rules
+     */
+    getValidationRules() {
+        const validator = getConfigurationValidator();
+        return validator.getValidationRules();
+    }
 }
 
-export default ConfigManager; 
+export default ConfigManager;

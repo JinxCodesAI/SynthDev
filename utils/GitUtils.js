@@ -27,10 +27,17 @@ class GitUtils {
             const gitStatusResult = await executeTerminal({ command: 'git status --porcelain' });
             if (!gitStatusResult.success) {
                 // Check if it's a "not a git repository" error
-                if (gitStatusResult.stderr && gitStatusResult.stderr.includes('not a git repository')) {
+                if (
+                    gitStatusResult.stderr &&
+                    gitStatusResult.stderr.includes('not a git repository')
+                ) {
                     return { available: true, isRepo: false, error: 'Not a Git repository' };
                 }
-                return { available: true, isRepo: false, error: gitStatusResult.error || 'Git status failed' };
+                return {
+                    available: true,
+                    isRepo: false,
+                    error: gitStatusResult.error || 'Git status failed',
+                };
             }
 
             return { available: true, isRepo: true };
@@ -174,7 +181,7 @@ class GitUtils {
             .replace(/[^a-z0-9\s]/g, '') // Remove special characters
             .replace(/\s+/g, '-') // Replace spaces with hyphens
             .slice(0, 30); // Limit length
-        
+
         return `synth-dev/${timestamp}-${safeName}`;
     }
 
@@ -189,6 +196,133 @@ class GitUtils {
                 return { success: true, hasUncommittedChanges: statusResult.hasChanges };
             }
             return { success: false, error: statusResult.error };
+        } catch (error) {
+            return { success: false, error: error.message };
+        }
+    }
+
+    /**
+     * Get commit history for the current branch
+     * @param {number} limit - Maximum number of commits to retrieve
+     * @returns {Promise<{success: boolean, commits?: Array, error?: string}>}
+     */
+    async getCommitHistory(limit = 20) {
+        try {
+            const result = await executeTerminal({
+                command: `git log --oneline --format="%H|%s|%ai|%an" -n ${limit}`,
+            });
+            if (result.success) {
+                const commits = result.stdout
+                    .trim()
+                    .split('\n')
+                    .filter(line => line.trim())
+                    .map(line => {
+                        const [hash, subject, date, author] = line.split('|');
+                        return {
+                            hash: hash.trim(),
+                            subject: subject.trim(),
+                            date: date.trim(),
+                            author: author.trim(),
+                            shortHash: hash.trim().substring(0, 7),
+                        };
+                    });
+                return { success: true, commits };
+            }
+            return { success: false, error: result.error || 'Failed to get commit history' };
+        } catch (error) {
+            return { success: false, error: error.message };
+        }
+    }
+
+    /**
+     * Reset to a specific commit (hard reset)
+     * @param {string} commitHash - Hash of the commit to reset to
+     * @returns {Promise<{success: boolean, error?: string}>}
+     */
+    async resetToCommit(commitHash) {
+        try {
+            const result = await executeTerminal({ command: `git reset --hard "${commitHash}"` });
+            if (result.success) {
+                return { success: true };
+            }
+            return { success: false, error: result.error || 'Failed to reset to commit' };
+        } catch (error) {
+            return { success: false, error: error.message };
+        }
+    }
+
+    /**
+     * Get details of a specific commit
+     * @param {string} commitHash - Hash of the commit
+     * @returns {Promise<{success: boolean, commit?: Object, error?: string}>}
+     */
+    async getCommitDetails(commitHash) {
+        try {
+            const result = await executeTerminal({
+                command: `git show --name-only --format="%H|%s|%ai|%an|%B" "${commitHash}"`,
+            });
+            if (result.success) {
+                const lines = result.stdout.trim().split('\n');
+                const [hash, subject, date, author, ...rest] = lines[0].split('|');
+
+                // Find where the commit message ends and file list begins
+                let messageEndIndex = 1;
+                while (messageEndIndex < lines.length && lines[messageEndIndex].trim() !== '') {
+                    messageEndIndex++;
+                }
+
+                const message = lines.slice(1, messageEndIndex).join('\n').trim();
+                const files = lines.slice(messageEndIndex + 1).filter(line => line.trim());
+
+                return {
+                    success: true,
+                    commit: {
+                        hash: hash.trim(),
+                        shortHash: hash.trim().substring(0, 7),
+                        subject: subject.trim(),
+                        date: date.trim(),
+                        author: author.trim(),
+                        message: message,
+                        files: files,
+                    },
+                };
+            }
+            return { success: false, error: result.error || 'Failed to get commit details' };
+        } catch (error) {
+            return { success: false, error: error.message };
+        }
+    }
+
+    /**
+     * Check if a commit exists
+     * @param {string} commitHash - Hash of the commit to check
+     * @returns {Promise<{success: boolean, exists?: boolean, error?: string}>}
+     */
+    async commitExists(commitHash) {
+        try {
+            const result = await executeTerminal({ command: `git cat-file -e "${commitHash}"` });
+            return { success: true, exists: result.success };
+        } catch (error) {
+            return { success: false, error: error.message };
+        }
+    }
+
+    /**
+     * Delete a Git branch
+     * @param {string} branchName - Name of the branch to delete
+     * @param {boolean} force - Whether to force delete the branch (default: false)
+     * @returns {Promise<{success: boolean, error?: string}>}
+     */
+    async deleteBranch(branchName, force = false) {
+        try {
+            const forceFlag = force ? '-D' : '-d';
+            const result = await executeTerminal({
+                command: `git branch ${forceFlag} "${branchName}"`,
+            });
+            if (result.success) {
+                return { success: true };
+            }
+            return { success: false, error: result.error || 'Failed to delete branch' };
         } catch (error) {
             return { success: false, error: error.message };
         }

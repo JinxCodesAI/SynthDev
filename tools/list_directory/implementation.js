@@ -3,15 +3,17 @@
  * Lists directory contents with detailed information about files and subdirectories
  */
 
-import { statSync, readdirSync } from 'fs';
-import { join, relative, extname } from 'path';
+import { statSync, readdirSync, readFileSync, existsSync } from 'fs';
+import { join, relative, extname, resolve } from 'path';
 import { scanDirectory } from '../common/fs_utils.js';
 import { FileBaseTool } from '../common/base-tool.js';
+import { getToolConfigManager } from '../../toolConfigManager.js';
 
 class ListDirectoryTool extends FileBaseTool {
     constructor() {
-        super('list_directory', 'List the contents of a directory and provide detailed information about files and subdirectories');
-        
+        const toolConfig = getToolConfigManager();
+        super('list_directory', toolConfig.getToolDescription('list_directory'));
+
         // Define parameter validation
         this.requiredParams = ['directory_path'];
         this.parameterTypes = {
@@ -19,20 +21,79 @@ class ListDirectoryTool extends FileBaseTool {
             recursive: 'boolean',
             include_hidden: 'boolean',
             max_depth: 'number',
-            exclusion_list: 'array'
+            exclusion_list: 'array',
+            include_summaries: 'boolean',
         };
+
+        this.toolConfig = toolConfig;
+    }
+
+    /**
+     * Load and parse the .index/codebase-index.json file
+     * @returns {Object|null} Parsed index data or null if not available
+     */
+    _loadIndexData() {
+        try {
+            const indexPath = resolve('.index', 'codebase-index.json');
+            if (!existsSync(indexPath)) {
+                return null;
+            }
+
+            const indexContent = readFileSync(indexPath, 'utf8');
+            return JSON.parse(indexContent);
+        } catch (error) {
+            // Silently handle parsing errors - index file may be corrupted or incomplete
+            return null;
+        }
+    }
+
+    /**
+     * Get AI summary for a file from the index data
+     * @param {Object} indexData - Parsed index data
+     * @param {string} filePath - File path to look up
+     * @returns {string|undefined} AI summary if available
+     */
+    _getAISummary(indexData, filePath) {
+        if (!indexData || !indexData.files) {
+            return undefined;
+        }
+
+        // Normalize path for lookup - handle both Windows and Unix paths
+        const normalizedPath = filePath.replace(/\\/g, '/');
+        const windowsPath = filePath.replace(/\//g, '\\');
+
+        // Try both normalized and original paths
+        const fileEntry =
+            indexData.files[filePath] ||
+            indexData.files[normalizedPath] ||
+            indexData.files[windowsPath];
+
+        return fileEntry?.ai_summary;
     }
 
     async implementation(params) {
+        let { directory_path = '.' } = params;
+
         const {
-            directory_path = '.',
             recursive = false,
             include_hidden = false,
             max_depth = 5,
-            exclusion_list = ["node_modules", ".git", ".svn", "build", "dist", ".cache", "__pycache__", ".DS_Store", "Thumbs.db", ".index"]
+            include_summaries = false,
+            exclusion_list = [
+                'node_modules',
+                '.git',
+                '.svn',
+                'build',
+                'dist',
+                '.cache',
+                '__pycache__',
+                '.DS_Store',
+                'Thumbs.db',
+                '.index',
+            ],
         } = params;
 
-        if(!directory_path || directory_path.trim() === '') {
+        if (!directory_path || directory_path.trim() === '') {
             directory_path = '.';
         }
 
@@ -62,10 +123,16 @@ class ListDirectoryTool extends FileBaseTool {
             }
 
             if (!stats.isDirectory()) {
-                return this.createErrorResponse(
-                    'Path is not a directory',
-                    { directory_path, path_type: 'file' }
-                );
+                return this.createErrorResponse('Path is not a directory', {
+                    directory_path,
+                    path_type: 'file',
+                });
+            }
+
+            // Load index data if summaries are requested
+            let indexData = null;
+            if (include_summaries) {
+                indexData = this._loadIndexData();
             }
 
             // Use scanDirectory for recursive scanning
@@ -74,7 +141,7 @@ class ListDirectoryTool extends FileBaseTool {
                     const scanResults = scanDirectory(resolvedPath, {
                         depth: max_depth,
                         includeHidden: include_hidden,
-                        exclusionList: exclusion_list
+                        exclusionList: exclusion_list,
                     });
 
                     const directories = scanResults.filter(entry => entry.type === 'directory');
@@ -87,16 +154,28 @@ class ListDirectoryTool extends FileBaseTool {
                             name: dir.name,
                             path: dir.path.replace(/\\/g, '/'),
                             type: 'directory',
-                            depth: dir.lvl
+                            depth: dir.lvl,
                         })),
-                        files: files.map(file => ({
-                            name: file.name,
-                            path: file.path.replace(/\\/g, '/'),
-                            type: 'file',
-                            size: file.size,
-                            extension: extname(file.name),
-                            depth: file.lvl
-                        }))
+                        files: files.map(file => {
+                            const fileObj = {
+                                name: file.name,
+                                path: file.path.replace(/\\/g, '/'),
+                                type: 'file',
+                                size: file.size,
+                                extension: extname(file.name),
+                                depth: file.lvl,
+                            };
+
+                            // Add AI summary if requested and available
+                            if (include_summaries && indexData) {
+                                const aiSummary = this._getAISummary(indexData, file.path);
+                                if (aiSummary) {
+                                    fileObj.ai_summary = aiSummary;
+                                }
+                            }
+
+                            return fileObj;
+                        }),
                     });
                 } catch (scanError) {
                     return this.createErrorResponse(
@@ -145,17 +224,27 @@ class ListDirectoryTool extends FileBaseTool {
                             name: item,
                             path: relativeName,
                             type: 'directory',
-                            depth: 0
+                            depth: 0,
                         });
                     } else if (itemStats.isFile()) {
-                        files.push({
+                        const fileObj = {
                             name: item,
                             path: relativeName,
                             type: 'file',
                             size: itemStats.size,
                             extension: extname(item),
-                            depth: 0
-                        });
+                            depth: 0,
+                        };
+
+                        // Add AI summary if requested and available
+                        if (include_summaries && indexData) {
+                            const aiSummary = this._getAISummary(indexData, relativeName);
+                            if (aiSummary) {
+                                fileObj.ai_summary = aiSummary;
+                            }
+                        }
+
+                        files.push(fileObj);
                     }
                 }
 
@@ -164,15 +253,14 @@ class ListDirectoryTool extends FileBaseTool {
                     total_items: directories.length + files.length,
                     directories,
                     files,
-                    excluded_items: excludedItems
+                    excluded_items: excludedItems,
                 });
             }
-
         } catch (error) {
-            return this.createErrorResponse(
-                `Unexpected error: ${error.message}`,
-                { directory_path, stack: error.stack }
-            );
+            return this.createErrorResponse(`Unexpected error: ${error.message}`, {
+                directory_path,
+                stack: error.stack,
+            });
         }
     }
 }

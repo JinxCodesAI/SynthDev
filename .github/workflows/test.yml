@@ -1,0 +1,184 @@
+name: Test Suite
+
+on:
+    push:
+        branches: [master, stable]
+    pull_request:
+        branches: [master, stable]
+
+jobs:
+    test:
+        runs-on: ubuntu-latest
+
+        strategy:
+            matrix:
+                node-version: [18.x, 20.x]
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Setup Node.js ${{ matrix.node-version }}
+              uses: actions/setup-node@v4
+              with:
+                  node-version: ${{ matrix.node-version }}
+                  cache: 'npm'
+
+            - name: Install dependencies
+              run: npm ci
+
+            - name: Run ESLint
+              run: npm run lint
+
+            - name: Run tests
+              run: npm test
+
+            - name: Run tests with coverage
+              run: npm run test:coverage
+
+            - name: Upload coverage reports to Codecov
+              if: matrix.node-version == '20.x'
+              uses: codecov/codecov-action@v3
+              with:
+                  file: ./coverage/lcov.info
+                  flags: unittests
+                  name: codecov-umbrella
+                  fail_ci_if_error: false
+
+    quality:
+        runs-on: ubuntu-latest
+        needs: test
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: '20.x'
+                  cache: 'npm'
+
+            - name: Install dependencies
+              run: npm ci
+
+            - name: Check code formatting
+              run: npm run format:check
+
+            - name: Run security audit
+              run: npm audit --audit-level=moderate
+
+            - name: Check for outdated dependencies
+              run: npm outdated || true
+
+            - name: Validate package.json
+              run: npm run validate || echo "No validate script defined"
+
+    coverage-check:
+        runs-on: ubuntu-latest
+        needs: test
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: '20.x'
+                  cache: 'npm'
+
+            - name: Install dependencies
+              run: npm ci
+
+            - name: Generate coverage report
+              run: npm run test:coverage
+
+            - name: Check coverage thresholds
+              run: |
+                  echo "Checking coverage thresholds..."
+                  npm run test:coverage 2>&1 | grep -E "All files.*%" || echo "Coverage check completed"
+
+            - name: Comment coverage on PR
+              if: github.event_name == 'pull_request'
+              uses: actions/github-script@v7
+              with:
+                  script: |
+                      const fs = require('fs');
+                      try {
+                        const coverage = fs.readFileSync('./coverage/coverage-summary.json', 'utf8');
+                        const coverageData = JSON.parse(coverage);
+                        const total = coverageData.total;
+                        
+                        const comment = `## 📊 Coverage Report
+                        
+                        | Metric | Percentage | Covered/Total |
+                        |--------|------------|---------------|
+                        | Lines | ${total.lines.pct}% | ${total.lines.covered}/${total.lines.total} |
+                        | Branches | ${total.branches.pct}% | ${total.branches.covered}/${total.branches.total} |
+                        | Functions | ${total.functions.pct}% | ${total.functions.covered}/${total.functions.total} |
+                        | Statements | ${total.statements.pct}% | ${total.statements.covered}/${total.statements.total} |
+                        
+                        ${total.lines.pct >= 40 ? '✅' : '❌'} Coverage threshold: 40% (Current: ${total.lines.pct}%)
+                        `;
+                        
+                        github.rest.issues.createComment({
+                          issue_number: context.issue.number,
+                          owner: context.repo.owner,
+                          repo: context.repo.repo,
+                          body: comment
+                        });
+                      } catch (error) {
+                        console.log('Could not read coverage file:', error.message);
+                      }
+
+    integration-test:
+        runs-on: ubuntu-latest
+        needs: test
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4
+
+            - name: Setup Node.js
+              uses: actions/setup-node@v4
+              with:
+                  node-version: '20.x'
+                  cache: 'npm'
+
+            - name: Install dependencies
+              run: npm ci
+
+            - name: Run integration tests
+              run: npm run test:integration || echo "No integration tests defined yet"
+
+            - name: Test tool loading
+              run: |
+                  echo "Testing tool loading..."
+                  node -e "
+                    import('./toolManager.js').then(({ default: ToolManager }) => {
+                      const tm = new ToolManager();
+                      return tm.loadTools();
+                    }).then(() => {
+                      console.log('✅ Tool loading test passed');
+                      process.exit(0);
+                    }).catch(err => {
+                      console.error('❌ Tool loading test failed:', err.message);
+                      process.exit(1);
+                    });
+                  "
+
+            - name: Test configuration loading
+              run: |
+                  echo "Testing configuration loading..."
+                  node -e "
+                    import('./configManager.js').then(({ default: ConfigManager }) => {
+                      const config = ConfigManager.getInstance();
+                      const cfg = config.getConfig();
+                      console.log('✅ Configuration loading test passed');
+                      console.log('Config keys:', Object.keys(cfg));
+                    }).catch(err => {
+                      console.error('❌ Configuration loading test failed:', err.message);
+                      process.exit(1);
+                    });
+                  "

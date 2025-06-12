@@ -1,37 +1,37 @@
 {
-  "name": "execute_script",
-  "description": "Execute a JavaScript script as a child process for calculations, text transformations, and data aggregation. Use Stdout for returning results.",
-  "auto_run": false,
-  "requires_backup": false,
-  "backup_resource_path_property_name": "",
-  "category": "command",
-  "version": "1.0.0",
-  "tags": ["javascript", "script", "calculation", "transformation", "aggregation"],
-  "schema": {
-    "type": "function",
-    "function": {
-      "name": "execute_script",
-      "description": "Execute a self-contained JavaScript script for performing calculations, text transformations, search aggregation, and other data processing tasks. The script runs in a sandboxed environment with read-only access to the current directory. Cannot modify files or execute terminal commands. Uses AI-powered safety assessment to prevent malicious code execution. Use Stdout for returning results.",
-      "parameters": {
-        "type": "object",
-        "properties": {
-          "script": {
-            "type": "string",
-            "description": "JavaScript code to execute. Must be self-contained and not require external parameters. Can use built-in Node.js modules for file reading (fs.readFileSync), path operations, and data processing. Cannot use modules that modify files, execute commands, or access network. Examples: 'console.log(Math.sqrt(16) + Math.pow(2, 3))' (calculation), 'const fs = require(\"fs\"); const data = fs.readFileSync(\"data.txt\", \"utf8\"); console.log(data.split(\"\\n\").length)' (file processing)"
-          },
-          "timeout": {
-            "type": "integer",
-            "description": "Maximum execution time in milliseconds before the script is terminated. Prevents infinite loops and long-running processes. Range: 1000-30000ms (1-30 seconds)",
-            "default": 10000,
-            "minimum": 1000,
-            "maximum": 30000
-          }
-        },
-        "required": ["script"]
-      },
-      "response_format": {
-        "description": "Returns a JSON object with 'success' (boolean), 'timestamp' (ISO string), 'tool_name' (string), 'script' (original input), 'output' (script stdout), 'stderr' (script stderr if any), 'execution_time' (milliseconds), and 'safety_check' (AI-powered validation results including confidence score, reasoning, and token usage). Error responses include 'error' field with detailed error message and safety assessment for debugging unsafe or invalid scripts."
-      }
+    "name": "execute_script",
+    "description": "Execute a JavaScript script as a child process for calculations, text transformations, and data aggregation. Use Stdout for returning results.",
+    "auto_run": false,
+    "requires_backup": false,
+    "backup_resource_path_property_name": "",
+    "category": "command",
+    "version": "1.0.0",
+    "tags": ["javascript", "script", "calculation", "transformation", "aggregation"],
+    "schema": {
+        "type": "function",
+        "function": {
+            "name": "execute_script",
+            "description": "Execute a self-contained JavaScript script for performing calculations, text transformations, search aggregation, and other data processing tasks. The script runs in a sandboxed environment with read-only access to the current directory. Cannot modify files or execute terminal commands. Uses AI-powered safety assessment to prevent malicious code execution. Use Stdout for returning results.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "script": {
+                        "type": "string",
+                        "description": "JavaScript code to execute. Must be self-contained and not require external parameters. Can use built-in Node.js modules for file reading (fs.readFileSync), path operations, and data processing. Cannot use modules that modify files, execute commands, or access network. Examples: 'console.log(Math.sqrt(16) + Math.pow(2, 3))' (calculation), 'const fs = require(\"fs\"); const data = fs.readFileSync(\"data.txt\", \"utf8\"); console.log(data.split(\"\n\").length)' (file processing)"
+                    },
+                    "timeout": {
+                        "type": "integer",
+                        "description": "Maximum execution time in milliseconds before the script is terminated. Prevents infinite loops and long-running processes. Range: 1000-30000ms (1-30 seconds)",
+                        "default": 10000,
+                        "minimum": 1000,
+                        "maximum": 30000
+                    }
+                },
+                "required": ["script"]
+            },
+            "response_format": {
+                "description": "Returns a JSON object with 'success' (boolean), 'timestamp' (ISO string), 'tool_name' (string), 'script' (original input), 'output' (script stdout), 'stderr' (script stderr if any), 'execution_time' (milliseconds), and 'safety_check' (AI-powered validation results including confidence score, reasoning, and token usage). Error responses include 'error' field with detailed error message and safety assessment for debugging unsafe or invalid scripts."
+            }
+        }
     }
-  }
 }

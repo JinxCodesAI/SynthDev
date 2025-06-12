@@ -6,6 +6,8 @@
 // import { fileURLToPath } from 'url';
 import ConfigManager from './configManager.js';
 import SystemMessages from './systemMessages.js';
+import { getUIConfigManager } from './uiConfigManager.js';
+import { getConfigurationLoader } from './configurationLoader.js';
 
 /**
  * Parse command line arguments
@@ -18,7 +20,7 @@ function parseCommandLineArgs() {
     for (const arg of args) {
         if (arg.startsWith('--api-key=') || arg.startsWith('--api_key=')) {
             options.apiKey = arg.split('=')[1];
-        } else if (arg.startsWith('--base-model=') ) {
+        } else if (arg.startsWith('--base-model=')) {
             options.baseModel = arg.split('=')[1];
         } else if (arg.startsWith('--url=')) {
             options.baseUrl = arg.split('=')[1];
@@ -36,32 +38,18 @@ function parseCommandLineArgs() {
             options.fastUrl = arg.split('=')[1];
         } else if (arg === '--help' || arg === '-h') {
             // Use raw console.log for help since logger isn't initialized yet
+            const uiConfig = getUIConfigManager();
+            const cliHelp = uiConfig.getCliHelp();
+
             console.log(`
-Usage: synth-dev [options]
+${cliHelp.title}
+${cliHelp.usage}
 
 Options:
-  --api-key=<key>        Provide base API key via command line
-  --api_key=<key>        Alternative format for base API key
-  --smart-model=<model>  Provide smart model name via command line
-  --smart_model=<model>  Alternative format for smart model name
-  --fast-model=<model>   Provide fast model name via command line
-  --fast_model=<model>   Alternative format for fast model name
-  --smart-api-key=<key>  Provide smart model API key via command line
-  --smart_api_key=<key>  Alternative format for smart model API key
-  --fast-api-key=<key>   Provide fast model API key via command line
-  --fast_api_key=<key>   Alternative format for fast model API key
-  --smart-url=<url>      Provide smart model base URL via command line
-  --smart_url=<url>      Alternative format for smart model base URL
-  --fast-url=<url>       Provide fast model base URL via command line
-  --fast_url=<url>       Alternative format for fast model base URL
-  --help, -h             Show this help message
+${cliHelp.options.map(opt => `  ${opt}`).join('\n')}
 
 Examples:
-  synth-dev
-  synth-dev --api-key=sk-your-api-key-here
-  synth-dev --smart-model=gpt-4.1 --fast-model=gpt-4.1-mini
-  synth-dev --smart-api-key=sk-smart-key --fast-api-key=sk-fast-key
-  synth-dev --smart-url=https://api.openai.com/v1 --fast-url=https://api.openai.com/v1
+${cliHelp.examples.map(ex => `  ${ex}`).join('\n')}
             `);
             process.exit(0);
         }
@@ -93,7 +81,7 @@ class AICoderConsole {
         initializeLogger(config.getConfig());
         this.logger = getLogger();
 
-        this.costsManager = costsManager
+        this.costsManager = costsManager;
         const baseModel = config.getModel('base');
         this.apiClient = new AIAPIClient(
             this.costsManager,
@@ -106,7 +94,14 @@ class AICoderConsole {
         this.toolManager = new ToolManager();
         this.snapshotManager = new SnapshotManager();
         this.promptEnhancer = new PromptEnhancer(this.costsManager, this.toolManager);
-        this.commandHandler = new CommandHandler(this.apiClient, this.toolManager, this.consoleInterface, this.costsManager, this.snapshotManager);
+        this.commandHandler = new CommandHandler(
+            this.apiClient,
+            this.toolManager,
+            this.consoleInterface,
+            this.costsManager,
+            this.snapshotManager,
+            this
+        );
 
         // State management for input blocking
         this.isProcessing = false;
@@ -121,66 +116,94 @@ class AICoderConsole {
                 this.consoleInterface.showThinking();
                 this.consoleInterface.pauseInput();
             },
-            
-            onChainOfThought: (content) => {
+
+            onChainOfThought: content => {
                 this.consoleInterface.showChainOfThought(content);
             },
-            
-            onFinalChainOfThought: (content) => {
+
+            onFinalChainOfThought: content => {
                 this.consoleInterface.showFinalChainOfThought(content);
             },
-            
-            onToolExecution: async (toolCall) => {
+
+            onContentDisplay: (content, role = null) => {
+                // Display content immediately without affecting UI state
+                if (content) {
+                    this.consoleInterface.showMessage(
+                        content,
+                        role ? `🤖 ${role}:` : '🤖 Synth-Dev:'
+                    );
+                    this.consoleInterface.newLine();
+                }
+            },
+
+            onToolExecution: async toolCall => {
                 // Show that tools are being executed (only once)
                 if (!this._toolsExecutionShown) {
                     this.consoleInterface.showExecutingTools();
                     this._toolsExecutionShown = true;
                 }
-                
-                return await this.toolManager.executeToolCall(toolCall, this.consoleInterface, this.snapshotManager);
-            },
-            
-            onResponse: (response, role = null) => {
 
-                const content = response && response.choices && response.choices[0] && response.choices[0].message && response.choices[0].message.content;
-                if (content) {
-                    this.consoleInterface.showMessage(content, role ? `🤖 ${role}:` : '🤖 Synth-Dev:');
-                    this.consoleInterface.newLine();
-                    this._toolsExecutionShown = false; // Reset for next interaction
-                    this.isProcessing = false; // Unblock input
-                    this.consoleInterface.resumeInput();
-                }
+                return await this.toolManager.executeToolCall(
+                    toolCall,
+                    this.consoleInterface,
+                    this.snapshotManager
+                );
             },
-            
-            onError: (error) => {
+
+            onResponse: (response, role = null) => {
+                const content =
+                    response &&
+                    response.choices &&
+                    response.choices[0] &&
+                    response.choices[0].message &&
+                    response.choices[0].message.content;
+                if (content) {
+                    this.consoleInterface.showMessage(
+                        content,
+                        role ? `🤖 ${role}:` : '🤖 Synth-Dev:'
+                    );
+                    this.consoleInterface.newLine();
+                }
+                // Always reset state and unblock input when response is complete
+                this._toolsExecutionShown = false; // Reset for next interaction
+                this.isProcessing = false; // Unblock input
+                this.consoleInterface.resumeInput();
+            },
+
+            onError: error => {
                 this.consoleInterface.showError(error);
                 this.consoleInterface.newLine();
                 this._toolsExecutionShown = false; // Reset for next interaction
                 this.isProcessing = false; // Unblock input
                 this.consoleInterface.resumeInput();
-            }
+            },
         });
     }
 
     async start() {
         await this.toolManager.loadTools();
-        
+
         // Set tools in API client
         this.apiClient.setTools(this.toolManager.getTools());
-        
+
         // Set default role and system message
         await this.apiClient.setSystemMessage(SystemMessages.getSystemMessage('coder'), 'coder');
 
         await this.snapshotManager.initialize();
-        
+
+        // Set up signal handlers for graceful shutdown
+        this.setupSignalHandlers();
+
         this.consoleInterface.setupEventHandlers(
-            async (input) => await this.handleInput(input),
-            () => {
-                this.consoleInterface.showGoodbye();
-                process.exit(0);
-            }
+            async input => await this.handleInput(input),
+            () => this.handleExit()
         );
-        
+
+        // Log config path at verbosity level 1
+        const configLoader = getConfigurationLoader();
+        const configPath = configLoader.getConfigDir();
+        this.logger.info(`📁 Configuration files location: ${configPath}`);
+
         this.consoleInterface.showStartupMessage(
             this.apiClient.getModel(),
             this.toolManager.getToolsCount(),
@@ -188,7 +211,7 @@ class AICoderConsole {
             this.apiClient.getTotalToolCount(),
             this.apiClient.getFilteredToolCount()
         );
-        
+
         this.consoleInterface.prompt();
     }
 
@@ -245,25 +268,11 @@ class AICoderConsole {
 
             // Attempt to enhance the prompt
             const enhancementResult = await this.promptEnhancer.enhancePrompt(originalPrompt);
+            this.logger.debug('Enhancement result:', enhancementResult);
 
             if (!enhancementResult.success) {
-                // Enhancement failed, ask user what to do
-                const userChoice = await this.consoleInterface.promptForEnhancementFailureAction(
-                    enhancementResult.error,
-                    originalPrompt
-                );
-
-                if (userChoice.useOriginal) {
-                    this.logger.info('\n📝 Using original prompt...\n');
-                    return originalPrompt;
-                } else if (userChoice.useModified) {
-                    this.logger.info('\n📝 Using your modified prompt...\n');
-                    return userChoice.finalPrompt;
-                } else {
-                    // User chose to cancel
-                    this.logger.info('\n🚫 Operation cancelled.\n');
-                    return null; // Signal to cancel the operation
-                }
+                this.consoleInterface.showEnhancementError(enhancementResult.error);
+                return originalPrompt;
             }
 
             // Enhancement succeeded, get user approval
@@ -285,11 +294,67 @@ class AICoderConsole {
 
             // Fallback to original if something went wrong
             return originalPrompt;
-
         } catch (error) {
             // Any unexpected error during enhancement
             this.consoleInterface.showEnhancementError(error.message);
             return originalPrompt;
+        }
+    }
+
+    /**
+     * Set up signal handlers for graceful shutdown
+     * @private
+     */
+    setupSignalHandlers() {
+        // Handle SIGINT (Ctrl+C)
+        process.on('SIGINT', () => {
+            this.logger.info('\n🛑 Received SIGINT (Ctrl+C), shutting down gracefully...');
+            this.handleExit();
+        });
+
+        // Handle SIGTERM (process termination)
+        process.on('SIGTERM', () => {
+            this.logger.info('\n🛑 Received SIGTERM, shutting down gracefully...');
+            this.handleExit();
+        });
+
+        // Handle uncaught exceptions
+        process.on('uncaughtException', error => {
+            this.logger.error('💥 Uncaught exception:', error);
+            this.handleExit(1);
+        });
+
+        // Handle unhandled promise rejections
+        process.on('unhandledRejection', (reason, promise) => {
+            this.logger.error('💥 Unhandled promise rejection at:', promise, 'reason:', reason);
+            this.handleExit(1);
+        });
+    }
+
+    /**
+     * Handle application exit with cleanup
+     * @param {number} exitCode - Exit code (default: 0)
+     */
+    async handleExit(exitCode = 0) {
+        try {
+            // Show goodbye message
+            this.consoleInterface.showGoodbye();
+
+            // Perform automatic cleanup if conditions are met
+            const cleanupResult = await this.snapshotManager.performCleanup();
+            if (cleanupResult.success) {
+                this.logger.info('✅ Automatic cleanup completed successfully');
+            } else if (
+                cleanupResult.error &&
+                !cleanupResult.error.includes('Git integration not active')
+            ) {
+                this.logger.warn(`⚠️ Cleanup failed: ${cleanupResult.error}`);
+            }
+        } catch (error) {
+            this.logger.error('❌ Error during exit cleanup:', error.message);
+        } finally {
+            // Ensure we exit even if cleanup fails
+            process.exit(exitCode);
         }
     }
 }
@@ -311,19 +376,19 @@ async function main() {
         // Start the application
         const app = new AICoderConsole(config);
         await app.start();
-
     } catch (error) {
         // Use raw console.error for startup errors since logger may not be initialized
-        console.error(`
-❌ Error: ${error.message}
-
-Please:
-1. Copy env.template to .env and add your API key, OR
-2. Use --api-key=<your-key> command line argument, OR
-3. Enter your API key when prompted
-
-Get your API key from: https://platform.openai.com/api-keys
-        `);
+        try {
+            const uiConfig = getUIConfigManager();
+            const errorMessage = uiConfig.getMessage('errors.startup_error', {
+                message: error.message,
+            });
+            const errorDetails = uiConfig.getMessage('errors.startup_error_details');
+            console.error(`\n${errorMessage}${errorDetails}\n`);
+        } catch (_configError) {
+            // Fallback if configuration loading fails
+            console.error(`\n❌ Error: ${error.message}\n`);
+        }
         process.exit(1);
     }
 }

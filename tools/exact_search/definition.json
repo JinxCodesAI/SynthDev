@@ -1,31 +1,31 @@
 {
-  "name": "exact_search",
-  "description": "Searches for exact occurrences of a given string in all files listed by list_directory tool, returning matching fragments with context lines. Useful for finding specific text patterns across multiple files before using read_file and edit_file tools.",
-  "auto_run": true,
-  "requires_backup": false,
-  "backup_resource_path_property_name": "",
-  "category": "search",
-  "version": "2.0.0",
-  "tags": ["search", "find", "text", "filesystem"],
-  "schema": {
-    "type": "function",
-    "function": {
-      "name": "exact_search",
-      "description": "Finds all exact occurrences of a string in any file under the project directory and returns an array of entries containing filename and context fragment showing up to 4 lines before and after the occurrence.",
-      "parameters": {
-        "type": "object",
-        "properties": {
-          "search_string": {
-            "type": "string",
-            "description": "The exact string to search for in files.",
-            "minLength": 1
-          }
-        },
-        "required": ["search_string"]
-      },
-      "response_format": {
-        "description": "Returns JSON object with 'success' (boolean), 'timestamp' (ISO string), 'tool_name' (string), and 'results' (array of entries with 'filename' and 'fragment' showing the matching snippet with context lines). Error responses include 'error' field with detailed message."
-      }
+    "name": "exact_search",
+    "description": "Searches for exact occurrences of a given string in all files listed by list_directory tool, returning matching fragments with context lines. Useful for finding specific text patterns across multiple files before using read_file and edit_file tools.",
+    "auto_run": true,
+    "requires_backup": false,
+    "backup_resource_path_property_name": "",
+    "category": "search",
+    "version": "2.0.0",
+    "tags": ["search", "find", "text", "filesystem"],
+    "schema": {
+        "type": "function",
+        "function": {
+            "name": "exact_search",
+            "description": "Finds all exact occurrences of a string in any file under the project directory and returns an array of entries containing filename and context fragment showing up to 4 lines before and after the occurrence.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "search_string": {
+                        "type": "string",
+                        "description": "The exact string to search for in files.",
+                        "minLength": 1
+                    }
+                },
+                "required": ["search_string"]
+            },
+            "response_format": {
+                "description": "Returns JSON object with 'success' (boolean), 'timestamp' (ISO string), 'tool_name' (string), and 'results' (array of entries with 'filename' and 'fragment' showing the matching snippet with context lines). Error responses include 'error' field with detailed message."
+            }
+        }
     }
-  }
 }

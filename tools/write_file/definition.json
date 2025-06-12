@@ -1,50 +1,50 @@
 {
-  "name": "write_file",
-  "description": "Write content to a file in the file system using a relative path",
-  "auto_run": false,
-  "requires_backup": true,
-  "backup_resource_path_property_name": "file_path",
-  "category": "file",
-  "version": "2.0.0",
-  "tags": ["file", "write", "filesystem", "io"],
-  "schema": {
-    "type": "function",
-    "function": {
-      "name": "write_file",
-      "description": "A comprehensive file writing utility that safely creates or overwrites files with text content using relative paths. Supports creating new files, updating existing files, and automatically creating intermediate directories if they don't exist. Handles various file types including text files (.txt), configuration files (.json, .yaml, .xml), code files (.js, .py, .html, .css), documentation (.md, .rst), and data files. Provides detailed error handling for common file system issues like permission errors, disk space problems, or path conflicts. Includes safety features like path validation, backup options, and atomic writes to prevent data corruption. Returns comprehensive status information including operation success, file metadata, and any warnings or errors encountered.",
-      "parameters": {
-        "type": "object",
-        "properties": {
-          "file_path": {
-            "type": "string",
-            "description": "Relative path where the file should be written, starting from the current working directory. Supports forward slashes (/) and backslashes (\\) as path separators for cross-platform compatibility. Examples: 'output.txt' (root file), 'data/results.json' (file in subdirectory), 'logs/debug.log' (nested path). If intermediate directories don't exist, they will be created automatically. Path must be relative and cannot write files outside the project directory for security. Supports Unicode filenames and paths with spaces."
-          },
-          "content": {
-            "type": "string",
-            "description": "Complete content to write to the file as a string. Can include any text data such as code, configuration data, documentation, logs, or plain text. Supports Unicode characters, line breaks (\\n), special characters, and formatting. For structured data like JSON or YAML, pass the properly formatted string representation. Large content is supported up to reasonable file size limits."
-          },
-          "encoding": {
-            "type": "string",
-            "description": "Character encoding to use when writing the file. Common options: 'utf8' for standard text files with Unicode support (recommended for most use cases), 'ascii' for basic ASCII text, 'base64' for binary data representation, 'hex' for hexadecimal data. Default 'utf8' handles international characters, emojis, and special symbols correctly",
-            "enum": ["utf8", "ascii", "base64", "hex", "latin1"],
-            "default": "utf8"
-          },
-          "create_directories": {
-            "type": "boolean",
-            "description": "Whether to automatically create intermediate directories if they don't exist. When true, creates the full directory path as needed (e.g., for 'data/logs/output.txt', creates 'data' and 'data/logs' directories). When false, operation fails if parent directories don't exist. Recommended to keep true for most use cases",
-            "default": true
-          },
-          "overwrite": {
-            "type": "boolean",
-            "description": "Whether to overwrite existing files. When true, replaces existing file content completely. When false, operation fails if file already exists, preventing accidental data loss. Use false for safety when you want to avoid overwriting important files",
-            "default": true
-          }
-        },
-        "required": ["file_path", "content"]
-      },
-      "response_format": {
-        "description": "Returns a JSON object with 'success' (boolean), 'timestamp' (ISO string), 'tool_name' (string), 'file_path' (written path), 'size' (bytes written), 'encoding' (encoding used), 'created_directories' (array of directories created), and 'overwritten' (boolean if file was replaced). Error responses include 'error' field with detailed message (permission denied, disk full, invalid path, etc.)."
-      }
+    "name": "write_file",
+    "description": "Write content to a file in the file system using a relative path",
+    "auto_run": false,
+    "requires_backup": true,
+    "backup_resource_path_property_name": "file_path",
+    "category": "file",
+    "version": "2.0.0",
+    "tags": ["file", "write", "filesystem", "io"],
+    "schema": {
+        "type": "function",
+        "function": {
+            "name": "write_file",
+            "description": "A comprehensive file writing utility that safely creates or overwrites files with text content using relative paths. Supports creating new files, updating existing files, and automatically creating intermediate directories if they don't exist. Handles various file types including text files (.txt), configuration files (.json, .yaml, .xml), code files (.js, .py, .html, .css), documentation (.md, .rst), and data files. Provides detailed error handling for common file system issues like permission errors, disk space problems, or path conflicts. Includes safety features like path validation, backup options, and atomic writes to prevent data corruption. Returns comprehensive status information including operation success, file metadata, and any warnings or errors encountered.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "file_path": {
+                        "type": "string",
+                        "description": "Relative path where the file should be written, starting from the current working directory. Supports forward slashes (/) and backslashes (\\) as path separators for cross-platform compatibility. Examples: 'output.txt' (root file), 'data/results.json' (file in subdirectory), 'logs/debug.log' (nested path). If intermediate directories don't exist, they will be created automatically. Path must be relative and cannot write files outside the project directory for security. Supports Unicode filenames and paths with spaces."
+                    },
+                    "content": {
+                        "type": "string",
+                        "description": "Complete content to write to the file as a string. Can include any text data such as code, configuration data, documentation, logs, or plain text. Supports Unicode characters, line breaks (\n), special characters, and formatting. For structured data like JSON or YAML, pass the properly formatted string representation. Large content is supported up to reasonable file size limits."
+                    },
+                    "encoding": {
+                        "type": "string",
+                        "description": "Character encoding to use when writing the file. Common options: 'utf8' for standard text files with Unicode support (recommended for most use cases), 'ascii' for basic ASCII text, 'base64' for binary data representation, 'hex' for hexadecimal data. Default 'utf8' handles international characters, emojis, and special symbols correctly",
+                        "enum": ["utf8", "ascii", "base64", "hex", "latin1"],
+                        "default": "utf8"
+                    },
+                    "create_directories": {
+                        "type": "boolean",
+                        "description": "Whether to automatically create intermediate directories if they don't exist. When true, creates the full directory path as needed (e.g., for 'data/logs/output.txt', creates 'data' and 'data/logs' directories). When false, operation fails if parent directories don't exist. Recommended to keep true for most use cases",
+                        "default": true
+                    },
+                    "overwrite": {
+                        "type": "boolean",
+                        "description": "Whether to overwrite existing files. When true, replaces existing file content completely. When false, operation fails if file already exists, preventing accidental data loss. Use false for safety when you want to avoid overwriting important files",
+                        "default": true
+                    }
+                },
+                "required": ["file_path", "content"]
+            },
+            "response_format": {
+                "description": "Returns a JSON object with 'success' (boolean), 'timestamp' (ISO string), 'tool_name' (string), 'file_path' (written path), 'size' (bytes written), 'encoding' (encoding used), 'created_directories' (array of directories created), and 'overwritten' (boolean if file was replaced). Error responses include 'error' field with detailed message (permission denied, disk full, invalid path, etc.)."
+            }
+        }
     }
-  }
-} 
+}

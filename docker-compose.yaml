@@ -1,115 +1,115 @@
 services:
-  synth-dev:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: synth-dev-app
+    synth-dev:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        container_name: synth-dev-app
 
-    # Interactive mode for console application - CRITICAL for user input
-    stdin_open: true
-    tty: true
+        # Interactive mode for console application - CRITICAL for user input
+        stdin_open: true
+        tty: true
 
-    # Attach to terminal for interactive use
-    attach: true
-    
-    # Environment variables
-    environment:
-      # Copy from .env file or set directly
-      - API_KEY=${API_KEY:-}
-      - BASE_MODEL=${BASE_MODEL:-gpt-4o-mini}
-      - BASE_URL=${BASE_URL:-https://api.openai.com/v1}
-      - SMART_API_KEY=${SMART_API_KEY:-}
-      - SMART_MODEL=${SMART_MODEL:-gpt-4o}
-      - SMART_BASE_URL=${SMART_BASE_URL:-https://api.openai.com/v1}
-      - FAST_API_KEY=${FAST_API_KEY:-}
-      - FAST_MODEL=${FAST_MODEL:-gpt-4o-mini}
-      - FAST_BASE_URL=${FAST_BASE_URL:-https://api.openai.com/v1}
-      - MAX_TOOL_CALLS=${MAX_TOOL_CALLS:-50}
-      - ENABLE_PROMPT_ENHANCEMENT=${ENABLE_PROMPT_ENHANCEMENT:-false}
-      - VERBOSITY_LEVEL=${VERBOSITY_LEVEL:-2}
-      - NODE_ENV=production
-      - TERM=xterm-256color
-    
-    # Volume mounts for development
-    volumes:
-      # Mount source code for development (comment out for production)
-      - .:/app
-      # Mount node_modules as volume to avoid conflicts
-      - /app/node_modules
-    
-    # Working directory
-    working_dir: /app
-    
-    # Network mode
-    network_mode: bridge
-    
-    # Restart policy
-    restart: unless-stopped
-    
-    # Resource limits
-    deploy:
-      resources:
-        limits:
-          memory: 1G
-          cpus: '0.5'
-        reservations:
-          memory: 256M
-          cpus: '0.1'
+        # Attach to terminal for interactive use
+        attach: true
 
-  # Development service with hot reload
-  synth-dev-dev:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: synth-dev-dev
-    profiles:
-      - dev
+        # Environment variables
+        environment:
+            # Copy from .env file or set directly
+            - API_KEY=${API_KEY:-}
+            - BASE_MODEL=${BASE_MODEL:-gpt-4o-mini}
+            - BASE_URL=${BASE_URL:-https://api.openai.com/v1}
+            - SMART_API_KEY=${SMART_API_KEY:-}
+            - SMART_MODEL=${SMART_MODEL:-gpt-4o}
+            - SMART_BASE_URL=${SMART_BASE_URL:-https://api.openai.com/v1}
+            - FAST_API_KEY=${FAST_API_KEY:-}
+            - FAST_MODEL=${FAST_MODEL:-gpt-4o-mini}
+            - FAST_BASE_URL=${FAST_BASE_URL:-https://api.openai.com/v1}
+            - MAX_TOOL_CALLS=${MAX_TOOL_CALLS:-50}
+            - ENABLE_PROMPT_ENHANCEMENT=${ENABLE_PROMPT_ENHANCEMENT:-false}
+            - VERBOSITY_LEVEL=${VERBOSITY_LEVEL:-2}
+            - NODE_ENV=production
+            - TERM=xterm-256color
 
-    # Interactive mode for console application - CRITICAL for user input
-    stdin_open: true
-    tty: true
+        # Volume mounts for development
+        volumes:
+            # Mount source code for development (comment out for production)
+            - .:/app
+            # Mount node_modules as volume to avoid conflicts
+            - /app/node_modules
 
-    # Attach to terminal for interactive use
-    attach: true
-    
-    # Override command for development
-    command: npm run dev
-    
-    # Environment variables
-    environment:
-      - API_KEY=${API_KEY:-}
-      - BASE_MODEL=${BASE_MODEL:-gpt-4o-mini}
-      - BASE_URL=${BASE_URL:-https://api.openai.com/v1}
-      - SMART_API_KEY=${SMART_API_KEY:-}
-      - SMART_MODEL=${SMART_MODEL:-gpt-4o}
-      - SMART_BASE_URL=${SMART_BASE_URL:-https://api.openai.com/v1}
-      - FAST_API_KEY=${FAST_API_KEY:-}
-      - FAST_MODEL=${FAST_MODEL:-gpt-4o-mini}
-      - FAST_BASE_URL=${FAST_BASE_URL:-https://api.openai.com/v1}
-      - MAX_TOOL_CALLS=${MAX_TOOL_CALLS:-50}
-      - ENABLE_PROMPT_ENHANCEMENT=${ENABLE_PROMPT_ENHANCEMENT:-false}
-      - VERBOSITY_LEVEL=${VERBOSITY_LEVEL:-2}
-      - NODE_ENV=development
-      - TERM=xterm-256color
-    
-    # Volume mounts for development
-    volumes:
-      - .:/app
-      - /app/node_modules
-    
-    # Working directory
-    working_dir: /app
-    
-    # Network mode
-    network_mode: bridge
-    
-    # Restart policy
-    restart: unless-stopped
+        # Working directory
+        working_dir: /app
+
+        # Network mode
+        network_mode: bridge
+
+        # Restart policy
+        restart: unless-stopped
+
+        # Resource limits
+        deploy:
+            resources:
+                limits:
+                    memory: 1G
+                    cpus: '0.5'
+                reservations:
+                    memory: 256M
+                    cpus: '0.1'
+
+    # Development service with hot reload
+    synth-dev-dev:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        container_name: synth-dev-dev
+        profiles:
+            - dev
+
+        # Interactive mode for console application - CRITICAL for user input
+        stdin_open: true
+        tty: true
+
+        # Attach to terminal for interactive use
+        attach: true
+
+        # Override command for development
+        command: npm run dev
+
+        # Environment variables
+        environment:
+            - API_KEY=${API_KEY:-}
+            - BASE_MODEL=${BASE_MODEL:-gpt-4o-mini}
+            - BASE_URL=${BASE_URL:-https://api.openai.com/v1}
+            - SMART_API_KEY=${SMART_API_KEY:-}
+            - SMART_MODEL=${SMART_MODEL:-gpt-4o}
+            - SMART_BASE_URL=${SMART_BASE_URL:-https://api.openai.com/v1}
+            - FAST_API_KEY=${FAST_API_KEY:-}
+            - FAST_MODEL=${FAST_MODEL:-gpt-4o-mini}
+            - FAST_BASE_URL=${FAST_BASE_URL:-https://api.openai.com/v1}
+            - MAX_TOOL_CALLS=${MAX_TOOL_CALLS:-50}
+            - ENABLE_PROMPT_ENHANCEMENT=${ENABLE_PROMPT_ENHANCEMENT:-false}
+            - VERBOSITY_LEVEL=${VERBOSITY_LEVEL:-2}
+            - NODE_ENV=development
+            - TERM=xterm-256color
+
+        # Volume mounts for development
+        volumes:
+            - .:/app
+            - /app/node_modules
+
+        # Working directory
+        working_dir: /app
+
+        # Network mode
+        network_mode: bridge
+
+        # Restart policy
+        restart: unless-stopped
 
 # Named volumes (none needed currently)
 # volumes:
 
 # Networks (optional, using default bridge)
 networks:
-  default:
-    driver: bridge
+    default:
+        driver: bridge
