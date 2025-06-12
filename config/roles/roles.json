@@ -78,7 +78,7 @@
             {
                 "role": "function",
                 "name": "submit_enhanced_prompt",
-                "content": "",
+                "content": "The user's initial request is a good goal, but it needs to be refined into a concrete engineering task. To improve it, I should first establish the context by identifying the specific files to be reviewed. Next, to avoid ambiguity, the prompt needs to define the exact syntax for how wildcards and regular expressions should function. A critical constraint to add is the requirement for backward compatibility, ensuring existing functionality doesn't break. Finally, structuring the task into a clear sequence—analyze, plan, then implement—will create a more robust and actionable roadmap for the developer.",
                 "arguments": "{\"enhancement_needed\":true,\"enhanced_prompt\":\"Review the systemMessages.js file and the config/roles/roles.json configuration file to understand how the \\\"excludedTools\\\" feature currently works. I want to enhance the excludedTools functionality to support pattern matching instead of just exact tool name matches. \\n\\n Specifically, I want to implement: \\n\\n- Wildcard support using * (e.g., \"*file\" matches \"read_file\", \"write_file\")\n- Regular expression support with /pattern/flags syntax\n- Maintain backward compatibility with existing exact string matches \n\n Please analyze the current implementation, create a detailed plan for enhancing the excludedTools pattern matching, and implement the changes while preserving the existing functionality for roles that use exact tool names.\"}"
             },
             {
@@ -88,7 +88,7 @@
             {
                 "role": "function",
                 "name": "submit_enhanced_prompt",
-                "content": "User, just said hi, no enhancement needed",
+                "content": "The user provided a simple greeting (\"Hi\"), which is not a task or prompt that can be improved or made more specific. Therefore, no enhancement is necessary.",
                 "arguments": "{\"enhancement_needed\":false}"
             }
         ]
