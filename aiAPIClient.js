@@ -43,6 +43,7 @@ class AIAPIClient {
         this.tools = [];
         this.allTools = []; // Store original tools before filtering
         this.role = null;
+        this.exampleMessageCount = 0; // Track number of example messages for current role
         this.lastAPICall = {
             request: null,
             response: null,
@@ -153,14 +154,19 @@ class AIAPIClient {
      * @param {string} role - The role name (optional, for tool filtering)
      */
     async setSystemMessage(systemMessage, role = null) {
-        // Remove existing system message if present
-        this.messages = this.messages.filter(msg => msg.role !== 'system');
+        // Remove existing system message and examples if present
+        this._removeSystemMessageAndExamples();
 
         // Add new system message at the beginning
         this.messages.unshift({
             role: 'system',
             content: systemMessage,
         });
+
+        // Add examples for the role (few-shot prompting)
+        if (role) {
+            this._addExamplesForRole(role);
+        }
 
         // Update current role and apply tool filtering
         if (role === this.role) {
@@ -214,6 +220,59 @@ class AIAPIClient {
             );
             // Keep all tools if filtering fails
             this.tools = [...this.allTools];
+        }
+    }
+
+    /**
+     * Remove system message and any existing examples from messages
+     * @private
+     */
+    _removeSystemMessageAndExamples() {
+        // Remove system message
+        this.messages = this.messages.filter(msg => msg.role !== 'system');
+
+        // Remove existing examples (first N messages after system message)
+        if (this.exampleMessageCount > 0) {
+            this.messages.splice(0, this.exampleMessageCount);
+            this.exampleMessageCount = 0;
+        }
+    }
+
+    /**
+     * Add examples for the specified role (few-shot prompting)
+     * @param {string} role - The role name
+     * @private
+     */
+    _addExamplesForRole(role) {
+        try {
+            const examples = SystemMessages.getExamples(role);
+            if (examples && examples.length > 0) {
+                // Insert examples after system message (at index 1)
+                // Examples are added in order, so they appear right after system message
+                for (let i = 0; i < examples.length; i++) {
+                    const example = examples[i];
+                    // Create a clean copy without any internal tracking properties
+                    const exampleMessage = {
+                        role: example.role,
+                        content: example.content,
+                    };
+
+                    // Add function call properties if present (for function examples)
+                    if (example.name) {
+                        exampleMessage.name = example.name;
+                    }
+                    if (example.arguments) {
+                        exampleMessage.arguments = example.arguments;
+                    }
+
+                    this.messages.splice(1 + i, 0, exampleMessage);
+                }
+                this.exampleMessageCount = examples.length;
+
+                this.logger.debug(`Added ${examples.length} examples for role '${role}'`);
+            }
+        } catch (error) {
+            this.logger.warn(`Could not add examples for role '${role}': ${error.message}`);
         }
     }
 
@@ -464,7 +523,7 @@ class AIAPIClient {
     }
 
     /**
-     * Ensure system message is present for the current role
+     * Ensure system message and examples are present for the current role
      * @private
      */
     _ensureSystemMessage() {
@@ -485,6 +544,9 @@ class AIAPIClient {
                 role: 'system',
                 content: systemMessage,
             });
+
+            // Also add examples for the role
+            this._addExamplesForRole(this.role);
         } catch (error) {
             this.logger.warn(
                 `Could not restore system message for role '${this.role}': ${error.message}`
@@ -494,7 +556,8 @@ class AIAPIClient {
 
     clearConversation() {
         this.messages = [];
-        // Restore system message for current role if one is set
+        this.exampleMessageCount = 0;
+        // Restore system message and examples for current role if one is set
         this._ensureSystemMessage();
     }
 
@@ -521,6 +584,10 @@ class AIAPIClient {
 
     getMaxToolCalls() {
         return this.maxToolCalls;
+    }
+
+    getExampleMessageCount() {
+        return this.exampleMessageCount;
     }
 }
 

@@ -70,6 +70,7 @@ describe('AIAPIClient', () => {
             isToolExcluded: vi.fn().mockReturnValue(false),
             getReminder: vi.fn().mockReturnValue(null),
             getParsingTools: vi.fn().mockReturnValue([]),
+            getExamples: vi.fn().mockReturnValue([]),
         };
 
         // Setup module mocks
@@ -86,6 +87,7 @@ describe('AIAPIClient', () => {
         SystemMessages.default.isToolExcluded = mockSystemMessages.isToolExcluded;
         SystemMessages.default.getReminder = mockSystemMessages.getReminder;
         SystemMessages.default.getParsingTools = mockSystemMessages.getParsingTools;
+        SystemMessages.default.getExamples = mockSystemMessages.getExamples;
 
         const { getLogger } = await import('../../../logger.js');
         getLogger.mockReturnValue(mockLogger);
@@ -253,6 +255,132 @@ describe('AIAPIClient', () => {
                 expect.stringContaining('Switched to smart model')
             );
         });
+
+        it('should add examples when role has examples', async () => {
+            const mockExamples = [
+                { role: 'user', content: 'Example user message' },
+                { role: 'assistant', content: 'Example assistant response' },
+            ];
+            mockSystemMessages.getExamples.mockReturnValue(mockExamples);
+
+            await aiClient.setSystemMessage('Test system message', 'test-role');
+
+            expect(aiClient.messages).toHaveLength(3); // system + 2 examples
+            expect(aiClient.messages[0]).toEqual({
+                role: 'system',
+                content: 'Test system message',
+            });
+            expect(aiClient.messages[1]).toEqual({
+                role: 'user',
+                content: 'Example user message',
+            });
+            expect(aiClient.messages[2]).toEqual({
+                role: 'assistant',
+                content: 'Example assistant response',
+            });
+            expect(aiClient.exampleMessageCount).toBe(2);
+        });
+
+        it('should replace previous examples when switching roles', async () => {
+            // First role with examples
+            const firstExamples = [
+                { role: 'user', content: 'First example' },
+                { role: 'assistant', content: 'First response' },
+            ];
+            mockSystemMessages.getExamples.mockReturnValueOnce(firstExamples);
+
+            await aiClient.setSystemMessage('First system message', 'first-role');
+            expect(aiClient.messages).toHaveLength(3);
+            expect(aiClient.exampleMessageCount).toBe(2);
+
+            // Add a user message
+            aiClient.addUserMessage('User message');
+            expect(aiClient.messages).toHaveLength(4);
+
+            // Switch to second role with different examples
+            const secondExamples = [
+                { role: 'user', content: 'Second example' },
+                { role: 'function', name: 'test_function', content: 'Function result' },
+            ];
+            mockSystemMessages.getExamples.mockReturnValueOnce(secondExamples);
+
+            await aiClient.setSystemMessage('Second system message', 'second-role');
+
+            // Should have: system message + 2 new examples + user message
+            expect(aiClient.messages).toHaveLength(4);
+            expect(aiClient.messages[0]).toEqual({
+                role: 'system',
+                content: 'Second system message',
+            });
+            expect(aiClient.messages[1]).toEqual({
+                role: 'user',
+                content: 'Second example',
+            });
+            expect(aiClient.messages[2]).toEqual({
+                role: 'function',
+                name: 'test_function',
+                content: 'Function result',
+            });
+            expect(aiClient.messages[3]).toEqual({
+                role: 'user',
+                content: 'User message',
+            });
+            expect(aiClient.exampleMessageCount).toBe(2);
+        });
+
+        it('should handle function examples with arguments', async () => {
+            const mockExamples = [
+                { role: 'user', content: 'Test function call' },
+                {
+                    role: 'function',
+                    name: 'test_function',
+                    arguments: '{"param": "value"}',
+                    content: 'Function result',
+                },
+            ];
+            mockSystemMessages.getExamples.mockReturnValue(mockExamples);
+
+            await aiClient.setSystemMessage('Test system message', 'test-role');
+
+            expect(aiClient.messages).toHaveLength(3);
+            expect(aiClient.messages[2]).toEqual({
+                role: 'function',
+                name: 'test_function',
+                arguments: '{"param": "value"}',
+                content: 'Function result',
+            });
+        });
+
+        it('should handle roles without examples', async () => {
+            mockSystemMessages.getExamples.mockReturnValue([]);
+
+            await aiClient.setSystemMessage('Test system message', 'test-role');
+
+            expect(aiClient.messages).toHaveLength(1);
+            expect(aiClient.messages[0]).toEqual({
+                role: 'system',
+                content: 'Test system message',
+            });
+            expect(aiClient.exampleMessageCount).toBe(0);
+        });
+
+        it('should handle getExamples errors gracefully', async () => {
+            mockSystemMessages.getExamples.mockImplementation(() => {
+                throw new Error('Failed to get examples');
+            });
+
+            await aiClient.setSystemMessage('Test system message', 'test-role');
+
+            expect(aiClient.messages).toHaveLength(1);
+            expect(aiClient.messages[0]).toEqual({
+                role: 'system',
+                content: 'Test system message',
+            });
+            expect(aiClient.exampleMessageCount).toBe(0);
+            expect(mockLogger.warn).toHaveBeenCalledWith(
+                expect.stringContaining('Could not add examples for role')
+            );
+        });
     });
 
     describe('getCurrentRole', () => {
@@ -330,6 +458,49 @@ describe('AIAPIClient', () => {
                 content: 'Test system message',
             });
         });
+
+        it('should reset example message count', () => {
+            aiClient.exampleMessageCount = 3;
+            aiClient.messages = [
+                { role: 'user', content: 'User message' },
+                { role: 'assistant', content: 'Assistant message' },
+            ];
+
+            aiClient.clearConversation();
+
+            expect(aiClient.exampleMessageCount).toBe(0);
+        });
+
+        it('should restore system message and examples for current role', () => {
+            const mockExamples = [
+                { role: 'user', content: 'Example user message' },
+                { role: 'assistant', content: 'Example assistant response' },
+            ];
+            mockSystemMessages.getExamples.mockReturnValue(mockExamples);
+
+            aiClient.role = 'test-role';
+            aiClient.messages = [
+                { role: 'user', content: 'User message' },
+                { role: 'assistant', content: 'Assistant message' },
+            ];
+
+            aiClient.clearConversation();
+
+            expect(aiClient.messages).toHaveLength(3); // system + 2 examples
+            expect(aiClient.messages[0]).toEqual({
+                role: 'system',
+                content: 'Test system message',
+            });
+            expect(aiClient.messages[1]).toEqual({
+                role: 'user',
+                content: 'Example user message',
+            });
+            expect(aiClient.messages[2]).toEqual({
+                role: 'assistant',
+                content: 'Example assistant response',
+            });
+            expect(aiClient.exampleMessageCount).toBe(2);
+        });
     });
 
     describe('getters', () => {
@@ -373,6 +544,11 @@ describe('AIAPIClient', () => {
             aiClient.lastAPICall = mockAPICall;
 
             expect(aiClient.getLastAPICall()).toBe(mockAPICall);
+        });
+
+        it('should return example message count', () => {
+            aiClient.exampleMessageCount = 3;
+            expect(aiClient.getExampleMessageCount()).toBe(3);
         });
     });
 
