@@ -198,13 +198,12 @@ class AIAPIClient {
         }
 
         try {
-            const excludedTools = SystemMessages.getExcludedTools(this.role);
             const parsingTools = SystemMessages.getParsingTools(this.role);
 
-            // Filter out excluded tools
+            // Filter out excluded tools using pattern matching
             const filteredTools = this.allTools.filter(tool => {
                 const toolName = tool.function?.name || tool.name;
-                return !excludedTools.includes(toolName);
+                return !SystemMessages.isToolExcluded(this.role, toolName);
             });
 
             // Add role-specific tools

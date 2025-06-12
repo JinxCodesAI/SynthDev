@@ -19,6 +19,7 @@ vi.mock('../../../systemMessages.js', () => ({
         getSystemMessage: vi.fn(),
         getLevel: vi.fn(),
         getExcludedTools: vi.fn(),
+        isToolExcluded: vi.fn(),
         getReminder: vi.fn(),
         getParsingTools: vi.fn(),
     },
@@ -66,6 +67,7 @@ describe('AIAPIClient', () => {
             getSystemMessage: vi.fn().mockReturnValue('Test system message'),
             getLevel: vi.fn().mockReturnValue('base'),
             getExcludedTools: vi.fn().mockReturnValue([]),
+            isToolExcluded: vi.fn().mockReturnValue(false),
             getReminder: vi.fn().mockReturnValue(null),
             getParsingTools: vi.fn().mockReturnValue([]),
         };
@@ -81,6 +83,7 @@ describe('AIAPIClient', () => {
         SystemMessages.default.getSystemMessage = mockSystemMessages.getSystemMessage;
         SystemMessages.default.getLevel = mockSystemMessages.getLevel;
         SystemMessages.default.getExcludedTools = mockSystemMessages.getExcludedTools;
+        SystemMessages.default.isToolExcluded = mockSystemMessages.isToolExcluded;
         SystemMessages.default.getReminder = mockSystemMessages.getReminder;
         SystemMessages.default.getParsingTools = mockSystemMessages.getParsingTools;
 
@@ -188,7 +191,9 @@ describe('AIAPIClient', () => {
                 { function: { name: 'excluded_tool' } },
             ];
 
-            mockSystemMessages.getExcludedTools.mockReturnValue(['excluded_tool']);
+            mockSystemMessages.isToolExcluded.mockImplementation(
+                (role, toolName) => toolName === 'excluded_tool'
+            );
             aiClient.role = 'test-role';
 
             aiClient.setTools(tools);
@@ -563,7 +568,9 @@ describe('AIAPIClient', () => {
 
             aiClient.allTools = tools;
             aiClient.role = 'test-role';
-            mockSystemMessages.getExcludedTools.mockReturnValue(['excluded_tool']);
+            mockSystemMessages.isToolExcluded.mockImplementation(
+                (role, toolName) => toolName === 'excluded_tool'
+            );
 
             aiClient._applyToolFiltering();
 
@@ -579,7 +586,9 @@ describe('AIAPIClient', () => {
 
             aiClient.allTools = tools;
             aiClient.role = 'test-role';
-            mockSystemMessages.getExcludedTools.mockReturnValue(['tool1']);
+            mockSystemMessages.isToolExcluded.mockImplementation(
+                (role, toolName) => toolName === 'tool1'
+            );
 
             aiClient._applyToolFiltering();
 
@@ -605,7 +614,7 @@ describe('AIAPIClient', () => {
 
             aiClient.allTools = tools;
             aiClient.role = 'test-role';
-            mockSystemMessages.getExcludedTools.mockImplementation(() => {
+            mockSystemMessages.isToolExcluded.mockImplementation(() => {
                 throw new Error('SystemMessages error');
             });
 
@@ -615,6 +624,30 @@ describe('AIAPIClient', () => {
             expect(mockLogger.warn).toHaveBeenCalledWith(
                 expect.stringContaining('Could not apply tool filtering')
             );
+        });
+
+        it('should work with pattern matching exclusions', () => {
+            const tools = [
+                { function: { name: 'read_file' } },
+                { function: { name: 'write_file' } },
+                { function: { name: 'edit_file' } },
+                { function: { name: 'execute_command' } },
+                { function: { name: 'get_time' } },
+                { function: { name: 'calculate' } },
+            ];
+
+            aiClient.allTools = tools;
+            aiClient.role = 'test-role';
+
+            // Mock pattern matching: exclude tools ending with '_file' and starting with 'execute_'
+            mockSystemMessages.isToolExcluded.mockImplementation(
+                (role, toolName) => toolName.endsWith('_file') || toolName.startsWith('execute_')
+            );
+
+            aiClient._applyToolFiltering();
+
+            expect(aiClient.tools).toHaveLength(2);
+            expect(aiClient.tools.map(t => t.function.name)).toEqual(['get_time', 'calculate']);
         });
     });
 });
