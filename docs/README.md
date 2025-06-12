@@ -9,6 +9,7 @@ Synth-Dev is an AI-powered development assistant that provides:
 - **🛠️ Comprehensive Tool System**: File operations, code execution, terminal access, and analysis tools
 - **⚡ Command Interface**: Powerful `/` commands for managing conversations, costs, and application state
 - **🤖 Multi-Model Support**: Configure different AI models for different tasks (base, smart, fast)
+- **🎭 AI Role System**: Specialized AI personas with role-specific behaviors and few-shot prompting
 - **🔧 Extensible Architecture**: Easy to add new tools and commands
 - **📊 Advanced Features**: Conversation snapshots, codebase indexing, prompt enhancement, and cost tracking
 
@@ -193,6 +194,30 @@ Synth-Dev includes a comprehensive command system accessible via `/` prefix:
 | `/roles`         | Show available AI roles           |
 | `/role <name>`   | Switch to a specific role         |
 | `/exit`, `/quit` | Exit the application              |
+
+### AI Role System
+
+Synth-Dev features a sophisticated AI role system that provides specialized AI personas for different tasks. Each role has its own system message, tool access permissions, and can include examples for few-shot prompting.
+
+#### Few-Shot Prompting
+
+Roles can include conversation examples that provide context and demonstrate expected behavior patterns. When you switch to a role with examples, they are automatically added to the conversation context to guide the AI's responses.
+
+**Benefits:**
+
+- **Consistent Behavior**: Examples ensure the AI responds in the expected style and format
+- **Better Understanding**: Context from examples helps the AI understand complex tasks
+- **Quality Responses**: Few-shot learning improves response accuracy and relevance
+- **Role Specialization**: Each role can have examples tailored to its specific purpose
+
+**Usage:**
+
+```bash
+/role prompt_enhancer  # Switches to role with built-in examples
+# Examples are automatically loaded and used for context
+```
+
+For a detailed example of how few-shot prompting works, see [Few-Shot Prompting Example](FewShotPromptingExample.md).
 
 ## Tool System
 
@@ -654,16 +679,39 @@ export class MyInteractiveCommand extends InteractiveCommand {
 
 ### Adding New AI Roles
 
-Roles are defined in `systemMessages.js`:
+Roles are defined in `config/roles/roles.json`. Each role can include system messages, tool restrictions, examples for few-shot prompting, and more:
 
-```javascript
-newRole: {
-    level: 'base',  // 'base', 'smart', or 'fast'
-    systemMessage: `Your role description and instructions...`,
-    excludedTools: ['tool1', 'tool2'],  // Tools this role cannot use
-    reminder: `Additional behavior reminders...`
+```json
+{
+    "my_new_role": {
+        "level": "base",
+        "systemMessage": "You are a specialized assistant for...",
+        "excludedTools": ["tool1", "tool2"],
+        "reminder": "Remember to follow your instructions...",
+        "examples": [
+            {
+                "role": "user",
+                "content": "Example user input"
+            },
+            {
+                "role": "assistant",
+                "content": "Example AI response"
+            }
+        ]
+    }
 }
 ```
+
+**Role Configuration Properties:**
+
+- `level`: Model level (`'base'`, `'smart'`, or `'fast'`)
+- `systemMessage`: Core instructions for the AI role
+- `excludedTools`: Array of tools this role cannot access (supports wildcards and regex)
+- `reminder`: Additional instructions shown during tool execution
+- `examples`: Array of conversation examples for few-shot prompting (optional)
+- `parsingTools`: Special tools for structured output parsing (optional)
+
+For detailed information about role configuration and few-shot prompting, see [Role Configuration Guide](RoleConfiguration.md).
 
 ### Code Style Guidelines
 
@@ -694,6 +742,10 @@ newRole: {
 - **Issues**: Report bugs and request features via GitHub Issues
 - **Discussions**: Ask questions in GitHub Discussions
 - **Documentation**: Check existing docs in the `docs/` directory
+    - [Role Configuration Guide](RoleConfiguration.md) - AI roles and few-shot prompting
+    - [Few-Shot Prompting Example](FewShotPromptingExample.md) - Practical examples
+    - [Tool Creation Guidelines](ToolCreationGuidelines.md) - Creating new tools
+    - [Configuration Migration Plan](CONFIGURATION_MIGRATION_PLAN.md) - Configuration system
 - **Examples**: Look at existing tools and commands for patterns
 
 \* - not really, just a figure of speech
