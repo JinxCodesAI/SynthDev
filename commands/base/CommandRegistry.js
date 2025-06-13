@@ -98,7 +98,7 @@ export class CommandRegistry {
             const errorMessage = uiConfig.getMessage('errors.command_error', {
                 command: commandName,
             });
-            logger.raw(errorMessage);
+            logger.user(errorMessage);
             return 'invalid';
         }
 

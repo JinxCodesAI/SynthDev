@@ -33,12 +33,12 @@ export class ToolsCommand extends BaseCommand {
         const logger = getLogger();
 
         if (tools.length === 0) {
-            logger.raw('🔧 No tools available');
+            logger.info('🔧 No tools available');
             return true;
         }
 
-        logger.raw('\n🔧 Available Tools:');
-        logger.raw('─'.repeat(50));
+        logger.user('🔧 Available Tools:');
+        logger.user('─'.repeat(50));
 
         tools.forEach(tool => {
             const toolName = tool.function.name;
@@ -47,10 +47,10 @@ export class ToolsCommand extends BaseCommand {
             const autoRunIcon = autoRun ? '🟢' : '🔴';
             const autoRunText = autoRun ? 'Auto-run' : 'Requires confirmation';
 
-            logger.raw(`📍 ${tool.function.name} ${autoRunIcon} ${autoRunText}`);
-            logger.raw(`   Description: ${tool.function.description}`);
+            logger.info(`📍 ${tool.function.name} ${autoRunIcon} ${autoRunText}`);
+            logger.info(`   Description: ${tool.function.description}`);
             if (tool.function.parameters?.properties) {
-                logger.raw(
+                logger.info(
                     `   Parameters: ${Object.keys(tool.function.parameters.properties).join(', ')}`
                 );
             }

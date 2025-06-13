@@ -68,6 +68,7 @@ import ConsoleInterface from './consoleInterface.js';
 import costsManager from './costsManager.js';
 import SnapshotManager from './snapshotManager.js';
 import PromptEnhancer from './promptEnhancer.js';
+import WorkflowStateMachine from './workflow/WorkflowStateMachine.js';
 import { initializeLogger, getLogger } from './logger.js';
 
 /**
@@ -94,6 +95,13 @@ class AICoderConsole {
         this.toolManager = new ToolManager();
         this.snapshotManager = new SnapshotManager();
         this.promptEnhancer = new PromptEnhancer(this.costsManager, this.toolManager);
+        this.workflowStateMachine = new WorkflowStateMachine(
+            this.config,
+            this.toolManager,
+            this.snapshotManager,
+            this.consoleInterface,
+            this.costsManager
+        );
         this.commandHandler = new CommandHandler(
             this.apiClient,
             this.toolManager,
@@ -188,6 +196,9 @@ class AICoderConsole {
 
         // Set default role and system message
         await this.apiClient.setSystemMessage(SystemMessages.getSystemMessage('coder'), 'coder');
+
+        // Load workflow configurations
+        await this.workflowStateMachine.loadWorkflowConfigs();
 
         await this.snapshotManager.initialize();
 

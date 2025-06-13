@@ -1,0 +1,49 @@
+{
+    "workflow_name": "test_workflow",
+    "description": "A test workflow to demonstrate that workflow names come from JSON, not filenames",
+    "input": {
+        "name": "test_input",
+        "type": "string",
+        "description": "A test input parameter"
+    },
+    "output": {
+        "name": "test_output",
+        "type": "string",
+        "description": "A test output result"
+    },
+    "variables": {
+        "test_var": "test_value"
+    },
+    "contexts": [
+        {
+            "name": "test_context",
+            "starting_messages": [],
+            "max_length": 10000
+        }
+    ],
+    "agents": [
+        {
+            "agent_role": "coder",
+            "context": "test_context",
+            "role": "assistant"
+        }
+    ],
+    "states": [
+        {
+            "name": "start",
+            "action": {
+                "script": "common_data.test_output = 'Test workflow executed successfully';"
+            },
+            "transition": [
+                {
+                    "target": "stop",
+                    "condition": "true"
+                }
+            ]
+        },
+        {
+            "name": "stop",
+            "input": "common_data.test_output"
+        }
+    ]
+}

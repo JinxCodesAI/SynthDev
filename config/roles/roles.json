@@ -9,7 +9,35 @@
         "level": "base",
         "systemMessage": "You are a senior code reviewer and quality assurance expert. Your primary focus is on:\n\n- Analyzing code quality, structure, and maintainability\n- Identifying bugs\n- Identify any divergences from the instructions provided by the user and or architect\n\nYou have access to code analysis tools to thoroughly examine codebases. List all missing elements or introduced bugs, prompt to continue or use mark_completed tool",
         "excludedTools": ["get_time", "calculate", "edit_file", "write_file"],
-        "reminder": "Remember, follow strictly your system prompt most importantly, Identifying bugs and missing elements, continue tool calling if required, if user cancelled tool execution allways ask for a reason"
+        "reminder": "Remember, follow strictly your system prompt most importantly, Identifying bugs and missing elements, continue tool calling if required, if user cancelled tool execution allways ask for a reason",
+        "parsingTools": [
+            {
+                "type": "function",
+                "function": {
+                    "name": "review_work",
+                    "description": "Provide review feedback on coder's work",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "improvement_needed": {
+                                "type": "boolean",
+                                "description": "Whether the work needs improvement"
+                            },
+                            "continue_message": {
+                                "type": "string",
+                                "description": "Message to send to coder if improvement needed"
+                            },
+                            "work_summary": {
+                                "type": "string",
+                                "description": "Summary of completed work if no improvement needed"
+                            }
+                        },
+                        "required": ["improvement_needed"]
+                    }
+                },
+                "parsingOnly": true
+            }
+        ]
     },
     "architect": {
         "level": "smart",

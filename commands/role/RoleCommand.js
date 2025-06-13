@@ -46,9 +46,9 @@ export class RoleCommand extends BaseCommand {
 
         try {
             if (!SystemMessages.hasRole(role)) {
-                logger.raw(`❌ Unknown role: ${role}`);
-                logger.raw(`📖 Available roles: ${SystemMessages.getAvailableRoles().join(', ')}`);
-                logger.raw('💡 Use /roles to see detailed role information\n');
+                logger.error(`Unknown role: ${role}`);
+                logger.info(`📖 Available roles: ${SystemMessages.getAvailableRoles().join(', ')}`);
+                logger.info('💡 Use /roles to see detailed role information\n');
                 return true;
             }
 
@@ -57,14 +57,14 @@ export class RoleCommand extends BaseCommand {
 
             await apiClient.setSystemMessage(systemMessage, role);
 
-            logger.raw(`🎭 Role switched from '${previousRole || 'none'}' to '${role}'`);
-            logger.raw(
+            logger.user(`🎭 Role switched from '${previousRole || 'none'}' to '${role}'`);
+            logger.info(
                 `🔧 Tools: ${apiClient.getFilteredToolCount()}/${apiClient.getTotalToolCount()} available`
             );
 
             const excludedTools = SystemMessages.getExcludedTools(role);
             if (excludedTools.length > 0) {
-                logger.raw(`🚫 Excluded tools for ${role}: ${excludedTools.join(', ')}`);
+                logger.info(`🚫 Excluded tools for ${role}: ${excludedTools.join(', ')}`);
             }
             logger.raw();
 

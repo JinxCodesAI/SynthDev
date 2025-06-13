@@ -51,20 +51,20 @@ class ConsoleInterface {
     showChainOfThought(content) {
         const prefix = this.uiConfig.getMessage('prefixes.chain_of_thought');
         const separator = this.uiConfig.getMessage('prefixes.separator').repeat(50);
-        this.logger.raw(prefix);
-        this.logger.raw(separator);
-        this.logger.raw(content);
-        this.logger.raw(separator);
+        this.logger.debug(prefix);
+        this.logger.debug(separator);
+        this.logger.debug(content);
+        this.logger.debug(separator);
         this.logger.raw();
     }
 
     showFinalChainOfThought(content) {
         const prefix = this.uiConfig.getMessage('prefixes.final_chain_of_thought');
         const separator = this.uiConfig.getMessage('prefixes.separator').repeat(50);
-        this.logger.raw(prefix);
-        this.logger.raw(separator);
-        this.logger.raw(content);
-        this.logger.raw(separator);
+        this.logger.info(prefix);
+        this.logger.info(separator);
+        this.logger.info(content);
+        this.logger.info(separator);
         this.logger.raw();
     }
 
@@ -114,7 +114,7 @@ class ConsoleInterface {
 
         const instructions = this.uiConfig.getMessage('startup.instructions');
 
-        this.logger.raw(`
+        this.logger.user(`
 ${title}
 ${modelInfo}${roleInfo}
 ${toolInfo}
@@ -124,7 +124,7 @@ ${instructions}
     }
 
     showGoodbye() {
-        this.logger.raw(this.uiConfig.getMessage('goodbye'));
+        this.logger.user(this.uiConfig.getMessage('goodbye'));
     }
 
     newLine() {
@@ -140,7 +140,7 @@ ${instructions}
             const confirmationMessage = this.uiConfig.getMessage('prompts.confirmation', {
                 prompt,
             });
-            this.logger.raw(confirmationMessage);
+            this.logger.user(confirmationMessage);
 
             // Store current paused state
             const wasPaused = this.isPaused;
@@ -201,7 +201,7 @@ ${instructions}
     }
 
     async promptForEnhancedPromptApproval(enhancedPrompt, originalPrompt) {
-        this.logger.raw(this.uiConfig.getMessage('enhancement.approval_instruction'));
+        this.logger.user(this.uiConfig.getMessage('enhancement.approval_instruction'));
 
         // Show the enhanced prompt as editable input
         const userPrompt = this.uiConfig.getMessage('prompts.user');
@@ -366,16 +366,16 @@ ${instructions}
     }
 
     async promptForEnhancementFailureAction(error, originalPrompt) {
-        this.logger.raw(this.uiConfig.getMessage('enhancement.failure_header'));
-        this.logger.raw(`   ${error}`);
-        this.logger.raw(this.uiConfig.getMessage('enhancement.original_prompt_header'));
-        this.logger.raw(this.uiConfig.getMessage('enhancement.separator').repeat(60));
-        this.logger.raw(originalPrompt);
-        this.logger.raw(this.uiConfig.getMessage('enhancement.separator').repeat(60));
-        this.logger.raw(this.uiConfig.getMessage('enhancement.options_header'));
-        this.logger.raw(this.uiConfig.getMessage('enhancement.option_enter'));
-        this.logger.raw(this.uiConfig.getMessage('enhancement.option_modify'));
-        this.logger.raw(this.uiConfig.getMessage('enhancement.option_cancel'));
+        this.logger.user(this.uiConfig.getMessage('enhancement.failure_header'));
+        this.logger.user(`   ${error}`);
+        this.logger.user(this.uiConfig.getMessage('enhancement.original_prompt_header'));
+        this.logger.user(this.uiConfig.getMessage('enhancement.separator').repeat(60));
+        this.logger.user(originalPrompt);
+        this.logger.user(this.uiConfig.getMessage('enhancement.separator').repeat(60));
+        this.logger.user(this.uiConfig.getMessage('enhancement.options_header'));
+        this.logger.user(this.uiConfig.getMessage('enhancement.option_enter'));
+        this.logger.user(this.uiConfig.getMessage('enhancement.option_modify'));
+        this.logger.user(this.uiConfig.getMessage('enhancement.option_cancel'));
 
         const userInput = await this.promptForInput(
             this.uiConfig.getMessage('enhancement.choice_prompt')

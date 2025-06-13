@@ -93,7 +93,7 @@ All console output is now centralized through the `logger.js` module, eliminatin
 - `logger.warn(message, context)` - Level 1+: Warnings
 - `logger.debug(message, data)` - Level 3+: Debug messages
 - `logger.error(error, context)` - Always visible: Errors
-- `logger.raw(...args)` - Always visible: Raw console output
+- `logger.raw(...args)` - Always visible: Raw console output (use sparingly for spacing/formatting only)
 
 ### Integration
 

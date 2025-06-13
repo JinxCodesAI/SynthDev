@@ -25,33 +25,33 @@ export class ReviewCommand extends BaseCommand {
      * @param {Object} context - Execution context
      * @returns {boolean} Always returns true
      */
-    async implementation(args, context) {
+    async implementation(_args, context) {
         const { apiClient } = context;
 
         const lastCall = apiClient.getLastAPICall();
         const logger = getLogger();
 
         if (!lastCall.request || !lastCall.response) {
-            logger.raw('📋 No API calls have been made yet');
+            logger.info('📋 No API calls have been made yet');
             return true;
         }
 
-        logger.raw('\n📋 Last API Call Review');
-        logger.raw('═'.repeat(80));
-        logger.raw(`🕒 Timestamp: ${lastCall.timestamp}`);
+        logger.debug('\n📋 Last API Call Review');
+        logger.debug('═'.repeat(80));
+        logger.debug(`🕒 Timestamp: ${lastCall.timestamp}`);
         logger.raw();
 
         // Show Request
-        logger.raw('📤 REQUEST:');
-        logger.raw('─'.repeat(40));
-        logger.raw(JSON.stringify(lastCall.request, null, 3));
+        logger.debug('📤 REQUEST:');
+        logger.debug('─'.repeat(40));
+        logger.debug(JSON.stringify(lastCall.request, null, 3));
         logger.raw();
 
         // Show Response
-        logger.raw('📥 RESPONSE:');
-        logger.raw('─'.repeat(40));
-        logger.raw(JSON.stringify(lastCall.response, null, 3));
-        logger.raw('═'.repeat(80));
+        logger.debug('📥 RESPONSE:');
+        logger.debug('─'.repeat(40));
+        logger.debug(JSON.stringify(lastCall.response, null, 3));
+        logger.debug('═'.repeat(80));
         logger.raw();
 
         return true;
