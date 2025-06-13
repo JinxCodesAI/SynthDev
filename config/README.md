@@ -33,10 +33,10 @@ config/
 
 ### `roles/roles.json`
 
-**Affects**: AI behavior, system messages, tool availability per role
+**Affects**: AI behavior, system messages, tool availability per role, few-shot prompting
 
 - **Used by**: SystemMessages, AIAPIClient, PromptEnhancer, app.js
-- **Controls**: AI persona definitions, system prompts, excluded tools per role, model levels, reminder messages
+- **Controls**: AI persona definitions, system prompts, excluded tools per role, model levels, reminder messages, conversation examples for few-shot prompting
 
 ### `roles/environment-template.json`
 

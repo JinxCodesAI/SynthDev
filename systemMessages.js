@@ -119,6 +119,77 @@ class SystemMessages {
     }
 
     /**
+     * Check if a tool matches an exclusion pattern
+     * Supports:
+     * - Exact string matching (backward compatibility)
+     * - Wildcard patterns using * (e.g., "*file" matches "read_file", "write_file")
+     * - Regular expression patterns enclosed in forward slashes (e.g., "/^(read|write)_/")
+     * @private
+     * @param {string} toolName - The tool name to check
+     * @param {string} pattern - The exclusion pattern
+     * @returns {boolean} True if the tool matches the pattern
+     */
+    static _matchesExclusionPattern(toolName, pattern) {
+        if (toolName === undefined || toolName === null || !pattern) {
+            return false;
+        }
+
+        // Exact string match (backward compatibility)
+        if (toolName === pattern) {
+            return true;
+        }
+
+        // Regular expression pattern (enclosed in forward slashes)
+        if (pattern.startsWith('/') && pattern.lastIndexOf('/') > 0) {
+            try {
+                const lastSlashIndex = pattern.lastIndexOf('/');
+                const regexPattern = pattern.slice(1, lastSlashIndex);
+                const flags = pattern.slice(lastSlashIndex + 1);
+                const regex = new RegExp(regexPattern, flags);
+                return regex.test(toolName);
+            } catch (_error) {
+                // Invalid regex - treat as literal string
+                return toolName === pattern;
+            }
+        }
+
+        // Wildcard pattern using *
+        if (pattern.includes('*')) {
+            // Convert wildcard pattern to regex
+            // Escape special regex characters except *
+            const escapedPattern = pattern
+                .replace(/[.+?^${}()|[\]\\]/g, '\\$&')
+                .replace(/\*/g, '.*');
+
+            try {
+                const regex = new RegExp(`^${escapedPattern}$`);
+                return regex.test(toolName);
+            } catch (_error) {
+                // Invalid pattern - treat as literal string
+                return toolName === pattern;
+            }
+        }
+
+        // No pattern match
+        return false;
+    }
+
+    /**
+     * Check if a tool should be excluded for a specific role
+     * Uses pattern matching to support wildcards and regular expressions
+     * @param {string} role - The role name
+     * @param {string} toolName - The tool name to check
+     * @returns {boolean} True if the tool should be excluded
+     */
+    static isToolExcluded(role, toolName) {
+        const excludedPatterns = SystemMessages.getExcludedTools(role);
+
+        return excludedPatterns.some(pattern =>
+            SystemMessages._matchesExclusionPattern(toolName, pattern)
+        );
+    }
+
+    /**
      * Get role-specific tools for a specific role
      * @param {string} role - The role name (coder, reviewer, architect, prompt_enhancer)
      * @returns {Array} Array of role-specific tool definitions
@@ -185,6 +256,24 @@ class SystemMessages {
         }
 
         return roleConfig.reminder || '';
+    }
+
+    /**
+     * Get examples for a specific role (for few-shot prompting)
+     * @param {string} role - The role name
+     * @returns {Array} Array of example messages for few-shot prompting
+     */
+    static getExamples(role) {
+        const instance = new SystemMessages();
+        const roleConfig = instance.roles[role];
+
+        if (!roleConfig) {
+            throw new Error(
+                `Unknown role: ${role}. Available roles: ${Object.keys(instance.roles).join(', ')}`
+            );
+        }
+
+        return roleConfig.examples || [];
     }
 
     /**
