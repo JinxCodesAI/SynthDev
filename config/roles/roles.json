@@ -148,7 +148,7 @@
                 "type": "function",
                 "function": {
                     "name": "interaction_decision",
-                    "description": "Decide whether to continue the interaction or conclude your shopping assistance",
+                    "description": "Decide whether to continue the interaction or conclude your shopping assistance, should be called exactly once per interaction",
                     "parameters": {
                         "type": "object",
                         "properties": {

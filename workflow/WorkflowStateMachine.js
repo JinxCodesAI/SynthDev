@@ -24,8 +24,17 @@ export default class WorkflowStateMachine {
         this.commonData = {};
         this.subWorkflowResult = null;
         this.lastAgentResponse = null;
+        this.lastRawResponse = null; // Store raw API response for script access
         this.lastToolCalls = [];
         this.lastParsingToolCalls = [];
+
+        // Script execution context - this object will be bound to script functions
+        this.scriptContext = {
+            common_data: this.commonData,
+            last_response: null,
+            workflow_contexts: this.contexts,
+            input: null,
+        };
 
         this.logger.debug('🔄 WorkflowStateMachine initialized');
     }
@@ -86,16 +95,42 @@ export default class WorkflowStateMachine {
     }
 
     /**
+     * Load a single workflow configuration
+     * @param {string} configPath - Path to the workflow configuration file
+     * @returns {Promise<Object>} Loaded workflow configuration
+     */
+    async loadWorkflow(configPath) {
+        try {
+            const workflowConfig = new WorkflowConfig(configPath);
+            const config = await workflowConfig.load();
+            const workflowName = workflowConfig.getWorkflowName();
+
+            if (!workflowName) {
+                throw new Error('Workflow configuration has no workflow_name property');
+            }
+
+            this.workflowConfigs.set(workflowName, workflowConfig);
+            this.logger.debug(`✅ Loaded workflow: ${workflowName}`);
+
+            return config;
+        } catch (error) {
+            this.logger.error(error, `Failed to load workflow from ${configPath}`);
+            throw error;
+        }
+    }
+
+    /**
      * Execute a workflow by name
      * @param {string} workflowName - Name of the workflow to execute
      * @param {string} inputParams - Input parameters for the workflow
      * @returns {Promise<any>} Workflow execution result
      */
     async executeWorkflow(workflowName, inputParams) {
+        const startTime = Date.now();
         try {
             const workflowConfig = this.workflowConfigs.get(workflowName);
             if (!workflowConfig) {
-                throw new Error(`Unknown workflow: ${workflowName}`);
+                throw new Error(`Workflow not found: ${workflowName}`);
             }
 
             // Load the workflow configuration
@@ -107,17 +142,37 @@ export default class WorkflowStateMachine {
             // Initialize workflow execution context
             const executionContext = await this._initializeWorkflow(config, inputParams);
 
-            // Create workflow snapshot
-            await this.snapshotManager.createSnapshot(`Workflow: ${workflowName}`);
+            // Create workflow snapshot if snapshot manager is available
+            if (this.snapshotManager) {
+                await this.snapshotManager.createSnapshot(`Workflow: ${workflowName}`);
+            }
 
-            // Execute state machine (currently mocked)
+            // Execute state machine
             const result = await this._executeStateMachine(executionContext);
+            const executionTime = Date.now() - startTime;
 
             this.logger.info(`✅ Workflow completed: ${workflowName}`);
-            return result;
+
+            return {
+                success: true,
+                workflow_name: workflowName,
+                final_state: executionContext.currentState || 'stop',
+                execution_time: executionTime,
+                states_visited: executionContext.executionHistory.map(h => h.state),
+                result: result,
+                common_data: { ...this.commonData },
+            };
         } catch (error) {
+            const executionTime = Date.now() - startTime;
             this.logger.error(error, `Workflow execution failed: ${workflowName}`);
-            throw error;
+
+            return {
+                success: false,
+                workflow_name: workflowName,
+                error: error.message,
+                execution_time: executionTime,
+                states_visited: [],
+            };
         }
     }
 
@@ -137,6 +192,12 @@ export default class WorkflowStateMachine {
         this.lastAgentResponse = null;
         this.lastToolCalls = [];
         this.lastParsingToolCalls = [];
+        this.lastRawResponse = null;
+
+        // Update script context references
+        this.scriptContext.common_data = this.commonData;
+        this.scriptContext.workflow_contexts = this.contexts;
+        this.scriptContext.input = inputParams;
 
         // Initialize contexts
         for (const contextConfig of workflowConfig.contexts) {
@@ -205,6 +266,7 @@ export default class WorkflowStateMachine {
 
             // Determine next state
             currentStateName = this._getNextState(state, stateResult, executionContext);
+            executionContext.currentState = currentStateName; // Update current state
             this.logger.debug(`➡️ Next state: ${currentStateName || 'stop'}`);
         }
 
@@ -302,36 +364,43 @@ export default class WorkflowStateMachine {
      * @param {Object} executionContext - Execution context
      * @returns {Promise<Object>} State execution result
      */
-    async _executeState(state, _executionContext) {
+    async _executeState(state, executionContext) {
         try {
             // Execute pre-transition script if present
             if (state.action && state.action.script) {
-                this._executeScript(state.action.script);
+                // Get the workflow config to access script module
+                const workflowConfig = this.workflowConfigs.get(
+                    executionContext.config.workflow_name
+                );
+                this._executeScript(state.action.script, workflowConfig);
             }
 
             // Execute agent action if present
-            if (state.agent) {
-                const agent = this.agents.get(state.agent);
+            if (state.action && state.action.agent_role) {
+                const agentRole = state.action.agent_role;
+                const agent = this.agents.get(agentRole);
                 if (!agent) {
-                    throw new Error(`Unknown agent: ${state.agent}`);
+                    throw new Error(`Unknown agent: ${agentRole}`);
                 }
 
-                // Evaluate input expression
-                const input = this._evaluateExpression(state.input);
-                this.logger.debug(`📝 Evaluated input for agent ${state.agent}: "${input}"`);
+                // Evaluate message expression (support template variables)
+                let message = state.action.message || '';
+                message = this._evaluateTemplateString(message);
+
+                this.logger.debug(`📝 Evaluated message for agent ${agentRole}: "${message}"`);
 
                 // Execute agent function
-                const functionName = state.action?.function || 'sendUserMessage';
+                const functionName = state.action?.function || 'sendMessage';
                 let result;
 
                 this.logger.debug(
-                    `🤖 Agent ${state.agent} executing: ${functionName} with input: "${input}"`
+                    `🤖 Agent ${agentRole} executing: ${functionName} with message: "${message}"`
                 );
 
-                if (functionName === 'sendUserMessage') {
-                    result = await agent.sendMessage(input);
+                if (functionName === 'sendMessage') {
+                    result = await agent.sendMessage(message);
                 } else if (functionName === 'addUserMessage') {
-                    result = await agent.addUserMessage(input);
+                    result = await agent.addUserMessage(message);
                 } else if (functionName === 'clearConversation') {
                     result = await agent.clearConversation();
                 } else {
@@ -339,22 +408,26 @@ export default class WorkflowStateMachine {
                 }
 
                 this.logger.debug(
-                    `✅ Agent ${state.agent} completed ${functionName}, result: "${result}"`
+                    `✅ Agent ${agentRole} completed ${functionName}, result: "${result}"`
                 );
 
                 // Update last response tracking
                 this.lastAgentResponse = result;
+                this.lastRawResponse = agent.getLastRawResponse();
                 this.lastToolCalls = agent.getToolCalls();
                 this.lastParsingToolCalls = agent.getParsingToolCalls();
 
+                // Update script context with latest response
+                this._updateScriptContext();
+
                 this.logger.debug(
-                    `📊 Agent ${state.agent} tool calls: ${this.lastToolCalls.length}, parsing tool calls: ${this.lastParsingToolCalls.length}`
+                    `📊 Agent ${agentRole} tool calls: ${this.lastToolCalls.length}, parsing tool calls: ${this.lastParsingToolCalls.length}`
                 );
 
                 return {
                     success: true,
                     result: result,
-                    agent: state.agent,
+                    agent: agentRole,
                     toolCalls: this.lastToolCalls,
                     parsingToolCalls: this.lastParsingToolCalls,
                 };
@@ -375,19 +448,22 @@ export default class WorkflowStateMachine {
      * @param {Object} executionContext - Execution context
      * @returns {string|null} Next state name or null to stop
      */
-    _getNextState(state, stateResult, _executionContext) {
+    _getNextState(state, stateResult, executionContext) {
         if (!state.transition || !Array.isArray(state.transition)) {
             return 'stop'; // No transitions defined, stop execution
         }
 
+        // Get the workflow config to access script module
+        const workflowConfig = this.workflowConfigs.get(executionContext.config.workflow_name);
+
         for (const transition of state.transition) {
             // Execute before script if present
             if (transition.before) {
-                this._executeScript(transition.before);
+                this._executeScript(transition.before, workflowConfig);
             }
 
             // Evaluate transition condition
-            if (this._evaluateCondition(transition.condition, stateResult)) {
+            if (this._evaluateCondition(transition.condition, stateResult, workflowConfig)) {
                 return transition.target;
             }
         }
@@ -400,9 +476,10 @@ export default class WorkflowStateMachine {
      * @private
      * @param {string} condition - Condition expression
      * @param {Object} context - Execution context
+     * @param {Object} workflowConfig - Workflow configuration (optional, for script module access)
      * @returns {boolean} Condition result
      */
-    _evaluateCondition(condition, context = {}) {
+    _evaluateCondition(condition, context = {}, workflowConfig = null) {
         // Simple condition evaluation
         if (condition === 'true') {
             return true;
@@ -412,6 +489,11 @@ export default class WorkflowStateMachine {
         }
 
         try {
+            // Check if this is a function reference
+            if (this._isScriptFunctionReference(condition) && workflowConfig) {
+                return this._executeScriptFunction(condition, workflowConfig);
+            }
+
             // Handle function call access pattern
             if (condition.includes('function.')) {
                 return this._evaluateFunctionCondition(condition);
@@ -476,14 +558,20 @@ export default class WorkflowStateMachine {
     }
 
     /**
-     * Execute a JavaScript script
+     * Execute a JavaScript script or function reference
      * @private
-     * @param {string} script - Script to execute
+     * @param {string} script - Script to execute or function name to call
+     * @param {Object} workflowConfig - Workflow configuration (optional, for script module access)
      * @returns {any} Script result
      */
-    _executeScript(script) {
+    _executeScript(script, workflowConfig = null) {
         try {
-            // Handle function call access in scripts
+            // Check if this is a function reference (no spaces, no operators, no semicolons)
+            if (this._isScriptFunctionReference(script) && workflowConfig) {
+                return this._executeScriptFunction(script, workflowConfig);
+            }
+
+            // Handle inline script execution (legacy support)
             let processedScript = script;
             if (script.includes('function.')) {
                 processedScript = this._processFunctionCallsInScript(script);
@@ -496,6 +584,42 @@ export default class WorkflowStateMachine {
             this.logger.error(error, `Script execution failed: ${script}`);
             throw error;
         }
+    }
+
+    /**
+     * Check if a script string is a function reference
+     * @private
+     * @param {string} script - Script string to check
+     * @returns {boolean} True if it's a function reference
+     */
+    _isScriptFunctionReference(script) {
+        // Function references should be simple identifiers without spaces, operators, or semicolons
+        return /^[a-zA-Z_$][a-zA-Z0-9_$]*$/.test(script.trim());
+    }
+
+    /**
+     * Execute a script function from the loaded module
+     * @private
+     * @param {string} functionName - Name of the function to execute
+     * @param {Object} workflowConfig - Workflow configuration with script module
+     * @returns {any} Function result
+     */
+    _executeScriptFunction(functionName, workflowConfig) {
+        const scriptModule = workflowConfig.getScriptModule();
+        if (!scriptModule) {
+            throw new Error(`No script module loaded for function: ${functionName}`);
+        }
+
+        const func = scriptModule[functionName];
+        if (typeof func !== 'function') {
+            throw new Error(`Function not found in script module: ${functionName}`);
+        }
+
+        // Update script context with latest data before execution
+        this._updateScriptContext();
+
+        // Bind and execute the function
+        return func.call(this.scriptContext);
     }
 
     /**
@@ -559,6 +683,32 @@ export default class WorkflowStateMachine {
 
         // Return as-is if no special handling needed
         return expression;
+    }
+
+    /**
+     * Evaluate template string with variable substitution
+     * @param {string} template - Template string with {{variable}} placeholders
+     * @returns {string} Evaluated string
+     */
+    _evaluateTemplateString(template) {
+        if (typeof template !== 'string') {
+            return template;
+        }
+
+        return template.replace(/\{\{([^}]+)\}\}/g, (match, expression) => {
+            const value = this._evaluateExpression(expression.trim());
+            return value !== undefined ? String(value) : match;
+        });
+    }
+
+    /**
+     * Update the script context with latest workflow state
+     * @private
+     */
+    _updateScriptContext() {
+        this.scriptContext.common_data = this.commonData;
+        this.scriptContext.last_response = this.lastRawResponse; // Use raw response for script access
+        this.scriptContext.workflow_contexts = this.contexts;
     }
 
     /**

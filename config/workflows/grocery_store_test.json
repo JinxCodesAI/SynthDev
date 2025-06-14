@@ -37,12 +37,12 @@
         {
             "name": "start",
             "action": {
-                "script": "common_data.current_request = common_data.initial_customer_request;"
+                "script": "initializeRequest"
             },
             "transition": [
                 {
                     "target": "worker_response",
-                    "condition": "true"
+                    "condition": "alwaysTrue"
                 }
             ]
         },
@@ -56,8 +56,8 @@
             "transition": [
                 {
                     "target": "customer_decision",
-                    "condition": "true",
-                    "before": "common_data.current_request = this.lastAgentResponse;"
+                    "condition": "alwaysTrue",
+                    "before": "setWorkerResponse"
                 }
             ]
         },
@@ -71,13 +71,13 @@
             "transition": [
                 {
                     "target": "worker_response",
-                    "condition": "function.interaction_decision.arguments.continue_shopping === true",
-                    "before": "common_data.current_request = function.interaction_decision.arguments.continue_message;"
+                    "condition": "shouldContinueShopping",
+                    "before": "setContinueMessage"
                 },
                 {
                     "target": "stop",
-                    "condition": "function.interaction_decision.arguments.continue_shopping === false",
-                    "before": "common_data.interaction_summary = function.interaction_decision.arguments.shopping_summary;"
+                    "condition": "shouldStopShopping",
+                    "before": "setShoppingSummary"
                 }
             ]
         },

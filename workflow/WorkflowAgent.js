@@ -22,6 +22,7 @@ export default class WorkflowAgent {
         // Initialize response tracking
         this.lastParsingToolCall = null;
         this.lastResponseContent = null;
+        this.lastRawResponse = null; // Store raw API response for workflow access
 
         // Create AIAPIClient instance for this agent
         this._initializeAPIClient();
@@ -297,6 +298,9 @@ export default class WorkflowAgent {
      */
     _onResponse(response, _role) {
         try {
+            // Store the raw response for workflow script access
+            this.lastRawResponse = response;
+
             // Extract the content from the response
             const message = response.choices?.[0]?.message;
             if (message && message.content) {
@@ -308,6 +312,14 @@ export default class WorkflowAgent {
         } catch (error) {
             this.logger.error(error, `Agent ${this.agentRole} failed to capture response content`);
         }
+    }
+
+    /**
+     * Get the last raw API response
+     * @returns {Object|null} Last raw API response or null
+     */
+    getLastRawResponse() {
+        return this.lastRawResponse;
     }
 
     /**

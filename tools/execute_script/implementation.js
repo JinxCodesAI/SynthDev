@@ -211,7 +211,7 @@ class ExecuteScriptTool extends CommandBaseTool {
 
                 // Set timeout
                 const timeoutId = setTimeout(() => {
-                    if (!killed) {
+                    if (!killed && child && typeof child.kill === 'function') {
                         killed = true;
                         child.kill('SIGTERM');
                         resolve(

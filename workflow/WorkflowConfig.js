@@ -1,4 +1,6 @@
 import { existsSync, readFileSync } from 'fs';
+import { join, dirname, basename, resolve } from 'path';
+import { pathToFileURL } from 'url';
 import { getLogger } from '../logger.js';
 
 /**
@@ -9,6 +11,7 @@ export default class WorkflowConfig {
         this.configPath = configPath;
         this.config = null;
         this.workflowName = null; // Will be set from the JSON file
+        this.scriptModule = null; // Will hold the loaded script module
         this.logger = getLogger();
     }
 
@@ -27,6 +30,14 @@ export default class WorkflowConfig {
 
             // Set the workflow name from the config
             this.workflowName = this.config.workflow_name;
+
+            // Load the corresponding script file (optional)
+            try {
+                await this._loadScriptModule();
+            } catch (error) {
+                this.logger.warn(`Script module loading failed (optional): ${error.message}`);
+                this.scriptModule = null;
+            }
 
             // Validate the configuration
             this._validateConfig();
@@ -53,6 +64,48 @@ export default class WorkflowConfig {
      */
     getWorkflowName() {
         return this.workflowName;
+    }
+
+    /**
+     * Get the loaded script module
+     * @returns {Object|null} Script module or null if not loaded
+     */
+    getScriptModule() {
+        return this.scriptModule;
+    }
+
+    /**
+     * Load the corresponding script module for this workflow
+     * @private
+     */
+    async _loadScriptModule() {
+        try {
+            // Determine script path based on JSON filename
+            const configDir = dirname(this.configPath);
+            const configBasename = basename(this.configPath, '.json');
+            const scriptPath = join(configDir, configBasename, 'script.js');
+
+            if (existsSync(scriptPath)) {
+                // Import the script module dynamically
+                // Convert to absolute path and then to file URL
+                const absolutePath = resolve(scriptPath);
+                const fileUrl = pathToFileURL(absolutePath).href;
+                const module = await import(fileUrl);
+                this.scriptModule = module.default;
+
+                this.logger.debug(`✅ Loaded script module: ${scriptPath}`);
+            } else {
+                this.logger.debug(`📝 No script file found at: ${scriptPath} (optional)`);
+                this.scriptModule = null;
+            }
+        } catch (error) {
+            this.logger.error(
+                error,
+                `Failed to load script module for workflow: ${this.workflowName}`
+            );
+            // Don't throw - make script loading optional
+            this.scriptModule = null;
+        }
     }
 
     /**
