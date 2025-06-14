@@ -110,13 +110,29 @@ export default class WorkflowAgent {
                 throw new Error(`Message cannot be empty for agent ${this.agentRole}`);
             }
 
-            // For workflow agents, we always call sendUserMessage to get AI response
-            // The contextRole determines how the conversation history is presented to the AI
+            // Add the input message to shared context with correct role
+            // The role depends on who is "speaking" in the conversation
+            const inputRole = this.contextRole === 'assistant' ? 'user' : 'assistant';
+            const inputMessage = { role: inputRole, content: messageStr };
+            this.context.addMessage(inputMessage, this);
+
+            // Refresh agent's message array from context before API call
+            this._refreshMessagesFromContext();
+
+            // Get AI response
             this.logger.debug(
                 `📤 Agent ${this.agentRole} calling sendUserMessage with: "${messageStr}"`
             );
             const response = await this.apiClient.sendUserMessage(messageStr);
             this.logger.debug(`📥 Agent ${this.agentRole} received response: "${response}"`);
+
+            // Add the AI response to shared context with correct role
+            if (response && response.trim() !== '') {
+                const responseRole = this.contextRole === 'assistant' ? 'assistant' : 'user';
+                const responseMessage = { role: responseRole, content: response };
+                this.context.addMessage(responseMessage, this);
+            }
+
             return response;
         } catch (error) {
             this.logger.error(
@@ -133,8 +149,13 @@ export default class WorkflowAgent {
      */
     async addUserMessage(message) {
         try {
-            await this.apiClient.addUserMessage(message);
-            this.logger.debug(`💬 Agent ${this.agentRole} added user message`);
+            // Add message to shared context with correct role based on who is "speaking"
+            const messageRole = this.contextRole === 'assistant' ? 'user' : 'assistant';
+            const messageObj = { role: messageRole, content: message };
+            this.context.addMessage(messageObj, this);
+            this.logger.debug(
+                `💬 Agent ${this.agentRole} added ${messageRole} message to shared context`
+            );
         } catch (error) {
             this.logger.error(error, `Agent ${this.agentRole} failed to add user message`);
             throw error;
@@ -202,14 +223,27 @@ export default class WorkflowAgent {
     }
 
     /**
-     * Set the messages array for this agent (used by context)
-     * @param {Array} messages - Messages array from context
+     * Set the messages array for this agent (used by context) - DEPRECATED
+     * This method is kept for compatibility but should not be used
+     * Use _refreshMessagesFromContext() instead
+     * @param {Array} _messages - Messages array from context (unused)
      */
-    setMessages(messages) {
+    setMessages(_messages) {
+        this.logger.debug(`⚠️ Agent ${this.agentRole} setMessages() called - this is deprecated`);
+        // Don't do anything - messages should be refreshed from context dynamically
+    }
+
+    /**
+     * Refresh agent's message array from shared context with proper role mapping
+     * @private
+     */
+    _refreshMessagesFromContext() {
+        const contextMessages = this.context.getMessages();
+
         if (this.contextRole === 'user') {
             // For agents with contextRole 'user', reverse user/assistant roles
             // This makes the agent see the conversation from the user's perspective
-            const reversedMessages = messages.map(msg => {
+            const reversedMessages = contextMessages.map(msg => {
                 if (msg.role === 'user') {
                     return { ...msg, role: 'assistant' };
                 } else if (msg.role === 'assistant') {
@@ -220,13 +254,13 @@ export default class WorkflowAgent {
             });
             this.apiClient.messages = reversedMessages;
             this.logger.debug(
-                `🔄 Agent ${this.agentRole} (contextRole: user) using reversed message roles`
+                `🔄 Agent ${this.agentRole} refreshed ${reversedMessages.length} messages with reversed roles`
             );
         } else {
             // For agents with contextRole 'assistant', use messages as-is
-            this.apiClient.messages = messages;
+            this.apiClient.messages = [...contextMessages]; // Create copy to avoid reference issues
             this.logger.debug(
-                `➡️ Agent ${this.agentRole} (contextRole: assistant) using original message roles`
+                `➡️ Agent ${this.agentRole} refreshed ${contextMessages.length} messages with original roles`
             );
         }
     }

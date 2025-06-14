@@ -22,8 +22,8 @@ export default class WorkflowContext {
     addAgent(agent, role) {
         this.agents.set(agent.getId(), { agent, role });
 
-        // Share the actual message array for true context sharing
-        agent.setMessages(this.messages);
+        // Note: We no longer call agent.setMessages() here
+        // Agents will dynamically refresh their messages from context when needed
 
         this.logger.debug(`👤 Added agent ${agent.getRole()} as ${role} to context ${this.name}`);
     }

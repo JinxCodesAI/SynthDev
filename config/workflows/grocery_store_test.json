@@ -36,23 +36,8 @@
     "states": [
         {
             "name": "start",
-            "agent": "customer",
             "action": {
                 "script": "common_data.current_request = common_data.initial_customer_request;"
-            },
-            "transition": [
-                {
-                    "target": "customer_speaks",
-                    "condition": "true"
-                }
-            ]
-        },
-        {
-            "name": "customer_speaks",
-            "agent": "customer",
-            "input": "common_data.current_request",
-            "action": {
-                "function": "addUserMessage"
             },
             "transition": [
                 {
@@ -84,7 +69,7 @@
             },
             "transition": [
                 {
-                    "target": "customer_speaks",
+                    "target": "worker_response",
                     "condition": "function.interaction_decision.arguments.continue_shopping === true",
                     "before": "common_data.current_request = function.interaction_decision.arguments.continue_message;"
                 },
