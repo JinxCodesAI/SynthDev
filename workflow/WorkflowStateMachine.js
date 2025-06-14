@@ -318,12 +318,15 @@ export default class WorkflowStateMachine {
 
                 // Evaluate input expression
                 const input = this._evaluateExpression(state.input);
+                this.logger.debug(`📝 Evaluated input for agent ${state.agent}: "${input}"`);
 
                 // Execute agent function
                 const functionName = state.action?.function || 'sendUserMessage';
                 let result;
 
-                this.logger.debug(`🤖 Agent ${state.agent} executing: ${functionName}`);
+                this.logger.debug(
+                    `🤖 Agent ${state.agent} executing: ${functionName} with input: "${input}"`
+                );
 
                 if (functionName === 'sendUserMessage') {
                     result = await agent.sendMessage(input);
@@ -335,10 +338,18 @@ export default class WorkflowStateMachine {
                     throw new Error(`Unknown agent function: ${functionName}`);
                 }
 
+                this.logger.debug(
+                    `✅ Agent ${state.agent} completed ${functionName}, result: "${result}"`
+                );
+
                 // Update last response tracking
                 this.lastAgentResponse = result;
                 this.lastToolCalls = agent.getToolCalls();
                 this.lastParsingToolCalls = agent.getParsingToolCalls();
+
+                this.logger.debug(
+                    `📊 Agent ${state.agent} tool calls: ${this.lastToolCalls.length}, parsing tool calls: ${this.lastParsingToolCalls.length}`
+                );
 
                 return {
                     success: true,
@@ -520,12 +531,33 @@ export default class WorkflowStateMachine {
             return expression;
         }
 
-        if (expression.startsWith('common_data.')) {
+        // Simple property access
+        if (expression.startsWith('common_data.') && !expression.includes(' ')) {
             const path = expression.substring(12); // Remove 'common_data.'
             return this._getNestedProperty(this.commonData, path);
         }
 
-        // Handle other expression types as needed
+        // Complex expression that needs JavaScript evaluation
+        if (expression.includes('common_data.')) {
+            try {
+                // Create a function with the context variables in scope
+                const func = new Function(
+                    'common_data',
+                    'agents',
+                    'contexts',
+                    `return ${expression}`
+                );
+
+                const result = func.call(this, this.commonData, this.agents, this.contexts);
+                this.logger.debug(`📊 Expression "${expression}" evaluated to: "${result}"`);
+                return result;
+            } catch (error) {
+                this.logger.error(error, `Expression evaluation failed: ${expression}`);
+                throw new Error(`Failed to evaluate expression: ${expression} - ${error.message}`);
+            }
+        }
+
+        // Return as-is if no special handling needed
         return expression;
     }
 

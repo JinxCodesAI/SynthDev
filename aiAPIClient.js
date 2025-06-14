@@ -412,7 +412,16 @@ class AIAPIClient {
         this.lastAPICall.timestamp = new Date().toISOString();
 
         // Call OpenAI Compatible API
-        const response = await this.client.chat.completions.create(requestData);
+        const response = await this.client.chat.completions.create(requestData).catch(error => {
+            this.logger.error(error, 'API call failed');
+            this.logger.httpRequest(
+                'POST',
+                `${this.client.baseURL}/chat/completions`,
+                requestData,
+                error
+            );
+            throw error;
+        });
 
         // Store response data for review
         this.lastAPICall.response = JSON.parse(JSON.stringify(response));

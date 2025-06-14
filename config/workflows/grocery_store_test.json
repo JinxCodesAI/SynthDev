@@ -1,0 +1,103 @@
+{
+    "workflow_name": "grocery_store_test",
+    "description": "Test workflow simulating customer-grocery worker interaction to test multi-agent conversation patterns and context sharing",
+    "input": {
+        "name": "initial_customer_request",
+        "type": "string",
+        "description": "What the customer initially asks for or mentions when approaching the grocery worker"
+    },
+    "output": {
+        "name": "interaction_summary",
+        "type": "string",
+        "description": "Summary of the customer-worker interaction and what was accomplished"
+    },
+    "variables": {
+        "max_interactions": 15
+    },
+    "contexts": [
+        {
+            "name": "store_conversation",
+            "starting_messages": [],
+            "max_length": 30000
+        }
+    ],
+    "agents": [
+        {
+            "agent_role": "grocery_worker",
+            "context": "store_conversation",
+            "role": "assistant"
+        },
+        {
+            "agent_role": "customer",
+            "context": "store_conversation",
+            "role": "user"
+        }
+    ],
+    "states": [
+        {
+            "name": "start",
+            "agent": "customer",
+            "action": {
+                "script": "common_data.current_request = common_data.initial_customer_request;"
+            },
+            "transition": [
+                {
+                    "target": "customer_speaks",
+                    "condition": "true"
+                }
+            ]
+        },
+        {
+            "name": "customer_speaks",
+            "agent": "customer",
+            "input": "common_data.current_request",
+            "action": {
+                "function": "addUserMessage"
+            },
+            "transition": [
+                {
+                    "target": "worker_response",
+                    "condition": "true"
+                }
+            ]
+        },
+        {
+            "name": "worker_response",
+            "agent": "grocery_worker",
+            "input": "common_data.current_request",
+            "action": {
+                "function": "sendUserMessage"
+            },
+            "transition": [
+                {
+                    "target": "customer_decision",
+                    "condition": "true"
+                }
+            ]
+        },
+        {
+            "name": "customer_decision",
+            "agent": "customer",
+            "input": "common_data.current_request",
+            "action": {
+                "function": "sendUserMessage"
+            },
+            "transition": [
+                {
+                    "target": "customer_speaks",
+                    "condition": "function.interaction_decision.arguments.continue_shopping === true",
+                    "before": "common_data.current_request = function.interaction_decision.arguments.continue_message;"
+                },
+                {
+                    "target": "stop",
+                    "condition": "function.interaction_decision.arguments.continue_shopping === false",
+                    "before": "common_data.interaction_summary = function.interaction_decision.arguments.shopping_summary;"
+                }
+            ]
+        },
+        {
+            "name": "stop",
+            "input": "common_data.interaction_summary"
+        }
+    ]
+}
