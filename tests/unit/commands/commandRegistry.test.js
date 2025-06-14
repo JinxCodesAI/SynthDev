@@ -4,8 +4,6 @@ import { CommandRegistry } from '../../../commands/base/CommandRegistry.js';
 import { BaseCommand } from '../../../commands/base/BaseCommand.js';
 import json from '../../../config/ui/console-messages.json';
 
-console.log(json);
-
 // Mock logger
 vi.mock('../../../logger.js', () => ({
     getLogger: vi.fn().mockReturnValue({

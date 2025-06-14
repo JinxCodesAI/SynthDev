@@ -195,7 +195,7 @@ class AIAPIClient {
     }
 
     /**
-     * Apply tool filtering based on current role's excluded tools and add role-specific tools
+     * Apply tool filtering based on current role's included/excluded tools and add role-specific tools
      * @private
      */
     _applyToolFiltering() {
@@ -206,10 +206,10 @@ class AIAPIClient {
         try {
             const parsingTools = SystemMessages.getParsingTools(this.role);
 
-            // Filter out excluded tools using pattern matching
+            // Filter tools using inclusion logic (handles both includedTools and excludedTools)
             const filteredTools = this.allTools.filter(tool => {
                 const toolName = tool.function?.name || tool.name;
-                return !SystemMessages.isToolExcluded(this.role, toolName);
+                return SystemMessages.isToolIncluded(this.role, toolName);
             });
 
             // Add role-specific tools

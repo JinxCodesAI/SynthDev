@@ -119,6 +119,50 @@ class SystemMessages {
     }
 
     /**
+     * Get included tools for a specific role
+     * @param {string} role - The role name (coder, reviewer, architect)
+     * @returns {string[]} Array of tool names to include
+     */
+    static getIncludedTools(role) {
+        const instance = new SystemMessages();
+        const roleConfig = instance.roles[role];
+
+        if (!roleConfig) {
+            throw new Error(
+                `Unknown role: ${role}. Available roles: ${Object.keys(instance.roles).join(', ')}`
+            );
+        }
+
+        return roleConfig.includedTools || [];
+    }
+
+    /**
+     * Validate that includedTools and excludedTools are mutually exclusive
+     * @param {string} role - The role name
+     * @throws {Error} If both includedTools and excludedTools are present
+     * @private
+     */
+    static _validateToolConfiguration(role) {
+        const instance = new SystemMessages();
+        const roleConfig = instance.roles[role];
+
+        if (!roleConfig) {
+            throw new Error(
+                `Unknown role: ${role}. Available roles: ${Object.keys(instance.roles).join(', ')}`
+            );
+        }
+
+        const hasIncludedTools = roleConfig.includedTools && roleConfig.includedTools.length > 0;
+        const hasExcludedTools = roleConfig.excludedTools && roleConfig.excludedTools.length > 0;
+
+        if (hasIncludedTools && hasExcludedTools) {
+            throw new Error(
+                `Role '${role}' cannot have both 'includedTools' and 'excludedTools' properties. They are mutually exclusive.`
+            );
+        }
+    }
+
+    /**
      * Check if a tool matches an exclusion pattern
      * Supports:
      * - Exact string matching (backward compatibility)
@@ -175,18 +219,54 @@ class SystemMessages {
     }
 
     /**
+     * Check if a tool should be included for a specific role
+     * Uses pattern matching to support wildcards and regular expressions
+     * @param {string} role - The role name
+     * @param {string} toolName - The tool name to check
+     * @returns {boolean} True if the tool should be included
+     */
+    static isToolIncluded(role, toolName) {
+        // Validate configuration first
+        SystemMessages._validateToolConfiguration(role);
+
+        const instance = new SystemMessages();
+        const roleConfig = instance.roles[role];
+        const includedPatterns = SystemMessages.getIncludedTools(role);
+        const excludedPatterns = SystemMessages.getExcludedTools(role);
+
+        // Check if includedTools property exists (even if empty)
+        const hasIncludedToolsProperty = roleConfig.hasOwnProperty('includedTools');
+        // Check if excludedTools property exists (even if empty)
+        const hasExcludedToolsProperty = roleConfig.hasOwnProperty('excludedTools');
+
+        // If includedTools property exists, use inclusion logic
+        if (hasIncludedToolsProperty) {
+            return includedPatterns.some(pattern =>
+                SystemMessages._matchesExclusionPattern(toolName, pattern)
+            );
+        }
+
+        // If excludedTools property exists, use exclusion logic
+        if (hasExcludedToolsProperty) {
+            return !excludedPatterns.some(pattern =>
+                SystemMessages._matchesExclusionPattern(toolName, pattern)
+            );
+        }
+
+        // If neither property present, default to no tools available (includedTools: [])
+        return false;
+    }
+
+    /**
      * Check if a tool should be excluded for a specific role
      * Uses pattern matching to support wildcards and regular expressions
      * @param {string} role - The role name
      * @param {string} toolName - The tool name to check
      * @returns {boolean} True if the tool should be excluded
+     * @deprecated Use isToolIncluded() instead for more comprehensive logic
      */
     static isToolExcluded(role, toolName) {
-        const excludedPatterns = SystemMessages.getExcludedTools(role);
-
-        return excludedPatterns.some(pattern =>
-            SystemMessages._matchesExclusionPattern(toolName, pattern)
-        );
+        return !SystemMessages.isToolIncluded(role, toolName);
     }
 
     /**

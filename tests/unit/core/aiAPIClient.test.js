@@ -20,6 +20,7 @@ vi.mock('../../../systemMessages.js', () => ({
         getLevel: vi.fn(),
         getExcludedTools: vi.fn(),
         isToolExcluded: vi.fn(),
+        isToolIncluded: vi.fn(),
         getReminder: vi.fn(),
         getParsingTools: vi.fn(),
     },
@@ -68,6 +69,7 @@ describe('AIAPIClient', () => {
             getLevel: vi.fn().mockReturnValue('base'),
             getExcludedTools: vi.fn().mockReturnValue([]),
             isToolExcluded: vi.fn().mockReturnValue(false),
+            isToolIncluded: vi.fn().mockReturnValue(true),
             getReminder: vi.fn().mockReturnValue(null),
             getParsingTools: vi.fn().mockReturnValue([]),
             getExamples: vi.fn().mockReturnValue([]),
@@ -85,6 +87,7 @@ describe('AIAPIClient', () => {
         SystemMessages.default.getLevel = mockSystemMessages.getLevel;
         SystemMessages.default.getExcludedTools = mockSystemMessages.getExcludedTools;
         SystemMessages.default.isToolExcluded = mockSystemMessages.isToolExcluded;
+        SystemMessages.default.isToolIncluded = mockSystemMessages.isToolIncluded;
         SystemMessages.default.getReminder = mockSystemMessages.getReminder;
         SystemMessages.default.getParsingTools = mockSystemMessages.getParsingTools;
         SystemMessages.default.getExamples = mockSystemMessages.getExamples;
@@ -193,8 +196,8 @@ describe('AIAPIClient', () => {
                 { function: { name: 'excluded_tool' } },
             ];
 
-            mockSystemMessages.isToolExcluded.mockImplementation(
-                (role, toolName) => toolName === 'excluded_tool'
+            mockSystemMessages.isToolIncluded.mockImplementation(
+                (_role, toolName) => toolName !== 'excluded_tool'
             );
             aiClient.role = 'test-role';
 
@@ -744,8 +747,8 @@ describe('AIAPIClient', () => {
 
             aiClient.allTools = tools;
             aiClient.role = 'test-role';
-            mockSystemMessages.isToolExcluded.mockImplementation(
-                (role, toolName) => toolName === 'excluded_tool'
+            mockSystemMessages.isToolIncluded.mockImplementation(
+                (_role, toolName) => toolName !== 'excluded_tool'
             );
 
             aiClient._applyToolFiltering();
@@ -762,8 +765,8 @@ describe('AIAPIClient', () => {
 
             aiClient.allTools = tools;
             aiClient.role = 'test-role';
-            mockSystemMessages.isToolExcluded.mockImplementation(
-                (role, toolName) => toolName === 'tool1'
+            mockSystemMessages.isToolIncluded.mockImplementation(
+                (_role, toolName) => toolName !== 'tool1'
             );
 
             aiClient._applyToolFiltering();
@@ -790,7 +793,7 @@ describe('AIAPIClient', () => {
 
             aiClient.allTools = tools;
             aiClient.role = 'test-role';
-            mockSystemMessages.isToolExcluded.mockImplementation(() => {
+            mockSystemMessages.isToolIncluded.mockImplementation(() => {
                 throw new Error('SystemMessages error');
             });
 
@@ -815,9 +818,9 @@ describe('AIAPIClient', () => {
             aiClient.allTools = tools;
             aiClient.role = 'test-role';
 
-            // Mock pattern matching: exclude tools ending with '_file' and starting with 'execute_'
-            mockSystemMessages.isToolExcluded.mockImplementation(
-                (role, toolName) => toolName.endsWith('_file') || toolName.startsWith('execute_')
+            // Mock pattern matching: include only tools that don't end with '_file' and don't start with 'execute_'
+            mockSystemMessages.isToolIncluded.mockImplementation(
+                (_role, toolName) => !toolName.endsWith('_file') && !toolName.startsWith('execute_')
             );
 
             aiClient._applyToolFiltering();

@@ -14,6 +14,7 @@ Each role is defined as a JSON object with the following properties:
         "level": "base|smart|fast",
         "systemMessage": "Role instructions and behavior description",
         "excludedTools": ["tool1", "tool2"],
+        "includedTools": ["tool3", "tool4"],
         "reminder": "Additional instructions during tool execution",
         "examples": [
             {
@@ -57,13 +58,23 @@ Core instructions that define the role's behavior, expertise, and responsibiliti
 
 ### Optional Properties
 
-#### `excludedTools` (array)
+#### `excludedTools` (array) - **Mutually exclusive with `includedTools`**
 
-List of tools this role cannot access. Supports:
+List of tools this role cannot access. When present, all tools are available except those matching the exclusion patterns. Supports:
 
 - **Exact matches**: `"read_file"`
 - **Wildcards**: `"*file"` (matches read_file, write_file, edit_file)
 - **Regular expressions**: `"/^execute_/"` (matches tools starting with "execute\_")
+
+#### `includedTools` (array) - **Mutually exclusive with `excludedTools`**
+
+List of tools this role can access. When present, only tools matching the inclusion patterns are available. Supports the same pattern matching as `excludedTools`:
+
+- **Exact matches**: `"read_file"`
+- **Wildcards**: `"*file"` (matches read_file, write_file, edit_file)
+- **Regular expressions**: `"/^execute_/"` (matches tools starting with "execute\_")
+
+**Important**: A role cannot have both `includedTools` and `excludedTools` properties. They are mutually exclusive. If neither is present, the role defaults to having no tools available (equivalent to `"includedTools": []`).
 
 #### `reminder` (string)
 
@@ -137,22 +148,29 @@ Few-shot prompting provides the AI with examples of expected behavior patterns. 
 
 - **Purpose**: Software development and implementation
 - **Level**: base
-- **Tools**: Full access except time/calculation utilities
+- **Tools**: Full access except time/calculation utilities (uses `excludedTools`)
 - **Behavior**: Focuses on writing clean, maintainable code with proper error handling
 
 #### `reviewer`
 
 - **Purpose**: Code review and quality assurance
 - **Level**: base
-- **Tools**: Read-only access (no file modification)
+- **Tools**: Read-only access (no file modification, uses `excludedTools`)
 - **Behavior**: Analyzes code quality, identifies bugs, checks against requirements
 
 #### `architect`
 
 - **Purpose**: System design and architecture planning
 - **Level**: smart (uses advanced model)
-- **Tools**: Read-only access for analysis
+- **Tools**: Read-only access for analysis (uses `excludedTools`)
 - **Behavior**: Creates detailed implementation plans, analyzes existing architecture
+
+#### `file_reader`
+
+- **Purpose**: File reading and analysis only
+- **Level**: fast
+- **Tools**: Limited to read_file, list_directory, exact_search (uses `includedTools`)
+- **Behavior**: Can only read and analyze files, cannot modify them
 
 ### Utility Roles
 
@@ -201,6 +219,12 @@ Add your role to `config/roles/roles.json`:
                 "content": "Example response showing expected behavior"
             }
         ]
+    },
+    "read_only_role": {
+        "level": "fast",
+        "systemMessage": "You can only read and analyze files, not modify them.",
+        "includedTools": ["read_file", "list_directory", "exact_search"],
+        "reminder": "Remember you can only read files, never modify them"
     }
 }
 ```
@@ -245,7 +269,9 @@ If your role benefits from few-shot prompting:
 
 ## Advanced Features
 
-### Pattern Matching in Tool Exclusion
+### Pattern Matching in Tool Filtering
+
+Both `excludedTools` and `includedTools` support the same pattern matching syntax:
 
 ```json
 "excludedTools": [
@@ -255,6 +281,21 @@ If your role benefits from few-shot prompting:
     "/^dangerous_/i"       // Regex: case-insensitive match for tools starting with "dangerous_"
 ]
 ```
+
+```json
+"includedTools": [
+    "read_file",           // Exact match: only allow read_file
+    "*search*",            // Wildcard: allow any tool containing "search"
+    "/^analyze_/"          // Regex: allow tools starting with "analyze_"
+]
+```
+
+### Tool Filtering Logic
+
+- **With `excludedTools`**: All tools are available except those matching exclusion patterns
+- **With `includedTools`**: Only tools matching inclusion patterns are available
+- **With neither**: No tools are available (default behavior)
+- **With both**: Configuration error - they are mutually exclusive
 
 ### Function Examples
 
@@ -289,11 +330,12 @@ For roles that use parsing tools or structured output:
 - Check that `role` field uses valid values (`user`, `assistant`, `function`)
 - Ensure JSON is properly formatted
 
-### Tool Exclusion Issues
+### Tool Filtering Issues
 
-- Test exclusion patterns with `/tools` command
+- Test filtering patterns with `/tools` command
 - Verify wildcard and regex syntax
 - Check for typos in tool names
+- Ensure `includedTools` and `excludedTools` are not both present in the same role
 
 ## Configuration File Location
 
