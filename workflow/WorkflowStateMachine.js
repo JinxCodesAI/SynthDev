@@ -375,22 +375,34 @@ export default class WorkflowStateMachine {
                 this._executeScript(state.action.script, workflowConfig);
             }
 
-            // Execute agent action if present
+            // Execute agent action if present (support both state.agent and state.action.agent_role patterns)
+            let agentRole = null;
+            let message = '';
+            let functionName = 'sendMessage';
+
             if (state.action && state.action.agent_role) {
-                const agentRole = state.action.agent_role;
+                // Legacy pattern: agent_role inside action
+                agentRole = state.action.agent_role;
+                message = state.action.message || '';
+                functionName = state.action?.function || 'sendMessage';
+            } else if (state.agent) {
+                // New pattern: agent at state level
+                agentRole = state.agent;
+                message = this._evaluateExpression(state.input) || '';
+                functionName = state.action?.function || 'sendMessage';
+            }
+
+            if (agentRole) {
                 const agent = this.agents.get(agentRole);
                 if (!agent) {
                     throw new Error(`Unknown agent: ${agentRole}`);
                 }
 
                 // Evaluate message expression (support template variables)
-                let message = state.action.message || '';
-                message = this._evaluateTemplateString(message);
+                message = this._evaluateTemplateString(String(message));
 
                 this.logger.debug(`📝 Evaluated message for agent ${agentRole}: "${message}"`);
 
-                // Execute agent function
-                const functionName = state.action?.function || 'sendMessage';
                 let result;
 
                 this.logger.debug(
@@ -398,6 +410,8 @@ export default class WorkflowStateMachine {
                 );
 
                 if (functionName === 'sendMessage') {
+                    result = await agent.sendMessage(message);
+                } else if (functionName === 'sendUserMessage') {
                     result = await agent.sendMessage(message);
                 } else if (functionName === 'addUserMessage') {
                     result = await agent.addUserMessage(message);
@@ -489,14 +503,20 @@ export default class WorkflowStateMachine {
         }
 
         try {
+            this.logger.debug(`🔍 Evaluating condition: ${condition}`);
+
             // Check if this is a function reference
             if (this._isScriptFunctionReference(condition) && workflowConfig) {
-                return this._executeScriptFunction(condition, workflowConfig);
+                const result = this._executeScriptFunction(condition, workflowConfig);
+                this.logger.debug(`✅ Condition "${condition}" evaluated to: ${result}`);
+                return result;
             }
 
             // Handle function call access pattern
             if (condition.includes('function.')) {
-                return this._evaluateFunctionCondition(condition);
+                const result = this._evaluateFunctionCondition(condition);
+                this.logger.debug(`✅ Function condition "${condition}" evaluated to: ${result}`);
+                return result;
             }
 
             // Create a safe evaluation context with workflow methods
@@ -511,9 +531,14 @@ export default class WorkflowStateMachine {
 
             // Evaluate JavaScript expressions in safe context
             const func = new Function('this', 'context', `return ${condition}`);
-            return func.call(evaluationContext, context);
+            const result = func.call(evaluationContext, context);
+            this.logger.debug(`✅ Expression condition "${condition}" evaluated to: ${result}`);
+            return result;
         } catch (error) {
-            this.logger.warn(`Condition evaluation failed: ${condition}`, error);
+            this.logger.error(
+                error,
+                `⚠️ ${error.constructor.name}: ${error.message}: Condition evaluation failed: ${condition}`
+            );
             return false;
         }
     }
@@ -615,11 +640,17 @@ export default class WorkflowStateMachine {
             throw new Error(`Function not found in script module: ${functionName}`);
         }
 
-        // Update script context with latest data before execution
-        this._updateScriptContext();
+        // Update script context with latest data and script module functions before execution
+        this._updateScriptContextWithModule(workflowConfig);
+
+        this.logger.debug(`🔧 Executing script function: ${functionName}`);
 
         // Bind and execute the function
-        return func.call(this.scriptContext);
+        const result = func.call(this.scriptContext);
+
+        this.logger.debug(`✅ Script function ${functionName} returned: ${JSON.stringify(result)}`);
+
+        return result;
     }
 
     /**
@@ -709,6 +740,28 @@ export default class WorkflowStateMachine {
         this.scriptContext.common_data = this.commonData;
         this.scriptContext.last_response = this.lastRawResponse; // Use raw response for script access
         this.scriptContext.workflow_contexts = this.contexts;
+    }
+
+    /**
+     * Update the script context with latest workflow state and script module functions
+     * @private
+     * @param {Object} workflowConfig - Workflow configuration with script module
+     */
+    _updateScriptContextWithModule(workflowConfig) {
+        this._updateScriptContext();
+
+        // Add script module functions to the context so they can call each other
+        const scriptModule = workflowConfig.getScriptModule();
+        if (scriptModule) {
+            // Add all script functions to the context
+            Object.keys(scriptModule).forEach(functionName => {
+                if (typeof scriptModule[functionName] === 'function') {
+                    this.scriptContext[functionName] = scriptModule[functionName].bind(
+                        this.scriptContext
+                    );
+                }
+            });
+        }
     }
 
     /**

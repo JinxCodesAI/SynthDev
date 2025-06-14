@@ -419,6 +419,25 @@ class AIAPIClient {
             max_completion_tokens: config.getMaxTokens(this.model),
         };
 
+        // Add tool_choice for parsing-only tools to force them to be called
+        if (this.tools.length > 0) {
+            const parsingTools = SystemMessages.getParsingTools(this.role);
+            const parsingOnlyTools = parsingTools.filter(tool => tool.parsingOnly === true);
+
+            if (parsingOnlyTools.length === 1) {
+                // Force the single parsing-only tool to be called
+                requestData.tool_choice = {
+                    type: 'function',
+                    function: { name: parsingOnlyTools[0].function.name },
+                };
+                this.logger.debug(`🔧 Forcing tool choice: ${parsingOnlyTools[0].function.name}`);
+            } else if (parsingOnlyTools.length > 1) {
+                this.logger.warn(
+                    `Multiple parsing-only tools found for role ${this.role}, cannot force tool choice`
+                );
+            }
+        }
+
         // Store request data for review
         this.lastAPICall.request = JSON.parse(JSON.stringify(requestData));
         this.lastAPICall.timestamp = new Date().toISOString();
