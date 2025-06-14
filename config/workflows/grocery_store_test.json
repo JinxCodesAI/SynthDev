@@ -36,50 +36,24 @@
     "states": [
         {
             "name": "start",
-            "action": {
-                "script": "initializeRequest"
-            },
-            "transition": [
-                {
-                    "target": "worker_response",
-                    "condition": "alwaysTrue"
-                }
-            ]
-        },
-        {
-            "name": "worker_response",
             "agent": "grocery_worker",
-            "input": "common_data.current_request",
-            "action": {
-                "function": "sendUserMessage"
-            },
-            "transition": [
-                {
-                    "target": "customer_decision",
-                    "condition": "alwaysTrue",
-                    "before": "setWorkerResponse"
-                }
-            ]
+            "pre_handler": "addInitialCustomerMessage",
+            "post_handler": "addWorkerResponse",
+            "transition_handler": "alwaysTransitionToCustomer"
         },
         {
             "name": "customer_decision",
             "agent": "customer",
-            "input": "common_data.current_request",
-            "action": {
-                "function": "sendUserMessage"
-            },
-            "transition": [
-                {
-                    "target": "worker_response",
-                    "condition": "shouldContinueShopping",
-                    "before": "setContinueMessage"
-                },
-                {
-                    "target": "stop",
-                    "condition": "shouldStopShopping",
-                    "before": "setShoppingSummary"
-                }
-            ]
+            "pre_handler": null,
+            "post_handler": "processCustomerDecision",
+            "transition_handler": "decideNextState"
+        },
+        {
+            "name": "worker_response",
+            "agent": "grocery_worker",
+            "pre_handler": null,
+            "post_handler": "addWorkerResponse",
+            "transition_handler": "alwaysTransitionToCustomer"
         },
         {
             "name": "stop",
