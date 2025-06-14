@@ -156,7 +156,7 @@ export default class WorkflowAgent {
     async makeContextCall() {
         try {
             this.logger.debug(
-                `🤖 Agent ${this.agentRole} (${this.contextRole}) making context-based API call`
+                `🔍 DEBUG: makeContextCall called for agent ${this.agentRole} (${this.contextRole})`
             );
 
             // Refresh agent's message array from context before API call

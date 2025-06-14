@@ -394,14 +394,25 @@ export default class WorkflowStateMachine {
             }
 
             // STEP 2: Agent executes API call to update last_response
-            this.logger.debug(`🤖 Agent ${agentRole} making API call`);
+            this.logger.debug(`🔍 DEBUG: About to call agent.makeContextCall() for ${agentRole}`);
             const result = await agent.makeContextCall(); // Use context-based API call
+            this.logger.debug(`🔍 DEBUG: agent.makeContextCall() completed for ${agentRole}`);
 
             // Update last response tracking
             this.lastAgentResponse = result;
             this.lastRawResponse = agent.getLastRawResponse();
             this.lastToolCalls = agent.getToolCalls();
             this.lastParsingToolCalls = agent.getParsingToolCalls();
+
+            this.logger.debug(
+                `🔍 DEBUG: agent.getLastRawResponse() returned: ${this.lastRawResponse ? 'OBJECT' : 'NULL'}`
+            );
+            this.logger.debug(
+                `🔍 DEBUG: agent.getToolCalls() returned: ${this.lastToolCalls.length} calls`
+            );
+            this.logger.debug(
+                `🔍 DEBUG: agent.getParsingToolCalls() returned: ${this.lastParsingToolCalls.length} calls`
+            );
 
             this.logger.debug(`✅ Agent ${agentRole} completed API call, result: "${result}"`);
             this.logger.debug(

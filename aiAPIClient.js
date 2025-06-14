@@ -202,7 +202,7 @@ class AIAPIClient {
      * @private
      */
     _applyToolFiltering() {
-        if (!this.role || !this.allTools.length) {
+        if (!this.role) {
             return;
         }
 
@@ -324,6 +324,7 @@ class AIAPIClient {
      * @returns {Promise<string>} Response content
      */
     async sendMessage() {
+        this.logger.debug('🔍 DEBUG: sendMessage called for role', this.role);
         try {
             // Execute the common message processing logic without adding a new message
             return await this._processMessage();
@@ -341,6 +342,7 @@ class AIAPIClient {
      * @returns {Promise<string>} Response content
      */
     async _processMessage() {
+        this.logger.debug('🔍 DEBUG: _processMessage called for role', this.role);
         // Reset tool call counter for new interaction
         this.toolCallCount = 0;
 
@@ -368,12 +370,17 @@ class AIAPIClient {
         const parsingTools = SystemMessages.getParsingTools(this.role).map(
             tool => tool.function.name
         );
-        this.logger.debug('Parsing tools:', parsingTools);
+        this.logger.debug('🔍 DEBUG: Parsing tools for role', this.role, ':', parsingTools);
 
         const toolCalls = message.tool_calls || [];
+        this.logger.debug(
+            '🔍 DEBUG: Tool calls in response:',
+            toolCalls.map(call => call.function.name)
+        );
         const parsingToolCalls = toolCalls.filter(call =>
             parsingTools.includes(call.function.name)
         );
+        this.logger.debug('🔍 DEBUG: Parsing tool calls found:', parsingToolCalls.length);
         const nonParsingToolCalls = toolCalls.filter(
             call => !parsingTools.includes(call.function.name)
         );
@@ -427,10 +434,10 @@ class AIAPIClient {
 
             // Always call onResponse to capture raw response data, regardless of parsing tools
             if (this.onResponse) {
-                this.logger.debug('🔍 DEBUG: Calling onResponse callback');
+                this.logger.debug('🔍 DEBUG: Calling onResponse callback for parsing tools');
                 this.onResponse(response, this.role);
             } else {
-                this.logger.debug('🔍 DEBUG: No onResponse callback defined');
+                this.logger.debug('🔍 DEBUG: No onResponse callback defined for parsing tools');
             }
             return content || '';
         }
