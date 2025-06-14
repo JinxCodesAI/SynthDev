@@ -1,6 +1,5 @@
 import { BaseCommand } from '../base/BaseCommand.js';
 import { getLogger } from '../../logger.js';
-import { createInterface } from 'readline';
 
 /**
  * Command to execute a specific workflow
@@ -93,33 +92,22 @@ export default class WorkflowCommand extends BaseCommand {
         logger.user(`🔤 Type: ${inputDef.type}`);
         logger.user('');
 
-        // Prompt for input
-        return new Promise(resolve => {
-            const rl = createInterface({
-                input: process.stdin,
-                output: process.stdout,
-            });
+        // Prompt for input using the console interface
+        const userInput = await consoleInterface.promptForInput(`💭 Enter ${inputDef.name}: `);
 
-            rl.question(`💭 Enter ${inputDef.name}: `, answer => {
-                rl.close();
+        const trimmedAnswer = userInput.trim();
+        if (!trimmedAnswer) {
+            logger.error('❌ Input cannot be empty');
+            return null;
+        }
 
-                const trimmedAnswer = answer.trim();
-                if (!trimmedAnswer) {
-                    logger.error('❌ Input cannot be empty');
-                    resolve(null);
-                    return;
-                }
+        // Basic type validation
+        if (!this._validateInputType(trimmedAnswer, inputDef.type)) {
+            logger.error(`❌ Invalid input type. Expected: ${inputDef.type}`);
+            return null;
+        }
 
-                // Basic type validation
-                if (!this._validateInputType(trimmedAnswer, inputDef.type)) {
-                    logger.error(`❌ Invalid input type. Expected: ${inputDef.type}`);
-                    resolve(null);
-                    return;
-                }
-
-                resolve(trimmedAnswer);
-            });
-        });
+        return trimmedAnswer;
     }
 
     /**
