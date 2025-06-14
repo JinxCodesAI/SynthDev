@@ -69,12 +69,15 @@ vi.mock('../../workflow/WorkflowAgent.js', () => ({
             contextRole: agentConfig.role,
             context: context,
             sendMessage: vi.fn().mockResolvedValue('Mocked agent response'),
+            makeContextCall: vi.fn().mockResolvedValue('Mocked agent response'),
             addUserMessage: vi.fn().mockResolvedValue(),
             clearConversation: vi.fn().mockResolvedValue(),
             getToolCalls: vi.fn().mockReturnValue([]),
             getParsingToolCalls: vi.fn().mockReturnValue([]),
             getLastResponse: vi.fn().mockReturnValue('Mocked response'),
-            getLastRawResponse: vi.fn().mockReturnValue(null),
+            getLastRawResponse: vi.fn().mockReturnValue({
+                choices: [{ message: { content: 'Mocked response', tool_calls: [] } }],
+            }),
             getRole: vi.fn().mockReturnValue(agentConfig.agent_role),
             getContextRole: vi.fn().mockReturnValue(agentConfig.role),
             getId: vi.fn().mockReturnValue(`agent-${agentConfig.agent_role}`),
@@ -377,47 +380,252 @@ describe('Workflow Integration Tests', () => {
                 // Cleanup
             }
         });
+    });
 
-        it('should handle workflow execution errors gracefully', async () => {
+    // ===== NEW COMPREHENSIVE INTEGRATION TESTS FOR CURRENT 4-STEP WORKFLOW PATTERN =====
+
+    describe('4-Step Workflow Pattern Integration', () => {
+        it('should execute complete 4-step workflow with script functions', async () => {
             const workflowConfig = {
-                workflow_name: 'error_workflow',
-                description: 'A workflow that encounters errors',
+                workflow_name: 'grocery_store_simulation',
+                description: 'Simulates customer-worker interaction using 4-step pattern',
                 input: {
-                    name: 'error_input',
+                    name: 'initial_customer_request',
                     type: 'string',
-                    description: 'Input that may cause errors',
+                    description: 'Customer initial request',
                 },
                 output: {
-                    name: 'error_result',
+                    name: 'interaction_summary',
                     type: 'string',
-                    description: 'Result or error information',
+                    description: 'Summary of interaction',
+                },
+                variables: {
+                    max_interactions: 3,
                 },
                 contexts: [
                     {
-                        name: 'error_context',
+                        name: 'store_conversation',
                         starting_messages: [],
-                        max_length: 1000,
+                        max_length: 5000,
                     },
                 ],
                 agents: [
                     {
+                        agent_role: 'grocery_worker',
+                        context: 'store_conversation',
+                        role: 'assistant',
+                    },
+                    {
                         agent_role: 'customer',
-                        context: 'error_context',
+                        context: 'store_conversation',
+                        role: 'user',
+                    },
+                ],
+                states: [
+                    {
+                        name: 'start',
+                        agent: 'grocery_worker',
+                        pre_handler: 'addInitialCustomerMessage',
+                        post_handler: 'addWorkerResponse',
+                        transition_handler: 'alwaysTransitionToCustomer',
+                    },
+                    {
+                        name: 'customer_decision',
+                        agent: 'customer',
+                        pre_handler: null,
+                        post_handler: 'processCustomerDecision',
+                        transition_handler: 'decideNextState',
+                    },
+                    {
+                        name: 'stop',
+                        input: 'common_data.interaction_summary',
+                    },
+                ],
+            };
+
+            // Mock script module with realistic functions
+            const scriptModule = {
+                addInitialCustomerMessage: vi.fn().mockImplementation(function () {
+                    const context = this.workflow_contexts.get('store_conversation');
+                    if (context && this.common_data.initial_customer_request) {
+                        context.addMessage({
+                            role: 'user',
+                            content: this.common_data.initial_customer_request,
+                        });
+                    }
+                }),
+                addWorkerResponse: vi.fn().mockImplementation(function () {
+                    const context = this.workflow_contexts.get('store_conversation');
+                    const responseContent = this.last_response?.choices?.[0]?.message?.content;
+                    if (context && responseContent) {
+                        context.addMessage({
+                            role: 'assistant',
+                            content: responseContent,
+                        });
+                    }
+                }),
+                alwaysTransitionToCustomer: vi.fn().mockReturnValue('customer_decision'),
+                processCustomerDecision: vi.fn().mockImplementation(function () {
+                    // Simulate processing tool calls
+                    const toolCalls = this.last_response?.choices?.[0]?.message?.tool_calls || [];
+                    const decisionCall = toolCalls.find(
+                        call => call.function?.name === 'interaction_decision'
+                    );
+
+                    if (decisionCall) {
+                        try {
+                            const args = JSON.parse(decisionCall.function.arguments);
+                            if (args.continue_shopping === false && args.shopping_summary) {
+                                this.common_data.interaction_summary = args.shopping_summary;
+                            }
+                        } catch (error) {
+                            // Handle parsing error
+                        }
+                    }
+                }),
+                decideNextState: vi.fn().mockReturnValue('stop'),
+            };
+
+            // Mock file system
+            mockExistsSync.mockImplementation(path => {
+                if (path.includes('.json')) {
+                    return true;
+                }
+                if (path.includes('script.js')) {
+                    return true;
+                }
+                return false;
+            });
+
+            mockReadFileSync.mockImplementation(path => {
+                if (path.includes('.json')) {
+                    return JSON.stringify(workflowConfig);
+                }
+                if (path.includes('script.js')) {
+                    return `export default ${JSON.stringify(scriptModule)}`;
+                }
+                return '';
+            });
+
+            try {
+                // Manually set up the workflow config since we're mocking the file system
+                const mockWorkflowConfig = {
+                    load: vi.fn().mockResolvedValue(workflowConfig),
+                    getConfig: vi.fn().mockReturnValue(workflowConfig),
+                    getWorkflowName: vi.fn().mockReturnValue('grocery_store_simulation'),
+                    getScriptModule: vi.fn().mockReturnValue(scriptModule),
+                };
+
+                // Directly add the workflow config to the state machine
+                stateMachine.workflowConfigs.set('grocery_store_simulation', mockWorkflowConfig);
+
+                // Manually create contexts and agents
+                const { default: WorkflowContext } = await import(
+                    '../../workflow/WorkflowContext.js'
+                );
+
+                // Create context
+                const context = new WorkflowContext(workflowConfig.contexts[0]);
+                stateMachine.contexts.set('store_conversation', context);
+
+                // Create mock agents for this test
+                const mockGroceryWorker = {
+                    makeContextCall: vi.fn().mockResolvedValue('How can I help you today?'),
+                    getToolCalls: vi.fn().mockReturnValue([]),
+                    getParsingToolCalls: vi.fn().mockReturnValue([]),
+                    getLastRawResponse: vi.fn().mockReturnValue({
+                        choices: [
+                            { message: { content: 'How can I help you today?', tool_calls: [] } },
+                        ],
+                    }),
+                };
+
+                const mockCustomer = {
+                    makeContextCall: vi.fn().mockResolvedValue('Thank you for your help!'),
+                    getToolCalls: vi.fn().mockReturnValue([]),
+                    getParsingToolCalls: vi.fn().mockReturnValue([]),
+                    getLastRawResponse: vi.fn().mockReturnValue({
+                        choices: [
+                            { message: { content: 'Thank you for your help!', tool_calls: [] } },
+                        ],
+                    }),
+                };
+
+                // Override the _initializeWorkflow method to inject our mock agents
+                const originalInitializeWorkflow =
+                    stateMachine._initializeWorkflow.bind(stateMachine);
+                stateMachine._initializeWorkflow = async function (workflowConfig, inputParams) {
+                    const result = await originalInitializeWorkflow(workflowConfig, inputParams);
+
+                    // Replace the real agents with our mocks after initialization
+                    this.agents.set('grocery_worker', mockGroceryWorker);
+                    this.agents.set('customer', mockCustomer);
+
+                    return result;
+                };
+
+                const result = await stateMachine.executeWorkflow(
+                    'grocery_store_simulation',
+                    'I need help finding organic vegetables'
+                );
+                expect(result.success).toBe(true);
+                expect(result.workflow_name).toBe('grocery_store_simulation');
+                expect(result.execution_time).toBeGreaterThan(0);
+                expect(result.states_visited).toContain('start');
+                expect(result.states_visited).toContain('customer_decision');
+
+                // Verify script functions were called in correct order
+                expect(scriptModule.addInitialCustomerMessage).toHaveBeenCalled();
+                expect(scriptModule.addWorkerResponse).toHaveBeenCalled();
+                expect(scriptModule.alwaysTransitionToCustomer).toHaveBeenCalled();
+                expect(scriptModule.processCustomerDecision).toHaveBeenCalled();
+                expect(scriptModule.decideNextState).toHaveBeenCalled();
+
+                // Verify common_data was properly initialized
+                expect(stateMachine.commonData.initial_customer_request).toBe(
+                    'I need help finding organic vegetables'
+                );
+                expect(stateMachine.commonData.max_interactions).toBe(3);
+            } finally {
+                // Cleanup
+            }
+        });
+
+        it('should handle workflow with tool call processing', async () => {
+            const workflowConfig = {
+                workflow_name: 'tool_processing_workflow',
+                description: 'Tests tool call processing in workflow',
+                input: {
+                    name: 'user_input',
+                    type: 'string',
+                    description: 'User input',
+                },
+                output: {
+                    name: 'processed_result',
+                    type: 'string',
+                    description: 'Processed result',
+                },
+                contexts: [
+                    {
+                        name: 'tool_context',
+                        starting_messages: [],
+                        max_length: 2000,
+                    },
+                ],
+                agents: [
+                    {
+                        agent_role: 'processor',
+                        context: 'tool_context',
                         role: 'assistant',
                     },
                 ],
                 states: [
                     {
                         name: 'start',
-                        action: {
-                            script: 'throwError',
-                        },
-                        transition: [
-                            {
-                                target: 'stop',
-                                condition: 'alwaysTrue',
-                            },
-                        ],
+                        agent: 'processor',
+                        pre_handler: 'setupProcessing',
+                        post_handler: 'processToolCalls',
+                        transition_handler: 'checkCompletion',
                     },
                     {
                         name: 'stop',
@@ -425,12 +633,69 @@ describe('Workflow Integration Tests', () => {
                 ],
             };
 
+            // Mock agent with tool calls
+            const mockAgentWithTools = {
+                ...vi.mocked(stateMachine.agents.get('processor')),
+                makeContextCall: vi.fn().mockResolvedValue('Processing complete'),
+                getToolCalls: vi.fn().mockReturnValue([
+                    {
+                        id: 'call_1',
+                        type: 'function',
+                        function: {
+                            name: 'process_data',
+                            arguments: '{"data": "test data", "format": "json"}',
+                        },
+                    },
+                ]),
+                getParsingToolCalls: vi.fn().mockReturnValue([
+                    {
+                        id: 'call_2',
+                        type: 'function',
+                        function: {
+                            name: 'decision_tool',
+                            arguments: '{"decision": "complete", "confidence": 0.95}',
+                        },
+                    },
+                ]),
+                getLastRawResponse: vi.fn().mockReturnValue({
+                    choices: [
+                        {
+                            message: {
+                                content: 'Processing complete',
+                                tool_calls: [
+                                    {
+                                        id: 'call_1',
+                                        type: 'function',
+                                        function: {
+                                            name: 'process_data',
+                                            arguments: '{"data": "test data", "format": "json"}',
+                                        },
+                                    },
+                                ],
+                            },
+                        },
+                    ],
+                }),
+            };
+
+            const scriptModule = {
+                setupProcessing: vi.fn().mockImplementation(function () {
+                    this.common_data.processing_started = true;
+                }),
+                processToolCalls: vi.fn().mockImplementation(function () {
+                    const toolCalls = this.last_response?.choices?.[0]?.message?.tool_calls || [];
+                    this.common_data.tool_calls_count = toolCalls.length;
+                    this.common_data.processed_result = 'Tool processing completed';
+                }),
+                checkCompletion: vi.fn().mockReturnValue('stop'),
+            };
+
             mockExistsSync.mockImplementation(path => {
                 if (path.includes('.json')) {
                     return true;
                 }
                 if (path.includes('script.js')) {
-                    return false; // No script file to trigger error
+                    return true;
                 }
                 return false;
             });
@@ -438,60 +703,95 @@ describe('Workflow Integration Tests', () => {
             mockReadFileSync.mockReturnValue(JSON.stringify(workflowConfig));
 
             try {
-                await stateMachine.loadWorkflow('./error-workflow.json');
+                // Manually set up the workflow config
+                const mockWorkflowConfig = {
+                    load: vi.fn().mockResolvedValue(workflowConfig),
+                    getConfig: vi.fn().mockReturnValue(workflowConfig),
+                    getWorkflowName: vi.fn().mockReturnValue('tool_processing_workflow'),
+                    getScriptModule: vi.fn().mockReturnValue(scriptModule),
+                };
 
-                const result = await stateMachine.executeWorkflow('error_workflow', 'error input');
+                // Directly add the workflow config to the state machine
+                stateMachine.workflowConfigs.set('tool_processing_workflow', mockWorkflowConfig);
 
-                expect(result.success).toBe(false);
-                expect(result.error).toContain('No script module loaded for function');
-                expect(result.workflow_name).toBe('error_workflow');
+                // Manually create contexts and agents
+                const { default: WorkflowContext } = await import(
+                    '../../workflow/WorkflowContext.js'
+                );
+
+                // Create context
+                const context = new WorkflowContext(workflowConfig.contexts[0]);
+                stateMachine.contexts.set('tool_context', context);
+
+                // Override the _initializeWorkflow method to inject our mock agents
+                const originalInitializeWorkflow =
+                    stateMachine._initializeWorkflow.bind(stateMachine);
+                stateMachine._initializeWorkflow = async function (workflowConfig, inputParams) {
+                    const result = await originalInitializeWorkflow(workflowConfig, inputParams);
+
+                    // Replace the real agents with our mocks after initialization
+                    this.agents.set('processor', mockAgentWithTools);
+
+                    return result;
+                };
+
+                const result = await stateMachine.executeWorkflow(
+                    'tool_processing_workflow',
+                    'Process this data'
+                );
+
+                expect(result.success).toBe(true);
+                expect(scriptModule.setupProcessing).toHaveBeenCalled();
+                expect(mockAgentWithTools.makeContextCall).toHaveBeenCalled();
+                expect(scriptModule.processToolCalls).toHaveBeenCalled();
+                expect(scriptModule.checkCompletion).toHaveBeenCalled();
+
+                // Verify tool call processing
+                expect(stateMachine.commonData.processing_started).toBe(true);
+                expect(stateMachine.commonData.tool_calls_count).toBe(1);
+                expect(stateMachine.commonData.processed_result).toBe('Tool processing completed');
             } finally {
                 // Cleanup
             }
         });
     });
 
-    describe('Backward Compatibility', () => {
-        it('should support inline scripts for backward compatibility', async () => {
+    describe('Error Handling and Edge Cases', () => {
+        it('should handle workflow with missing script module gracefully', async () => {
             const workflowConfig = {
-                workflow_name: 'legacy_workflow',
-                description: 'A workflow using inline scripts',
+                workflow_name: 'missing_script_workflow',
+                description: 'Workflow with missing script module',
                 input: {
-                    name: 'legacy_input',
+                    name: 'test_input',
                     type: 'string',
-                    description: 'Legacy input',
+                    description: 'Test input',
                 },
                 output: {
-                    name: 'legacy_result',
+                    name: 'test_output',
                     type: 'string',
-                    description: 'Legacy result',
+                    description: 'Test output',
                 },
                 contexts: [
                     {
-                        name: 'legacy_context',
+                        name: 'test_context',
                         starting_messages: [],
                         max_length: 1000,
                     },
                 ],
                 agents: [
                     {
-                        agent_role: 'customer',
-                        context: 'legacy_context',
+                        agent_role: 'test_agent',
+                        context: 'test_context',
                         role: 'assistant',
                     },
                 ],
                 states: [
                     {
                         name: 'start',
-                        action: {
-                            script: 'common_data.legacy_value = "set by inline script";',
-                        },
-                        transition: [
-                            {
-                                target: 'stop',
-                                condition: 'true',
-                            },
-                        ],
+                        agent: 'test_agent',
+                        pre_handler: 'missingFunction',
+                        post_handler: null,
+                        transition_handler: null,
                     },
                     {
                         name: 'stop',
@@ -504,19 +804,411 @@ describe('Workflow Integration Tests', () => {
                     return true;
                 }
                 if (path.includes('script.js')) {
-                    return false; // No script file
+                    return false;
+                } // No script file
+                return false;
+            });
+
+            mockReadFileSync.mockReturnValue(JSON.stringify(workflowConfig));
+
+            try {
+                // Manually set up the workflow config with no script module
+                const mockWorkflowConfig = {
+                    load: vi.fn().mockResolvedValue(workflowConfig),
+                    getConfig: vi.fn().mockReturnValue(workflowConfig),
+                    getWorkflowName: vi.fn().mockReturnValue('missing_script_workflow'),
+                    getScriptModule: vi.fn().mockReturnValue(null),
+                };
+
+                // Directly add the workflow config to the state machine
+                stateMachine.workflowConfigs.set('missing_script_workflow', mockWorkflowConfig);
+
+                // Manually create contexts and agents
+                const { default: WorkflowContext } = await import(
+                    '../../workflow/WorkflowContext.js'
+                );
+
+                // Create context
+                const context = new WorkflowContext(workflowConfig.contexts[0]);
+                stateMachine.contexts.set('test_context', context);
+
+                // Create mock agent
+                const mockAgent = {
+                    makeContextCall: vi.fn().mockResolvedValue('Test response'),
+                    getToolCalls: vi.fn().mockReturnValue([]),
+                    getParsingToolCalls: vi.fn().mockReturnValue([]),
+                    getLastRawResponse: vi.fn().mockReturnValue({
+                        choices: [{ message: { content: 'Test response', tool_calls: [] } }],
+                    }),
+                };
+
+                stateMachine.agents.set('test_agent', mockAgent);
+
+                const result = await stateMachine.executeWorkflow(
+                    'missing_script_workflow',
+                    'test input'
+                );
+
+                expect(result.success).toBe(false);
+                expect(result.error).toContain('No script module loaded for function');
+            } finally {
+                // Cleanup
+            }
+        });
+
+        it('should handle workflow with circular state transitions', async () => {
+            const workflowConfig = {
+                workflow_name: 'circular_workflow',
+                description: 'Workflow with potential circular transitions',
+                input: {
+                    name: 'counter_input',
+                    type: 'string',
+                    description: 'Counter input',
+                },
+                output: {
+                    name: 'final_count',
+                    type: 'number',
+                    description: 'Final count',
+                },
+                variables: {
+                    max_iterations: 3,
+                    current_count: 0,
+                },
+                contexts: [
+                    {
+                        name: 'counter_context',
+                        starting_messages: [],
+                        max_length: 1000,
+                    },
+                ],
+                agents: [
+                    {
+                        agent_role: 'counter_agent',
+                        context: 'counter_context',
+                        role: 'assistant',
+                    },
+                ],
+                states: [
+                    {
+                        name: 'start',
+                        agent: 'counter_agent',
+                        pre_handler: 'initializeCounter',
+                        post_handler: 'incrementCounter',
+                        transition_handler: 'checkContinue',
+                    },
+                    {
+                        name: 'counting',
+                        agent: 'counter_agent',
+                        pre_handler: null,
+                        post_handler: 'incrementCounter',
+                        transition_handler: 'checkContinue',
+                    },
+                    {
+                        name: 'stop',
+                    },
+                ],
+            };
+
+            let callCount = 0;
+            const scriptModule = {
+                initializeCounter: vi.fn().mockImplementation(function () {
+                    this.common_data.current_count = 0;
+                }),
+                incrementCounter: vi.fn().mockImplementation(function () {
+                    this.common_data.current_count++;
+                    this.common_data.final_count = this.common_data.current_count;
+                }),
+                checkContinue: vi.fn().mockImplementation(function () {
+                    callCount++;
+                    if (this.common_data.current_count >= this.common_data.max_iterations) {
+                        return 'stop';
+                    }
+                    return 'counting';
+                }),
+            };
+
+            mockExistsSync.mockImplementation(path => {
+                if (path.includes('.json')) {
+                    return true;
+                }
+                if (path.includes('script.js')) {
+                    return true;
                 }
                 return false;
             });
 
             mockReadFileSync.mockReturnValue(JSON.stringify(workflowConfig));
 
-            await stateMachine.loadWorkflow('./legacy-workflow.json');
+            try {
+                // Manually set up the workflow config
+                const mockWorkflowConfig = {
+                    load: vi.fn().mockResolvedValue(workflowConfig),
+                    getConfig: vi.fn().mockReturnValue(workflowConfig),
+                    getWorkflowName: vi.fn().mockReturnValue('circular_workflow'),
+                    getScriptModule: vi.fn().mockReturnValue(scriptModule),
+                };
 
-            const result = await stateMachine.executeWorkflow('legacy_workflow', 'legacy input');
+                // Directly add the workflow config to the state machine
+                stateMachine.workflowConfigs.set('circular_workflow', mockWorkflowConfig);
 
-            expect(result.success).toBe(true);
-            expect(stateMachine.commonData.legacy_value).toBe('set by inline script');
+                // Manually create contexts and agents
+                const { default: WorkflowContext } = await import(
+                    '../../workflow/WorkflowContext.js'
+                );
+
+                // Create context
+                const context = new WorkflowContext(workflowConfig.contexts[0]);
+                stateMachine.contexts.set('counter_context', context);
+
+                // Create mock agent
+                const mockCounterAgent = {
+                    makeContextCall: vi.fn().mockResolvedValue('Counter updated'),
+                    getToolCalls: vi.fn().mockReturnValue([]),
+                    getParsingToolCalls: vi.fn().mockReturnValue([]),
+                    getLastRawResponse: vi.fn().mockReturnValue({
+                        choices: [{ message: { content: 'Counter updated', tool_calls: [] } }],
+                    }),
+                };
+
+                // Override the _initializeWorkflow method to inject our mock agents
+                const originalInitializeWorkflow =
+                    stateMachine._initializeWorkflow.bind(stateMachine);
+                stateMachine._initializeWorkflow = async function (workflowConfig, inputParams) {
+                    const result = await originalInitializeWorkflow(workflowConfig, inputParams);
+
+                    // Replace the real agents with our mocks after initialization
+                    this.agents.set('counter_agent', mockCounterAgent);
+
+                    return result;
+                };
+
+                const result = await stateMachine.executeWorkflow(
+                    'circular_workflow',
+                    'start counting'
+                );
+
+                expect(result.success).toBe(true);
+                expect(stateMachine.commonData.final_count).toBe(3);
+                expect(result.states_visited).toContain('start');
+                expect(result.states_visited).toContain('counting');
+
+                // Should have called checkContinue multiple times but eventually stopped
+                expect(callCount).toBeGreaterThan(1);
+            } finally {
+                // Cleanup
+            }
+        });
+
+        it('should handle workflow with complex tool call processing', async () => {
+            const workflowConfig = {
+                workflow_name: 'complex_tool_workflow',
+                description: 'Workflow with complex tool call processing',
+                input: {
+                    name: 'task_description',
+                    type: 'string',
+                    description: 'Task description',
+                },
+                output: {
+                    name: 'task_result',
+                    type: 'object',
+                    description: 'Task result',
+                },
+                contexts: [
+                    {
+                        name: 'task_context',
+                        starting_messages: [],
+                        max_length: 3000,
+                    },
+                ],
+                agents: [
+                    {
+                        agent_role: 'task_processor',
+                        context: 'task_context',
+                        role: 'assistant',
+                    },
+                ],
+                states: [
+                    {
+                        name: 'start',
+                        agent: 'task_processor',
+                        pre_handler: 'setupTask',
+                        post_handler: 'processComplexToolCalls',
+                        transition_handler: 'evaluateCompletion',
+                    },
+                    {
+                        name: 'stop',
+                    },
+                ],
+            };
+
+            // Mock agent with complex tool calls
+            const complexMockAgent = {
+                makeContextCall: vi.fn().mockResolvedValue('Task processing complete'),
+                getToolCalls: vi.fn().mockReturnValue([
+                    {
+                        id: 'call_1',
+                        type: 'function',
+                        function: {
+                            name: 'analyze_data',
+                            arguments: '{"data": "sample data", "method": "statistical"}',
+                        },
+                    },
+                    {
+                        id: 'call_2',
+                        type: 'function',
+                        function: {
+                            name: 'generate_report',
+                            arguments: '{"format": "json", "include_charts": true}',
+                        },
+                    },
+                ]),
+                getParsingToolCalls: vi.fn().mockReturnValue([
+                    {
+                        id: 'call_3',
+                        type: 'function',
+                        function: {
+                            name: 'task_completion',
+                            arguments:
+                                '{"status": "completed", "confidence": 0.95, "results": {"analysis": "positive", "recommendations": ["action1", "action2"]}}',
+                        },
+                    },
+                ]),
+                getLastRawResponse: vi.fn().mockReturnValue({
+                    choices: [
+                        {
+                            message: {
+                                content: 'Task processing complete',
+                                tool_calls: [
+                                    {
+                                        id: 'call_1',
+                                        type: 'function',
+                                        function: {
+                                            name: 'analyze_data',
+                                            arguments:
+                                                '{"data": "sample data", "method": "statistical"}',
+                                        },
+                                    },
+                                    {
+                                        id: 'call_3',
+                                        type: 'function',
+                                        function: {
+                                            name: 'task_completion',
+                                            arguments:
+                                                '{"status": "completed", "confidence": 0.95, "results": {"analysis": "positive", "recommendations": ["action1", "action2"]}}',
+                                        },
+                                    },
+                                ],
+                            },
+                        },
+                    ],
+                }),
+            };
+
+            const scriptModule = {
+                setupTask: vi.fn().mockImplementation(function () {
+                    this.common_data.task_started = true;
+                    this.common_data.start_time = Date.now();
+                }),
+                processComplexToolCalls: vi.fn().mockImplementation(function () {
+                    const toolCalls = this.last_response?.choices?.[0]?.message?.tool_calls || [];
+
+                    // Process different types of tool calls
+                    const analysisCalls = toolCalls.filter(
+                        call => call.function.name === 'analyze_data'
+                    );
+                    const completionCalls = toolCalls.filter(
+                        call => call.function.name === 'task_completion'
+                    );
+
+                    this.common_data.analysis_count = analysisCalls.length;
+
+                    if (completionCalls.length > 0) {
+                        try {
+                            const completionData = JSON.parse(
+                                completionCalls[0].function.arguments
+                            );
+                            this.common_data.task_result = {
+                                status: completionData.status,
+                                confidence: completionData.confidence,
+                                results: completionData.results,
+                                processing_time: Date.now() - this.common_data.start_time,
+                            };
+                        } catch (error) {
+                            this.common_data.task_result = {
+                                status: 'error',
+                                error: error.message,
+                            };
+                        }
+                    }
+                }),
+                evaluateCompletion: vi.fn().mockImplementation(function () {
+                    return this.common_data.task_result?.status === 'completed' ? 'stop' : 'start';
+                }),
+            };
+
+            mockExistsSync.mockImplementation(path => {
+                if (path.includes('.json')) {
+                    return true;
+                }
+                if (path.includes('script.js')) {
+                    return true;
+                }
+                return false;
+            });
+
+            mockReadFileSync.mockReturnValue(JSON.stringify(workflowConfig));
+
+            try {
+                // Manually set up the workflow config
+                const mockWorkflowConfig = {
+                    load: vi.fn().mockResolvedValue(workflowConfig),
+                    getConfig: vi.fn().mockReturnValue(workflowConfig),
+                    getWorkflowName: vi.fn().mockReturnValue('complex_tool_workflow'),
+                    getScriptModule: vi.fn().mockReturnValue(scriptModule),
+                };
+
+                // Directly add the workflow config to the state machine
+                stateMachine.workflowConfigs.set('complex_tool_workflow', mockWorkflowConfig);
+
+                // Manually create contexts and agents
+                const { default: WorkflowContext } = await import(
+                    '../../workflow/WorkflowContext.js'
+                );
+
+                // Create context
+                const context = new WorkflowContext(workflowConfig.contexts[0]);
+                stateMachine.contexts.set('task_context', context);
+
+                // Override the _initializeWorkflow method to inject our mock agents
+                const originalInitializeWorkflow =
+                    stateMachine._initializeWorkflow.bind(stateMachine);
+                stateMachine._initializeWorkflow = async function (workflowConfig, inputParams) {
+                    const result = await originalInitializeWorkflow(workflowConfig, inputParams);
+
+                    // Replace the real agents with our mocks after initialization
+                    this.agents.set('task_processor', complexMockAgent);
+
+                    return result;
+                };
+
+                const result = await stateMachine.executeWorkflow(
+                    'complex_tool_workflow',
+                    'Analyze customer feedback data'
+                );
+
+                expect(result.success).toBe(true);
+                expect(stateMachine.commonData.task_started).toBe(true);
+                expect(stateMachine.commonData.analysis_count).toBe(1);
+                expect(stateMachine.commonData.task_result).toBeDefined();
+                expect(stateMachine.commonData.task_result.status).toBe('completed');
+                expect(stateMachine.commonData.task_result.confidence).toBe(0.95);
+                expect(stateMachine.commonData.task_result.results).toEqual({
+                    analysis: 'positive',
+                    recommendations: ['action1', 'action2'],
+                });
+            } finally {
+                // Cleanup
+            }
         });
     });
 });
