@@ -70,6 +70,37 @@ export default class WorkflowContext {
     }
 
     /**
+     * Get messages from the perspective of a specific agent
+     * @param {string} agentId - Agent ID to get messages for
+     * @returns {Array} Array of message objects with roles mapped for the agent's perspective
+     */
+    getMessagesForAgent(agentId) {
+        const agentInfo = this.agents.get(agentId);
+        if (!agentInfo) {
+            throw new Error(`Agent ${agentId} not found in context ${this.name}`);
+        }
+
+        const contextMessages = [...this.messages]; // Get copy of all messages
+
+        if (agentInfo.role === 'user') {
+            // For agents with contextRole 'user', reverse user/assistant roles
+            // This makes the agent see the conversation from the user's perspective
+            return contextMessages.map(msg => {
+                if (msg.role === 'user') {
+                    return { ...msg, role: 'assistant' };
+                } else if (msg.role === 'assistant') {
+                    return { ...msg, role: 'user' };
+                } else {
+                    return msg; // Keep system messages as-is
+                }
+            });
+        } else {
+            // For agents with contextRole 'assistant', use messages as-is
+            return contextMessages;
+        }
+    }
+
+    /**
      * Get the last message in the context
      * @returns {Object|null} Last message or null if no messages
      */

@@ -19,6 +19,10 @@ export default class WorkflowAgent {
         // Generate unique agent ID
         this.id = `${this.agentRole}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
 
+        // Initialize response tracking
+        this.lastParsingToolCall = null;
+        this.lastResponseContent = null;
+
         // Create AIAPIClient instance for this agent
         this._initializeAPIClient();
 
@@ -64,12 +68,17 @@ export default class WorkflowAgent {
 
             // Set up parsing response handler ONLY if this agent has parsing tools
             const parsingTools = SystemMessages.getParsingTools(this.agentRole);
+            // Set up callbacks for all agents
+            const callbacks = {
+                onMessagePush: this._onMessagePush.bind(this),
+                onResponse: this._onResponse.bind(this),
+            };
+
+            // Add parsing response handler if this agent has parsing tools
             if (parsingTools && parsingTools.length > 0) {
-                this.apiClient.setCallbacks({
-                    onParseResponse: message => {
-                        return this._handleParsingResponse(message);
-                    },
-                });
+                callbacks.onParseResponse = message => {
+                    return this._handleParsingResponse(message);
+                };
                 this.logger.debug(
                     `🔧 Agent ${this.agentRole} has ${parsingTools.length} parsing tools, handler enabled`
                 );
@@ -78,6 +87,8 @@ export default class WorkflowAgent {
                     `🔧 Agent ${this.agentRole} has no parsing tools, no handler needed`
                 );
             }
+
+            this.apiClient.setCallbacks(callbacks);
 
             this.logger.debug(
                 `🔧 Agent ${this.agentRole} initialized with ${this.apiClient.getFilteredToolCount()}/${this.apiClient.getTotalToolCount()} tools`
@@ -110,30 +121,23 @@ export default class WorkflowAgent {
                 throw new Error(`Message cannot be empty for agent ${this.agentRole}`);
             }
 
-            // Add the input message to shared context with correct role
-            // The role depends on who is "speaking" in the conversation
-            const inputRole = this.contextRole === 'assistant' ? 'user' : 'assistant';
-            const inputMessage = { role: inputRole, content: messageStr };
-            this.context.addMessage(inputMessage, this);
-
             // Refresh agent's message array from context before API call
             this._refreshMessagesFromContext();
+
+            // Clear previous response content
+            this.lastResponseContent = null;
 
             // Get AI response
             this.logger.debug(
                 `📤 Agent ${this.agentRole} calling sendUserMessage with: "${messageStr}"`
             );
-            const response = await this.apiClient.sendUserMessage(messageStr);
-            this.logger.debug(`📥 Agent ${this.agentRole} received response: "${response}"`);
+            await this.apiClient.sendUserMessage(messageStr);
 
-            // Add the AI response to shared context with correct role
-            if (response && response.trim() !== '') {
-                const responseRole = this.contextRole === 'assistant' ? 'assistant' : 'user';
-                const responseMessage = { role: responseRole, content: response };
-                this.context.addMessage(responseMessage, this);
-            }
+            // Return the captured response content
+            const responseContent = this.lastResponseContent || '';
+            this.logger.debug(`📥 Agent ${this.agentRole} received response: "${responseContent}"`);
 
-            return response;
+            return responseContent;
         } catch (error) {
             this.logger.error(
                 error,
@@ -238,30 +242,71 @@ export default class WorkflowAgent {
      * @private
      */
     _refreshMessagesFromContext() {
-        const contextMessages = this.context.getMessages();
+        const agentMessages = this.context.getMessagesForAgent(this.id);
+        this.apiClient.messages = agentMessages;
 
-        if (this.contextRole === 'user') {
-            // For agents with contextRole 'user', reverse user/assistant roles
-            // This makes the agent see the conversation from the user's perspective
-            const reversedMessages = contextMessages.map(msg => {
-                if (msg.role === 'user') {
-                    return { ...msg, role: 'assistant' };
-                } else if (msg.role === 'assistant') {
-                    return { ...msg, role: 'user' };
-                } else {
-                    return msg; // Keep system messages as-is
+        this.logger.debug(
+            `🔄 Agent ${this.agentRole} refreshed ${agentMessages.length} messages from context`
+        );
+    }
+
+    /**
+     * Handle message push from API client to sync with shared context
+     * @private
+     * @param {Object} message - Message that was pushed to API client
+     */
+    _onMessagePush(message) {
+        try {
+            // Skip system messages as they shouldn't be in shared context
+            if (message.role === 'system') {
+                return;
+            }
+
+            // Skip messages with empty content
+            if (!message.content || message.content.trim() === '') {
+                return;
+            }
+
+            // Map roles back to context perspective
+            let contextRole = message.role;
+            if (this.contextRole === 'user') {
+                // For agents with contextRole 'user', reverse the roles back
+                if (message.role === 'user') {
+                    contextRole = 'assistant';
+                } else if (message.role === 'assistant') {
+                    contextRole = 'user';
                 }
-            });
-            this.apiClient.messages = reversedMessages;
+            }
+
+            const contextMessage = { role: contextRole, content: message.content };
+            this.context.addMessage(contextMessage, this);
+
             this.logger.debug(
-                `🔄 Agent ${this.agentRole} refreshed ${reversedMessages.length} messages with reversed roles`
+                `💬 Agent ${this.agentRole} synced ${message.role} message to context as ${contextRole}`
             );
-        } else {
-            // For agents with contextRole 'assistant', use messages as-is
-            this.apiClient.messages = [...contextMessages]; // Create copy to avoid reference issues
-            this.logger.debug(
-                `➡️ Agent ${this.agentRole} refreshed ${contextMessages.length} messages with original roles`
-            );
+        } catch (error) {
+            this.logger.error(error, `Agent ${this.agentRole} failed to sync message to context`);
+        }
+    }
+
+    /**
+     * Handle response from API client to capture content for workflow system
+     * @private
+     * @param {Object} response - API response object
+     * @param {string} _role - Agent role (unused)
+     */
+    _onResponse(response, _role) {
+        try {
+            // Extract the content from the response
+            const message = response.choices?.[0]?.message;
+            if (message && message.content) {
+                this.lastResponseContent = message.content;
+                this.logger.debug(
+                    `📝 Agent ${this.agentRole} captured response content: "${message.content}"`
+                );
+            }
+        } catch (error) {
+            this.logger.error(error, `Agent ${this.agentRole} failed to capture response content`);
         }
     }
 

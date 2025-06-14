@@ -56,7 +56,8 @@
             "transition": [
                 {
                     "target": "customer_decision",
-                    "condition": "true"
+                    "condition": "true",
+                    "before": "common_data.current_request = this.lastAgentResponse;"
                 }
             ]
         },
