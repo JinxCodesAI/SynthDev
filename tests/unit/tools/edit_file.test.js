@@ -4,6 +4,29 @@ import { writeFileSync, unlinkSync, existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 import editFile from '../../../tools/edit_file/implementation.js';
 
+// Mock the logger specifically for this test
+vi.mock('../../../logger.js', () => ({
+    getLogger: vi.fn(() => ({
+        debug: vi.fn(),
+        info: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        user: vi.fn(),
+        status: vi.fn(),
+        toolExecution: vi.fn(),
+        toolExecutionDetailed: vi.fn(),
+        toolResult: vi.fn(),
+        httpRequest: vi.fn(),
+        raw: vi.fn(),
+        setVerbosityLevel: vi.fn(),
+        getVerbosityLevel: vi.fn(() => 2),
+        getRecentHttpRequests: vi.fn(() => []),
+        clearHttpHistory: vi.fn(),
+    })),
+    resetLogger: vi.fn(),
+    initializeLogger: vi.fn(),
+}));
+
 describe('Edit File Tool', () => {
     const testDir = process.cwd();
     const testFile = join(testDir, 'test_edit_file.txt');
