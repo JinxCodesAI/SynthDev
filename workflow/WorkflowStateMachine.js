@@ -358,7 +358,7 @@ export default class WorkflowStateMachine {
     }
 
     /**
-     * Execute a single state
+     * Execute a single state using the new 4-step pattern
      * @private
      * @param {Object} state - State configuration
      * @param {Object} executionContext - Execution context
@@ -366,88 +366,81 @@ export default class WorkflowStateMachine {
      */
     async _executeState(state, executionContext) {
         try {
-            // Execute pre-transition script if present
-            if (state.action && state.action.script) {
-                // Get the workflow config to access script module
-                const workflowConfig = this.workflowConfigs.get(
-                    executionContext.config.workflow_name
-                );
-                this._executeScript(state.action.script, workflowConfig);
+            this.logger.debug(`🎯 Executing state: ${state.name}`);
+
+            // Get the workflow config to access script module
+            const workflowConfig = this.workflowConfigs.get(executionContext.config.workflow_name);
+
+            // Skip agent execution for stop state
+            if (state.name === 'stop') {
+                return { success: true, nextState: null };
             }
 
-            // Execute agent action if present (support both state.agent and state.action.agent_role patterns)
-            let agentRole = null;
-            let message = '';
-            let functionName = 'sendMessage';
-
-            if (state.action && state.action.agent_role) {
-                // Legacy pattern: agent_role inside action
-                agentRole = state.action.agent_role;
-                message = state.action.message || '';
-                functionName = state.action?.function || 'sendMessage';
-            } else if (state.agent) {
-                // New pattern: agent at state level
-                agentRole = state.agent;
-                message = this._evaluateExpression(state.input) || '';
-                functionName = state.action?.function || 'sendMessage';
+            // Validate that state has an agent
+            if (!state.agent) {
+                throw new Error(`State ${state.name} must have an agent defined`);
             }
 
-            if (agentRole) {
-                const agent = this.agents.get(agentRole);
-                if (!agent) {
-                    throw new Error(`Unknown agent: ${agentRole}`);
-                }
+            const agentRole = state.agent;
+            const agent = this.agents.get(agentRole);
+            if (!agent) {
+                throw new Error(`Unknown agent: ${agentRole}`);
+            }
 
-                // Evaluate message expression (support template variables)
-                message = this._evaluateTemplateString(String(message));
+            // STEP 1: Execute pre-handler (agent modifies context before API call)
+            if (state.pre_handler) {
+                this.logger.debug(`🔧 Executing pre-handler: ${state.pre_handler}`);
+                this._executeScriptFunction(state.pre_handler, workflowConfig);
+            }
 
-                this.logger.debug(`📝 Evaluated message for agent ${agentRole}: "${message}"`);
+            // STEP 2: Agent executes API call to update last_response
+            this.logger.debug(`🤖 Agent ${agentRole} making API call`);
+            const result = await agent.makeContextCall(); // Use context-based API call
 
-                let result;
+            // Update last response tracking
+            this.lastAgentResponse = result;
+            this.lastRawResponse = agent.getLastRawResponse();
+            this.lastToolCalls = agent.getToolCalls();
+            this.lastParsingToolCalls = agent.getParsingToolCalls();
 
+            this.logger.debug(`✅ Agent ${agentRole} completed API call, result: "${result}"`);
+            this.logger.debug(
+                `📊 Agent ${agentRole} tool calls: ${this.lastToolCalls.length}, parsing tool calls: ${this.lastParsingToolCalls.length}`
+            );
+
+            // Debug: Log the raw response to verify it's being captured
+            this.logger.debug(`🔍 Raw response captured: ${this.lastRawResponse ? 'YES' : 'NO'}`);
+            if (this.lastRawResponse) {
                 this.logger.debug(
-                    `🤖 Agent ${agentRole} executing: ${functionName} with message: "${message}"`
+                    `🔍 Raw response tool calls: ${this.lastRawResponse.choices?.[0]?.message?.tool_calls?.length || 0}`
                 );
+            }
 
-                if (functionName === 'sendMessage') {
-                    result = await agent.sendMessage(message);
-                } else if (functionName === 'sendUserMessage') {
-                    result = await agent.sendMessage(message);
-                } else if (functionName === 'addUserMessage') {
-                    result = await agent.addUserMessage(message);
-                } else if (functionName === 'clearConversation') {
-                    result = await agent.clearConversation();
-                } else {
-                    throw new Error(`Unknown agent function: ${functionName}`);
-                }
-
-                this.logger.debug(
-                    `✅ Agent ${agentRole} completed ${functionName}, result: "${result}"`
-                );
-
-                // Update last response tracking
-                this.lastAgentResponse = result;
-                this.lastRawResponse = agent.getLastRawResponse();
-                this.lastToolCalls = agent.getToolCalls();
-                this.lastParsingToolCalls = agent.getParsingToolCalls();
-
-                // Update script context with latest response
+            // STEP 3: Execute post-handler (agent modifies context using last_response)
+            if (state.post_handler) {
+                this.logger.debug(`🔧 Executing post-handler: ${state.post_handler}`);
+                // Update script context right before executing script function
                 this._updateScriptContext();
-
-                this.logger.debug(
-                    `📊 Agent ${agentRole} tool calls: ${this.lastToolCalls.length}, parsing tool calls: ${this.lastParsingToolCalls.length}`
-                );
-
-                return {
-                    success: true,
-                    result: result,
-                    agent: agentRole,
-                    toolCalls: this.lastToolCalls,
-                    parsingToolCalls: this.lastParsingToolCalls,
-                };
+                this._executeScriptFunction(state.post_handler, workflowConfig);
             }
 
-            return { success: true };
+            // STEP 4: Execute transition-handler (agent decides next state)
+            let nextState = null;
+            if (state.transition_handler) {
+                this.logger.debug(`🔧 Executing transition-handler: ${state.transition_handler}`);
+                // Update script context right before executing script function
+                this._updateScriptContext();
+                nextState = this._executeScriptFunction(state.transition_handler, workflowConfig);
+            }
+
+            return {
+                success: true,
+                result: result,
+                agent: agentRole,
+                toolCalls: this.lastToolCalls,
+                parsingToolCalls: this.lastParsingToolCalls,
+                nextState: nextState,
+            };
         } catch (error) {
             this.logger.error(error, `State execution failed: ${state.name}`);
             throw error;
@@ -455,7 +448,7 @@ export default class WorkflowStateMachine {
     }
 
     /**
-     * Determine the next state based on transitions
+     * Determine the next state using the new pattern
      * @private
      * @param {Object} state - Current state
      * @param {Object} stateResult - Result from state execution
@@ -463,26 +456,16 @@ export default class WorkflowStateMachine {
      * @returns {string|null} Next state name or null to stop
      */
     _getNextState(state, stateResult, executionContext) {
-        if (!state.transition || !Array.isArray(state.transition)) {
-            return 'stop'; // No transitions defined, stop execution
+        // In the new pattern, the next state is determined by the transition_handler
+        // which was already executed in _executeState and returned in stateResult.nextState
+        if (stateResult.nextState) {
+            this.logger.debug(`➡️ Next state: ${stateResult.nextState}`);
+            return stateResult.nextState;
         }
 
-        // Get the workflow config to access script module
-        const workflowConfig = this.workflowConfigs.get(executionContext.config.workflow_name);
-
-        for (const transition of state.transition) {
-            // Execute before script if present
-            if (transition.before) {
-                this._executeScript(transition.before, workflowConfig);
-            }
-
-            // Evaluate transition condition
-            if (this._evaluateCondition(transition.condition, stateResult, workflowConfig)) {
-                return transition.target;
-            }
-        }
-
-        return 'stop'; // Default to stop if no transitions match
+        // Default to stop if no next state specified
+        this.logger.debug('➡️ Next state: stop (default)');
+        return 'stop';
     }
 
     /**
@@ -740,6 +723,17 @@ export default class WorkflowStateMachine {
         this.scriptContext.common_data = this.commonData;
         this.scriptContext.last_response = this.lastRawResponse; // Use raw response for script access
         this.scriptContext.workflow_contexts = this.contexts;
+
+        // Debug logging
+        this.logger.debug(
+            `🔍 Script context updated - last_response: ${this.lastRawResponse ? 'SET' : 'NULL'}`
+        );
+        if (this.lastRawResponse) {
+            const toolCalls = this.lastRawResponse.choices?.[0]?.message?.tool_calls;
+            this.logger.debug(
+                `🔍 Script context - tool calls in last_response: ${toolCalls?.length || 0}`
+            );
+        }
     }
 
     /**

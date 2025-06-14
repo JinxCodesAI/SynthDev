@@ -149,6 +149,38 @@ export default class WorkflowAgent {
     }
 
     /**
+     * Make an API call using the current context without adding a new message
+     * Used by workflow state machine when context is managed by handlers
+     * @returns {Promise<string>} Response from the agent
+     */
+    async makeContextCall() {
+        try {
+            this.logger.debug(
+                `🤖 Agent ${this.agentRole} (${this.contextRole}) making context-based API call`
+            );
+
+            // Refresh agent's message array from context before API call
+            this._refreshMessagesFromContext();
+
+            // Clear previous response content
+            this.lastResponseContent = null;
+
+            // Make API call without adding a new message
+            this.logger.debug(`📤 Agent ${this.agentRole} calling API with context messages`);
+            await this.apiClient.sendMessage();
+
+            // Return the captured response content
+            const responseContent = this.lastResponseContent || '';
+            this.logger.debug(`📥 Agent ${this.agentRole} received response: "${responseContent}"`);
+
+            return responseContent;
+        } catch (error) {
+            this.logger.error(error, `Agent ${this.agentRole} failed to make context call`);
+            throw error;
+        }
+    }
+
+    /**
      * Add a user message without getting a response
      * @param {string} message - Message to add
      */
@@ -268,25 +300,13 @@ export default class WorkflowAgent {
                 return;
             }
 
-            // Map roles back to context perspective
-            let contextRole = message.role;
-            if (this.contextRole === 'user') {
-                // For agents with contextRole 'user', reverse the roles back
-                if (message.role === 'user') {
-                    contextRole = 'assistant';
-                } else if (message.role === 'assistant') {
-                    contextRole = 'user';
-                }
-            }
-
-            const contextMessage = { role: contextRole, content: message.content };
-            this.context.addMessage(contextMessage, this);
-
+            // In the new workflow pattern, message syncing is handled by script functions
+            // Disable automatic syncing to prevent duplication
             this.logger.debug(
-                `💬 Agent ${this.agentRole} synced ${message.role} message to context as ${contextRole}`
+                `💬 Agent ${this.agentRole} skipping automatic message sync - handled by workflow scripts`
             );
         } catch (error) {
-            this.logger.error(error, `Agent ${this.agentRole} failed to sync message to context`);
+            this.logger.error(error, `Agent ${this.agentRole} failed to handle message push`);
         }
     }
 
