@@ -1,8 +1,6 @@
-# Tool Creation Guidelines
+# Tool Development Guide
 
-## Overview
-
-This document provides comprehensive guidelines for creating custom tools for the AI Coder application. Tools are self-contained modules that extend the AI's capabilities through function calling, enabling file operations, calculations, command execution, and data processing.
+This guide provides comprehensive instructions for creating custom tools and commands for SynthDev. Tools extend the AI's capabilities through function calling, enabling file operations, calculations, command execution, and data processing.
 
 ## Tool Architecture
 
@@ -70,13 +68,13 @@ tools/
 
 ### Field Descriptions
 
-- **`auto_run`**: Controls execution approval
+- **auto_run**: Controls execution approval
     - `true`: Executes automatically without user confirmation
     - `false`: Requires user approval before execution
-- **`requires_backup`**: Indicates if tool modifies resources requiring backup
-- **`backup_resource_path_property_name`**: Parameter name containing the resource path to backup
-- **`description` (function level)**: Critical AI-facing documentation - be extremely detailed
-- **`category`**: Tool classification for organization and discovery
+- **requires_backup**: Indicates if tool modifies resources requiring backup
+- **backup_resource_path_property_name**: Parameter name containing the resource path to backup
+- **description (function level)**: Critical AI-facing documentation - be extremely detailed
+- **category**: Tool classification for organization and discovery
 
 ## Implementation Standards
 
@@ -267,6 +265,7 @@ The `description` field in the function schema is the AI's primary interface doc
 - **Examples**: execute_terminal, execute_script
 - **Base Class**: CommandBaseTool
 - **Common Parameters**: command, timeout, working_directory
+- **Note**: execute_terminal requires `requires_backup: false` for validation
 
 ### Utilities (`category: "utility"`)
 
@@ -411,60 +410,7 @@ Tools are automatically discovered and loaded by the application at startup. The
 
 No manual registration is required - simply create the tool files and restart the application.
 
-## Common Pitfalls and Solutions
+---
 
-### Pitfall: Vague Parameter Descriptions
-
-**Problem**: AI doesn't understand how to use the tool
-**Solution**: Write extremely detailed, specific descriptions with examples
-
-### Pitfall: Missing Input Validation
-
-**Problem**: Tool crashes with invalid inputs
-**Solution**: Use base class validation methods and check all parameters
-
-### Pitfall: Inconsistent Response Format
-
-**Problem**: AI can't reliably parse tool responses
-**Solution**: Always use standardized success/error response formats
-
-### Pitfall: Security Vulnerabilities
-
-**Problem**: Path traversal or code injection attacks
-**Solution**: Use provided security validation functions
-
-### Pitfall: Poor Error Messages
-
-**Problem**: Users can't understand what went wrong
-**Solution**: Provide specific, actionable error messages with context
-
-## Integration with AI Agents
-
-### Tool Selection Guidelines
-
-When designing tools for AI agents, consider:
-
-1. **Multistep Capabilities**: Enable complex workflows through tool chaining
-2. **Self-Contained Operations**: Each tool should complete a discrete task
-3. **Clear Boundaries**: Define what the tool can and cannot do
-4. **Composability**: Design tools that work well together
-5. **Safety First**: Implement robust safety checks for autonomous execution
-
-### AI-Powered Safety Assessment
-
-The system supports AI-based safety assessment using separate prompts with fast models rather than static pattern matching. This approach:
-
-- Provides contextual understanding of code intent
-- Adapts to new patterns and edge cases
-- Offers detailed reasoning for safety decisions
-- Scales better than rule-based systems
-
-### Directory Indexing Integration
-
-For tools that work with directory structures, follow these preferences:
-
-- **Directory summaries**: Aggregate all ai_summaries of direct children
-- **Directory checksums**: Concatenate all content checksums
-- **File structure**: Maintain flat 'files' structure but add 'lvl' property for nesting depth
-
-This comprehensive guide enables developers to create robust, secure, and well-documented tools that integrate seamlessly with the AI Coder application's function calling system and support advanced AI agent workflows.
+_For role-based tool access control, see [AI Roles & Few-Shot Prompting](roles-and-prompting.md)_
+_For testing your tools, see [Testing Guide](testing.md)_

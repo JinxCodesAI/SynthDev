@@ -3,8 +3,8 @@
  * Loads external configuration files and provides fallback to hardcoded defaults
  */
 
-import { readFileSync, existsSync } from 'fs';
-import { join, dirname } from 'path';
+import { readFileSync, existsSync, readdirSync, statSync } from 'fs';
+import { join, dirname, extname } from 'path';
 import { fileURLToPath } from 'url';
 import { getLogger } from './logger.js';
 
@@ -155,6 +155,115 @@ class ConfigurationLoader {
     configExists(configPath) {
         const fullPath = join(this.configDir, configPath);
         return existsSync(fullPath);
+    }
+
+    /**
+     * Recursively scan a directory for JSON files
+     * @param {string} dirPath - Directory path to scan
+     * @returns {string[]} Array of JSON file paths relative to the directory
+     */
+    scanDirectoryForJsonFiles(dirPath) {
+        const fullDirPath = join(this.configDir, dirPath);
+        const jsonFiles = [];
+
+        if (!existsSync(fullDirPath)) {
+            return jsonFiles;
+        }
+
+        const scanRecursive = (currentPath, relativePath = '') => {
+            try {
+                const items = readdirSync(currentPath);
+
+                for (const item of items) {
+                    const itemPath = join(currentPath, item);
+                    const relativeItemPath = relativePath ? join(relativePath, item) : item;
+
+                    try {
+                        const stats = statSync(itemPath);
+
+                        if (stats.isDirectory()) {
+                            // Recursively scan subdirectories
+                            scanRecursive(itemPath, relativeItemPath);
+                        } else if (stats.isFile() && extname(item).toLowerCase() === '.json') {
+                            // Add JSON files to the list
+                            jsonFiles.push(relativeItemPath);
+                        }
+                    } catch (error) {
+                        this.logger.warn(`Failed to stat ${itemPath}: ${error.message}`);
+                    }
+                }
+            } catch (error) {
+                this.logger.warn(`Failed to read directory ${currentPath}: ${error.message}`);
+            }
+        };
+
+        scanRecursive(fullDirPath);
+        return jsonFiles.sort(); // Sort for consistent ordering
+    }
+
+    /**
+     * Load and merge multiple role configuration files from a directory
+     * @param {string} rolesDir - Directory path containing role files (relative to config)
+     * @returns {Object} Merged role configurations
+     */
+    loadRolesFromDirectory(rolesDir = 'roles') {
+        const cacheKey = `roles_directory_${rolesDir}`;
+
+        // Return cached config if available
+        if (this.configCache.has(cacheKey)) {
+            return this.configCache.get(cacheKey);
+        }
+
+        const jsonFiles = this.scanDirectoryForJsonFiles(rolesDir);
+        const mergedRoles = {};
+
+        // First, try to load the legacy roles.json file for backward compatibility
+        const legacyRolesPath = join(rolesDir, 'roles.json');
+        if (this.configExists(legacyRolesPath)) {
+            try {
+                const legacyRoles = this.loadConfig(legacyRolesPath, {}, false);
+                Object.assign(mergedRoles, legacyRoles);
+                this.logger.debug(`Loaded legacy roles from: ${legacyRolesPath}`);
+            } catch (error) {
+                this.logger.warn(
+                    `Failed to load legacy roles from ${legacyRolesPath}: ${error.message}`
+                );
+            }
+        }
+
+        // Load all other JSON files in the directory (excluding roles.json to avoid duplication)
+        for (const jsonFile of jsonFiles) {
+            if (jsonFile === 'roles.json') {
+                continue; // Skip legacy file as it's already loaded
+            }
+
+            const filePath = join(rolesDir, jsonFile);
+            try {
+                const fileRoles = this.loadConfig(filePath, {}, false);
+
+                // Merge roles from this file
+                for (const [roleName, roleConfig] of Object.entries(fileRoles)) {
+                    if (mergedRoles[roleName]) {
+                        this.logger.warn(
+                            `Role '${roleName}' from ${filePath} overwrites existing role definition`
+                        );
+                    }
+                    mergedRoles[roleName] = roleConfig;
+                }
+
+                this.logger.debug(`Loaded roles from: ${filePath}`);
+            } catch (error) {
+                this.logger.warn(`Failed to load roles from ${filePath}: ${error.message}`);
+            }
+        }
+
+        // Cache the merged configuration
+        this.configCache.set(cacheKey, mergedRoles);
+
+        this.logger.debug(
+            `Loaded ${Object.keys(mergedRoles).length} roles from ${jsonFiles.length} files in ${rolesDir}`
+        );
+        return mergedRoles;
     }
 }
 

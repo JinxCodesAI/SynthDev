@@ -23,8 +23,16 @@ class SystemMessages {
             return this._rolesConfig;
         }
 
-        // Load roles from configuration file (required)
-        this._rolesConfig = this.configLoader.loadConfig('roles/roles.json', {}, true);
+        // Load roles from multiple files in the roles directory
+        this._rolesConfig = this.configLoader.loadRolesFromDirectory('roles');
+
+        // Ensure we have at least some roles loaded
+        if (!this._rolesConfig || Object.keys(this._rolesConfig).length === 0) {
+            throw new Error(
+                'No roles found in roles directory. At least one role configuration file is required.'
+            );
+        }
+
         return this._rolesConfig;
     }
 
@@ -37,12 +45,32 @@ class SystemMessages {
             return this._environmentTemplate;
         }
 
-        // Load environment template from configuration file (required)
-        this._environmentTemplate = this.configLoader.loadConfig(
-            'roles/environment-template.json',
-            {},
-            true
-        );
+        // Try to load from new location first, then fall back to old location for backward compatibility
+        try {
+            this._environmentTemplate = this.configLoader.loadConfig(
+                'defaults/environment-template.json',
+                {},
+                true
+            );
+        } catch (error) {
+            // Fall back to old location for backward compatibility
+            try {
+                this._environmentTemplate = this.configLoader.loadConfig(
+                    'roles/environment-template.json',
+                    {},
+                    true
+                );
+                // Log deprecation warning
+                console.warn(
+                    'DEPRECATION WARNING: environment-template.json should be moved from config/roles/ to config/defaults/'
+                );
+            } catch (fallbackError) {
+                throw new Error(
+                    `Failed to load environment template from both new location (defaults/environment-template.json) and old location (roles/environment-template.json): ${error.message}`
+                );
+            }
+        }
+
         return this._environmentTemplate;
     }
 
