@@ -25,9 +25,36 @@ vi.mock('../../../configurationLoader.js', () => ({
                     },
                 };
             }
+            if (path === 'defaults/environment-template.json') {
+                return {
+                    template: 'Test environment',
+                };
+            }
             if (path === 'roles/environment-template.json') {
                 return {
                     template: 'Test environment',
+                };
+            }
+            return {};
+        }),
+        loadRolesFromDirectory: vi.fn(dirPath => {
+            if (dirPath === 'roles') {
+                return {
+                    test_exact: {
+                        excludedTools: ['get_time', 'calculate'],
+                    },
+                    test_wildcard: {
+                        excludedTools: ['*file', 'test_*', '*_tool'],
+                    },
+                    test_regex: {
+                        excludedTools: ['/^execute_/', '/terminal$/i', '/^(read|write)_file$/'],
+                    },
+                    test_mixed: {
+                        excludedTools: ['get_time', '*file', '/^execute_/', '/terminal$/i'],
+                    },
+                    test_invalid: {
+                        excludedTools: ['/[invalid/', '*'],
+                    },
                 };
             }
             return {};

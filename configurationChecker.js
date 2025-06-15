@@ -18,8 +18,7 @@ export class ConfigurationChecker {
      */
     getRequiredConfigurationFiles() {
         return [
-            'roles/roles.json',
-            'roles/environment-template.json',
+            'defaults/environment-template.json', // Moved from roles/ to defaults/
             'tools/tool-messages.json',
             'tools/safety-patterns.json',
             'ui/console-messages.json',
@@ -30,21 +29,35 @@ export class ConfigurationChecker {
     }
 
     /**
+     * List of required configuration directories that must contain at least one JSON file
+     * @returns {string[]} Array of required configuration directory paths
+     */
+    getRequiredConfigurationDirectories() {
+        return [
+            'roles', // Must contain at least one role definition file
+        ];
+    }
+
+    /**
      * Check all required configuration files
      * @returns {Object} Comprehensive check result
      */
     checkAllConfigurations() {
         const requiredFiles = this.getRequiredConfigurationFiles();
+        const requiredDirs = this.getRequiredConfigurationDirectories();
         const results = {
             success: true,
             errors: [],
             warnings: [],
             fileChecks: {},
+            directoryChecks: {},
             summary: {
                 totalFiles: requiredFiles.length,
                 existingFiles: 0,
                 missingFiles: 0,
                 invalidFiles: 0,
+                totalDirectories: requiredDirs.length,
+                validDirectories: 0,
             },
         };
 
@@ -69,6 +82,19 @@ export class ConfigurationChecker {
                     results.errors.push(`Invalid JSON in ${filePath}: ${fileResult.error}`);
                     results.summary.invalidFiles++;
                 }
+            }
+        }
+
+        // Check required directories
+        for (const dirPath of requiredDirs) {
+            const dirResult = this._checkConfigurationDirectory(dirPath);
+            results.directoryChecks[dirPath] = dirResult;
+
+            if (dirResult.valid) {
+                results.summary.validDirectories++;
+            } else {
+                results.success = false;
+                results.errors.push(...dirResult.errors);
             }
         }
 
@@ -111,6 +137,61 @@ export class ConfigurationChecker {
     }
 
     /**
+     * Check a configuration directory for required JSON files
+     * @private
+     * @param {string} dirPath - Path to the configuration directory
+     * @returns {Object} Directory check result
+     */
+    _checkConfigurationDirectory(dirPath) {
+        const result = {
+            valid: false,
+            exists: false,
+            jsonFiles: [],
+            errors: [],
+        };
+
+        try {
+            // Check if directory exists
+            result.exists = this.loader.configExists(dirPath);
+
+            if (!result.exists) {
+                result.errors.push(`Directory does not exist: ${dirPath}`);
+                return result;
+            }
+
+            // Scan for JSON files
+            result.jsonFiles = this.loader.scanDirectoryForJsonFiles(dirPath);
+
+            if (result.jsonFiles.length === 0) {
+                result.errors.push(`No JSON files found in directory: ${dirPath}`);
+                return result;
+            }
+
+            // For roles directory, try to load roles to validate structure
+            if (dirPath === 'roles') {
+                try {
+                    const roles = this.loader.loadRolesFromDirectory(dirPath);
+                    if (!roles || Object.keys(roles).length === 0) {
+                        result.errors.push(`No valid roles found in directory: ${dirPath}`);
+                        return result;
+                    }
+                } catch (error) {
+                    result.errors.push(
+                        `Failed to load roles from directory ${dirPath}: ${error.message}`
+                    );
+                    return result;
+                }
+            }
+
+            result.valid = true;
+        } catch (error) {
+            result.errors.push(`Error checking directory ${dirPath}: ${error.message}`);
+        }
+
+        return result;
+    }
+
+    /**
      * Generate a detailed report of configuration status
      * @returns {string} Human-readable configuration report
      */
@@ -124,7 +205,9 @@ export class ConfigurationChecker {
         report += `   Total Files: ${checkResult.summary.totalFiles}\n`;
         report += `   ✅ Existing: ${checkResult.summary.existingFiles}\n`;
         report += `   ❌ Missing: ${checkResult.summary.missingFiles}\n`;
-        report += `   🚫 Invalid: ${checkResult.summary.invalidFiles}\n\n`;
+        report += `   🚫 Invalid: ${checkResult.summary.invalidFiles}\n`;
+        report += `   Total Directories: ${checkResult.summary.totalDirectories}\n`;
+        report += `   ✅ Valid Directories: ${checkResult.summary.validDirectories}\n\n`;
 
         // Overall status
         if (checkResult.success) {
@@ -147,6 +230,23 @@ export class ConfigurationChecker {
             }
 
             report += '\n';
+        }
+
+        // Directory details
+        if (checkResult.directoryChecks && Object.keys(checkResult.directoryChecks).length > 0) {
+            report += '\n📁 Directory Details:\n';
+            for (const [dirPath, dirResult] of Object.entries(checkResult.directoryChecks)) {
+                const status = dirResult.valid ? '✅' : '❌';
+                report += `   ${status} ${dirPath}/`;
+
+                if (dirResult.valid) {
+                    report += ` (${dirResult.jsonFiles.length} JSON files)`;
+                } else if (dirResult.errors.length > 0) {
+                    report += ` - ${dirResult.errors.join(', ')}`;
+                }
+
+                report += '\n';
+            }
         }
 
         // Errors

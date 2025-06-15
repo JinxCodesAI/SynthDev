@@ -8,10 +8,14 @@ This directory contains external configuration files that control Synth-Dev's be
 config/
 ├── README.md                    # This file
 ├── defaults/                    # Application default values
-│   └── application.json         # Core application settings and limits
-├── roles/                       # AI role definitions
-│   ├── roles.json              # AI persona configurations and system messages
-│   └── environment-template.json # Environment information template
+│   ├── application.json         # Core application settings and limits
+│   └── environment-template.json # Environment information template (moved from roles/)
+├── roles/                       # AI role definitions (supports multiple files and subdirectories)
+│   ├── roles.json              # Main AI persona configurations (legacy, optional)
+│   ├── core-roles.json         # Core system roles (example)
+│   ├── specialized-roles.json  # Specialized roles (example)
+│   └── custom/                 # Custom role subdirectories (example)
+│       └── my-roles.json       # Custom role definitions (example)
 ├── tools/                       # Tool configuration
 │   ├── tool-messages.json      # Tool descriptions, error messages, and validation text
 │   └── safety-patterns.json    # Security patterns and limits for execute_script tool
@@ -31,19 +35,22 @@ config/
 - **Used by**: ConfigManager, application startup
 - **Controls**: Model configurations, global settings, UI preferences, tool defaults, logging levels
 
-### `roles/roles.json`
+### `roles/` directory (Multi-file support)
 
 **Affects**: AI behavior, system messages, tool availability per role, few-shot prompting
 
 - **Used by**: SystemMessages, AIAPIClient, PromptEnhancer, app.js
 - **Controls**: AI persona definitions, system prompts, excluded tools per role, model levels, reminder messages, conversation examples for few-shot prompting
+- **Structure**: Supports multiple JSON files and subdirectories. All JSON files in the roles/ directory and its subdirectories are automatically loaded and merged.
+- **Backward Compatibility**: The legacy `roles.json` file is still supported and will be loaded first if present.
 
-### `roles/environment-template.json`
+### `defaults/environment-template.json`
 
 **Affects**: Environment information included in AI system messages
 
 - **Used by**: SystemMessages
 - **Controls**: Template for OS, working directory, index status, and timestamp information
+- **Migration**: Moved from `roles/environment-template.json` to `defaults/environment-template.json`. The old location is still supported for backward compatibility with a deprecation warning.
 
 ### `tools/tool-messages.json`
 
