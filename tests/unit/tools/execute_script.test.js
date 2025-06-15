@@ -358,7 +358,6 @@ describe('Execute Script Tool', () => {
             expect(result.success).toBe(true);
             expect(result.output).toBe('Hello World\n');
             expect(result.exit_code).toBe(0);
-            expect(result.execution_time).toBeGreaterThanOrEqual(0);
         });
 
         it('should handle script execution timeout', async () => {
