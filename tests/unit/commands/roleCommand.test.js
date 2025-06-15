@@ -32,6 +32,7 @@ describe('RoleCommand', () => {
             info: vi.fn(),
             warn: vi.fn(),
             error: vi.fn(),
+            user: vi.fn(),
         };
 
         // Setup logger mock
@@ -119,15 +120,15 @@ describe('RoleCommand', () => {
             );
 
             // Should display success message
-            expect(mockLogger.raw).toHaveBeenCalledWith(
+            expect(mockLogger.user).toHaveBeenCalledWith(
                 "🎭 Role switched from 'coder' to 'reviewer'"
             );
 
             // Should display tool count
-            expect(mockLogger.raw).toHaveBeenCalledWith('🔧 Tools: 8/10 available');
+            expect(mockLogger.info).toHaveBeenCalledWith('🔧 Tools: 8/10 available');
 
             // Should display excluded tools
-            expect(mockLogger.raw).toHaveBeenCalledWith(
+            expect(mockLogger.info).toHaveBeenCalledWith(
                 '🚫 Excluded tools for reviewer: get_time, calculate'
             );
         });
@@ -143,11 +144,11 @@ describe('RoleCommand', () => {
             expect(mockSystemMessages.hasRole).toHaveBeenCalledWith('unknown');
 
             // Should display error messages
-            expect(mockLogger.raw).toHaveBeenCalledWith('❌ Unknown role: unknown');
-            expect(mockLogger.raw).toHaveBeenCalledWith(
+            expect(mockLogger.error).toHaveBeenCalledWith('Unknown role: unknown');
+            expect(mockLogger.info).toHaveBeenCalledWith(
                 '📖 Available roles: coder, reviewer, architect'
             );
-            expect(mockLogger.raw).toHaveBeenCalledWith(
+            expect(mockLogger.info).toHaveBeenCalledWith(
                 '💡 Use /roles to see detailed role information\n'
             );
 
@@ -163,7 +164,7 @@ describe('RoleCommand', () => {
             expect(result).toBe(true);
 
             // Should not display excluded tools message
-            const excludedToolsCalls = mockLogger.raw.mock.calls.filter(
+            const excludedToolsCalls = mockLogger.info.mock.calls.filter(
                 call => call[0] && call[0].includes('🚫 Excluded tools')
             );
             expect(excludedToolsCalls).toHaveLength(0);
@@ -177,7 +178,7 @@ describe('RoleCommand', () => {
             expect(result).toBe(true);
 
             // Should display switch message with 'none' as previous role
-            expect(mockLogger.raw).toHaveBeenCalledWith("🎭 Role switched from 'none' to 'coder'");
+            expect(mockLogger.user).toHaveBeenCalledWith("🎭 Role switched from 'none' to 'coder'");
         });
 
         it('should handle setSystemMessage errors', async () => {

@@ -56,8 +56,8 @@ export class HelpCommand extends BaseCommand {
 `;
 
         const logger = getLogger();
-        logger.raw(commandsHelp);
-        logger.raw(systemInfo);
+        logger.user(commandsHelp);
+        logger.info(systemInfo);
 
         return true;
     }

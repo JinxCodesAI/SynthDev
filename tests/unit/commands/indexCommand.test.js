@@ -76,6 +76,8 @@ describe('IndexCommand', () => {
             info: vi.fn(),
             warn: vi.fn(),
             error: vi.fn(),
+            user: vi.fn(),
+            status: vi.fn(),
         };
 
         // Setup logger mock
@@ -188,8 +190,8 @@ describe('IndexCommand', () => {
             const result = await indexCommand.implementation('', mockContext);
 
             expect(result).toBe(true);
-            expect(mockLogger.raw).toHaveBeenCalledWith('\n📚 Codebase Indexing');
-            expect(mockLogger.raw).toHaveBeenCalledWith('❌ Indexing cancelled');
+            expect(mockLogger.user).toHaveBeenCalledWith('📚 Codebase Indexing');
+            expect(mockLogger.user).toHaveBeenCalledWith('❌ Indexing cancelled');
         });
 
         it('should handle errors during indexing gracefully', async () => {
@@ -300,7 +302,7 @@ describe('IndexCommand', () => {
             const result = await indexCommand.implementation('', mockContext);
 
             expect(result).toBe(true);
-            expect(mockLogger.raw).toHaveBeenCalledWith('❌ Indexing cancelled');
+            expect(mockLogger.user).toHaveBeenCalledWith('❌ Indexing cancelled');
         });
 
         it('should handle confirmation prompts', async () => {

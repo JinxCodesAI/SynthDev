@@ -12,6 +12,7 @@ vi.mock('../../../logger.js', () => ({
         warn: vi.fn(),
         info: vi.fn(),
         debug: vi.fn(),
+        user: vi.fn(),
     }),
 }));
 
@@ -168,7 +169,7 @@ describe('CommandRegistry', () => {
             const result = await registry.executeCommand('nonexistent', '', context);
 
             expect(result).toBe('invalid');
-            expect(mockLogger.raw).toHaveBeenCalledWith(
+            expect(mockLogger.user).toHaveBeenCalledWith(
                 '❌ Unknown command: /nonexistent\n📖 Type /help to see available commands'
             );
         });

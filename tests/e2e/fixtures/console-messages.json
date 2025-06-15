@@ -1,0 +1,77 @@
+{
+    "prompts": {
+        "confirmation": "❓ {prompt}\n   Type \"y\" or \"yes\" to proceed, anything else to cancel:"
+    },
+    "status": {
+        "thinking": "\n🧠 Synth-Dev is thinking...\n",
+        "executing_tools": "🔧 Executing tools...\n",
+        "enhancing_prompt": "🔄 Enhancing prompt..."
+    },
+    "startup": {
+        "title": "🚀 Synth-Dev Console Application Started!",
+        "model_info": "🤖 Model: {model}",
+        "role_info": "🎭 Role: {role}",
+        "tools_info": "🔧 Tools: {count} loaded",
+        "tools_filtered_info": "🔧 Tools: {filtered}/{total} available ({excluded} filtered for role)",
+        "instructions": "Type your message and press Enter to chat.\nUse /help for commands."
+    },
+    "goodbye": "👋 Goodbye!",
+    "prefixes": {
+        "assistant": "🤖 Synth-Dev:",
+        "chain_of_thought": "💭 Chain of Thought:",
+        "final_chain_of_thought": "💭 Final Chain of Thought:",
+        "separator": "─"
+    },
+    "errors": {
+        "startup_error": "❌ Error: {message}",
+        "startup_error_details": "\nPlease:\n1. Copy env.template to .env and add your API key, OR\n2. Use --api-key=<your-key> command line argument, OR\n3. Enter your API key when prompted\n\nGet your API key from: https://platform.openai.com/api-keys",
+        "command_error": "❌ Unknown command: /{command}\n📖 Type /help to see available commands",
+        "tool_execution_failed": "Tool execution failed"
+    },
+    "enhancement": {
+        "failure_header": "\n⚠️  \u001b[33mPrompt enhancement failed:\u001b[0m",
+        "failure_message": "\n⚠️  \u001b[33mPrompt enhancement failed: {error}\u001b[0m",
+        "proceeding_message": "📝 Proceeding with original prompt...\n",
+        "approval_instruction": "🔄 Press Esc to revert to original or ENTER to submit current prompt",
+        "original_prompt_header": "\n📝 \u001b[36mOriginal prompt:\u001b[0m",
+        "separator": "─",
+        "options_header": "\n📝 You can:",
+        "option_enter": "   • Press ENTER to use your original prompt",
+        "option_modify": "   • Type your modifications and press ENTER",
+        "option_cancel": "   • Type \"cancel\" to cancel the operation",
+        "choice_prompt": "\n💭 Your choice: ",
+        "cancel_keyword": "cancel"
+    },
+    "tools": {
+        "cancelled": "Tool execution cancelled: {toolName}\n"
+    },
+    "cmd": {
+        "context_enabled": "✅ Context integration enabled - commands and results will be added to chat history\n",
+        "context_disabled": "❌ Context integration disabled\n",
+        "context_status": "ℹ️  Context integration is currently {status}",
+        "context_toggle_help": "   Use \"/cmd context on\" or \"/cmd context off\" to toggle\n",
+        "ai_generating": "🤖 Generating command...\n",
+        "generation_failed": "❌ Failed to generate command: {error}\n",
+        "generation_cancelled": "🚫 Command generation cancelled\n",
+        "generation_instruction": "🔄 Press Esc to revert to original or ENTER to submit current command",
+        "invalid_format": "❌ Invalid command format\n",
+        "no_command": "❌ No command to execute\n",
+        "no_description": "❌ Please provide a description of what you want to do after ???\n",
+        "description_example": "   Example: /cmd ??? add all files to git\n",
+        "execution_failed": "Failed to execute command: {command}",
+        "no_history": "📜 No commands in history\n",
+        "history_title": "📜 Command History:\n",
+        "context_prompt": "\n🤔 Add this command and result to chat history? (y/N): ",
+        "context_added": "✅ Added to chat history\n",
+        "context_skipped": "⏭️  Skipped adding to chat history\n",
+        "executing": "⚡ Executing: {command}\n",
+        "success": "✅ Command completed successfully\n",
+        "failed": "❌ Command failed\n",
+        "output_header": "📤 Output:",
+        "warnings_header": "⚠️  Warnings/Info:",
+        "error_header": "❌ Error:",
+        "error_details": "💥 Error details: {error}",
+        "separator": "─",
+        "context_auto_added": "📝 Command and results added to chat history\n"
+    }
+}

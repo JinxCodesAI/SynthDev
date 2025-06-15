@@ -63,6 +63,7 @@ class AIAPIClient {
         this.onResponse = null;
         this.onError = null;
         this.onContentDisplay = null;
+        this.onMessagePush = null;
 
         // Initialize logger
         this.logger = getLogger();
@@ -130,6 +131,7 @@ class AIAPIClient {
         onReminder = null,
         onContentDisplay = null,
         onParseResponse = null,
+        onMessagePush = null,
     }) {
         this.onThinking = onThinking;
         this.onChainOfThought = onChainOfThought;
@@ -140,6 +142,7 @@ class AIAPIClient {
         this.onReminder = onReminder;
         this.onContentDisplay = onContentDisplay;
         this.onParseResponse = onParseResponse;
+        this.onMessagePush = onMessagePush;
     }
 
     setTools(tools) {
@@ -199,7 +202,7 @@ class AIAPIClient {
      * @private
      */
     _applyToolFiltering() {
-        if (!this.role || !this.allTools.length) {
+        if (!this.role) {
             return;
         }
 
@@ -302,98 +305,146 @@ class AIAPIClient {
 
     async sendUserMessage(userInput) {
         try {
-            // Reset tool call counter for new user interaction
-            this.toolCallCount = 0;
-
-            // Ensure system message is present for current role
-            this._ensureSystemMessage();
-
             // Add user message to conversation
-            this.messages.push({ role: 'user', content: userInput });
+            this._pushMessage({ role: 'user', content: userInput });
 
-            // Notify UI that thinking has started
-            if (this.onThinking) {
-                this.onThinking();
-            }
-
-            // Get initial response
-            const response = await this._makeAPICall();
-            const message = response.choices[0].message;
-
-            // Handle reasoning content (model-specific)
-            if (message.reasoning_content) {
-                if (this.onChainOfThought) {
-                    this.onChainOfThought(message.reasoning_content);
-                }
-                // Clear reasoning content before storing (model-specific behavior)
-                message.reasoning_content = null;
-            }
-
-            const parsingTools = SystemMessages.getParsingTools(this.role).map(
-                tool => tool.function.name
-            );
-            this.logger.debug('Parsing tools:', parsingTools);
-
-            const toolCalls = message.tool_calls || [];
-            const parsingToolCalls = toolCalls.filter(call =>
-                parsingTools.includes(call.function.name)
-            );
-            const nonParsingToolCalls = toolCalls.filter(
-                call => !parsingTools.includes(call.function.name)
-            );
-
-            if (parsingToolCalls.length > 0 && nonParsingToolCalls.length > 0) {
-                this.onError(
-                    new Error(
-                        'AI response contains both parsing and non-parsing tool calls. This is not supported.'
-                    )
-                );
-            }
-
-            // Handle tool calls if present
-            if (nonParsingToolCalls.length > 0) {
-                this.logger.debug('AI response contains tool calls');
-
-                // Display content immediately if present (before tool execution)
-                if (message.content && this.onContentDisplay) {
-                    this.onContentDisplay(message.content, this.role);
-                }
-                await this._handleToolCalls(message);
-            } else {
-                let content = null;
-                if (parsingToolCalls.length > 0) {
-                    this.logger.debug('AI response contains parsing tool calls');
-                    if (this.onParseResponse) {
-                        const parsedResponse = this.onParseResponse(message);
-                        this.logger.debug('Parsed response:', parsedResponse);
-                        if (parsedResponse.success) {
-                            content = parsedResponse.content;
-                        } else {
-                            this.onError(new Error(parsedResponse.error));
-                        }
-                    } else {
-                        this.logger.error('No parsing response handler defined');
-                        this.onError(new Error('No parsing response handler defined'));
-                    }
-                } else {
-                    this.logger.debug('AI response contains no tool calls');
-                    content = message.content;
-                }
-                // Regular response without tools
-                this.messages.push({ role: 'assistant', content: content });
-                if (this.onResponse && !this.onParseResponse) {
-                    this.onResponse(response, this.role);
-                }
-            }
+            // Execute the common message processing logic
+            return await this._processMessage();
         } catch (error) {
             if (this.onError) {
                 this.onError(error);
             }
+            return null;
+        }
+    }
+
+    /**
+     * Send a message using existing conversation context without adding a new user message
+     * Used by workflow agents when context is managed externally
+     * @returns {Promise<string>} Response content
+     */
+    async sendMessage() {
+        this.logger.debug('🔍 DEBUG: sendMessage called for role', this.role);
+        try {
+            // Execute the common message processing logic without adding a new message
+            return await this._processMessage();
+        } catch (error) {
+            if (this.onError) {
+                this.onError(error);
+            }
+            return null;
+        }
+    }
+
+    /**
+     * Common message processing logic shared by sendUserMessage and sendMessage
+     * @private
+     * @returns {Promise<string>} Response content
+     */
+    async _processMessage() {
+        this.logger.debug('🔍 DEBUG: _processMessage called for role', this.role);
+        // Reset tool call counter for new interaction
+        this.toolCallCount = 0;
+
+        // Ensure system message is present for current role
+        this._ensureSystemMessage();
+
+        // Notify UI that thinking has started
+        if (this.onThinking) {
+            this.onThinking();
+        }
+
+        // Get initial response
+        const response = await this._makeAPICall();
+        const message = response.choices[0].message;
+
+        // Handle reasoning content (model-specific)
+        if (message.reasoning_content) {
+            if (this.onChainOfThought) {
+                this.onChainOfThought(message.reasoning_content);
+            }
+            // Clear reasoning content before storing (model-specific behavior)
+            message.reasoning_content = null;
+        }
+
+        const parsingTools = SystemMessages.getParsingTools(this.role).map(
+            tool => tool.function.name
+        );
+        this.logger.debug('🔍 DEBUG: Parsing tools for role', this.role, ':', parsingTools);
+
+        const toolCalls = message.tool_calls || [];
+        this.logger.debug(
+            '🔍 DEBUG: Tool calls in response:',
+            toolCalls.map(call => call.function.name)
+        );
+        const parsingToolCalls = toolCalls.filter(call =>
+            parsingTools.includes(call.function.name)
+        );
+        this.logger.debug('🔍 DEBUG: Parsing tool calls found:', parsingToolCalls.length);
+        const nonParsingToolCalls = toolCalls.filter(
+            call => !parsingTools.includes(call.function.name)
+        );
+
+        if (parsingToolCalls.length > 0 && nonParsingToolCalls.length > 0) {
+            this.onError(
+                new Error(
+                    'AI response contains both parsing and non-parsing tool calls. This is not supported.'
+                )
+            );
+            return null;
+        }
+
+        // Handle tool calls if present
+        if (nonParsingToolCalls.length > 0) {
+            this.logger.debug('AI response contains tool calls');
+
+            // Display content immediately if present (before tool execution)
+            if (message.content && this.onContentDisplay) {
+                this.onContentDisplay(message.content, this.role);
+            }
+            await this._handleToolCalls(message);
+
+            // Return the final message content after tool execution
+            const finalMessage = this.messages[this.messages.length - 1];
+            return finalMessage.content || '';
+        } else {
+            let content = null;
+            if (parsingToolCalls.length > 0) {
+                this.logger.debug('AI response contains parsing tool calls');
+                if (this.onParseResponse) {
+                    const parsedResponse = this.onParseResponse(message);
+                    this.logger.debug('Parsed response:', parsedResponse);
+                    if (parsedResponse.success) {
+                        content = parsedResponse.content;
+                    } else {
+                        this.onError(new Error(parsedResponse.error));
+                        return null;
+                    }
+                } else {
+                    this.logger.error('No parsing response handler defined');
+                    this.onError(new Error('No parsing response handler defined'));
+                    return null;
+                }
+            } else {
+                this.logger.debug('AI response contains no tool calls');
+                content = message.content;
+            }
+            // Regular response without tools
+            this._pushMessage({ role: 'assistant', content: content });
+
+            // Always call onResponse to capture raw response data, regardless of parsing tools
+            if (this.onResponse) {
+                this.logger.debug('🔍 DEBUG: Calling onResponse callback for parsing tools');
+                this.onResponse(response, this.role);
+            } else {
+                this.logger.debug('🔍 DEBUG: No onResponse callback defined for parsing tools');
+            }
+            return content || '';
         }
     }
 
     addUserMessage(userMessage) {
-        this.messages.push({ role: 'user', content: userMessage });
+        this._pushMessage({ role: 'user', content: userMessage });
     }
 
     async _makeAPICall() {
@@ -407,12 +458,40 @@ class AIAPIClient {
             max_completion_tokens: config.getMaxTokens(this.model),
         };
 
+        // Add tool_choice for parsing-only tools to force them to be called
+        if (this.tools.length > 0) {
+            const parsingTools = SystemMessages.getParsingTools(this.role);
+            const parsingOnlyTools = parsingTools.filter(tool => tool.parsingOnly === true);
+
+            if (parsingOnlyTools.length === 1) {
+                // Force the single parsing-only tool to be called
+                requestData.tool_choice = {
+                    type: 'function',
+                    function: { name: parsingOnlyTools[0].function.name },
+                };
+                this.logger.debug(`🔧 Forcing tool choice: ${parsingOnlyTools[0].function.name}`);
+            } else if (parsingOnlyTools.length > 1) {
+                this.logger.warn(
+                    `Multiple parsing-only tools found for role ${this.role}, cannot force tool choice`
+                );
+            }
+        }
+
         // Store request data for review
         this.lastAPICall.request = JSON.parse(JSON.stringify(requestData));
         this.lastAPICall.timestamp = new Date().toISOString();
 
         // Call OpenAI Compatible API
-        const response = await this.client.chat.completions.create(requestData);
+        const response = await this.client.chat.completions.create(requestData).catch(error => {
+            this.logger.error(error, 'API call failed');
+            this.logger.httpRequest(
+                'POST',
+                `${this.client.baseURL}/chat/completions`,
+                requestData,
+                error
+            );
+            throw error;
+        });
 
         // Store response data for review
         this.lastAPICall.response = JSON.parse(JSON.stringify(response));
@@ -437,7 +516,7 @@ class AIAPIClient {
 
     async _handleToolCalls(message) {
         // Add the initial assistant message with tool calls to conversation
-        this.messages.push(message);
+        this._pushMessage(message);
 
         let currentMessage = message;
 
@@ -457,10 +536,10 @@ class AIAPIClient {
                 if (this.onToolExecution) {
                     try {
                         const toolResult = await this.onToolExecution(toolCall);
-                        this.messages.push(toolResult);
+                        this._pushMessage(toolResult);
                     } catch (error) {
                         // Add error result to conversation
-                        this.messages.push({
+                        this._pushMessage({
                             role: 'tool',
                             tool_call_id: toolCall.id,
                             content: `Error: ${error.message}`,
@@ -477,7 +556,7 @@ class AIAPIClient {
                         reminder = this.onReminder(reminder);
                     }
                     if (reminder) {
-                        this.messages.push({
+                        this._pushMessage({
                             role: 'user',
                             content: reminder,
                         });
@@ -503,7 +582,7 @@ class AIAPIClient {
             }
 
             // Add the response message to conversation
-            this.messages.push(nextMessage);
+            this._pushMessage(nextMessage);
 
             // Update current message for next iteration
             currentMessage = nextMessage;
@@ -520,6 +599,9 @@ class AIAPIClient {
                 this.onResponse({ choices: [{ message: currentMessage }] }, this.role);
             }
         }
+
+        // Return the final message content
+        return currentMessage.content || '';
     }
 
     /**
@@ -588,6 +670,18 @@ class AIAPIClient {
 
     getExampleMessageCount() {
         return this.exampleMessageCount;
+    }
+
+    /**
+     * Push a message to the conversation and notify handler
+     * @param {Object} message - The message to push
+     * @private
+     */
+    _pushMessage(message) {
+        this.messages.push(message);
+        if (this.onMessagePush) {
+            this.onMessagePush(message);
+        }
     }
 }
 

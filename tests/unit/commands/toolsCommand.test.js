@@ -19,6 +19,8 @@ describe('ToolsCommand', () => {
         mockLogger = {
             raw: vi.fn(),
             debug: vi.fn(),
+            user: vi.fn(),
+            info: vi.fn(),
         };
 
         // Setup logger mock
@@ -102,17 +104,17 @@ describe('ToolsCommand', () => {
             expect(mockContext.toolManager.getToolDefinition).toHaveBeenCalledWith('write_file');
 
             // Should display tools header
-            expect(mockLogger.raw).toHaveBeenCalledWith('\n🔧 Available Tools:');
-            expect(mockLogger.raw).toHaveBeenCalledWith('─'.repeat(50));
+            expect(mockLogger.user).toHaveBeenCalledWith('🔧 Available Tools:');
+            expect(mockLogger.user).toHaveBeenCalledWith('─'.repeat(50));
 
             // Should display tool information
-            expect(mockLogger.raw).toHaveBeenCalledWith(
+            expect(mockLogger.info).toHaveBeenCalledWith(
                 expect.stringContaining('📍 read_file 🟢 Auto-run')
             );
-            expect(mockLogger.raw).toHaveBeenCalledWith(
+            expect(mockLogger.info).toHaveBeenCalledWith(
                 expect.stringContaining('Description: Read contents of a file')
             );
-            expect(mockLogger.raw).toHaveBeenCalledWith(
+            expect(mockLogger.info).toHaveBeenCalledWith(
                 expect.stringContaining('Parameters: file_path')
             );
         });
@@ -125,7 +127,7 @@ describe('ToolsCommand', () => {
             expect(result).toBe(true);
 
             // Should display no tools message
-            expect(mockLogger.raw).toHaveBeenCalledWith('🔧 No tools available');
+            expect(mockLogger.info).toHaveBeenCalledWith('🔧 No tools available');
         });
 
         it('should handle args parameter (unused)', async () => {
@@ -142,10 +144,10 @@ describe('ToolsCommand', () => {
             expect(result).toBe(true);
 
             // Should display parameter information
-            expect(mockLogger.raw).toHaveBeenCalledWith(
+            expect(mockLogger.info).toHaveBeenCalledWith(
                 expect.stringContaining('Parameters: file_path')
             );
-            expect(mockLogger.raw).toHaveBeenCalledWith(
+            expect(mockLogger.info).toHaveBeenCalledWith(
                 expect.stringContaining('Parameters: file_path, content')
             );
         });
@@ -191,7 +193,7 @@ describe('ToolsCommand', () => {
             const result = await toolsCommand.implementation('', mockContext);
 
             expect(result).toBe(true);
-            expect(mockLogger.raw).toHaveBeenCalledWith(
+            expect(mockLogger.info).toHaveBeenCalledWith(
                 expect.stringContaining('🔴 Requires confirmation')
             );
         });
@@ -214,7 +216,7 @@ describe('ToolsCommand', () => {
             const result = await toolsCommand.implementation('', mockContext);
 
             expect(result).toBe(true);
-            expect(mockLogger.raw).toHaveBeenCalledWith(expect.stringContaining('📍 simple_tool'));
+            expect(mockLogger.info).toHaveBeenCalledWith(expect.stringContaining('📍 simple_tool'));
         });
     });
 });

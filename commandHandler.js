@@ -46,6 +46,7 @@ class CommandHandler {
                 costsManager: this.costsManager,
                 snapshotManager: this.snapshotManager,
                 commandRegistry: this.commandRegistry,
+                workflowStateMachine: this.app?.workflowStateMachine,
                 app: this.app,
             };
 

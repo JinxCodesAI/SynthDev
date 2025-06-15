@@ -33,8 +33,8 @@ export class RolesCommand extends BaseCommand {
         const currentRole = apiClient.getCurrentRole();
         const logger = getLogger();
 
-        logger.raw('\n🎭 Available Roles:');
-        logger.raw('─'.repeat(50));
+        logger.user('🎭 Available Roles:');
+        logger.user('─'.repeat(50));
 
         roles.forEach(role => {
             const isCurrentRole = role === currentRole;
@@ -45,32 +45,32 @@ export class RolesCommand extends BaseCommand {
             const level = SystemMessages.getLevel(role);
             const levelIcon = level === 'smart' ? '🧠' : level === 'fast' ? '⚡' : '🔧';
 
-            logger.raw(`${roleIcon} ${role.charAt(0).toUpperCase() + role.slice(1)}${roleStatus}`);
-            logger.raw(`   ${levelIcon} Model Level: ${level}`);
+            logger.info(`${roleIcon} ${role.charAt(0).toUpperCase() + role.slice(1)}${roleStatus}`);
+            logger.info(`   ${levelIcon} Model Level: ${level}`);
 
             // Get system message preview (first line)
             const systemMessage = SystemMessages.getSystemMessage(role);
             const preview = systemMessage.split('\n')[0];
-            logger.raw(`   ${preview}`);
+            logger.info(`   ${preview}`);
 
             // Get reminder message
             const reminder = SystemMessages.getReminder(role);
             if (reminder) {
                 const reminderPreview =
                     reminder.length > 80 ? `${reminder.substring(0, 80)}...` : reminder;
-                logger.raw(`   💭 Reminder: ${reminderPreview}`);
+                logger.info(`   💭 Reminder: ${reminderPreview}`);
             }
 
             const excludedTools = SystemMessages.getExcludedTools(role);
             if (excludedTools.length > 0) {
-                logger.raw(
+                logger.info(
                     `   🚫 Excludes: ${excludedTools.slice(0, 3).join(', ')}${excludedTools.length > 3 ? '...' : ''}`
                 );
             }
             logger.raw();
         });
 
-        logger.raw('💡 Use "/role <name>" to switch roles (e.g., "/role reviewer")');
+        logger.info('💡 Use "/role <name>" to switch roles (e.g., "/role reviewer")');
         logger.raw();
 
         return true;

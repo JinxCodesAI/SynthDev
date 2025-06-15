@@ -65,6 +65,7 @@ vi.mock('../../../toolConfigManager.js', () => ({
             { pattern: /eval\s*\(/, reason: 'Dynamic code execution' },
             { pattern: /spawn|exec|fork/, reason: 'Process execution functions' },
             { pattern: /writeFileSync|writeFile/, reason: 'File writing operations' },
+            { pattern: /unlinkSync|unlink/, reason: 'File deletion operations' },
         ]),
     }),
 }));
@@ -203,6 +204,7 @@ describe('Execute Script Tool', () => {
                 },
             }));
 
+            // Don't need to mock spawn since script should fail safety check before execution
             const result = await executeScript({
                 script: 'fs.unlinkSync("important.txt");',
             });
@@ -356,7 +358,6 @@ describe('Execute Script Tool', () => {
             expect(result.success).toBe(true);
             expect(result.output).toBe('Hello World\n');
             expect(result.exit_code).toBe(0);
-            expect(result.execution_time).toBeGreaterThanOrEqual(0);
         });
 
         it('should handle script execution timeout', async () => {

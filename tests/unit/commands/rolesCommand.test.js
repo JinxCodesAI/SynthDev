@@ -33,6 +33,7 @@ describe('RolesCommand', () => {
             info: vi.fn(),
             warn: vi.fn(),
             error: vi.fn(),
+            user: vi.fn(),
         };
 
         // Setup logger mock
@@ -112,18 +113,18 @@ describe('RolesCommand', () => {
             expect(mockContext.apiClient.getCurrentRole).toHaveBeenCalled();
 
             // Should display header
-            expect(mockLogger.raw).toHaveBeenCalledWith('\n🎭 Available Roles:');
-            expect(mockLogger.raw).toHaveBeenCalledWith('─'.repeat(50));
+            expect(mockLogger.user).toHaveBeenCalledWith('🎭 Available Roles:');
+            expect(mockLogger.user).toHaveBeenCalledWith('─'.repeat(50));
 
             // Should display current role with crown icon
-            expect(mockLogger.raw).toHaveBeenCalledWith('👑 Coder (current)');
+            expect(mockLogger.info).toHaveBeenCalledWith('👑 Coder (current)');
 
             // Should display other roles with regular icon
-            expect(mockLogger.raw).toHaveBeenCalledWith('🎭 Reviewer');
-            expect(mockLogger.raw).toHaveBeenCalledWith('🎭 Architect');
+            expect(mockLogger.info).toHaveBeenCalledWith('🎭 Reviewer');
+            expect(mockLogger.info).toHaveBeenCalledWith('🎭 Architect');
 
             // Should display usage tip
-            expect(mockLogger.raw).toHaveBeenCalledWith(
+            expect(mockLogger.info).toHaveBeenCalledWith(
                 '💡 Use "/role <name>" to switch roles (e.g., "/role reviewer")'
             );
         });
@@ -134,10 +135,10 @@ describe('RolesCommand', () => {
             expect(result).toBe(true);
 
             // Should display base level with tool icon
-            expect(mockLogger.raw).toHaveBeenCalledWith('   🔧 Model Level: base');
+            expect(mockLogger.info).toHaveBeenCalledWith('   🔧 Model Level: base');
 
             // Should display smart level with brain icon
-            expect(mockLogger.raw).toHaveBeenCalledWith('   🧠 Model Level: smart');
+            expect(mockLogger.info).toHaveBeenCalledWith('   🧠 Model Level: smart');
         });
 
         it('should display system message previews', async () => {
@@ -146,13 +147,13 @@ describe('RolesCommand', () => {
             expect(result).toBe(true);
 
             // Should display first line of system messages
-            expect(mockLogger.raw).toHaveBeenCalledWith(
+            expect(mockLogger.info).toHaveBeenCalledWith(
                 '   You are an expert software developer and coding assistant.'
             );
-            expect(mockLogger.raw).toHaveBeenCalledWith(
+            expect(mockLogger.info).toHaveBeenCalledWith(
                 '   You are a senior code reviewer and quality assurance expert.'
             );
-            expect(mockLogger.raw).toHaveBeenCalledWith(
+            expect(mockLogger.info).toHaveBeenCalledWith(
                 '   You are a senior software architect and system design expert.'
             );
         });
@@ -163,13 +164,13 @@ describe('RolesCommand', () => {
             expect(result).toBe(true);
 
             // Should display reminder messages
-            expect(mockLogger.raw).toHaveBeenCalledWith(
+            expect(mockLogger.info).toHaveBeenCalledWith(
                 '   💭 Reminder: Remember, follow strictly your system prompt most importantly.'
             );
-            expect(mockLogger.raw).toHaveBeenCalledWith(
+            expect(mockLogger.info).toHaveBeenCalledWith(
                 '   💭 Reminder: Remember to identify bugs and missing elements.'
             );
-            expect(mockLogger.raw).toHaveBeenCalledWith(
+            expect(mockLogger.info).toHaveBeenCalledWith(
                 '   💭 Reminder: Remember to use tools to understand context first.'
             );
         });
@@ -180,8 +181,8 @@ describe('RolesCommand', () => {
             expect(result).toBe(true);
 
             // Should display excluded tools for roles that have them
-            expect(mockLogger.raw).toHaveBeenCalledWith('   🚫 Excludes: get_time, calculate');
-            expect(mockLogger.raw).toHaveBeenCalledWith(
+            expect(mockLogger.info).toHaveBeenCalledWith('   🚫 Excludes: get_time, calculate');
+            expect(mockLogger.info).toHaveBeenCalledWith(
                 '   🚫 Excludes: get_time, calculate, edit_file...'
             );
         });
@@ -192,7 +193,7 @@ describe('RolesCommand', () => {
             expect(result).toBe(true);
 
             // Architect has no excluded tools, so no excludes line should be shown for it
-            const excludesCalls = mockLogger.raw.mock.calls.filter(
+            const excludesCalls = mockLogger.info.mock.calls.filter(
                 call => call[0] && call[0].includes('🚫 Excludes:')
             );
 
@@ -215,7 +216,7 @@ describe('RolesCommand', () => {
             expect(result).toBe(true);
 
             // Should truncate long reminders
-            const reminderCalls = mockLogger.raw.mock.calls.filter(
+            const reminderCalls = mockLogger.info.mock.calls.filter(
                 call => call[0] && call[0].includes('💭 Reminder:')
             );
 
@@ -246,7 +247,7 @@ describe('RolesCommand', () => {
             expect(result).toBe(true);
 
             // Should show only first 3 tools with ellipsis
-            expect(mockLogger.raw).toHaveBeenCalledWith('   🚫 Excludes: tool1, tool2, tool3...');
+            expect(mockLogger.info).toHaveBeenCalledWith('   🚫 Excludes: tool1, tool2, tool3...');
         });
 
         it('should handle no current role', async () => {
@@ -257,7 +258,7 @@ describe('RolesCommand', () => {
             expect(result).toBe(true);
 
             // All roles should be displayed with regular icon (no current role)
-            const crownCalls = mockLogger.raw.mock.calls.filter(
+            const crownCalls = mockLogger.info.mock.calls.filter(
                 call => call[0] && call[0].includes('👑')
             );
             expect(crownCalls).toHaveLength(0);
@@ -280,7 +281,7 @@ describe('RolesCommand', () => {
             expect(result).toBe(true);
 
             // Should display fast level with lightning icon
-            expect(mockLogger.raw).toHaveBeenCalledWith('   ⚡ Model Level: fast');
+            expect(mockLogger.info).toHaveBeenCalledWith('   ⚡ Model Level: fast');
         });
     });
 

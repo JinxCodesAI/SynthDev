@@ -3,6 +3,16 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import ConfigManager from '../../../configManager.js';
 import { mockEnvVars } from '../../helpers/testUtils.js';
 
+// Mock logger
+vi.mock('../../../logger.js', () => ({
+    getLogger: vi.fn(() => ({
+        debug: vi.fn(),
+        warn: vi.fn(),
+        error: vi.fn(),
+        info: vi.fn(),
+    })),
+}));
+
 describe('ConfigManager', () => {
     let restoreEnv;
 

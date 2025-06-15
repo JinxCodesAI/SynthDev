@@ -252,10 +252,10 @@ describe('ConsoleInterface', () => {
 
             consoleInterface.showChainOfThought(content);
 
-            expect(mockLogger.raw).toHaveBeenCalledWith(expectedPrefix);
-            expect(mockLogger.raw).toHaveBeenCalledWith(expectedSeparator.repeat(50));
-            expect(mockLogger.raw).toHaveBeenCalledWith(content);
-            expect(mockLogger.raw).toHaveBeenCalledWith(expectedSeparator.repeat(50));
+            expect(mockLogger.debug).toHaveBeenCalledWith(expectedPrefix);
+            expect(mockLogger.debug).toHaveBeenCalledWith(expectedSeparator.repeat(50));
+            expect(mockLogger.debug).toHaveBeenCalledWith(content);
+            expect(mockLogger.debug).toHaveBeenCalledWith(expectedSeparator.repeat(50));
             expect(mockLogger.raw).toHaveBeenCalledWith();
         });
     });
@@ -263,13 +263,17 @@ describe('ConsoleInterface', () => {
     describe('showFinalChainOfThought', () => {
         it('should show final chain of thought with formatting', () => {
             const content = 'Final thought process';
+            const expectedPrefix = realConfigMessages.prefixes.final_chain_of_thought;
+            const expectedSeparator = realConfigMessages.prefixes.separator;
+            expect(expectedPrefix).toBeDefined(); // Ensure config value exists
+            expect(expectedSeparator).toBeDefined(); // Ensure config value exists
 
             consoleInterface.showFinalChainOfThought(content);
 
-            expect(mockLogger.raw).toHaveBeenCalledWith('💭 Final Chain of Thought:');
-            expect(mockLogger.raw).toHaveBeenCalledWith('─'.repeat(50));
-            expect(mockLogger.raw).toHaveBeenCalledWith(content);
-            expect(mockLogger.raw).toHaveBeenCalledWith('─'.repeat(50));
+            expect(mockLogger.info).toHaveBeenCalledWith(expectedPrefix);
+            expect(mockLogger.info).toHaveBeenCalledWith(expectedSeparator.repeat(50));
+            expect(mockLogger.info).toHaveBeenCalledWith(content);
+            expect(mockLogger.info).toHaveBeenCalledWith(expectedSeparator.repeat(50));
             expect(mockLogger.raw).toHaveBeenCalledWith();
         });
     });
@@ -332,9 +336,11 @@ describe('ConsoleInterface', () => {
 
             consoleInterface.showStartupMessage(model, totalToolsCount);
 
-            expect(mockLogger.raw).toHaveBeenCalledWith(expect.stringContaining(expectedTitle));
-            expect(mockLogger.raw).toHaveBeenCalledWith(expect.stringContaining('🤖 Model: gpt-4'));
-            expect(mockLogger.raw).toHaveBeenCalledWith(
+            expect(mockLogger.user).toHaveBeenCalledWith(expect.stringContaining(expectedTitle));
+            expect(mockLogger.user).toHaveBeenCalledWith(
+                expect.stringContaining('🤖 Model: gpt-4')
+            );
+            expect(mockLogger.user).toHaveBeenCalledWith(
                 expect.stringContaining('🔧 Tools: 10 loaded')
             );
         });
@@ -346,7 +352,7 @@ describe('ConsoleInterface', () => {
 
             consoleInterface.showStartupMessage(model, totalToolsCount, role);
 
-            expect(mockLogger.raw).toHaveBeenCalledWith(
+            expect(mockLogger.user).toHaveBeenCalledWith(
                 expect.stringContaining('🎭 Role: Assistant')
             );
         });
@@ -366,7 +372,7 @@ describe('ConsoleInterface', () => {
                 filteredToolsCount
             );
 
-            expect(mockLogger.raw).toHaveBeenCalledWith(
+            expect(mockLogger.user).toHaveBeenCalledWith(
                 expect.stringContaining('🔧 Tools: 8/10 available (2 filtered for role)')
             );
         });
@@ -379,7 +385,7 @@ describe('ConsoleInterface', () => {
 
             consoleInterface.showGoodbye();
 
-            expect(mockLogger.raw).toHaveBeenCalledWith(expectedMessage);
+            expect(mockLogger.user).toHaveBeenCalledWith(expectedMessage);
         });
     });
 
@@ -456,7 +462,7 @@ describe('ConsoleInterface', () => {
                 '{prompt}',
                 prompt
             );
-            expect(mockLogger.raw).toHaveBeenCalledWith(expectedMessage);
+            expect(mockLogger.user).toHaveBeenCalledWith(expectedMessage);
         });
 
         it('should return true for "yes" input', async () => {
@@ -599,10 +605,10 @@ describe('ConsoleInterface', () => {
             );
 
             expect(result).toEqual({ cancel: true });
-            expect(mockLogger.raw).toHaveBeenCalledWith(
-                '\n⚠️  \x1b[33mPrompt enhancement failed:\x1b[0m'
-            );
-            expect(mockLogger.raw).toHaveBeenCalledWith(`   ${error}`);
+            const expectedHeader = realConfigMessages.enhancement.failure_header;
+            expect(expectedHeader).toBeDefined(); // Ensure config value exists
+            expect(mockLogger.user).toHaveBeenCalledWith(expectedHeader);
+            expect(mockLogger.user).toHaveBeenCalledWith(`   ${error}`);
         });
 
         it('should return useOriginal for empty input', async () => {

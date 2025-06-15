@@ -6,8 +6,8 @@
 import { spawn } from 'child_process';
 import { writeFileSync, unlinkSync, existsSync } from 'fs';
 import { join } from 'path';
-import { OpenAI } from 'openai';
 import ConfigManager from '../../configManager.js';
+import AIAPIClient from '../../aiAPIClient.js';
 import { CommandBaseTool } from '../common/base-tool.js';
 import { getLogger } from '../../logger.js';
 import { getToolConfigManager } from '../../toolConfigManager.js';
@@ -33,38 +33,50 @@ class ExecuteScriptTool extends CommandBaseTool {
      */
     async performAISafetyCheck(script) {
         try {
-            // Initialize AI client for safety assessment
+            // Initialize AI client for safety assessment using AIAPIClient for centralized logging
             const config = ConfigManager.getInstance();
-            let aiClient = null;
-            let aiModel = null;
 
             // Use fast model for safety checks to optimize cost and speed
             const modelConfig = config.hasFastModelConfig()
                 ? config.getModel('fast')
                 : config.getModel('base');
 
-            aiClient = new OpenAI({
-                apiKey: modelConfig.apiKey,
-                baseURL: modelConfig.baseUrl,
-            });
-
-            aiModel = config.hasFastModelConfig()
-                ? modelConfig.model
-                : modelConfig.baseModel || modelConfig.model;
+            const aiClient = new AIAPIClient(
+                this.costsManager,
+                modelConfig.apiKey,
+                modelConfig.baseUrl,
+                modelConfig.model || modelConfig.baseModel
+            );
 
             // Create detailed safety assessment prompt from configuration
             const safetyPrompt = this.toolConfig.getSafetyPrompt(script);
 
-            // Make AI safety assessment call
-            const response = await aiClient.chat.completions.create({
-                model: aiModel,
-                messages: [{ role: 'user', content: safetyPrompt }],
-                max_tokens: 500,
-                temperature: 0.1, // Low temperature for consistent security assessment
-            });
-            this.costsManager.addUsage(aiModel, response.usage);
+            // Set up response handler to capture the AI response
+            let aiResponseContent = null;
+            let aiError = null;
 
-            const aiResponse = response.choices[0].message.content.trim();
+            aiClient.setCallbacks({
+                onResponse: response => {
+                    aiResponseContent = response.choices[0].message.content;
+                },
+                onError: error => {
+                    aiError = error;
+                },
+            });
+
+            // Make AI safety assessment call through centralized method
+            await aiClient.sendUserMessage(safetyPrompt);
+
+            // Check for errors
+            if (aiError) {
+                throw aiError;
+            }
+
+            if (!aiResponseContent) {
+                throw new Error('No response received from AI safety assessment');
+            }
+
+            const aiResponse = aiResponseContent.trim();
 
             // Parse AI response
             let safetyResult;
@@ -102,10 +114,8 @@ class ExecuteScriptTool extends CommandBaseTool {
 
             // Add metadata
             safetyResult.assessment_method = 'ai_powered';
-            safetyResult.model_used = aiModel;
-            safetyResult.tokens_used = response.usage
-                ? response.usage.prompt_tokens + response.usage.completion_tokens
-                : 0;
+            safetyResult.model_used = aiClient.getModel();
+            safetyResult.tokens_used = 0; // Token usage is tracked by AIAPIClient internally
 
             return safetyResult;
         } catch (error) {
@@ -201,7 +211,7 @@ class ExecuteScriptTool extends CommandBaseTool {
 
                 // Set timeout
                 const timeoutId = setTimeout(() => {
-                    if (!killed) {
+                    if (!killed && child && typeof child.kill === 'function') {
                         killed = true;
                         child.kill('SIGTERM');
                         resolve(
