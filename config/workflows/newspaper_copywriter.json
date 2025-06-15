@@ -1,6 +1,6 @@
 {
     "workflow_name": "newspaper_copywriter",
-    "description": "Newspaper copywriter workflow simulating article creation, multi-role review process, and editorial approval chain",
+    "description": "Newspaper copywriter workflow demonstrating independent agent contexts with selective information sharing between contexts",
     "input": {
         "name": "article_assignment",
         "type": "string",
@@ -19,35 +19,55 @@
     },
     "contexts": [
         {
-            "name": "newsroom_conversation",
+            "name": "copywriter_context",
             "starting_messages": [],
             "max_length": 50000
+        },
+        {
+            "name": "legal_reviewer_context",
+            "starting_messages": [],
+            "max_length": 20000
+        },
+        {
+            "name": "editorial_reviewer_context",
+            "starting_messages": [],
+            "max_length": 20000
+        },
+        {
+            "name": "fact_checker_context",
+            "starting_messages": [],
+            "max_length": 20000
+        },
+        {
+            "name": "chief_editor_context",
+            "starting_messages": [],
+            "max_length": 30000
         }
     ],
     "agents": [
         {
             "agent_role": "copywriter",
-            "context": "newsroom_conversation",
+            "context": "copywriter_context",
             "role": "assistant"
         },
         {
             "agent_role": "legal_reviewer",
-            "context": "newsroom_conversation",
+            "context": "legal_reviewer_context",
             "role": "assistant"
         },
         {
             "agent_role": "editorial_reviewer",
-            "context": "newsroom_conversation",
+            "context": "editorial_reviewer_context",
             "role": "assistant"
         },
         {
             "agent_role": "fact_checker",
-            "context": "newsroom_conversation",
+            "context": "fact_checker_context",
             "role": "assistant"
         },
         {
             "agent_role": "chief_editor",
-            "context": "newsroom_conversation",
+            "context": "chief_editor_context",
             "role": "assistant"
         }
     ],
@@ -62,21 +82,21 @@
         {
             "name": "legal_review",
             "agent": "legal_reviewer",
-            "pre_handler": "prepareReviewContext",
+            "pre_handler": "prepareLegalReviewContext",
             "post_handler": "processLegalReview",
             "transition_handler": "checkNextReviewer"
         },
         {
             "name": "editorial_review",
             "agent": "editorial_reviewer",
-            "pre_handler": "prepareReviewContext",
+            "pre_handler": "prepareEditorialReviewContext",
             "post_handler": "processEditorialReview",
             "transition_handler": "checkNextReviewer"
         },
         {
             "name": "fact_check",
             "agent": "fact_checker",
-            "pre_handler": "prepareReviewContext",
+            "pre_handler": "prepareFactCheckContext",
             "post_handler": "processFactCheck",
             "transition_handler": "checkNextReviewer"
         },
