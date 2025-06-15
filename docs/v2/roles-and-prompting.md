@@ -81,6 +81,64 @@ SynthDev's AI role system enables:
 - **Tools**: Analysis and search tools
 - **Behavior**: Answers questions about codebase structure
 
+**command_generator**
+
+- **Purpose**: Converting natural language to terminal commands
+- **Level**: fast
+- **Tools**: No tools (generates commands only)
+- **Behavior**: Creates safe, accurate terminal commands
+
+**directory_summarizer**
+
+- **Purpose**: Analyzing and summarizing directory structures
+- **Level**: fast
+- **Tools**: Limited to analysis tools
+- **Behavior**: Provides directory organization insights
+
+**file_summarizer**
+
+- **Purpose**: Analyzing and summarizing individual files in a codebase
+- **Level**: fast
+- **Tools**: Highly restricted (excludes most file operations)
+- **Behavior**: Provides concise technical summaries of file contents
+
+**dude**
+
+- **Purpose**: General-purpose helpful assistant
+- **Level**: fast
+- **Tools**: All tools available
+- **Behavior**: Can help with a wide range of tasks
+
+#### **Additional Specialized Roles**
+
+**basic_assistant** (from core-roles.json)
+
+- **Purpose**: Basic AI assistant for general questions and tasks
+- **Level**: fast
+- **Tools**: Limited set excluding file modifications and terminal
+- **Behavior**: Helpful and concise responses
+
+**research_assistant** (from core-roles.json)
+
+- **Purpose**: Information gathering and analysis specialist
+- **Level**: base
+- **Tools**: Read-only tools (read_file, list_directory, exact_search, explain_codebase)
+- **Behavior**: Thorough research and detailed analysis
+
+**test_writer** (from specialized/testing-roles.json)
+
+- **Purpose**: Specialized test writing assistant
+- **Level**: base
+- **Tools**: Most tools available except terminal execution
+- **Behavior**: Creates comprehensive, well-structured tests
+
+**qa_specialist** (from specialized/testing-roles.json)
+
+- **Purpose**: Quality assurance and bug detection specialist
+- **Level**: base
+- **Tools**: Read-only tools for code analysis
+- **Behavior**: Focuses on finding bugs and testing edge cases
+
 ## Few-Shot Prompting
 
 ### What is Few-Shot Prompting?
@@ -138,7 +196,22 @@ The `prompt_enhancer` role demonstrates few-shot prompting:
 
 ### Configuration Structure
 
-Roles are defined in `config/roles/roles.json`:
+Roles can be defined in multiple files within the `config/roles/` directory:
+
+#### **Multi-File Role System**
+
+SynthDev supports organizing roles across multiple JSON files:
+
+- **`config/roles/roles.json`** - Main role definitions (legacy support)
+- **`config/roles/core-roles.json`** - Core system roles
+- **`config/roles/specialized/testing-roles.json`** - Testing-specific roles
+- **Any `.json` file** in `config/roles/` and subdirectories
+
+All JSON files are automatically loaded and merged. If roles have the same name, later files override earlier ones.
+
+#### **Basic Role Structure**
+
+Example role definition:
 
 ```json
 {

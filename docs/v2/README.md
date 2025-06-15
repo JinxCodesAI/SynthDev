@@ -106,19 +106,49 @@ Access powerful commands via `/` prefix:
 | `/index`         | Index codebase for analysis       |
 | `/roles`         | Show available AI roles           |
 | `/role <name>`   | Switch to a specific role         |
+| `/cmd`           | Execute terminal commands with AI |
+| `/workflows`     | Manage and execute workflows      |
 | `/exit`, `/quit` | Exit the application              |
 
 ### AI Role System
 
 SynthDev features specialized AI personas for different tasks:
 
+#### **Development Roles**
+
 - **coder**: Software development and implementation
 - **reviewer**: Code review and quality assurance
 - **architect**: System design and architecture planning
+- **test_writer**: Specialized test writing assistant
+- **qa_specialist**: Quality assurance and bug detection
+
+#### **Analysis Roles**
+
+- **codebase_explainer**: Explaining codebase functionality
+- **file_summarizer**: Analyzing and summarizing individual files
+- **directory_summarizer**: Analyzing directory structures
+- **research_assistant**: Information gathering and analysis
+
+#### **Utility Roles**
+
 - **prompt_enhancer**: Improving user prompts with AI assistance
+- **command_generator**: Converting natural language to terminal commands
 - **file_reader**: File reading and analysis only
+- **basic_assistant**: General-purpose AI assistant
+- **dude**: Helpful assistant for wide range of tasks
 
 Switch roles with: `/role <role_name>`
+
+### Multi-Agent Workflows
+
+SynthDev supports complex multi-agent workflows where different AI personas collaborate:
+
+- **🔄 State Machine Execution**: Structured workflow with defined states and transitions
+- **💬 Shared Context**: Agents share conversation context with role-based message mapping
+- **📝 Custom Scripts**: JavaScript functions for complex workflow logic
+- **🎯 Parsing Tools**: Structured output handling for decision-making
+
+Execute workflows with: `/workflow <workflow_name>`
 
 ### Tool System
 
@@ -152,10 +182,10 @@ This documentation is organized into focused guides:
 - **[Installation & Setup](installation.md)** - Detailed installation instructions for all platforms
 - **[Configuration Guide](configuration.md)** - Complete configuration reference
 - **[AI Roles & Few-Shot Prompting](roles-and-prompting.md)** - Role system and examples
+- **[Workflow System Guide](workflows.md)** - Multi-agent workflows and state machines
 - **[Tool Development](tool-development.md)** - Creating custom tools and commands
 - **[Testing Guide](testing.md)** - Comprehensive testing documentation
 - **[Architecture Overview](architecture.md)** - System design and components
-- **[Migration & Updates](migration.md)** - Upgrading and configuration changes
 
 ## Getting Help
 

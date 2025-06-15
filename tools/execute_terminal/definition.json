@@ -2,7 +2,7 @@
     "name": "execute_terminal",
     "description": "Executes a terminal command and returns its output.",
     "auto_run": false,
-    "requires_backup": true,
+    "requires_backup": false,
     "backup_resource_path_property_name": "",
     "category": "command",
     "version": "2.0.0",

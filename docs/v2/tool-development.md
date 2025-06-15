@@ -265,6 +265,7 @@ The `description` field in the function schema is the AI's primary interface doc
 - **Examples**: execute_terminal, execute_script
 - **Base Class**: CommandBaseTool
 - **Common Parameters**: command, timeout, working_directory
+- **Note**: execute_terminal requires `requires_backup: false` for validation
 
 ### Utilities (`category: "utility"`)
 

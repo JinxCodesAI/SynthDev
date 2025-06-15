@@ -104,8 +104,11 @@ BASE_URL=http://localhost:8080/v1
 
 ```
 config/
-├── roles/                       # AI role definitions
-│   ├── roles.json              # Main role configurations
+├── roles/                       # AI role definitions (multi-file support)
+│   ├── roles.json              # Main role configurations (legacy)
+│   ├── core-roles.json         # Core system roles
+│   ├── specialized/            # Specialized role subdirectories
+│   │   └── testing-roles.json  # Testing-specific roles
 │   └── environment-template.json # Environment info template
 ├── tools/                       # Tool configuration
 │   ├── tool-messages.json      # Common tool messages
@@ -121,7 +124,129 @@ config/
 
 ### AI Roles Configuration
 
-Edit `config/roles/roles.json` to customize AI behavior:
+SynthDev supports multi-file role configuration. You can organize roles across multiple JSON files in the `config/roles/` directory and subdirectories.
+
+#### **Multi-File Organization**
+
+Create role files anywhere in the roles directory:
+
+- `config/roles/roles.json` (main/legacy file)
+- `config/roles/core-roles.json` (core system roles)
+- `config/roles/specialized/testing-roles.json` (specialized roles)
+- `config/roles/custom/my-roles.json` (your custom roles)
+
+#### **Role Definition Example**
+
+Edit any JSON file in `config/roles/` to customize AI behavior:
+
+### Multi-Agent Workflows Configuration
+
+Configure complex multi-agent workflows in `config/workflows/`:
+
+#### **Workflow Structure**
+
+```
+config/workflows/
+├── my_workflow.json          # Workflow configuration
+└── my_workflow/              # Workflow scripts directory
+    └── script.js             # Custom JavaScript functions
+```
+
+#### **Basic Workflow Configuration**
+
+Create `config/workflows/example_workflow.json`:
+
+```json
+{
+    "workflow_name": "example_workflow",
+    "description": "Example multi-agent workflow",
+    "input": {
+        "name": "user_request",
+        "type": "string",
+        "description": "User's initial request"
+    },
+    "output": {
+        "name": "final_result",
+        "type": "string",
+        "description": "Final workflow result"
+    },
+    "variables": {
+        "max_iterations": 5
+    },
+    "contexts": [
+        {
+            "name": "shared_context",
+            "starting_messages": [],
+            "max_length": 30000
+        }
+    ],
+    "agents": [
+        {
+            "agent_role": "coder",
+            "context": "shared_context",
+            "role": "assistant"
+        },
+        {
+            "agent_role": "reviewer",
+            "context": "shared_context",
+            "role": "user"
+        }
+    ],
+    "states": [
+        {
+            "name": "start",
+            "agent": "coder",
+            "pre_handler": "setupRequest",
+            "post_handler": "captureResponse",
+            "transition_handler": "moveToReview"
+        },
+        {
+            "name": "stop",
+            "input": "common_data.final_result"
+        }
+    ]
+}
+```
+
+#### **Workflow Script Functions**
+
+Create `config/workflows/example_workflow/script.js`:
+
+```javascript
+export default {
+    // Pre-handler: Setup before API call
+    setupRequest() {
+        const context = this.workflow_contexts.get('shared_context');
+        context.addMessage({
+            role: 'user',
+            content: this.input,
+        });
+    },
+
+    // Post-handler: Process API response
+    captureResponse() {
+        const responseContent = this.last_response?.choices?.[0]?.message?.content;
+        if (responseContent) {
+            this.common_data.coder_response = responseContent;
+        }
+    },
+
+    // Transition-handler: Decide next state
+    moveToReview() {
+        return 'review_state';
+    },
+};
+```
+
+#### **Workflow Execution**
+
+```bash
+# List available workflows
+/workflows
+
+# Execute workflow
+/workflow example_workflow
+```
 
 ```json
 {
@@ -152,6 +277,7 @@ Edit `config/roles/roles.json` to customize AI behavior:
 - **includedTools**: Tools this role can access (mutually exclusive with excludedTools)
 - **reminder**: Additional instructions during tool execution
 - **examples**: Conversation examples for few-shot prompting
+- **parsingTools**: Special tools for structured output (parsing only)
 
 #### Tool Filtering Patterns
 

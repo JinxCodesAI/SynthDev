@@ -393,10 +393,10 @@ it('should handle exceptions gracefully', async () => {
 
 ### Target Coverage Metrics
 
-- **Overall Coverage**: 70%+ lines
-- **Branch Coverage**: 80%+ branches
-- **Function Coverage**: 90%+ functions
-- **Core Modules**: 90%+ coverage for critical components
+- **Overall Coverage**: 40%+ lines (current threshold)
+- **Branch Coverage**: 40%+ branches (current threshold)
+- **Function Coverage**: 40%+ functions (current threshold)
+- **Core Modules**: Higher coverage expected for critical components
 
 ### Coverage Analysis
 

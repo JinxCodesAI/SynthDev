@@ -263,9 +263,16 @@ Priority (High to Low):
 
 ```
 config/
-├── roles/                  # AI role definitions
-│   ├── roles.json
+├── roles/                  # AI role definitions (multi-file support)
+│   ├── roles.json              # Main roles (legacy)
+│   ├── core-roles.json         # Core system roles
+│   ├── specialized/            # Specialized role subdirectories
+│   │   └── testing-roles.json  # Testing-specific roles
 │   └── environment-template.json
+├── workflows/              # Multi-agent workflow definitions
+│   ├── workflow_name.json      # Workflow configuration
+│   └── workflow_name/          # Workflow scripts
+│       └── script.js           # Custom JavaScript functions
 ├── tools/                  # Tool configuration
 │   ├── tool-messages.json
 │   └── safety-patterns.json
@@ -295,10 +302,63 @@ config/
 
 ### Adding New AI Roles
 
-1. Add role definition to `config/roles/roles.json`
-2. Define system message and tool access
-3. Optionally add few-shot examples
-4. Role available immediately
+1. Add role definition to any JSON file in `config/roles/` directory
+2. Organize roles by category (core, specialized, custom, etc.)
+3. Define system message and tool access
+4. Optionally add few-shot examples and parsing tools
+5. Role available immediately (supports hot-reloading)
+
+## Workflow System Architecture
+
+### Multi-Agent Orchestration
+
+SynthDev includes a sophisticated workflow system for multi-agent interactions:
+
+```
+WorkflowStateMachine
+├── WorkflowConfig          # Configuration validation and loading
+├── WorkflowContext         # Shared conversation contexts
+├── WorkflowAgent          # Individual AI agent instances
+└── Script Execution       # Custom JavaScript functions
+```
+
+### Workflow Components
+
+#### **State Machine Engine**
+
+- Manages workflow execution lifecycle
+- Handles state transitions and validation
+- Provides execution tracking and logging
+- Supports complex branching logic
+
+#### **Agent Management**
+
+- Creates isolated AI agent instances
+- Manages role-specific tool filtering
+- Handles parsing tool responses
+- Maintains agent-specific state
+
+#### **Context Sharing**
+
+- Shared conversation contexts between agents
+- Role-based message mapping (user/assistant)
+- Message length management and truncation
+- Context isolation between workflows
+
+#### **Script Integration**
+
+- Dynamic JavaScript module loading
+- Custom function execution with workflow context
+- Pre/post/transition handlers for each state
+- Helper function support for complex logic
+
+### Workflow Execution Flow
+
+1. **Configuration Loading**: Parse JSON config and validate structure
+2. **Context Initialization**: Create shared conversation contexts
+3. **Agent Creation**: Initialize AI agents with role-specific settings
+4. **State Machine Execution**: Execute states with handlers
+5. **Result Processing**: Generate final output and execution summary
 
 ### Adding New Configuration
 
