@@ -159,7 +159,7 @@ export default class WorkflowStateMachine {
                 final_state: executionContext.currentState || 'stop',
                 execution_time: executionTime,
                 states_visited: executionContext.executionHistory.map(h => h.state),
-                result: result,
+                output: result,
                 common_data: { ...this.commonData },
             };
         } catch (error) {
@@ -273,6 +273,18 @@ export default class WorkflowStateMachine {
         this.logger.info('✅ State machine execution completed');
 
         // Return workflow output
+        // First check if there's a stop state with an input field
+        const stopState = states.get('stop');
+        if (stopState && stopState.input) {
+            // Evaluate the stop state's input expression
+            const stopOutput = this.evaluateExpression(stopState.input);
+            this.logger.debug(`Output from stop state: ${stopOutput}`);
+            if (stopOutput !== undefined && stopOutput !== null) {
+                return stopOutput;
+            }
+        }
+
+        // Fallback to the workflow's output configuration
         const outputName = config.output.name;
         return this.commonData[outputName] || 'Workflow completed successfully';
     }

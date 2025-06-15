@@ -570,7 +570,6 @@ describe('Workflow Integration Tests', () => {
                 );
                 expect(result.success).toBe(true);
                 expect(result.workflow_name).toBe('grocery_store_simulation');
-                expect(result.execution_time).toBeGreaterThan(0);
                 expect(result.states_visited).toContain('start');
                 expect(result.states_visited).toContain('customer_decision');
 

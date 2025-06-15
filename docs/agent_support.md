@@ -5,6 +5,7 @@
 This document outlines a comprehensive, **state machine-based** architecture for introducing multi-agent capabilities to Synth-Dev. The design follows the **Open-Closed Principle** by extending functionality without modifying existing code, enabling sophisticated agentic workflows through JSON configuration alone - just like the current role system.
 
 **Key Principles**:
+
 - **State Machine Workflows**: All workflows are finite state machines with transitions and conditions
 - **Context Isolation**: Contexts are first-class entities that can be shared or isolated
 - **Agent Role Separation**: Agents can play different roles (user/assistant) within the same context
@@ -30,8 +31,8 @@ The current `AIAPIClient` uses role switching which overwrites context instead o
 // Current: Single conversation thread with role switching
 class AIAPIClient {
     constructor() {
-        this.messages = [];     // Single conversation thread
-        this.role = null;       // Single active role
+        this.messages = []; // Single conversation thread
+        this.role = null; // Single active role
     }
 
     async setSystemMessage(systemMessage, role = null) {
@@ -43,6 +44,7 @@ class AIAPIClient {
 ```
 
 This prevents:
+
 - Concurrent agent execution
 - Agent-to-agent communication
 - Self-reflection patterns
@@ -186,8 +188,8 @@ class WorkflowAgent {
         // Apply role-based tool filtering
         const allTools = toolManager.getTools();
         const excludedTools = SystemMessages.getExcludedTools(this.agentRole);
-        const agentTools = allTools.filter(tool =>
-            !excludedTools.includes(tool.function?.name || tool.name)
+        const agentTools = allTools.filter(
+            tool => !excludedTools.includes(tool.function?.name || tool.name)
         );
         this.apiClient.setTools(agentTools);
     }
@@ -212,8 +214,12 @@ class WorkflowAgent {
         return lastMessage?.tool_calls || [];
     }
 
-    getRole() { return this.agentRole; }
-    getContextRole() { return this.contextRole; }
+    getRole() {
+        return this.agentRole;
+    }
+    getContextRole() {
+        return this.contextRole;
+    }
 }
 ```
 
@@ -285,7 +291,13 @@ class WorkflowStateMachine {
         // Initialize agents
         for (const agentConfig of workflowConfig.agents) {
             const context = this.contexts.get(agentConfig.context);
-            const agent = new WorkflowAgent(agentConfig, context, this.config, this.toolManager, this.snapshotManager);
+            const agent = new WorkflowAgent(
+                agentConfig,
+                context,
+                this.config,
+                this.toolManager,
+                this.snapshotManager
+            );
             this.agents.set(agentConfig.agent_role, agent);
         }
 
@@ -300,7 +312,7 @@ class WorkflowStateMachine {
             config: workflowConfig,
             currentState: 'start',
             states: new Map(workflowConfig.states.map(s => [s.name, s])),
-            executionHistory: []
+            executionHistory: [],
         };
     }
 
@@ -319,7 +331,7 @@ class WorkflowStateMachine {
             executionContext.executionHistory.push({
                 state: currentStateName,
                 result: stateResult,
-                timestamp: new Date()
+                timestamp: new Date(),
             });
 
             // Determine next state
@@ -362,7 +374,7 @@ class WorkflowStateMachine {
                 success: true,
                 result: result,
                 agent: state.agent,
-                toolCalls: agent.getToolCalls()
+                toolCalls: agent.getToolCalls(),
             };
         }
 
@@ -429,53 +441,53 @@ class WorkflowStateMachine {
 
 ```typescript
 interface WorkflowConfig {
-    workflow_name: string;                    // Unique identifier for the workflow
-    description: string;                      // Human-readable description
-    input: ParameterDefinition;               // Input parameter specification
-    output: ParameterDefinition;              // Output parameter specification
-    variables?: Record<string, any>;          // Default variables for common_data
-    contexts: ContextDefinition[];            // Context definitions
-    agents: AgentDefinition[];                // Agent definitions
-    states: StateDefinition[];                // State machine definition
+    workflow_name: string; // Unique identifier for the workflow
+    description: string; // Human-readable description
+    input: ParameterDefinition; // Input parameter specification
+    output: ParameterDefinition; // Output parameter specification
+    variables?: Record<string, any>; // Default variables for common_data
+    contexts: ContextDefinition[]; // Context definitions
+    agents: AgentDefinition[]; // Agent definitions
+    states: StateDefinition[]; // State machine definition
 }
 
 interface ParameterDefinition {
-    name: string;                            // Parameter name
-    type: "string" | "number" | "object" | "array";
-    description: string;                     // Parameter description
+    name: string; // Parameter name
+    type: 'string' | 'number' | 'object' | 'array';
+    description: string; // Parameter description
 }
 
 interface ContextDefinition {
-    name: string;                           // Context identifier
-    starting_messages?: Message[];          // Initial messages in context
-    max_length?: number;                    // Maximum context length in characters
+    name: string; // Context identifier
+    starting_messages?: Message[]; // Initial messages in context
+    max_length?: number; // Maximum context length in characters
 }
 
 interface AgentDefinition {
-    agent_role: string;                     // Role name from roles.json
-    context: string;                        // Context name to connect to
-    role: "user" | "assistant";            // How agent interacts with context
+    agent_role: string; // Role name from roles.json
+    context: string; // Context name to connect to
+    role: 'user' | 'assistant'; // How agent interacts with context
 }
 
 interface StateDefinition {
-    name: string;                           // State identifier
-    agent?: string;                         // Agent role to execute (optional)
-    input?: string;                         // Input expression (optional)
-    action?: ActionDefinition;              // Action to execute (optional)
-    transition: TransitionDefinition[];     // State transitions
+    name: string; // State identifier
+    agent?: string; // Agent role to execute (optional)
+    input?: string; // Input expression (optional)
+    action?: ActionDefinition; // Action to execute (optional)
+    transition: TransitionDefinition[]; // State transitions
 }
 
 interface ActionDefinition {
-    function?: "sendUserMessage" | "addUserMessage" | "clearConversation";
-    script?: string;                        // JavaScript code to execute
-    sub_workflow?: string;                  // Sub-workflow to execute
+    function?: 'sendUserMessage' | 'addUserMessage' | 'clearConversation';
+    script?: string; // JavaScript code to execute
+    sub_workflow?: string; // Sub-workflow to execute
     sub_workflow_input?: Record<string, string>; // Input mapping for sub-workflow
 }
 
 interface TransitionDefinition {
-    target: string;                         // Target state name
-    condition: string;                      // JavaScript boolean expression
-    before?: string;                        // JavaScript code to execute before transition
+    target: string; // Target state name
+    condition: string; // JavaScript boolean expression
+    before?: string; // JavaScript code to execute before transition
 }
 ```
 
@@ -510,33 +522,33 @@ Available in `action.function`:
 
 ```typescript
 // Send user message and get AI response
-"sendUserMessage"    // Calls agent.apiClient.sendUserMessage(input)
+'sendUserMessage'; // Calls agent.apiClient.sendUserMessage(input)
 
 // Add user message without getting response
-"addUserMessage"     // Calls agent.apiClient.addUserMessage(input)
+'addUserMessage'; // Calls agent.apiClient.addUserMessage(input)
 
 // Clear conversation history
-"clearConversation"  // Calls agent.apiClient.clearConversation()
+'clearConversation'; // Calls agent.apiClient.clearConversation()
 ```
 
 #### 2. Context Objects in Conditions and Scripts
 
 ```javascript
 // Access to workflow state machine instance
-this.common_data                    // Shared data object
-this.agents                         // Map of agent_role -> WorkflowAgent
-this.contexts                       // Map of context_name -> WorkflowContext
-this.sub_workflow_result           // Result from last sub-workflow execution
+this.common_data; // Shared data object
+this.agents; // Map of agent_role -> WorkflowAgent
+this.contexts; // Map of context_name -> WorkflowContext
+this.sub_workflow_result; // Result from last sub-workflow execution
 
 // Access to last agent execution result
-this.last_agent_response           // Last response from agent
-this.last_tool_calls              // Tool calls from last agent response
-this.last_parsing_tool_calls      // Parsing tool calls from last response
+this.last_agent_response; // Last response from agent
+this.last_tool_calls; // Tool calls from last agent response
+this.last_parsing_tool_calls; // Parsing tool calls from last response
 
 // Utility functions
-this.getAgent(role)                // Get agent by role
-this.getContext(name)              // Get context by name
-this.getToolCalls(agent_role)      // Get tool calls from specific agent's last response
+this.getAgent(role); // Get agent by role
+this.getContext(name); // Get context by name
+this.getToolCalls(agent_role); // Get tool calls from specific agent's last response
 ```
 
 #### 3. Function Call Access Pattern
@@ -559,12 +571,12 @@ Input expressions are evaluated with access to:
 
 ```javascript
 // Direct variable access
-"common_data.current_task"          // Evaluates to this.common_data.current_task
-"variables.max_iterations"          // Evaluates to this.common_data.max_iterations
+'common_data.current_task'; // Evaluates to this.common_data.current_task
+'variables.max_iterations'; // Evaluates to this.common_data.max_iterations
 
 // Agent context access
-"agents.coder.getLastResponse()"    // Get last response from coder agent
-"contexts.code_history.messages"   // Access context messages directly
+'agents.coder.getLastResponse()'; // Get last response from coder agent
+'contexts.code_history.messages'; // Access context messages directly
 ```
 
 ### Condition and Script Execution Context
@@ -598,22 +610,22 @@ Scripts are JavaScript functions executed with full workflow context:
 
 ```javascript
 // Script function signature
-(executionContext) => {
+executionContext => {
     // Available in script scope:
-    this.common_data                // Workflow shared data
-    this.agents                     // Map of agents
-    this.contexts                   // Map of contexts
-    this.sub_workflow_result       // Result from sub-workflow
+    this.common_data; // Workflow shared data
+    this.agents; // Map of agents
+    this.contexts; // Map of contexts
+    this.sub_workflow_result; // Result from sub-workflow
 
     // Utility functions:
-    this.getAgent(role)             // Get agent by role
-    this.getContext(name)           // Get context by name
-    this.evaluateExpression(expr)   // Evaluate expression
+    this.getAgent(role); // Get agent by role
+    this.getContext(name); // Get context by name
+    this.evaluateExpression(expr); // Evaluate expression
 
     // Example script:
     this.common_data.current_task = 'New task: ' + this.common_data.user_input;
     this.common_data.iteration_count = (this.common_data.iteration_count || 0) + 1;
-}
+};
 ```
 
 #### 3. Input Expression Evaluation
@@ -622,15 +634,15 @@ Input expressions are evaluated to provide agent input:
 
 ```javascript
 // Simple variable access
-"common_data.current_task"          // Direct property access
-"common_data.variables.max_iterations"  // Nested property access
+'common_data.current_task'; // Direct property access
+'common_data.variables.max_iterations'; // Nested property access
 
 // Complex expressions
-"'Task ' + common_data.current_task_index + ': ' + common_data.task_list[common_data.current_task_index].description"
+"'Task ' + common_data.current_task_index + ': ' + common_data.task_list[common_data.current_task_index].description";
 
 // Agent response access
-"agents.product_manager.getLastResponse()"
-"contexts.pm_context.messages[contexts.pm_context.messages.length - 1].content"
+'agents.product_manager.getLastResponse()';
+'contexts.pm_context.messages[contexts.pm_context.messages.length - 1].content';
 ```
 
 ### Tool Call Integration
@@ -677,13 +689,13 @@ Roles must define parsing tools for structured responses:
 
 ```javascript
 // Check if agent made any tool calls
-"this.getToolCalls('coder').length > 0"
+"this.getToolCalls('coder').length > 0";
 
 // Check for specific parsing tool calls
-"function.review_work.arguments.improvement_needed === true"
+'function.review_work.arguments.improvement_needed === true';
 
 // Access tool call arguments
-"function.task_approval.arguments.approved === false"
+'function.task_approval.arguments.approved === false';
 ```
 
 ## Complete Workflow Examples
@@ -977,12 +989,12 @@ For parsing tool function calls, use this pattern in conditions:
 
 ```javascript
 // Pattern: function.{tool_name}.arguments.{argument_name}
-"function.review_work.arguments.improvement_needed === true"
-"function.task_approval.arguments.approved === false"
+'function.review_work.arguments.improvement_needed === true';
+'function.task_approval.arguments.approved === false';
 
 // This is shorthand for:
-this.last_parsing_tool_calls.find(call => call.function.name === 'review_work')
-    ?.function.arguments.improvement_needed === true
+this.last_parsing_tool_calls.find(call => call.function.name === 'review_work')?.function.arguments
+    .improvement_needed === true;
 ```
 
 ### 4. Sub-Workflow Execution
@@ -1009,6 +1021,7 @@ Sub-workflows are executed as atomic operations:
 ```
 
 The sub-workflow:
+
 1. Executes completely in isolation
 2. Returns its output value
 3. Result available as `this.sub_workflow_result`
@@ -1019,57 +1032,61 @@ The sub-workflow:
 ### Step-by-Step Workflow Creation
 
 1. **Define Workflow Metadata**
-   ```json
-   {
-       "workflow_name": "my_workflow",
-       "description": "Clear description of workflow purpose",
-       "input": {"name": "input_param", "type": "string", "description": "Input description"},
-       "output": {"name": "result_param", "type": "string"}
-   }
-   ```
+
+    ```json
+    {
+        "workflow_name": "my_workflow",
+        "description": "Clear description of workflow purpose",
+        "input": { "name": "input_param", "type": "string", "description": "Input description" },
+        "output": { "name": "result_param", "type": "string" }
+    }
+    ```
 
 2. **Define Contexts**
-   ```json
-   "contexts": [
-       {
-           "name": "shared_context",
-           "starting_messages": [],
-           "max_length": 50000
-       }
-   ]
-   ```
+
+    ```json
+    "contexts": [
+        {
+            "name": "shared_context",
+            "starting_messages": [],
+            "max_length": 50000
+        }
+    ]
+    ```
 
 3. **Define Agents**
-   ```json
-   "agents": [
-       {
-           "agent_role": "coder",
-           "context": "shared_context",
-           "role": "assistant"
-       }
-   ]
-   ```
+
+    ```json
+    "agents": [
+        {
+            "agent_role": "coder",
+            "context": "shared_context",
+            "role": "assistant"
+        }
+    ]
+    ```
 
 4. **Create State Machine**
-   ```json
-   "states": [
-       {
-           "name": "start",
-           "action": {"script": "() => { /* initialization */ }"},
-           "transition": [{"target": "next_state", "condition": "true"}]
-       }
-   ]
-   ```
+    ```json
+    "states": [
+        {
+            "name": "start",
+            "action": {"script": "() => { /* initialization */ }"},
+            "transition": [{"target": "next_state", "condition": "true"}]
+        }
+    ]
+    ```
 
 ### Common Patterns
 
 #### 1. Agent Interaction Loop
+
 ```json
 {
     "name": "agent_loop",
     "agent": "coder",
     "input": "common_data.task",
-    "action": {"function": "sendUserMessage"},
+    "action": { "function": "sendUserMessage" },
     "transition": [
         {
             "target": "agent_loop",
@@ -1084,6 +1101,7 @@ The sub-workflow:
 ```
 
 #### 2. Conditional Branching on Tool Calls
+
 ```json
 {
     "transition": [
@@ -1101,6 +1119,7 @@ The sub-workflow:
 ```
 
 #### 3. Sub-Workflow Integration
+
 ```json
 {
     "name": "delegate_to_sub_workflow",
@@ -1139,8 +1158,8 @@ Add these roles to `config/roles/roles.json`:
                     "parameters": {
                         "type": "object",
                         "properties": {
-                            "approved": {"type": "boolean"},
-                            "feedback": {"type": "string"}
+                            "approved": { "type": "boolean" },
+                            "feedback": { "type": "string" }
                         },
                         "required": ["approved"]
                     }
@@ -1158,9 +1177,9 @@ Add these roles to `config/roles/roles.json`:
                     "parameters": {
                         "type": "object",
                         "properties": {
-                            "improvement_needed": {"type": "boolean"},
-                            "continue_message": {"type": "string"},
-                            "work_summary": {"type": "string"}
+                            "improvement_needed": { "type": "boolean" },
+                            "continue_message": { "type": "string" },
+                            "work_summary": { "type": "string" }
                         },
                         "required": ["improvement_needed"]
                     }
@@ -1170,8 +1189,6 @@ Add these roles to `config/roles/roles.json`:
     }
 }
 ```
-
-
 
 ## Integration with Existing System
 
@@ -1234,7 +1251,10 @@ class SynthDev {
         if (input.startsWith('/workflow')) {
             this.multiAgentMode = true;
             const args = input.slice(9).trim().split(' ');
-            return await this.workflowStateMachine.executeWorkflow(args[0], args.slice(1).join(' '));
+            return await this.workflowStateMachine.executeWorkflow(
+                args[0],
+                args.slice(1).join(' ')
+            );
         }
 
         // Existing single-agent handling
@@ -1285,18 +1305,21 @@ class SynthDev {
 ## Implementation Timeline
 
 ### Phase 1: Foundation (2-3 weeks)
+
 - Implement `WorkflowContext` class for context management
 - Create `WorkflowAgent` class with context role support
 - Build `WorkflowStateMachine` core engine
 - Add workflow configuration loading system
 
 ### Phase 2: State Machine Features (3-4 weeks)
+
 - Implement state transition logic with conditions
 - Add JavaScript expression evaluation for conditions and scripts
 - Create sub-workflow execution capability
 - Add common_data variable system
 
 ### Phase 3: Advanced Features (2-3 weeks)
+
 - Workflow monitoring and debugging
 - Error handling and recovery mechanisms
 - Performance optimization
@@ -1305,6 +1328,7 @@ class SynthDev {
 ## Usage Examples
 
 ### Single-Agent Mode (Existing)
+
 ```bash
 # Continue using current system
 /role coder
@@ -1312,6 +1336,7 @@ Create a new React component
 ```
 
 ### State Machine Workflows
+
 ```bash
 # Coder-Reviewer workflow with shared context
 /workflow coder_reviewer "Optimize database query performance"
@@ -1332,35 +1357,31 @@ Create a new React component
 ## Key Advantages of State Machine Approach
 
 ### 1. True Workflow Flexibility
+
 - **State machines**: Workflows are proper finite state machines
 - **Conditional transitions**: Dynamic routing based on agent responses and tool calls
 - **JavaScript expressions**: Full programming capability in conditions and scripts
 - **Sub-workflow composition**: Build complex workflows from simpler state machines
 
 ### 2. Context as First-Class Citizens
+
 - **Independent context entities**: Contexts defined separately from agents
 - **Flexible agent-context relationships**: Agents can share or isolate contexts
 - **Context roles**: Agents can be 'user' or 'assistant' within the same context
 - **Automatic context management**: Length limits and message trimming
 
 ### 3. Perfect Configuration-Driven Design
+
 - **Zero hardcoded logic**: All workflow behavior defined in JSON
 - **Generic state machine engine**: Single engine executes any workflow
 - **JavaScript integration**: Conditions and scripts provide unlimited flexibility
 - **Variable system**: common_data provides shared state across workflow execution
 
 ### 4. Natural Agent Interaction
+
 - **Reviewer in coder's thread**: True shared context interaction
 - **Hierarchical information flow**: Independent contexts with result passing
 - **Parallel collaboration**: Multiple agents building on shared conversation
 - **Tool call awareness**: State transitions based on agent tool usage
 
 This state machine architecture enables unlimited workflow possibilities while maintaining the excellent foundation of the current Synth-Dev system. Users can create sophisticated multi-agent workflows through JSON configuration alone, with the full power of state machines and JavaScript expressions.
-
-
-
-
-
-
-
-

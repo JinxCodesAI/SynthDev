@@ -1,8 +1,34 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { existsSync, readFileSync } from 'fs';
-import { join } from 'path';
+import { join, dirname } from 'path';
+import { fileURLToPath } from 'url';
 import WorkflowStateMachine from '../../workflow/WorkflowStateMachine.js';
+import ConfigManager from '../../configManager.js';
+import ToolManager from '../../toolManager.js';
+import SnapshotManager from '../../snapshotManager.js';
+import ConsoleInterface from '../../consoleInterface.js';
+import costsManager from '../../costsManager.js';
 import { groceryStoreHttpMocks } from '../mocks/grocery-store-http.js';
+
+// Get current directory for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Import actual fs functions before mocking
+const actualFs = await vi.importActual('fs');
+
+// Helper function to read fixture files using the actual readFileSync
+const readFixtureFile = filename => {
+    const fixturePath = join(__dirname, 'fixtures', filename);
+
+    try {
+        const content = actualFs.readFileSync(fixturePath, 'utf8');
+        return content || '';
+    } catch (error) {
+        console.error(`🔍 DEBUG: Error reading file ${fixturePath}:`, error);
+        return '';
+    }
+};
 
 // Mock OpenAI client
 vi.mock('openai', () => ({
@@ -12,6 +38,7 @@ vi.mock('openai', () => ({
 // Mock file system to return exact config files
 vi.mock('fs', async () => {
     const actual = await vi.importActual('fs');
+    console.log('🔍 DEBUG: Mocking fs module');
     return {
         ...actual,
         existsSync: vi.fn(),
@@ -26,57 +53,74 @@ vi.mock('fs', async () => {
  */
 describe('Grocery Store Workflow E2E Test', () => {
     let stateMachine;
-    let mockConfig;
-    let mockToolManager;
-    let mockSnapshotManager;
-    let mockConsoleInterface;
-    let mockCostsManager;
     let originalEnv;
+
+    // Cache fixture files before mocking
+    let fixtureFiles;
 
     beforeEach(async () => {
         vi.clearAllMocks();
+
+        // Cache fixture files before mocking readFileSync
+        fixtureFiles = {
+            'grocery_store_test.json': readFixtureFile('grocery_store_test.json'),
+            'environment-template.json': readFixtureFile('environment-template.json'),
+            'roles.json': readFixtureFile('roles.json'),
+            'application.json': readFixtureFile('application.json'),
+            'grocery_store_test/script.js': readFixtureFile('grocery_store_test/script.js'),
+            'config-validation.json': readFixtureFile('config-validation.json'),
+            'console-messages.json': readFixtureFile('console-messages.json'),
+        };
 
         // Store original environment variables
         originalEnv = {
             MODEL: process.env.MODEL,
             MAX_COMPLETION_TOKENS: process.env.MAX_COMPLETION_TOKENS,
+            API_KEY: process.env.API_KEY,
+            BASE_URL: process.env.BASE_URL,
+            SMART_BASE_URL: process.env.SMART_BASE_URL,
+            FAST_BASE_URL: process.env.FAST_BASE_URL,
         };
 
         // Set environment variables to match the logged requests
         process.env.MODEL = 'gpt-4.1-nano';
         process.env.MAX_COMPLETION_TOKENS = '32000';
+        process.env.API_KEY = 'sk-test-key-for-testing-purposes-only';
+        process.env.BASE_URL = 'https://api.openai.com/v1';
+        process.env.SMART_BASE_URL = 'https://api.openai.com/v1';
+        process.env.FAST_BASE_URL = 'https://api.openai.com/v1';
 
         // Setup file system mocks to return exact config content
         setupFileMocks();
 
-        // Setup HTTP mocks to return exact responses
-        await setupHttpMocking();
+        const confMgr = ConfigManager.getInstance();
+        await confMgr.initialize();
+        console.log('🔍 DEBUG: Config loaded:', JSON.stringify(confMgr.getConfig(), null, 2));
 
-        // Setup other mocks
-        setupMocks();
+        // Create real instances like in app.js
+        const toolManager = new ToolManager();
+        const snapshotManager = new SnapshotManager();
+        const consoleInterface = new ConsoleInterface();
 
-        // Create state machine instance
+        // Create state machine instance with real instances
         stateMachine = new WorkflowStateMachine(
-            mockConfig,
-            mockToolManager,
-            mockSnapshotManager,
-            mockConsoleInterface,
-            mockCostsManager
+            confMgr,
+            toolManager,
+            snapshotManager,
+            consoleInterface,
+            costsManager
         );
     });
 
     afterEach(() => {
         // Restore original environment variables
-        if (originalEnv.MODEL !== undefined) {
-            process.env.MODEL = originalEnv.MODEL;
-        } else {
-            delete process.env.MODEL;
-        }
-        if (originalEnv.MAX_COMPLETION_TOKENS !== undefined) {
-            process.env.MAX_COMPLETION_TOKENS = originalEnv.MAX_COMPLETION_TOKENS;
-        } else {
-            delete process.env.MAX_COMPLETION_TOKENS;
-        }
+        Object.keys(originalEnv).forEach(key => {
+            if (originalEnv[key] !== undefined) {
+                process.env[key] = originalEnv[key];
+            } else {
+                delete process.env[key];
+            }
+        });
 
         vi.resetAllMocks();
     });
@@ -86,6 +130,7 @@ describe('Grocery Store Workflow E2E Test', () => {
      */
     function setupFileMocks() {
         const mockExistsSync = vi.mocked(existsSync);
+        console.log('🔍 DEBUG: Mocking readFileSync');
         const mockReadFileSync = vi.mocked(readFileSync);
 
         // Mock existsSync to return true for our config files
@@ -99,7 +144,9 @@ describe('Grocery Store Workflow E2E Test', () => {
                 pathStr.includes('application.json') ||
                 pathStr.includes('defaults') ||
                 pathStr.includes('environment-template.json') ||
-                pathStr.includes('.index')
+                pathStr.includes('console-messages.json') ||
+                pathStr.includes('.index') || // For .index directory
+                pathStr.includes('config-validation.json')
             );
         });
 
@@ -109,370 +156,65 @@ describe('Grocery Store Workflow E2E Test', () => {
             console.log('🔍 DEBUG: readFileSync called with path:', pathStr);
 
             if (pathStr.includes('grocery_store_test.json')) {
-                return JSON.stringify({
-                    workflow_name: 'grocery_store_test',
-                    description:
-                        'Test workflow simulating customer-grocery worker interaction to test multi-agent conversation patterns and context sharing',
-                    input: {
-                        name: 'initial_customer_request',
-                        type: 'string',
-                        description:
-                            'What the customer initially asks for or mentions when approaching the grocery worker',
-                    },
-                    output: {
-                        name: 'interaction_summary',
-                        type: 'string',
-                        description:
-                            'Summary of the customer-worker interaction and what was accomplished',
-                    },
-                    variables: {
-                        max_interactions: 15,
-                    },
-                    contexts: [
-                        {
-                            name: 'store_conversation',
-                            starting_messages: [],
-                            max_length: 30000,
-                        },
-                    ],
-                    agents: [
-                        {
-                            agent_role: 'grocery_worker',
-                            context: 'store_conversation',
-                            role: 'assistant',
-                        },
-                        {
-                            agent_role: 'customer',
-                            context: 'store_conversation',
-                            role: 'user',
-                        },
-                    ],
-                    states: [
-                        {
-                            name: 'start',
-                            agent: 'grocery_worker',
-                            pre_handler: 'addInitialCustomerMessage',
-                            post_handler: 'addWorkerResponse',
-                            transition_handler: 'alwaysTransitionToCustomer',
-                        },
-                        {
-                            name: 'customer_decision',
-                            agent: 'customer',
-                            pre_handler: null,
-                            post_handler: 'processCustomerDecision',
-                            transition_handler: 'decideNextState',
-                        },
-                        {
-                            name: 'worker_response',
-                            agent: 'grocery_worker',
-                            pre_handler: null,
-                            post_handler: 'addWorkerResponse',
-                            transition_handler: 'alwaysTransitionToCustomer',
-                        },
-                        {
-                            name: 'stop',
-                            input: 'common_data.interaction_summary',
-                        },
-                    ],
-                });
+                console.log(
+                    '🔍 DEBUG: Returning grocery_store_test.json with length:',
+                    fixtureFiles['grocery_store_test.json'].length
+                );
+                return fixtureFiles['grocery_store_test.json'];
             }
 
             if (pathStr.includes('environment-template.json')) {
-                return JSON.stringify({
-                    template:
-                        '\n\nEnvironment Information:\n- Operating System: {os}\n- Current Working Directory: {cwd}\n- .index directory exists: {indexExists}\n- Current Date/Time: {currentDateTime}',
-                    variables: {
-                        os: {
-                            description: 'Operating system platform',
-                            value: 'win32',
-                        },
-                        cwd: {
-                            description: 'Current working directory',
-                            value: 'E:\\AI\\projects\\synth-dev',
-                        },
-                        indexExists: {
-                            description: 'Whether .index directory exists',
-                            value: 'Yes',
-                        },
-                        currentDateTime: {
-                            description: 'Current date and time',
-                            value: '15/06/2025, 00:28:38',
-                        },
-                    },
-                });
+                console.log(
+                    '🔍 DEBUG: Returning environment-template.json with length:',
+                    fixtureFiles['environment-template.json'].length
+                );
+                return fixtureFiles['environment-template.json'];
             }
 
             if (pathStr.includes('roles.json')) {
-                // Return the exact roles configuration
-                const rolesConfig = {
-                    customer: {
-                        level: 'fast',
-                        systemMessage:
-                            "You are a customer at FreshMart grocery store. You came here today with a specific shopping list and budget in mind:\n\n**Your Shopping Mission:**\n- You need ingredients for a dinner party tomorrow (6 people)\n- Your planned menu: pasta with marinara sauce, garlic bread, and a simple salad\n- Budget: $45\n- You prefer organic when possible but will compromise for budget\n- You're somewhat picky about produce quality\n\n**Your Personality:**\n- Friendly but focused on getting what you need\n- Ask questions about alternatives if your preferred items aren't available\n- You'll negotiate on substitutions but have preferences\n- You want to finish shopping efficiently\n\n**Interaction Style:**\n- Start by asking about specific items from your list\n- Be realistic about what a grocery worker would know\n- Ask about prices and consider them when making decisions \n- Decide when you're satisfied with the help and ready to finish shopping. Allways use interaction_decision tool to decide if you need more help or not. specify continue_message if continue_shopping is true and shopping_summary if continue_shopping is false.",
-                        includedTools: [],
-                        parsingTools: [
-                            {
-                                type: 'function',
-                                function: {
-                                    name: 'interaction_decision',
-                                    description:
-                                        'Decide whether to continue the interaction or conclude your shopping assistance, should be called exactly once per interaction',
-                                    parameters: {
-                                        type: 'object',
-                                        properties: {
-                                            continue_shopping: {
-                                                type: 'boolean',
-                                                description:
-                                                    'Whether you need more help from the grocery worker',
-                                            },
-                                            continue_message: {
-                                                type: 'string',
-                                                description:
-                                                    "Your next question or request can't be empty if continue_shopping is true",
-                                            },
-                                            shopping_summary: {
-                                                type: 'string',
-                                                description:
-                                                    "Summary of what you exacly bought and how much it cost if you're done shopping can't be empty if continue_shopping is false",
-                                            },
-                                        },
-                                        required: ['continue_shopping'],
-                                    },
-                                },
-                                parsingOnly: true,
-                            },
-                        ],
-                    },
-                    grocery_worker: {
-                        level: 'fast',
-                        systemMessage:
-                            "You are Sam, a helpful employee at FreshMart grocery store. You've been working here for 2 years and know the store layout and inventory well.\n\n**Store Information:**\n- FreshMart is a mid-size grocery store with good produce and competitive prices\n- Current season: Late fall, so some summer produce is limited\n- Store specialties: Fresh bakery, good organic selection, local dairy products\n\n**Current Inventory Status:**\n- Pasta: Full stock (regular and organic options available)\n- Marinara sauce: Good selection, including store brand and premium options\n- Garlic bread: Fresh baked daily, frozen options also available\n- Salad ingredients: Fresh lettuce, tomatoes, cucumbers in stock\n- Organic produce: Limited but available for most items at 20-30% premium\n- Seasonal note: Tomatoes are not at peak quality, but greenhouse varieties available\n\n**Your Personality:**\n- Genuinely helpful and knowledgeable\n- Proactive in suggesting alternatives when items aren't ideal\n- Know about current sales and promotions\n- Can provide cooking tips when relevant\n- Professional but friendly\n\n**Your Approach:**\n- Listen to what the customer needs\n- Offer specific alternatives when their first choice isn't optimal\n- Mention relevant sales or promotions\n- Help them stay within budget if they mention it\n- Provide location information for items in the store. Customers budget of $45 should be enough to buy all the items they need, but not most luxury items.",
-                        includedTools: [],
-                    },
-                };
-                console.log(
-                    '🔍 DEBUG: Returning roles.json:',
-                    JSON.stringify(rolesConfig, null, 2)
-                );
-                return JSON.stringify(rolesConfig);
+                const rolesContent = fixtureFiles['roles.json'];
+                console.log('🔍 DEBUG: Returning roles.json with length:', rolesContent.length);
+                return rolesContent;
             }
 
             // For application.json file, return basic config
             if (pathStr.includes('application.json')) {
-                return JSON.stringify({
-                    models: {
-                        base: {
-                            model: 'gpt-4.1-nano',
-                            baseUrl: 'https://api.openai.com/v1',
-                        },
-                        smart: {
-                            model: null,
-                            baseUrl: null,
-                        },
-                        fast: {
-                            model: null,
-                            baseUrl: null,
-                        },
-                    },
-                    global_settings: {
-                        maxToolCalls: 50,
-                        enablePromptEnhancement: false,
-                        verbosityLevel: 2,
-                    },
-                    ui_settings: {
-                        defaultRole: 'coder',
-                        showStartupBanner: false,
-                        enableColors: true,
-                        promptPrefix: '💭 You: ',
-                    },
-                    tool_settings: {
-                        autoRun: true,
-                        requiresBackup: false,
-                        defaultEncoding: 'utf8',
-                        maxFileSize: 10485760,
-                        defaultTimeout: 10000,
-                    },
-                    logging: {
-                        defaultLevel: 2,
-                        enableHttpLogging: false,
-                        enableToolLogging: true,
-                        enableErrorLogging: true,
-                    },
-                    safety: {
-                        enableAISafetyCheck: true,
-                        fallbackToPatternMatching: true,
-                        maxScriptSize: 50000,
-                        scriptTimeout: {
-                            min: 1000,
-                            max: 30000,
-                            default: 10000,
-                        },
-                    },
-                    features: {
-                        enableSnapshots: true,
-                        enableIndexing: true,
-                        enableCommandHistory: true,
-                        enableContextIntegration: false,
-                    },
-                });
+                console.log(
+                    '🔍 DEBUG: Returning application.json with length:',
+                    fixtureFiles['application.json'].length
+                );
+                return fixtureFiles['application.json'];
             }
 
             // For script.js file, return the script content
             if (pathStr.includes('script.js')) {
-                return `export default {
-                    addInitialCustomerMessage() {
-                        const context = this.workflow_contexts.get('store_conversation');
-                        if (context && this.common_data.initial_customer_request) {
-                            context.addMessage({
-                                role: 'user',
-                                content: this.common_data.initial_customer_request,
-                            });
-                        }
-                    },
-                    addWorkerResponse() {
-                        const context = this.workflow_contexts.get('store_conversation');
-                        const responseContent = this.last_response?.choices?.[0]?.message?.content;
-                        if (context && responseContent) {
-                            context.addMessage({
-                                role: 'assistant',
-                                content: responseContent,
-                            });
-                        }
-                    },
-                    alwaysTransitionToCustomer() {
-                        return 'customer_decision';
-                    },
-                    processCustomerDecision() {
-                        const context = this.workflow_contexts.get('store_conversation');
-                        const toolCalls = this.last_response?.choices?.[0]?.message?.tool_calls || [];
-                        const decisionCall = toolCalls.find(call => call.function?.name === 'interaction_decision');
-                        if (decisionCall && context) {
-                            try {
-                                const arguments_ = JSON.parse(decisionCall.function.arguments);
-                                if (arguments_.continue_shopping === true && arguments_.continue_message) {
-                                    context.addMessage({
-                                        role: 'user',
-                                        content: arguments_.continue_message,
-                                    });
-                                } else if (arguments_.continue_shopping === false && arguments_.shopping_summary) {
-                                    this.common_data.interaction_summary = arguments_.shopping_summary;
-                                }
-                            } catch (error) {
-                                console.error('Error parsing interaction_decision arguments:', error);
-                            }
-                        }
-                    },
-                    decideNextState() {
-                        const toolCalls = this.last_response?.choices?.[0]?.message?.tool_calls || [];
-                        const decisionCall = toolCalls.find(call => call.function?.name === 'interaction_decision');
-                        if (decisionCall) {
-                            try {
-                                const arguments_ = JSON.parse(decisionCall.function.arguments);
-                                if (arguments_.continue_shopping === true) {
-                                    return 'worker_response';
-                                } else {
-                                    return 'stop';
-                                }
-                            } catch (error) {
-                                console.error('Error parsing interaction_decision arguments:', error);
-                                return 'stop';
-                            }
-                        }
-                        return 'stop';
-                    },
-                };`;
+                console.log(
+                    '🔍 DEBUG: Returning script.js with length:',
+                    fixtureFiles['grocery_store_test/script.js'].length
+                );
+                return fixtureFiles['grocery_store_test/script.js'];
             }
+
+            if (pathStr.includes('console-messages.json')) {
+                console.log(
+                    '🔍 DEBUG: Returning console-messages.json with length:',
+                    fixtureFiles['console-messages.json'].length
+                );
+                return fixtureFiles['console-messages.json'];
+            }
+
+            if (pathStr.includes('config-validation.json')) {
+                console.log(
+                    '🔍 DEBUG: Returning config-validation.json with length:',
+                    fixtureFiles['config-validation.json'].length
+                );
+                return fixtureFiles['config-validation.json'];
+            }
+
+            console.log('🔍 DEBUG: readFileSync returning empty string for path:', pathStr);
 
             return '';
         });
-    }
-
-    /**
-     * Setup all required mocks
-     */
-    function setupMocks() {
-        // Mock config manager
-        mockConfig = {
-            getModel: vi.fn().mockReturnValue({
-                apiKey: 'test-key',
-                baseUrl: 'https://api.openai.com/v1',
-                model: 'gpt-4.1-nano',
-                maxCompletionTokens: 32000,
-            }),
-            getRoleConfig: vi.fn().mockImplementation(roleName => {
-                // Return role configurations from our mocked roles.json
-                const rolesConfig = {
-                    customer: {
-                        level: 'fast',
-                        systemMessage:
-                            "You are a customer at FreshMart grocery store. You came here today with a specific shopping list and budget in mind:\n\n**Your Shopping Mission:**\n- You need ingredients for a dinner party tomorrow (6 people)\n- Your planned menu: pasta with marinara sauce, garlic bread, and a simple salad\n- Budget: $45\n- You prefer organic when possible but will compromise for budget\n- You're somewhat picky about produce quality\n\n**Your Personality:**\n- Friendly but focused on getting what you need\n- Ask questions about alternatives if your preferred items aren't available\n- You'll negotiate on substitutions but have preferences\n- You want to finish shopping efficiently\n\n**Interaction Style:**\n- Start by asking about specific items from your list\n- Be realistic about what a grocery worker would know\n- Ask about prices and consider them when making decisions \n- Decide when you're satisfied with the help and ready to finish shopping. Allways use interaction_decision tool to decide if you need more help or not. specify continue_message if continue_shopping is true and shopping_summary if continue_shopping is false.",
-                        includedTools: [],
-                        parsingTools: [
-                            {
-                                type: 'function',
-                                function: {
-                                    name: 'interaction_decision',
-                                    description:
-                                        'Decide whether to continue the interaction or conclude your shopping assistance, should be called exactly once per interaction',
-                                    parameters: {
-                                        type: 'object',
-                                        properties: {
-                                            continue_shopping: {
-                                                type: 'boolean',
-                                                description:
-                                                    'Whether you need more help from the grocery worker',
-                                            },
-                                            continue_message: {
-                                                type: 'string',
-                                                description:
-                                                    "Your next question or request can't be empty if continue_shopping is true",
-                                            },
-                                            shopping_summary: {
-                                                type: 'string',
-                                                description:
-                                                    "Summary of what you exacly bought and how much it cost if you're done shopping can't be empty if continue_shopping is false",
-                                            },
-                                        },
-                                        required: ['continue_shopping'],
-                                    },
-                                },
-                                parsingOnly: true,
-                            },
-                        ],
-                    },
-                    grocery_worker: {
-                        level: 'fast',
-                        systemMessage:
-                            "You are Sam, a helpful employee at FreshMart grocery store. You've been working here for 2 years and know the store layout and inventory well.\n\n**Store Information:**\n- FreshMart is a mid-size grocery store with good produce and competitive prices\n- Current season: Late fall, so some summer produce is limited\n- Store specialties: Fresh bakery, good organic selection, local dairy products\n\n**Current Inventory Status:**\n- Pasta: Full stock (regular and organic options available)\n- Marinara sauce: Good selection, including store brand and premium options\n- Garlic bread: Fresh baked daily, frozen options also available\n- Salad ingredients: Fresh lettuce, tomatoes, cucumbers in stock\n- Organic produce: Limited but available for most items at 20-30% premium\n- Seasonal note: Tomatoes are not at peak quality, but greenhouse varieties available\n\n**Your Personality:**\n- Genuinely helpful and knowledgeable\n- Proactive in suggesting alternatives when items aren't ideal\n- Know about current sales and promotions\n- Can provide cooking tips when relevant\n- Professional but friendly\n\n**Your Approach:**\n- Listen to what the customer needs\n- Offer specific alternatives when their first choice isn't optimal\n- Mention relevant sales or promotions\n- Help them stay within budget if they mention it\n- Provide location information for items in the store. Customers budget of $45 should be enough to buy all the items they need, but not most luxury items.",
-                        includedTools: [],
-                    },
-                };
-                return rolesConfig[roleName];
-            }),
-        };
-
-        // Mock tool manager
-        mockToolManager = {
-            getTools: vi.fn().mockReturnValue([]),
-        };
-
-        // Mock snapshot manager
-        mockSnapshotManager = {
-            createSnapshot: vi.fn().mockResolvedValue(),
-        };
-
-        // Mock console interface
-        mockConsoleInterface = {
-            log: vi.fn(),
-            warn: vi.fn(),
-            error: vi.fn(),
-        };
-
-        // Mock costs manager
-        mockCostsManager = {
-            addCost: vi.fn(),
-            getCosts: vi.fn().mockReturnValue({ total: 0 }),
-        };
     }
 
     /**
