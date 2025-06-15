@@ -1,0 +1,129 @@
+{
+    "workflow_name": "newspaper_copywriter",
+    "description": "Newspaper copywriter workflow demonstrating independent agent contexts with selective information sharing between contexts",
+    "input": {
+        "name": "article_assignment",
+        "type": "string",
+        "description": "Initial article assignment with topic, deadline, and requirements"
+    },
+    "output": {
+        "name": "final_article_status",
+        "type": "string",
+        "description": "Final status of the article - approved, rejected, or summary of the editorial process"
+    },
+    "variables": {
+        "max_revision_cycles": 5,
+        "current_revision": 1,
+        "reviewers_completed": 0,
+        "total_reviewers": 3
+    },
+    "contexts": [
+        {
+            "name": "copywriter_context",
+            "starting_messages": [],
+            "max_length": 50000
+        },
+        {
+            "name": "legal_reviewer_context",
+            "starting_messages": [],
+            "max_length": 20000
+        },
+        {
+            "name": "editorial_reviewer_context",
+            "starting_messages": [],
+            "max_length": 20000
+        },
+        {
+            "name": "fact_checker_context",
+            "starting_messages": [],
+            "max_length": 20000
+        },
+        {
+            "name": "chief_editor_context",
+            "starting_messages": [],
+            "max_length": 30000
+        }
+    ],
+    "agents": [
+        {
+            "agent_role": "copywriter",
+            "context": "copywriter_context",
+            "role": "assistant"
+        },
+        {
+            "agent_role": "legal_reviewer",
+            "context": "legal_reviewer_context",
+            "role": "assistant"
+        },
+        {
+            "agent_role": "editorial_reviewer",
+            "context": "editorial_reviewer_context",
+            "role": "assistant"
+        },
+        {
+            "agent_role": "fact_checker",
+            "context": "fact_checker_context",
+            "role": "assistant"
+        },
+        {
+            "agent_role": "chief_editor",
+            "context": "chief_editor_context",
+            "role": "assistant"
+        }
+    ],
+    "states": [
+        {
+            "name": "start",
+            "agent": "copywriter",
+            "pre_handler": "addInitialAssignment",
+            "post_handler": "storeCopywriterDraft",
+            "transition_handler": "transitionToReviewCycle"
+        },
+        {
+            "name": "legal_review",
+            "agent": "legal_reviewer",
+            "pre_handler": "prepareLegalReviewContext",
+            "post_handler": "processLegalReview",
+            "transition_handler": "checkNextReviewer"
+        },
+        {
+            "name": "editorial_review",
+            "agent": "editorial_reviewer",
+            "pre_handler": "prepareEditorialReviewContext",
+            "post_handler": "processEditorialReview",
+            "transition_handler": "checkNextReviewer"
+        },
+        {
+            "name": "fact_check",
+            "agent": "fact_checker",
+            "pre_handler": "prepareFactCheckContext",
+            "post_handler": "processFactCheck",
+            "transition_handler": "checkNextReviewer"
+        },
+        {
+            "name": "copywriter_decision",
+            "agent": "copywriter",
+            "pre_handler": "prepareDecisionContext",
+            "post_handler": "processCopywriterDecision",
+            "transition_handler": "decideCopywriterAction"
+        },
+        {
+            "name": "chief_review",
+            "agent": "chief_editor",
+            "pre_handler": "prepareChiefReviewContext",
+            "post_handler": "processChiefDecision",
+            "transition_handler": "decideChiefAction"
+        },
+        {
+            "name": "copywriter_revision",
+            "agent": "copywriter",
+            "pre_handler": "prepareRevisionContext",
+            "post_handler": "storeCopywriterRevision",
+            "transition_handler": "transitionToReviewCycle"
+        },
+        {
+            "name": "stop",
+            "input": "common_data.final_article_status"
+        }
+    ]
+}
