@@ -88,33 +88,22 @@ export default {
      * Decides next state based on continue_shopping value
      */
     decideNextState() {
-        console.log('🔍 DEBUG: decideNextState called');
-        console.log('🔍 DEBUG: this.last_response:', JSON.stringify(this.last_response, null, 2));
-
         const toolCalls = this.last_response?.choices?.[0]?.message?.tool_calls || [];
-        console.log('🔍 DEBUG: toolCalls:', toolCalls);
 
         const decisionCall = toolCalls.find(call => call.function?.name === 'interaction_decision');
-        console.log('🔍 DEBUG: decisionCall:', decisionCall);
 
         if (decisionCall) {
             try {
                 const arguments_ = JSON.parse(decisionCall.function.arguments);
-                console.log('🔍 DEBUG: arguments_:', arguments_);
                 if (arguments_.continue_shopping === true) {
-                    console.log('🔍 DEBUG: Returning worker_response');
                     return 'worker_response';
                 } else {
-                    console.log('🔍 DEBUG: Returning stop (continue_shopping is false)');
                     return 'stop';
                 }
             } catch (error) {
-                console.error('Error parsing interaction_decision arguments:', error);
                 return 'stop'; // Default to stop on error
             }
         }
-
-        console.log('🔍 DEBUG: Returning stop (no decision call found)');
         return 'stop'; // Default to stop if no tool call found
     },
 };

@@ -218,8 +218,6 @@ export const yourWorkflowHttpMocks = {
         let callCount = 0;
 
         return async function mockOpenAICreate(requestData) {
-            console.log('🔍 DEBUG: OpenAI HTTP request:', JSON.stringify(requestData, null, 2));
-
             if (callCount >= httpResponses.length) {
                 throw new Error(`No more responses available (call ${callCount + 1})`);
             }
@@ -227,7 +225,6 @@ export const yourWorkflowHttpMocks = {
             const response = httpResponses[callCount];
             callCount++;
 
-            console.log('🔍 DEBUG: OpenAI HTTP response:', JSON.stringify(response, null, 2));
             return response;
         };
     },

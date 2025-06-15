@@ -38,7 +38,6 @@ vi.mock('openai', () => ({
 // Mock file system to return exact config files
 vi.mock('fs', async () => {
     const actual = await vi.importActual('fs');
-    console.log('🔍 DEBUG: Mocking fs module');
     return {
         ...actual,
         existsSync: vi.fn(),
@@ -95,7 +94,6 @@ describe('Grocery Store Workflow E2E Test', () => {
 
         const confMgr = ConfigManager.getInstance();
         await confMgr.initialize();
-        console.log('🔍 DEBUG: Config loaded:', JSON.stringify(confMgr.getConfig(), null, 2));
 
         // Create real instances like in app.js
         const toolManager = new ToolManager();
@@ -130,7 +128,6 @@ describe('Grocery Store Workflow E2E Test', () => {
      */
     function setupFileMocks() {
         const mockExistsSync = vi.mocked(existsSync);
-        console.log('🔍 DEBUG: Mocking readFileSync');
         const mockReadFileSync = vi.mocked(readFileSync);
 
         // Mock existsSync to return true for our config files
@@ -153,65 +150,37 @@ describe('Grocery Store Workflow E2E Test', () => {
         // Mock readFileSync to return exact config content
         mockReadFileSync.mockImplementation(path => {
             const pathStr = path.toString();
-            console.log('🔍 DEBUG: readFileSync called with path:', pathStr);
 
             if (pathStr.includes('grocery_store_test.json')) {
-                console.log(
-                    '🔍 DEBUG: Returning grocery_store_test.json with length:',
-                    fixtureFiles['grocery_store_test.json'].length
-                );
                 return fixtureFiles['grocery_store_test.json'];
             }
 
             if (pathStr.includes('environment-template.json')) {
-                console.log(
-                    '🔍 DEBUG: Returning environment-template.json with length:',
-                    fixtureFiles['environment-template.json'].length
-                );
                 return fixtureFiles['environment-template.json'];
             }
 
             if (pathStr.includes('roles.json')) {
                 const rolesContent = fixtureFiles['roles.json'];
-                console.log('🔍 DEBUG: Returning roles.json with length:', rolesContent.length);
                 return rolesContent;
             }
 
             // For application.json file, return basic config
             if (pathStr.includes('application.json')) {
-                console.log(
-                    '🔍 DEBUG: Returning application.json with length:',
-                    fixtureFiles['application.json'].length
-                );
                 return fixtureFiles['application.json'];
             }
 
             // For script.js file, return the script content
             if (pathStr.includes('script.js')) {
-                console.log(
-                    '🔍 DEBUG: Returning script.js with length:',
-                    fixtureFiles['grocery_store_test/script.js'].length
-                );
                 return fixtureFiles['grocery_store_test/script.js'];
             }
 
             if (pathStr.includes('console-messages.json')) {
-                console.log(
-                    '🔍 DEBUG: Returning console-messages.json with length:',
-                    fixtureFiles['console-messages.json'].length
-                );
                 return fixtureFiles['console-messages.json'];
             }
 
             if (pathStr.includes('config-validation.json')) {
-                console.log(
-                    '🔍 DEBUG: Returning config-validation.json with length:',
-                    fixtureFiles['config-validation.json'].length
-                );
                 return fixtureFiles['config-validation.json'];
             }
-
-            console.log('🔍 DEBUG: readFileSync returning empty string for path:', pathStr);
 
             return '';
         });
@@ -244,14 +213,6 @@ describe('Grocery Store Workflow E2E Test', () => {
         );
 
         // Debug: Log the actual result to understand what's happening
-        console.log('🔍 DEBUG: Workflow result:', JSON.stringify(result, null, 2));
-        console.log('🔍 DEBUG: OpenAI calls made:', global.mockOpenAICreate.mock.calls.length);
-        console.log(
-            '🔍 DEBUG: OpenAI calls structure:',
-            global.mockOpenAICreate.mock.calls.map((call, i) => `Call ${i}: ${call.length} args`)
-        );
-        console.log('🔍 DEBUG: First call args:', global.mockOpenAICreate.mock.calls[0]);
-        console.log('🔍 DEBUG: Second call args:', global.mockOpenAICreate.mock.calls[1]);
 
         // Verify the workflow executed successfully
         expect(result.success).toBe(true);

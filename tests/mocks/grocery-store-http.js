@@ -416,12 +416,6 @@ export const groceryStoreHttpMocks = {
         let customerCallCount = 0;
 
         return async function mockOpenAICreate(requestData) {
-            console.log('🔍 DEBUG: OpenAI HTTP request:', JSON.stringify(requestData, null, 2));
-            console.log(
-                '🔍 DEBUG: Request tools:',
-                requestData.tools ? `${requestData.tools.length} tools` : 'undefined'
-            );
-
             // Determine request type and return appropriate response
             let response;
             let responseIndex;
@@ -436,9 +430,6 @@ export const groceryStoreHttpMocks = {
                 }
                 response = httpResponses[responseIndex];
                 customerCallCount++;
-                console.log(
-                    `🔍 DEBUG: Customer call ${customerCallCount}, returning response ${responseIndex + 1}`
-                );
             } else {
                 // Grocery worker request (no tools) - responses 1, 3, 5 (indices 0, 2, 4)
                 responseIndex = 0 + groceryWorkerCallCount * 2; // 0, 2, 4
@@ -449,12 +440,8 @@ export const groceryStoreHttpMocks = {
                 }
                 response = httpResponses[responseIndex];
                 groceryWorkerCallCount++;
-                console.log(
-                    `🔍 DEBUG: Grocery worker call ${groceryWorkerCallCount}, returning response ${responseIndex + 1}`
-                );
             }
 
-            console.log('🔍 DEBUG: OpenAI HTTP response:', JSON.stringify(response, null, 2));
             return response;
         };
     },
