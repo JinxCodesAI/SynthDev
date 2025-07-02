@@ -111,20 +111,6 @@ SynthDev's AI role system enables:
 
 #### **Additional Specialized Roles**
 
-**basic_assistant** (from core-roles.json)
-
-- **Purpose**: Basic AI assistant for general questions and tasks
-- **Level**: fast
-- **Tools**: Limited set excluding file modifications and terminal
-- **Behavior**: Helpful and concise responses
-
-**research_assistant** (from core-roles.json)
-
-- **Purpose**: Information gathering and analysis specialist
-- **Level**: base
-- **Tools**: Read-only tools (read_file, list_directory, exact_search, explain_codebase)
-- **Behavior**: Thorough research and detailed analysis
-
 **test_writer** (from specialized/testing-roles.json)
 
 - **Purpose**: Specialized test writing assistant

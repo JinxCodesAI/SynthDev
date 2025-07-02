@@ -134,7 +134,6 @@ SynthDev features specialized AI personas for different tasks:
 - **prompt_enhancer**: Improving user prompts with AI assistance
 - **command_generator**: Converting natural language to terminal commands
 - **file_reader**: File reading and analysis only
-- **basic_assistant**: General-purpose AI assistant
 - **dude**: Helpful assistant for wide range of tasks
 
 Switch roles with: `/role <role_name>`
