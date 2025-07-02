@@ -34,37 +34,70 @@ export class RoleCommand extends BaseCommand {
 
     /**
      * Execute the role command
-     * @param {string} args - Role name
+     * @param {string} args - Role name (can include group prefix like 'testing.dude')
      * @param {Object} context - Execution context
      * @returns {boolean} Always returns true
      */
     async implementation(args, context) {
         const { apiClient } = context;
-        const role = args.trim();
+        const roleSpec = args.trim();
 
         const logger = getLogger();
 
         try {
-            if (!SystemMessages.hasRole(role)) {
-                logger.error(`Unknown role: ${role}`);
-                logger.info(`📖 Available roles: ${SystemMessages.getAvailableRoles().join(', ')}`);
+            // Resolve the role specification (handle group prefixes)
+            const { roleName, group, found } = SystemMessages.resolveRole(roleSpec);
+
+            if (!found) {
+                logger.error(`Unknown role: ${roleSpec}`);
+
+                if (roleSpec.includes('.')) {
+                    // User specified a group, show roles in that group
+                    const [specifiedGroup] = roleSpec.split('.', 1);
+                    const rolesInGroup = SystemMessages.getRolesByGroup(specifiedGroup);
+                    if (rolesInGroup.length > 0) {
+                        logger.info(
+                            `📖 Available roles in '${specifiedGroup}': ${rolesInGroup.join(', ')}`
+                        );
+                    } else {
+                        logger.info(`📖 No roles found in group '${specifiedGroup}'`);
+                        const availableGroups = SystemMessages.getAvailableGroups();
+                        logger.info(`📖 Available groups: ${availableGroups.join(', ')}`);
+                    }
+                } else {
+                    // Show global roles and suggest group syntax
+                    const globalRoles = SystemMessages.getRolesByGroup('global');
+                    logger.info(`📖 Available global roles: ${globalRoles.join(', ')}`);
+
+                    const availableGroups = SystemMessages.getAvailableGroups().filter(
+                        g => g !== 'global'
+                    );
+                    if (availableGroups.length > 0) {
+                        logger.info('💡 For group-specific roles, use: /role <group>.<name>');
+                        logger.info(`📖 Available groups: ${availableGroups.join(', ')}`);
+                    }
+                }
+
                 logger.info('💡 Use /roles to see detailed role information\n');
                 return true;
             }
 
             const previousRole = apiClient.getCurrentRole();
-            const systemMessage = SystemMessages.getSystemMessage(role);
+            const systemMessage = SystemMessages.getSystemMessage(roleName);
 
-            await apiClient.setSystemMessage(systemMessage, role);
+            await apiClient.setSystemMessage(systemMessage, roleName);
 
-            logger.user(`🎭 Role switched from '${previousRole || 'none'}' to '${role}'`);
+            const groupDisplay = group !== 'global' ? ` [${group}]` : '';
+            logger.user(
+                `🎭 Role switched from '${previousRole || 'none'}' to '${roleName}'${groupDisplay}`
+            );
             logger.info(
                 `🔧 Tools: ${apiClient.getFilteredToolCount()}/${apiClient.getTotalToolCount()} available`
             );
 
-            const excludedTools = SystemMessages.getExcludedTools(role);
+            const excludedTools = SystemMessages.getExcludedTools(roleName);
             if (excludedTools.length > 0) {
-                logger.info(`🚫 Excluded tools for ${role}: ${excludedTools.join(', ')}`);
+                logger.info(`🚫 Excluded tools for ${roleName}: ${excludedTools.join(', ')}`);
             }
             logger.raw();
 
@@ -88,10 +121,19 @@ export class RoleCommand extends BaseCommand {
      * @returns {string} Help text
      */
     getHelp() {
-        const availableRoles = SystemMessages.getAvailableRoles();
+        const globalRoles = SystemMessages.getRolesByGroup('global');
+        const availableGroups = SystemMessages.getAvailableGroups().filter(g => g !== 'global');
+
         let help = super.getHelp();
-        help += `\n   Available roles: ${availableRoles.join(', ')}`;
-        help += '\n   Example: /role coder';
+        help += `\n   Global roles: ${globalRoles.join(', ')}`;
+
+        if (availableGroups.length > 0) {
+            help += `\n   Groups: ${availableGroups.join(', ')}`;
+            help += '\n   Examples: /role coder, /role testing.dude';
+        } else {
+            help += '\n   Example: /role coder';
+        }
+
         return help;
     }
 }

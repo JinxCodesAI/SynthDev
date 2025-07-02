@@ -15,29 +15,57 @@ vi.mock('../../../configurationLoader.js', () => ({
         }),
         loadRolesFromDirectory: vi.fn(dirPath => {
             if (dirPath === 'roles') {
-                // Simulate loading from multiple files
+                // Simulate loading from multiple files with new structure
                 return {
-                    // From roles.json (legacy)
-                    coder: {
-                        level: 'base',
-                        systemMessage: 'You are a coder',
-                        excludedTools: ['get_time'],
+                    roles: {
+                        // From roles.json (legacy)
+                        coder: {
+                            level: 'base',
+                            systemMessage: 'You are a coder',
+                            excludedTools: ['get_time'],
+                            _group: 'global',
+                            _source: 'roles.json',
+                        },
+                        reviewer: {
+                            level: 'base',
+                            systemMessage: 'You are a reviewer',
+                            excludedTools: ['edit_file', 'write_file'],
+                            _group: 'global',
+                            _source: 'roles.json',
+                        },
+                        // From specialized/testing-roles.json
+                        test_writer: {
+                            level: 'base',
+                            systemMessage: 'You are a test writer',
+                            excludedTools: ['execute_terminal'],
+                            _group: 'global',
+                            _source: 'test-roles.json',
+                        },
+                        qa_specialist: {
+                            level: 'base',
+                            systemMessage: 'You are a QA specialist',
+                            includedTools: ['read_file', 'list_directory', 'exact_search'],
+                            _group: 'global',
+                            _source: 'test-roles.json',
+                        },
+                        // From testing group
+                        basic_assistant: {
+                            level: 'fast',
+                            systemMessage: 'You are a basic assistant',
+                            _group: 'testing',
+                            _source: 'basic.testing.json',
+                        },
+                        file_reader: {
+                            level: 'fast',
+                            systemMessage: 'You are a file reader',
+                            includedTools: ['read_file', 'list_directory', 'exact_search'],
+                            _group: 'testing',
+                            _source: 'reader.testing.json',
+                        },
                     },
-                    reviewer: {
-                        level: 'base',
-                        systemMessage: 'You are a reviewer',
-                        excludedTools: ['edit_file', 'write_file'],
-                    },
-                    // From specialized/testing-roles.json
-                    test_writer: {
-                        level: 'base',
-                        systemMessage: 'You are a test writer',
-                        excludedTools: ['execute_terminal'],
-                    },
-                    qa_specialist: {
-                        level: 'base',
-                        systemMessage: 'You are a QA specialist',
-                        includedTools: ['read_file', 'list_directory', 'exact_search'],
+                    roleGroups: {
+                        global: ['coder', 'reviewer', 'test_writer', 'qa_specialist'],
+                        testing: ['basic_assistant', 'file_reader'],
                     },
                 };
             }
@@ -65,7 +93,7 @@ describe('SystemMessages - Multi-file Role Loading', () => {
             // Should include roles from all files
             expect(availableRoles).toContain('coder'); // from roles.json
             expect(availableRoles).toContain('reviewer'); // from roles.json
-            expect(availableRoles).toContain('dude'); // from specialized/testing-roles.json
+            expect(availableRoles).toContain('basic_assistant'); // from testing group
 
             expect(availableRoles.length).toBe(6);
         });
@@ -101,8 +129,8 @@ describe('SystemMessages - Multi-file Role Loading', () => {
 
         it('should get correct role levels from different files', () => {
             expect(SystemMessages.getLevel('coder')).toBe('base');
-            expect(SystemMessages.getLevel('architect')).toBe('smart');
-            expect(SystemMessages.getLevel('dude')).toBe('fast');
+            expect(SystemMessages.getLevel('reviewer')).toBe('base');
+            expect(SystemMessages.getLevel('basic_assistant')).toBe('fast');
         });
     });
 

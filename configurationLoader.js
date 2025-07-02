@@ -202,9 +202,32 @@ class ConfigurationLoader {
     }
 
     /**
+     * Parse filename to extract group information
+     * @param {string} filename - The filename to parse
+     * @returns {Object} Object with {basename, group} where group is 'global' if not specified
+     */
+    _parseRoleFilename(filename) {
+        // Remove .json extension
+        const nameWithoutExt = filename.replace(/\.json$/i, '');
+
+        // Check if filename contains a group (format: name.group.json)
+        const parts = nameWithoutExt.split('.');
+
+        if (parts.length >= 2) {
+            // Last part is the group, everything before is the basename
+            const group = parts[parts.length - 1];
+            const basename = parts.slice(0, -1).join('.');
+            return { basename, group };
+        } else {
+            // No group specified, use 'global'
+            return { basename: nameWithoutExt, group: 'global' };
+        }
+    }
+
+    /**
      * Load and merge multiple role configuration files from a directory
      * @param {string} rolesDir - Directory path containing role files (relative to config)
-     * @returns {Object} Merged role configurations
+     * @returns {Object} Object with roles and roleGroups properties
      */
     loadRolesFromDirectory(rolesDir = 'roles') {
         const cacheKey = `roles_directory_${rolesDir}`;
@@ -216,13 +239,27 @@ class ConfigurationLoader {
 
         const jsonFiles = this.scanDirectoryForJsonFiles(rolesDir);
         const mergedRoles = {};
+        const roleGroups = {}; // Track which roles belong to which groups
 
         // First, try to load the legacy roles.json file for backward compatibility
         const legacyRolesPath = join(rolesDir, 'roles.json');
         if (this.configExists(legacyRolesPath)) {
             try {
                 const legacyRoles = this.loadConfig(legacyRolesPath, {}, false);
-                Object.assign(mergedRoles, legacyRoles);
+
+                // Add legacy roles to global group
+                for (const [roleName, roleConfig] of Object.entries(legacyRoles)) {
+                    mergedRoles[roleName] = {
+                        ...roleConfig,
+                        _group: 'global',
+                        _source: 'roles.json',
+                    };
+                    if (!roleGroups['global']) {
+                        roleGroups['global'] = [];
+                    }
+                    roleGroups['global'].push(roleName);
+                }
+
                 this.logger.debug(`Loaded legacy roles from: ${legacyRolesPath}`);
             } catch (error) {
                 this.logger.warn(
@@ -241,6 +278,10 @@ class ConfigurationLoader {
             try {
                 const fileRoles = this.loadConfig(filePath, {}, false);
 
+                // Parse filename to get group information
+                const filename = jsonFile.split('/').pop(); // Get just the filename, not the path
+                const { basename, group } = this._parseRoleFilename(filename);
+
                 // Merge roles from this file
                 for (const [roleName, roleConfig] of Object.entries(fileRoles)) {
                     if (mergedRoles[roleName]) {
@@ -248,22 +289,39 @@ class ConfigurationLoader {
                             `Role '${roleName}' from ${filePath} overwrites existing role definition`
                         );
                     }
-                    mergedRoles[roleName] = roleConfig;
+
+                    // Add group metadata to role config
+                    mergedRoles[roleName] = {
+                        ...roleConfig,
+                        _group: group,
+                        _source: jsonFile,
+                    };
+
+                    // Track role in group
+                    if (!roleGroups[group]) {
+                        roleGroups[group] = [];
+                    }
+                    roleGroups[group].push(roleName);
                 }
 
-                this.logger.debug(`Loaded roles from: ${filePath}`);
+                this.logger.debug(`Loaded roles from: ${filePath} (group: ${group})`);
             } catch (error) {
                 this.logger.warn(`Failed to load roles from ${filePath}: ${error.message}`);
             }
         }
 
+        const result = {
+            roles: mergedRoles,
+            roleGroups: roleGroups,
+        };
+
         // Cache the merged configuration
-        this.configCache.set(cacheKey, mergedRoles);
+        this.configCache.set(cacheKey, result);
 
         this.logger.debug(
-            `Loaded ${Object.keys(mergedRoles).length} roles from ${jsonFiles.length} files in ${rolesDir}`
+            `Loaded ${Object.keys(mergedRoles).length} roles from ${jsonFiles.length} files in ${rolesDir}. Groups: ${Object.keys(roleGroups).join(', ')}`
         );
-        return mergedRoles;
+        return result;
     }
 }
 
