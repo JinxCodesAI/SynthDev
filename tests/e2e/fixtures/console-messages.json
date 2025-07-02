@@ -13,6 +13,8 @@
         "role_info": "🎭 Role: {role}",
         "tools_info": "🔧 Tools: {count} loaded",
         "tools_filtered_info": "🔧 Tools: {filtered}/{total} available ({excluded} filtered for role)",
+        "env_info": "📄 Environment: {envStatus}",
+        "git_info": "🌿 Git: {gitStatus}",
         "instructions": "Type your message and press Enter to chat.\nUse /help for commands."
     },
     "goodbye": "👋 Goodbye!",

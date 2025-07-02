@@ -70,6 +70,7 @@ import SnapshotManager from './snapshotManager.js';
 import PromptEnhancer from './promptEnhancer.js';
 import WorkflowStateMachine from './workflow/WorkflowStateMachine.js';
 import { initializeLogger, getLogger } from './logger.js';
+import GitUtils from './utils/GitUtils.js';
 
 /**
  * Main application orchestrator
@@ -95,6 +96,7 @@ class AICoderConsole {
         this.toolManager = new ToolManager();
         this.snapshotManager = new SnapshotManager();
         this.promptEnhancer = new PromptEnhancer(this.costsManager, this.toolManager);
+        this.gitUtils = new GitUtils();
         this.workflowStateMachine = new WorkflowStateMachine(
             this.config,
             this.toolManager,
@@ -215,12 +217,18 @@ class AICoderConsole {
         const configPath = configLoader.getConfigDir();
         this.logger.info(`📁 Configuration files location: ${configPath}`);
 
+        // Gather environment and git information
+        const envInfo = await this._getEnvironmentInfo();
+        const gitInfo = await this._getGitInfo();
+
         this.consoleInterface.showStartupMessage(
             this.apiClient.getModel(),
             this.toolManager.getToolsCount(),
             this.apiClient.getCurrentRole(),
             this.apiClient.getTotalToolCount(),
-            this.apiClient.getFilteredToolCount()
+            this.apiClient.getFilteredToolCount(),
+            envInfo,
+            gitInfo
         );
 
         this.consoleInterface.prompt();
@@ -259,6 +267,54 @@ class AICoderConsole {
         // Process user message through API client
         await this.apiClient.sendUserMessage(finalPrompt);
         // Note: resumeInput() is called in the API client callbacks
+    }
+
+    /**
+     * Get environment file information
+     * @private
+     * @returns {Promise<string>} Environment information string
+     */
+    async _getEnvironmentInfo() {
+        try {
+            const envFileInfo = this.config.getEnvFileInfo();
+            if (envFileInfo.exists) {
+                return `${envFileInfo.path} (loaded)`;
+            } else {
+                return `${envFileInfo.path} (not found)`;
+            }
+        } catch (error) {
+            this.logger.debug('Error getting environment info:', error);
+            return 'environment info unavailable';
+        }
+    }
+
+    /**
+     * Get git repository information
+     * @private
+     * @returns {Promise<string>} Git information string
+     */
+    async _getGitInfo() {
+        try {
+            const gitAvailability = await this.gitUtils.checkGitAvailability();
+
+            if (!gitAvailability.available) {
+                return 'not available';
+            }
+
+            if (!gitAvailability.isRepo) {
+                return 'not a git repository';
+            }
+
+            const branchResult = await this.gitUtils.getCurrentBranch();
+            if (branchResult.success) {
+                return `branch: ${branchResult.branch}`;
+            } else {
+                return 'repository (branch unknown)';
+            }
+        } catch (error) {
+            this.logger.debug('Error getting git info:', error);
+            return 'git info unavailable';
+        }
     }
 
     /**

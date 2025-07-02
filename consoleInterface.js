@@ -93,7 +93,9 @@ class ConsoleInterface {
         totalToolsCount,
         role = null,
         allToolsCount = null,
-        filteredToolsCount = null
+        filteredToolsCount = null,
+        envInfo = null,
+        gitInfo = null
     ) {
         const title = this.uiConfig.getMessage('startup.title');
         const modelInfo = this.uiConfig.getMessage('startup.model_info', { model });
@@ -112,12 +114,20 @@ class ConsoleInterface {
                   })
                 : this.uiConfig.getMessage('startup.tools_info', { count: totalToolsCount });
 
+        const envInfoLine = envInfo
+            ? `\n${this.uiConfig.getMessage('startup.env_info', { envStatus: envInfo })}`
+            : '';
+
+        const gitInfoLine = gitInfo
+            ? `\n${this.uiConfig.getMessage('startup.git_info', { gitStatus: gitInfo })}`
+            : '';
+
         const instructions = this.uiConfig.getMessage('startup.instructions');
 
         this.logger.user(`
 ${title}
 ${modelInfo}${roleInfo}
-${toolInfo}
+${toolInfo}${envInfoLine}${gitInfoLine}
 
 ${instructions}
         `);
