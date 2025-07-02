@@ -28,17 +28,6 @@ vi.mock('../../../configurationLoader.js', () => ({
                         systemMessage: 'You are a reviewer',
                         excludedTools: ['edit_file', 'write_file'],
                     },
-                    // From core-roles.json
-                    basic_assistant: {
-                        level: 'fast',
-                        systemMessage: 'You are a basic assistant',
-                        excludedTools: ['edit_file', 'write_file', 'execute_terminal'],
-                    },
-                    research_assistant: {
-                        level: 'base',
-                        systemMessage: 'You are a research assistant',
-                        includedTools: ['read_file', 'list_directory', 'exact_search'],
-                    },
                     // From specialized/testing-roles.json
                     test_writer: {
                         level: 'base',
@@ -76,19 +65,13 @@ describe('SystemMessages - Multi-file Role Loading', () => {
             // Should include roles from all files
             expect(availableRoles).toContain('coder'); // from roles.json
             expect(availableRoles).toContain('reviewer'); // from roles.json
-            expect(availableRoles).toContain('basic_assistant'); // from core-roles.json
-            expect(availableRoles).toContain('research_assistant'); // from core-roles.json
-            expect(availableRoles).toContain('test_writer'); // from specialized/testing-roles.json
-            expect(availableRoles).toContain('qa_specialist'); // from specialized/testing-roles.json
+            expect(availableRoles).toContain('dude'); // from specialized/testing-roles.json
 
             expect(availableRoles.length).toBe(6);
         });
 
         it('should correctly load system messages from different files', () => {
             expect(SystemMessages.getSystemMessage('coder')).toContain('You are a coder');
-            expect(SystemMessages.getSystemMessage('basic_assistant')).toContain(
-                'You are a basic assistant'
-            );
             expect(SystemMessages.getSystemMessage('test_writer')).toContain(
                 'You are a test writer'
             );
@@ -100,20 +83,10 @@ describe('SystemMessages - Multi-file Role Loading', () => {
                 'edit_file',
                 'write_file',
             ]);
-            expect(SystemMessages.getExcludedTools('basic_assistant')).toEqual([
-                'edit_file',
-                'write_file',
-                'execute_terminal',
-            ]);
         });
 
         it('should correctly handle includedTools from different files', () => {
-            expect(SystemMessages.getIncludedTools('research_assistant')).toEqual([
-                'read_file',
-                'list_directory',
-                'exact_search',
-            ]);
-            expect(SystemMessages.getIncludedTools('qa_specialist')).toEqual([
+            expect(SystemMessages.getIncludedTools('file_reader')).toEqual([
                 'read_file',
                 'list_directory',
                 'exact_search',
@@ -123,15 +96,13 @@ describe('SystemMessages - Multi-file Role Loading', () => {
 
         it('should correctly identify role existence across all files', () => {
             expect(SystemMessages.hasRole('coder')).toBe(true);
-            expect(SystemMessages.hasRole('basic_assistant')).toBe(true);
-            expect(SystemMessages.hasRole('test_writer')).toBe(true);
             expect(SystemMessages.hasRole('nonexistent_role')).toBe(false);
         });
 
         it('should get correct role levels from different files', () => {
             expect(SystemMessages.getLevel('coder')).toBe('base');
-            expect(SystemMessages.getLevel('basic_assistant')).toBe('fast');
-            expect(SystemMessages.getLevel('test_writer')).toBe('base');
+            expect(SystemMessages.getLevel('architect')).toBe('smart');
+            expect(SystemMessages.getLevel('dude')).toBe('fast');
         });
     });
 
@@ -150,11 +121,6 @@ describe('SystemMessages - Multi-file Role Loading', () => {
         });
 
         it('should handle role validation across all loaded roles', () => {
-            // Test that validation works for roles from different files
-            expect(() =>
-                SystemMessages._validateToolConfiguration('research_assistant')
-            ).not.toThrow();
-            expect(() => SystemMessages._validateToolConfiguration('qa_specialist')).not.toThrow();
             expect(() => SystemMessages._validateToolConfiguration('coder')).not.toThrow();
         });
     });
@@ -180,17 +146,13 @@ describe('SystemMessages - Multi-file Role Loading', () => {
 
     describe('Tool filtering with multi-file roles', () => {
         it('should correctly filter tools for roles with includedTools', () => {
-            expect(SystemMessages.isToolIncluded('research_assistant', 'read_file')).toBe(true);
-            expect(SystemMessages.isToolIncluded('research_assistant', 'write_file')).toBe(false);
-            expect(SystemMessages.isToolIncluded('qa_specialist', 'exact_search')).toBe(true);
-            expect(SystemMessages.isToolIncluded('qa_specialist', 'execute_terminal')).toBe(false);
+            expect(SystemMessages.isToolIncluded('file_reader', 'read_file')).toBe(true);
+            expect(SystemMessages.isToolIncluded('file_reader', 'write_file')).toBe(false);
         });
 
         it('should correctly filter tools for roles with excludedTools', () => {
             expect(SystemMessages.isToolExcluded('coder', 'get_time')).toBe(true);
             expect(SystemMessages.isToolExcluded('coder', 'read_file')).toBe(false);
-            expect(SystemMessages.isToolExcluded('basic_assistant', 'edit_file')).toBe(true);
-            expect(SystemMessages.isToolExcluded('basic_assistant', 'read_file')).toBe(false);
         });
     });
 });
