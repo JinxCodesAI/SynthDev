@@ -40,11 +40,5 @@
             "max": 30000,
             "default": 10000
         }
-    },
-    "features": {
-        "enableSnapshots": true,
-        "enableIndexing": true,
-        "enableCommandHistory": true,
-        "enableContextIntegration": false
     }
 }

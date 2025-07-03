@@ -108,7 +108,6 @@ class ConfigManager {
         const uiDefaults = defaults.ui_settings || {};
         const toolDefaults = defaults.tool_settings || {};
         const safetyDefaults = defaults.safety || {};
-        const featureDefaults = defaults.features || {};
 
         const config = {
             // OpenAI/General AI Provider Configuration
@@ -231,13 +230,13 @@ class ConfigManager {
                 },
             },
 
-            // Feature Settings
-            features: {
-                enableSnapshots: featureDefaults.enableSnapshots !== false, //unused
-                enableIndexing: featureDefaults.enableIndexing !== false, //unused
-                enableCommandHistory: featureDefaults.enableCommandHistory !== false, //unused
-                enableContextIntegration: featureDefaults.enableContextIntegration || false, //unused
-            },
+            // Feature Settings - removed: not used anywhere in the application
+            // features: {
+            //     enableSnapshots: not implemented
+            //     enableIndexing: not implemented
+            //     enableCommandHistory: not implemented
+            //     enableContextIntegration: not implemented
+            // },
         };
         return config;
     }
