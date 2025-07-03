@@ -68,15 +68,13 @@ export class RolesCommand extends BaseCommand {
 
             // Get role group for display
             const roleGroup = SystemMessages.getRoleGroup(role);
-            const groupDisplay = roleGroup !== 'global' ? ` [${roleGroup}]` : '';
+            const displayName = roleGroup !== 'global' ? `${roleGroup}.${role}` : role;
 
             // Get role level and model info
             const level = SystemMessages.getLevel(role);
             const levelIcon = level === 'smart' ? '🧠' : level === 'fast' ? '⚡' : '🔧';
 
-            logger.info(
-                `${roleIcon} ${role.charAt(0).toUpperCase() + role.slice(1)}${roleStatus}${groupDisplay}`
-            );
+            logger.info(`${roleIcon} ${displayName}${roleStatus}`);
             logger.info(`   ${levelIcon} Model Level: ${level}`);
 
             // Get system message preview (first line)
