@@ -75,19 +75,19 @@ describe('Grocery Store Workflow E2E Test', () => {
         originalEnv = {
             MODEL: process.env.MODEL,
             MAX_COMPLETION_TOKENS: process.env.MAX_COMPLETION_TOKENS,
-            API_KEY: process.env.API_KEY,
-            BASE_URL: process.env.BASE_URL,
-            SMART_BASE_URL: process.env.SMART_BASE_URL,
-            FAST_BASE_URL: process.env.FAST_BASE_URL,
+            SYNTHDEV_API_KEY: process.env.SYNTHDEV_API_KEY,
+            SYNTHDEV_BASE_URL: process.env.SYNTHDEV_BASE_URL,
+            SYNTHDEV_SMART_BASE_URL: process.env.SYNTHDEV_SMART_BASE_URL,
+            SYNTHDEV_FAST_BASE_URL: process.env.SYNTHDEV_FAST_BASE_URL,
         };
 
         // Set environment variables to match the logged requests
         process.env.MODEL = 'gpt-4.1-nano';
         process.env.MAX_COMPLETION_TOKENS = '32000';
-        process.env.API_KEY = 'sk-test-key-for-testing-purposes-only';
-        process.env.BASE_URL = 'https://api.openai.com/v1';
-        process.env.SMART_BASE_URL = 'https://api.openai.com/v1';
-        process.env.FAST_BASE_URL = 'https://api.openai.com/v1';
+        process.env.SYNTHDEV_API_KEY = 'sk-test-key-for-testing-purposes-only';
+        process.env.SYNTHDEV_BASE_URL = 'https://api.openai.com/v1';
+        process.env.SYNTHDEV_SMART_BASE_URL = 'https://api.openai.com/v1';
+        process.env.SYNTHDEV_FAST_BASE_URL = 'https://api.openai.com/v1';
 
         // Setup file system mocks to return exact config content
         setupFileMocks();

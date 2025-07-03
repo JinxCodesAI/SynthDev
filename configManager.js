@@ -99,7 +99,7 @@ class ConfigManager {
      */
     _loadConfiguration() {
         // Prioritize CLI API key over environment variable
-        const apiKey = this.cliOptions.apiKey || process.env.API_KEY;
+        const apiKey = this.cliOptions.apiKey || process.env.SYNTHDEV_API_KEY;
 
         // Get defaults from application.json
         const defaults = this.applicationDefaults;
@@ -115,56 +115,60 @@ class ConfigManager {
                 apiKey: apiKey,
                 baseModel:
                     this.cliOptions.baseModel ||
-                    process.env.BASE_MODEL ||
+                    process.env.SYNTHDEV_BASE_MODEL ||
                     modelDefaults.base?.model ||
                     'gpt-4.1-mini',
                 baseUrl:
                     this.cliOptions.baseUrl ||
-                    process.env.BASE_URL ||
+                    process.env.SYNTHDEV_BASE_URL ||
                     modelDefaults.base?.baseUrl ||
                     'https://api.openai.com/v1',
             },
 
             // Smart Model Configuration (Optional)
             smart: {
-                apiKey: this.cliOptions.smartApiKey || process.env.SMART_API_KEY || apiKey,
+                apiKey: this.cliOptions.smartApiKey || process.env.SYNTHDEV_SMART_API_KEY || apiKey,
                 model:
                     this.cliOptions.smartModel ||
-                    process.env.SMART_MODEL ||
+                    process.env.SYNTHDEV_SMART_MODEL ||
                     modelDefaults.smart?.model ||
-                    process.env.BASE_MODEL,
+                    process.env.SYNTHDEV_BASE_MODEL,
                 baseUrl:
                     this.cliOptions.smartUrl ||
-                    process.env.SMART_BASE_URL ||
+                    process.env.SYNTHDEV_SMART_BASE_URL ||
                     modelDefaults.smart?.baseUrl ||
-                    process.env.BASE_URL,
+                    process.env.SYNTHDEV_BASE_URL,
             },
 
             // Fast Model Configuration (Optional)
             fast: {
-                apiKey: this.cliOptions.fastApiKey || process.env.FAST_API_KEY || apiKey,
+                apiKey: this.cliOptions.fastApiKey || process.env.SYNTHDEV_FAST_API_KEY || apiKey,
                 model:
                     this.cliOptions.fastModel ||
-                    process.env.FAST_MODEL ||
+                    process.env.SYNTHDEV_FAST_MODEL ||
                     modelDefaults.fast?.model ||
-                    process.env.BASE_MODEL,
+                    process.env.SYNTHDEV_BASE_MODEL,
                 baseUrl:
                     this.cliOptions.fastUrl ||
-                    process.env.FAST_BASE_URL ||
+                    process.env.SYNTHDEV_FAST_BASE_URL ||
                     modelDefaults.fast?.baseUrl ||
-                    process.env.BASE_URL,
+                    process.env.SYNTHDEV_BASE_URL,
             },
 
             // Global Settings (prioritize env vars, then application.json, then hardcoded defaults)
             global: {
                 maxToolCalls:
-                    parseInt(process.env.MAX_TOOL_CALLS) || globalDefaults.maxToolCalls || 50,
+                    parseInt(process.env.SYNTHDEV_MAX_TOOL_CALLS) ||
+                    globalDefaults.maxToolCalls ||
+                    50,
                 enablePromptEnhancement:
-                    process.env.ENABLE_PROMPT_ENHANCEMENT === 'true' ||
+                    process.env.SYNTHDEV_ENABLE_PROMPT_ENHANCEMENT === 'true' ||
                     globalDefaults.enablePromptEnhancement ||
                     false,
                 verbosityLevel:
-                    parseInt(process.env.VERBOSITY_LEVEL) || globalDefaults.verbosityLevel || 2,
+                    parseInt(process.env.SYNTHDEV_VERBOSITY_LEVEL) ||
+                    globalDefaults.verbosityLevel ||
+                    2,
             },
 
             // UI Settings
@@ -255,7 +259,7 @@ class ConfigManager {
                 const apiKey = await this._promptForApiKey();
                 this._updateApiKey(apiKey);
             } catch (_error) {
-                errors.push('API_KEY is required');
+                errors.push('SYNTHDEV_API_KEY is required');
             }
         }
 

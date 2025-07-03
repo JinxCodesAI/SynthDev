@@ -23,9 +23,9 @@ describe('ConfigManager', () => {
 
         // Mock environment variables
         restoreEnv = mockEnvVars({
-            API_KEY: 'sk-test1234567890',
-            BASE_MODEL: 'gpt-4-mini',
-            BASE_URL: 'https://api.openai.com/v1',
+            SYNTHDEV_API_KEY: 'sk-test1234567890',
+            SYNTHDEV_BASE_MODEL: 'gpt-4-mini',
+            SYNTHDEV_BASE_URL: 'https://api.openai.com/v1',
         });
     });
 
@@ -83,9 +83,9 @@ describe('ConfigManager', () => {
             // Clear environment variables
             restoreEnv();
             restoreEnv = mockEnvVars({
-                API_KEY: '',
-                BASE_MODEL: '',
-                BASE_URL: '',
+                SYNTHDEV_API_KEY: '',
+                SYNTHDEV_BASE_MODEL: '',
+                SYNTHDEV_BASE_URL: '',
             });
 
             const instance = ConfigManager.getInstance();

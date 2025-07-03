@@ -27,7 +27,7 @@ For more serious documentation, see [docs/README.md](docs/README.md) (AI generat
 npm install
 ```
 
-Setup your .env file, see [config.example.env](config.example.env) for details.
+Setup your .env file, see [config.example.env](config.example.env) for details. All environment variables now use the `SYNTHDEV_` prefix.
 
 ```bash
 npm start
