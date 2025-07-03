@@ -198,7 +198,10 @@ class AICoderConsole {
 
         // Set default role and system message from configuration
         const defaultRole = this.config.getConfig().ui.defaultRole;
-        await this.apiClient.setSystemMessage(SystemMessages.getSystemMessage(defaultRole), defaultRole);
+        await this.apiClient.setSystemMessage(
+            SystemMessages.getSystemMessage(defaultRole),
+            defaultRole
+        );
 
         // Load workflow configurations
         await this.workflowStateMachine.loadWorkflowConfigs();
