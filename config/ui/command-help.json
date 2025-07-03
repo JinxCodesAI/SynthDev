@@ -12,6 +12,7 @@
             "snapshots": "Manage code checkpoints, revert AI changes",
             "index": "Index codebase with AI-powered summaries",
             "cmd": "Execute terminal commands or generate with AI",
+            "configure": "Interactive configuration wizard for setup",
             "exit": "Exit the application"
         }
     },
@@ -38,6 +39,30 @@
             "/cmd ls -la",
             "/cmd ??? add all files to git",
             "/cmd ??? run tests for the user module"
+        ]
+    },
+    "configure": {
+        "title": "🔧 Configuration Wizard",
+        "usage": [
+            "/configure              - Start configuration wizard",
+            "/configure force        - Force reconfiguration (skip confirmation)",
+            "/configure help         - Show detailed help"
+        ],
+        "description": [
+            "Interactive wizard to set up Synth-Dev configuration.",
+            "Guides you through provider selection, model choice, and API key setup."
+        ],
+        "features": [
+            "- Choose from multiple AI providers (OpenAI, Google, Anthropic, OpenRouter)",
+            "- Select appropriate models for your needs",
+            "- Secure API key entry with validation",
+            "- Configure optional settings (verbosity, tool limits)",
+            "- Creates or updates .env file automatically"
+        ],
+        "auto_start": [
+            "- Automatically starts if .env file is missing",
+            "- Triggers when required configuration is incomplete",
+            "- Can be manually run anytime to update settings"
         ]
     },
     "cli_help": {

@@ -425,6 +425,82 @@ class ConfigManager {
             absolutePath: this.envFilePath,
         };
     }
+
+    /**
+     * Check if configuration is complete enough to run the application
+     * @returns {Object} Configuration completeness status
+     */
+    isConfigurationComplete() {
+        const requiredFields = {
+            SYNTHDEV_API_KEY: this.config.base.apiKey,
+            SYNTHDEV_BASE_URL: this.config.base.baseUrl,
+            SYNTHDEV_BASE_MODEL: this.config.base.baseModel,
+        };
+
+        // Optional but recommended fields for complete setup
+        const optionalFields = {
+            SYNTHDEV_SMART_MODEL: this.config.smart.model,
+            SYNTHDEV_FAST_MODEL: this.config.fast.model,
+            SYNTHDEV_VERBOSITY_LEVEL: this.config.global.verbosityLevel,
+            SYNTHDEV_MAX_TOOL_CALLS: this.config.global.maxToolCalls,
+        };
+
+        const missing = [];
+        const incomplete = [];
+        const optionalIncomplete = [];
+
+        // Check required fields
+        for (const [field, value] of Object.entries(requiredFields)) {
+            if (!value) {
+                missing.push(field);
+            } else if (this._isDefaultValue(field, value)) {
+                incomplete.push(field);
+            }
+        }
+
+        // Check optional fields for completeness assessment
+        for (const [field, value] of Object.entries(optionalFields)) {
+            if (!value || this._isDefaultValue(field, value)) {
+                optionalIncomplete.push(field);
+            }
+        }
+
+        const isMinimallyComplete = missing.length === 0;
+        const isComplete =
+            missing.length === 0 && incomplete.length === 0 && optionalIncomplete.length === 0;
+
+        return {
+            isComplete,
+            isMinimallyComplete,
+            missing,
+            incomplete,
+            optionalIncomplete,
+            envFileExists: this.envFileExists,
+        };
+    }
+
+    /**
+     * Check if a value is a default/placeholder value
+     * @private
+     * @param {string} field - Field name
+     * @param {string} value - Field value
+     * @returns {boolean} Whether the value is a default/placeholder
+     */
+    _isDefaultValue(field, value) {
+        const defaultValues = {
+            SYNTHDEV_API_KEY: ['your_base_model_api_key', 'your_api_key_here'],
+            SYNTHDEV_BASE_URL: ['https://api.example.com/v1'],
+            SYNTHDEV_BASE_MODEL: ['default-model'],
+            SYNTHDEV_SMART_API_KEY: ['your_smart_model_api_key'],
+            SYNTHDEV_SMART_MODEL: ['smart-model'],
+            SYNTHDEV_SMART_BASE_URL: ['https://api.example.com/v1'],
+            SYNTHDEV_FAST_API_KEY: ['your_fast_model_api_key'],
+            SYNTHDEV_FAST_MODEL: ['fast-model'],
+            SYNTHDEV_FAST_BASE_URL: ['https://api.example.com/v1'],
+        };
+
+        return defaultValues[field]?.includes(value) || false;
+    }
 }
 
 export default ConfigManager;

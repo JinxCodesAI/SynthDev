@@ -442,8 +442,30 @@ async function main() {
         // Initialize configuration with CLI options
         const config = ConfigManager.getInstance(cliOptions);
 
-        // Initialize and validate configuration (may prompt for API key)
-        await config.initialize();
+        // Check if configuration is complete before initializing
+        const configStatus = config.isConfigurationComplete();
+
+        if (!configStatus.isMinimallyComplete) {
+            // Configuration is incomplete, start wizard
+            console.log('\n⚠️  Configuration is incomplete or missing.');
+            console.log('Starting configuration wizard...\n');
+
+            const { ConfigurationWizard } = await import('./utils/ConfigurationWizard.js');
+            const wizard = new ConfigurationWizard();
+            const success = await wizard.startWizard(true);
+
+            if (!success) {
+                console.log('❌ Configuration setup cancelled or failed.');
+                console.log('Synth-Dev requires valid configuration to run.\n');
+                process.exit(1);
+            }
+
+            // Reload configuration after wizard completion
+            await config.reloadConfiguration();
+        } else {
+            // Initialize and validate configuration (may prompt for API key)
+            await config.initialize();
+        }
 
         // Start the application
         const app = new AICoderConsole(config);
