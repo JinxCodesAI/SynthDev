@@ -207,17 +207,17 @@ class ConfigManager {
             tool: {
                 autoRun: toolDefaults.autoRun !== false,
                 requiresBackup: toolDefaults.requiresBackup || false,
-                defaultEncoding: toolDefaults.defaultEncoding || 'utf8',
-                maxFileSize: toolDefaults.maxFileSize || 10485760,
-                defaultTimeout: toolDefaults.defaultTimeout || 10000,
+                defaultEncoding: toolDefaults.defaultEncoding || 'utf8', //unused
+                maxFileSize: toolDefaults.maxFileSize || 10485760, //unused
+                defaultTimeout: toolDefaults.defaultTimeout || 10000, //unused
             },
 
             // Logging Settings
             logging: {
-                defaultLevel: loggingDefaults.defaultLevel || 2,
-                enableHttpLogging: loggingDefaults.enableHttpLogging || false,
-                enableToolLogging: loggingDefaults.enableToolLogging !== false,
-                enableErrorLogging: loggingDefaults.enableErrorLogging !== false,
+                defaultLevel: loggingDefaults.defaultLevel || 2, //unused
+                enableHttpLogging: loggingDefaults.enableHttpLogging || false, //unused
+                enableToolLogging: loggingDefaults.enableToolLogging !== false, //unused
+                enableErrorLogging: loggingDefaults.enableErrorLogging !== false, //unused
             },
 
             // Safety Settings
@@ -234,10 +234,10 @@ class ConfigManager {
 
             // Feature Settings
             features: {
-                enableSnapshots: featureDefaults.enableSnapshots !== false,
-                enableIndexing: featureDefaults.enableIndexing !== false,
-                enableCommandHistory: featureDefaults.enableCommandHistory !== false,
-                enableContextIntegration: featureDefaults.enableContextIntegration || false,
+                enableSnapshots: featureDefaults.enableSnapshots !== false, //unused
+                enableIndexing: featureDefaults.enableIndexing !== false, //unused
+                enableCommandHistory: featureDefaults.enableCommandHistory !== false, //unused
+                enableContextIntegration: featureDefaults.enableContextIntegration || false, //unused
             },
         };
         return config;
