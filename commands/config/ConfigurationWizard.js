@@ -19,10 +19,11 @@ export class ConfigurationWizard {
         this.envFilePath = join(rootDir, '.env');
         this.providersPath = join(rootDir, 'config/defaults/providers.json');
         this.exampleEnvPath = join(rootDir, 'config.example.env');
+        this.openRouterExamplePath = join(rootDir, 'config.example.openrouter.env');
 
         this.providers = this._loadProviders();
         this.currentConfig = this._loadCurrentConfig();
-        this.envVariables = this._parseExampleEnv();
+        this.envVariables = this._parseExampleEnvFiles();
     }
 
     /**
@@ -71,38 +72,54 @@ export class ConfigurationWizard {
     }
 
     /**
-     * Parse example .env file to get all available variables with descriptions
+     * Parse example .env files to get all available variables with descriptions
      * @private
      * @returns {Object} Environment variables with descriptions
      */
-    _parseExampleEnv() {
+    _parseExampleEnvFiles() {
         const variables = {};
 
-        try {
-            const exampleContent = readFileSync(this.exampleEnvPath, 'utf8');
-            const lines = exampleContent.split('\n');
-            let currentComment = '';
+        // Parse both example files
+        const filesToParse = [this.exampleEnvPath, this.openRouterExamplePath];
 
-            for (const line of lines) {
-                const trimmed = line.trim();
-
-                if (trimmed.startsWith('#')) {
-                    currentComment += `${trimmed.substring(1).trim()} `;
-                } else if (trimmed && trimmed.includes('=')) {
-                    const [key, ...valueParts] = trimmed.split('=');
-                    if (key) {
-                        variables[key.trim()] = {
-                            defaultValue: valueParts.join('=').trim(),
-                            description: currentComment.trim(),
-                        };
-                    }
-                    currentComment = '';
-                } else if (!trimmed) {
-                    currentComment = '';
+        for (const filePath of filesToParse) {
+            try {
+                if (!existsSync(filePath)) {
+                    continue;
                 }
+
+                const exampleContent = readFileSync(filePath, 'utf8');
+                const lines = exampleContent.split('\n');
+                let currentComment = '';
+
+                for (const line of lines) {
+                    const trimmed = line.trim();
+
+                    if (trimmed.startsWith('#')) {
+                        // Skip commented out variable lines like #SYNTHDEV_SMART_API_KEY=
+                        if (!trimmed.includes('=') || trimmed.indexOf('#') < trimmed.indexOf('=')) {
+                            currentComment += `${trimmed.substring(1).trim()} `;
+                        }
+                    } else if (trimmed && trimmed.includes('=')) {
+                        const [key, ...valueParts] = trimmed.split('=');
+                        if (key) {
+                            const keyName = key.trim();
+                            if (!variables[keyName]) {
+                                // Don't overwrite if already exists
+                                variables[keyName] = {
+                                    defaultValue: valueParts.join('=').trim(),
+                                    description: currentComment.trim(),
+                                };
+                            }
+                        }
+                        currentComment = '';
+                    } else if (!trimmed) {
+                        currentComment = '';
+                    }
+                }
+            } catch (error) {
+                this.logger.error(`Failed to parse example .env file ${filePath}:`, error);
             }
-        } catch (error) {
-            this.logger.error('Failed to parse example .env file:', error);
         }
 
         return variables;

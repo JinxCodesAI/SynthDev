@@ -45,9 +45,21 @@ SYNTHDEV_BASE_URL=https://api.example.com/v1
 # Verbosity Level (0-5)
 SYNTHDEV_VERBOSITY_LEVEL=2`;
 
+        // Mock config.example.openrouter.env
+        const mockOpenRouterEnv = `SYNTHDEV_API_KEY=sk-or-v1-replace_me
+SYNTHDEV_BASE_MODEL=google/gemini-2.5-flash-preview-05-20
+SYNTHDEV_SMART_MODEL=google/gemini-2.5-flash-preview-05-20
+SYNTHDEV_FAST_MODEL=google/gemini-2.5-flash-preview-05-20
+SYNTHDEV_BASE_URL=https://openrouter.ai/api/v1
+SYNTHDEV_MAX_TOOL_CALLS=50
+SYNTHDEV_ENABLE_PROMPT_ENHANCEMENT=false
+SYNTHDEV_VERBOSITY_LEVEL=2`;
+
         readFileSync.mockImplementation(path => {
             if (path.includes('providers.json')) {
                 return JSON.stringify(mockProviders);
+            } else if (path.includes('config.example.openrouter.env')) {
+                return mockOpenRouterEnv;
             } else if (path.includes('config.example.env')) {
                 return mockExampleEnv;
             } else if (path.includes('.env')) {
@@ -56,7 +68,14 @@ SYNTHDEV_VERBOSITY_LEVEL=2`;
             return '';
         });
 
-        existsSync.mockReturnValue(false); // No .env file by default
+        existsSync.mockImplementation(path => {
+            // Return true for example files so they get parsed
+            if (path.includes('config.example')) {
+                return true;
+            }
+            // Return false for .env file by default
+            return false;
+        });
 
         wizard = new ConfigurationWizard();
     });

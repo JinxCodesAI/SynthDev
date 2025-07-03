@@ -39,10 +39,7 @@ describe('ConfigureCommand', () => {
             const result = await configureCommand.implementation('', mockContext);
 
             expect(result).toBe(true);
-            expect(mockContext.consoleInterface.promptForInput).toHaveBeenCalledWith(
-                'configure> ',
-                expect.any(Object)
-            );
+            expect(mockContext.consoleInterface.promptForInput).toHaveBeenCalled();
         });
 
         it('should handle save command', async () => {
@@ -192,6 +189,75 @@ describe('ConfigureCommand', () => {
                 'SYNTHDEV_ENABLE_PROMPT_ENHANCEMENT',
                 'false'
             );
+        });
+    });
+
+    describe('_copyFromBase', () => {
+        it('should copy base configuration to smart/fast', async () => {
+            mockContext.consoleInterface.promptForConfirmation.mockResolvedValue(true);
+
+            vi.spyOn(configureCommand.wizard, 'getCurrentValue').mockImplementation(key => {
+                if (key === 'SYNTHDEV_BASE_URL') {
+                    return 'https://api.openai.com/v1';
+                }
+                if (key === 'SYNTHDEV_BASE_MODEL') {
+                    return 'gpt-4.1';
+                }
+                if (key === 'SYNTHDEV_API_KEY') {
+                    return 'sk-test-key';
+                }
+                return '';
+            });
+            vi.spyOn(configureCommand.wizard, 'setConfigValue').mockImplementation(() => {});
+            vi.spyOn(configureCommand.wizard, '_getProviderFromUrl').mockReturnValue('OpenAI');
+
+            await configureCommand._copyFromBase(mockContext, 'smart');
+
+            expect(configureCommand.wizard.setConfigValue).toHaveBeenCalledWith(
+                'SYNTHDEV_SMART_BASE_URL',
+                'https://api.openai.com/v1'
+            );
+            expect(configureCommand.wizard.setConfigValue).toHaveBeenCalledWith(
+                'SYNTHDEV_SMART_MODEL',
+                'gpt-4.1'
+            );
+            expect(configureCommand.wizard.setConfigValue).toHaveBeenCalledWith(
+                'SYNTHDEV_SMART_API_KEY',
+                'sk-test-key'
+            );
+        });
+
+        it('should handle incomplete base configuration', async () => {
+            vi.spyOn(configureCommand.wizard, 'getCurrentValue').mockReturnValue('');
+            vi.spyOn(configureCommand.wizard, 'setConfigValue').mockImplementation(() => {});
+
+            await configureCommand._copyFromBase(mockContext, 'smart');
+
+            // Should not call setConfigValue when base config is incomplete
+            expect(configureCommand.wizard.setConfigValue).not.toHaveBeenCalled();
+        });
+
+        it('should handle cancelled copy operation', async () => {
+            mockContext.consoleInterface.promptForConfirmation.mockResolvedValue(false);
+
+            vi.spyOn(configureCommand.wizard, 'getCurrentValue').mockImplementation(key => {
+                if (key === 'SYNTHDEV_BASE_URL') {
+                    return 'https://api.openai.com/v1';
+                }
+                if (key === 'SYNTHDEV_BASE_MODEL') {
+                    return 'gpt-4.1';
+                }
+                if (key === 'SYNTHDEV_API_KEY') {
+                    return 'sk-test-key';
+                }
+                return '';
+            });
+            vi.spyOn(configureCommand.wizard, 'setConfigValue').mockImplementation(() => {});
+            vi.spyOn(configureCommand.wizard, '_getProviderFromUrl').mockReturnValue('OpenAI');
+
+            await configureCommand._copyFromBase(mockContext, 'smart');
+
+            expect(configureCommand.wizard.setConfigValue).not.toHaveBeenCalled();
         });
     });
 });

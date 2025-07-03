@@ -147,6 +147,9 @@ export class ConfigureCommand extends InteractiveCommand {
             logger.raw('  1 - Change provider');
             logger.raw('  2 - Change model');
             logger.raw('  3 - Change API key');
+            if (type !== 'base') {
+                logger.raw('  4 - Copy from base configuration');
+            }
             logger.raw('  b - Back to main menu');
 
             const input = await this.promptForInput(`${type}> `, context);
@@ -160,6 +163,8 @@ export class ConfigureCommand extends InteractiveCommand {
                 await this._selectModel(context, type);
             } else if (trimmed === '3') {
                 await this._setApiKey(context, type);
+            } else if (trimmed === '4' && type !== 'base') {
+                await this._copyFromBase(context, type);
             } else {
                 logger.raw('❌ Invalid option. Please try again.');
             }
@@ -277,6 +282,45 @@ export class ConfigureCommand extends InteractiveCommand {
             logger.raw('✅ API key set successfully.');
         } else {
             logger.raw('❌ API key cannot be empty.');
+        }
+    }
+
+    /**
+     * Copy configuration from base to smart/fast
+     * @private
+     * @param {Object} context - Execution context
+     * @param {string} type - Provider type (smart or fast)
+     */
+    async _copyFromBase(context, type) {
+        const logger = getLogger();
+        const typeUpper = type.toUpperCase();
+
+        const baseUrl = this.wizard.getCurrentValue('SYNTHDEV_BASE_URL');
+        const baseModel = this.wizard.getCurrentValue('SYNTHDEV_BASE_MODEL');
+        const baseApiKey = this.wizard.getCurrentValue('SYNTHDEV_API_KEY');
+
+        if (!baseUrl || !baseModel || !baseApiKey) {
+            logger.raw(
+                '❌ Base configuration is incomplete. Please configure base provider first.'
+            );
+            return;
+        }
+
+        const confirmed = await this.promptForConfirmation(
+            `Copy base configuration to ${type}?\n` +
+                `  Provider: ${this.wizard._getProviderFromUrl(baseUrl)}\n` +
+                `  Model: ${baseModel}\n` +
+                '  API Key: ***set***',
+            context
+        );
+
+        if (confirmed) {
+            this.wizard.setConfigValue(`SYNTHDEV_${typeUpper}_BASE_URL`, baseUrl);
+            this.wizard.setConfigValue(`SYNTHDEV_${typeUpper}_MODEL`, baseModel);
+            this.wizard.setConfigValue(`SYNTHDEV_${typeUpper}_API_KEY`, baseApiKey);
+            logger.raw(`✅ Base configuration copied to ${type}.`);
+        } else {
+            logger.raw('❌ Copy cancelled.');
         }
     }
 
