@@ -148,34 +148,34 @@ synth-dev
 
 ```env
 # Base Model Configuration (Required)
-API_KEY=your_api_key_here
-BASE_MODEL=gpt-4.1-mini
-BASE_URL=https://api.openai.com/v1
+SYNTHDEV_API_KEY=your_api_key_here
+SYNTHDEV_BASE_MODEL=gpt-4.1-mini
+SYNTHDEV_BASE_URL=https://api.openai.com/v1
 ```
 
 ### Optional Model Configurations
 
 ```env
 # Smart Model (for Architect role)
-SMART_API_KEY=your_smart_api_key
-SMART_MODEL=gpt-4.1-mini
-SMART_BASE_URL=https://api.openai.com/v1
+SYNTHDEV_SMART_API_KEY=your_smart_api_key
+SYNTHDEV_SMART_MODEL=gpt-4.1-mini
+SYNTHDEV_SMART_BASE_URL=https://api.openai.com/v1
 
 # Fast Model (for quick tasks)
-FAST_API_KEY=your_fast_api_key
-FAST_MODEL=gpt-4.1-nano
-FAST_BASE_URL=https://api.openai.com/v1
+SYNTHDEV_FAST_API_KEY=your_fast_api_key
+SYNTHDEV_FAST_MODEL=gpt-4.1-nano
+SYNTHDEV_FAST_BASE_URL=https://api.openai.com/v1
 ```
 
 ### Application Settings
 
 ```env
 # Tool and Safety Settings
-MAX_TOOL_CALLS=50
-ENABLE_PROMPT_ENHANCEMENT=false
+SYNTHDEV_MAX_TOOL_CALLS=50
+SYNTHDEV_ENABLE_PROMPT_ENHANCEMENT=false
 
 # Output Control
-VERBOSITY_LEVEL=2
+SYNTHDEV_VERBOSITY_LEVEL=2
 
 # Development Settings
 NODE_ENV=development
@@ -187,25 +187,25 @@ DEBUG=false
 #### OpenAI
 
 ```env
-API_KEY=sk-your-openai-key
-BASE_MODEL=gpt-4.1-mini
-BASE_URL=https://api.openai.com/v1
+SYNTHDEV_API_KEY=sk-your-openai-key
+SYNTHDEV_BASE_MODEL=gpt-4.1-mini
+SYNTHDEV_BASE_URL=https://api.openai.com/v1
 ```
 
 #### Google AI
 
 ```env
-API_KEY=your-google-ai-key
-BASE_MODEL=gemini-1.5-flash
-BASE_URL=https://generativelanguage.googleapis.com/v1beta
+SYNTHDEV_API_KEY=your-google-ai-key
+SYNTHDEV_BASE_MODEL=gemini-1.5-flash
+SYNTHDEV_BASE_URL=https://generativelanguage.googleapis.com/v1beta
 ```
 
 #### Local/Custom Provider
 
 ```env
-API_KEY=your-local-key
-BASE_MODEL=your-model-name
-BASE_URL=http://localhost:8080/v1
+SYNTHDEV_API_KEY=your-local-key
+SYNTHDEV_BASE_MODEL=your-model-name
+SYNTHDEV_BASE_URL=http://localhost:8080/v1
 ```
 
 ## Verification
@@ -258,10 +258,10 @@ Error: SynthDev requires Node.js 20.10.0 or higher
 #### Missing API Key
 
 ```
-Configuration error: API_KEY is required
+Configuration error: SYNTHDEV_API_KEY is required
 ```
 
-**Solution**: Add API_KEY to your `.env` file
+**Solution**: Add SYNTHDEV_API_KEY to your `.env` file
 
 #### Docker Permission Issues
 
