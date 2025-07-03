@@ -16,18 +16,16 @@ describe('Role Groups Integration Test', () => {
             // Should have roles from different groups
             expect(availableRoles).toContain('coder'); // from core.json (global)
             expect(availableRoles).toContain('dude'); // from testing-roles.testing.json (testing)
-            expect(availableRoles).toContain('integration_tester'); // from test-integration.integration.json (integration)
+            expect(availableRoles).toContain('customer'); // from grocery-workflow.testing.json (testing)
 
             // Should have the expected groups
             expect(availableGroups).toContain('global');
             expect(availableGroups).toContain('testing');
-            expect(availableGroups).toContain('integration');
         });
 
         it('should correctly assign roles to groups based on filename', () => {
             const globalRoles = SystemMessages.getRolesByGroup('global');
             const testingRoles = SystemMessages.getRolesByGroup('testing');
-            const integrationRoles = SystemMessages.getRolesByGroup('integration');
 
             // Global roles (from core.json and other files without group suffix)
             expect(globalRoles).toContain('coder');
@@ -35,9 +33,8 @@ describe('Role Groups Integration Test', () => {
 
             // Testing roles (from *.testing.json files)
             expect(testingRoles).toContain('dude');
-
-            // Integration roles (from *.integration.json files)
-            expect(integrationRoles).toContain('integration_tester');
+            expect(testingRoles).toContain('customer');
+            expect(testingRoles).toContain('grocery_worker');
         });
 
         it('should resolve roles correctly with group prefixes', () => {
@@ -53,11 +50,11 @@ describe('Role Groups Integration Test', () => {
             expect(dudeResult.roleName).toBe('dude');
             expect(dudeResult.group).toBe('testing');
 
-            // Test resolving integration role
-            const integrationResult = SystemMessages.resolveRole('integration.integration_tester');
-            expect(integrationResult.found).toBe(true);
-            expect(integrationResult.roleName).toBe('integration_tester');
-            expect(integrationResult.group).toBe('integration');
+            // Test resolving another testing role
+            const customerResult = SystemMessages.resolveRole('testing.customer');
+            expect(customerResult.found).toBe(true);
+            expect(customerResult.roleName).toBe('customer');
+            expect(customerResult.group).toBe('testing');
         });
 
         it('should handle role that exists in non-global group when no prefix specified', () => {
@@ -71,24 +68,22 @@ describe('Role Groups Integration Test', () => {
         it('should return correct group metadata for roles', () => {
             expect(SystemMessages.getRoleGroup('coder')).toBe('global');
             expect(SystemMessages.getRoleGroup('dude')).toBe('testing');
-            expect(SystemMessages.getRoleGroup('integration_tester')).toBe('integration');
+            expect(SystemMessages.getRoleGroup('customer')).toBe('testing');
         });
 
         it('should maintain backward compatibility for all role access methods', () => {
             // All existing methods should work regardless of which group the role is in
             expect(SystemMessages.hasRole('coder')).toBe(true);
             expect(SystemMessages.hasRole('dude')).toBe(true);
-            expect(SystemMessages.hasRole('integration_tester')).toBe(true);
+            expect(SystemMessages.hasRole('customer')).toBe(true);
 
             expect(SystemMessages.getLevel('coder')).toBe('base');
             expect(SystemMessages.getLevel('dude')).toBe('fast');
-            expect(SystemMessages.getLevel('integration_tester')).toBe('fast');
+            expect(SystemMessages.getLevel('customer')).toBe('fast');
 
             expect(SystemMessages.getSystemMessage('coder')).toContain('expert software developer');
             expect(SystemMessages.getSystemMessage('dude')).toContain('helpful assistant');
-            expect(SystemMessages.getSystemMessage('integration_tester')).toContain(
-                'integration tester'
-            );
+            expect(SystemMessages.getSystemMessage('customer')).toContain('customer at FreshMart');
         });
     });
 });
