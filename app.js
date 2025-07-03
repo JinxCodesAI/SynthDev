@@ -203,8 +203,9 @@ class AICoderConsole {
             defaultRole
         );
 
-        // Load workflow configurations
-        await this.workflowStateMachine.loadWorkflowConfigs();
+        if (this.commandHandler.commandRegistry.getCommand('workflow')) {
+            await this.workflowStateMachine.loadWorkflowConfigs();
+        }
 
         await this.snapshotManager.initialize();
 

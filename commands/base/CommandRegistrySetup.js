@@ -57,8 +57,8 @@ export function createCommandRegistry() {
         registry.register(new CmdCommand());
 
         // Workflow commands
-        registry.register(new WorkflowsCommand());
-        registry.register(new WorkflowCommand());
+        // registry.register(new WorkflowsCommand());
+        // registry.register(new WorkflowCommand());
 
         logger.debug(`✅ Registered ${registry.getAllCommands().length} commands successfully`);
     } catch (error) {
