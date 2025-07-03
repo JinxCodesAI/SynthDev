@@ -156,11 +156,11 @@ describe('RolesCommand', () => {
             expect(mockLogger.user).toHaveBeenCalledWith('─'.repeat(50));
 
             // Should display current role with crown icon
-            expect(mockLogger.info).toHaveBeenCalledWith('👑 Coder (current)');
+            expect(mockLogger.info).toHaveBeenCalledWith('👑 coder (current)');
 
             // Should display other roles with regular icon
-            expect(mockLogger.info).toHaveBeenCalledWith('🎭 Reviewer');
-            expect(mockLogger.info).toHaveBeenCalledWith('🎭 Architect');
+            expect(mockLogger.info).toHaveBeenCalledWith('🎭 reviewer');
+            expect(mockLogger.info).toHaveBeenCalledWith('🎭 architect');
 
             // Should display usage tips
             expect(mockLogger.info).toHaveBeenCalledWith(
@@ -335,7 +335,7 @@ describe('RolesCommand', () => {
             expect(mockLogger.user).toHaveBeenCalledWith('🎭 Available Roles (testing):');
 
             // Should display roles from testing group
-            expect(mockLogger.info).toHaveBeenCalledWith('🎭 Dude [testing]');
+            expect(mockLogger.info).toHaveBeenCalledWith('🎭 testing.dude');
         });
 
         it('should display all roles when "all" is specified', async () => {
