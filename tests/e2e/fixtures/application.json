@@ -31,12 +31,6 @@
         "maxFileSize": 10485760,
         "defaultTimeout": 10000
     },
-    "logging": {
-        "defaultLevel": 2,
-        "enableHttpLogging": false,
-        "enableToolLogging": true,
-        "enableErrorLogging": true
-    },
     "safety": {
         "enableAISafetyCheck": true,
         "fallbackToPatternMatching": true,
@@ -46,11 +40,5 @@
             "max": 30000,
             "default": 10000
         }
-    },
-    "features": {
-        "enableSnapshots": true,
-        "enableIndexing": true,
-        "enableCommandHistory": true,
-        "enableContextIntegration": false
     }
 }

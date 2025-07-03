@@ -196,8 +196,12 @@ class AICoderConsole {
         // Set tools in API client
         this.apiClient.setTools(this.toolManager.getTools());
 
-        // Set default role and system message
-        await this.apiClient.setSystemMessage(SystemMessages.getSystemMessage('coder'), 'coder');
+        // Set default role and system message from configuration
+        const defaultRole = this.config.getConfig().ui.defaultRole;
+        await this.apiClient.setSystemMessage(
+            SystemMessages.getSystemMessage(defaultRole),
+            defaultRole
+        );
 
         // Load workflow configurations
         await this.workflowStateMachine.loadWorkflowConfigs();
