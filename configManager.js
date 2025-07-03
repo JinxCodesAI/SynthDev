@@ -107,9 +107,7 @@ class ConfigManager {
         const globalDefaults = defaults.global_settings || {};
         const uiDefaults = defaults.ui_settings || {};
         const toolDefaults = defaults.tool_settings || {};
-        const loggingDefaults = defaults.logging || {};
         const safetyDefaults = defaults.safety || {};
-        const featureDefaults = defaults.features || {};
 
         const config = {
             // OpenAI/General AI Provider Configuration
@@ -207,18 +205,18 @@ class ConfigManager {
             tool: {
                 autoRun: toolDefaults.autoRun !== false,
                 requiresBackup: toolDefaults.requiresBackup || false,
-                defaultEncoding: toolDefaults.defaultEncoding || 'utf8',
-                maxFileSize: toolDefaults.maxFileSize || 10485760,
-                defaultTimeout: toolDefaults.defaultTimeout || 10000,
+                defaultEncoding: toolDefaults.defaultEncoding || 'utf8', //unused
+                maxFileSize: toolDefaults.maxFileSize || 10485760, //unused
+                defaultTimeout: toolDefaults.defaultTimeout || 10000, //unused
             },
 
-            // Logging Settings
-            logging: {
-                defaultLevel: loggingDefaults.defaultLevel || 2,
-                enableHttpLogging: loggingDefaults.enableHttpLogging || false,
-                enableToolLogging: loggingDefaults.enableToolLogging !== false,
-                enableErrorLogging: loggingDefaults.enableErrorLogging !== false,
-            },
+            // Logging Settings - removed: redundant with global.verbosityLevel
+            // logging: {
+            //     defaultLevel: redundant with global.verbosityLevel
+            //     enableHttpLogging: covered by verbosity level 5
+            //     enableToolLogging: covered by verbosity levels 2-4
+            //     enableErrorLogging: errors always shown regardless of verbosity
+            // },
 
             // Safety Settings
             safety: {
@@ -232,13 +230,13 @@ class ConfigManager {
                 },
             },
 
-            // Feature Settings
-            features: {
-                enableSnapshots: featureDefaults.enableSnapshots !== false,
-                enableIndexing: featureDefaults.enableIndexing !== false,
-                enableCommandHistory: featureDefaults.enableCommandHistory !== false,
-                enableContextIntegration: featureDefaults.enableContextIntegration || false,
-            },
+            // Feature Settings - removed: not used anywhere in the application
+            // features: {
+            //     enableSnapshots: not implemented
+            //     enableIndexing: not implemented
+            //     enableCommandHistory: not implemented
+            //     enableContextIntegration: not implemented
+            // },
         };
         return config;
     }
