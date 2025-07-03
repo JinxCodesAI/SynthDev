@@ -107,7 +107,6 @@ class ConfigManager {
         const globalDefaults = defaults.global_settings || {};
         const uiDefaults = defaults.ui_settings || {};
         const toolDefaults = defaults.tool_settings || {};
-        const loggingDefaults = defaults.logging || {};
         const safetyDefaults = defaults.safety || {};
         const featureDefaults = defaults.features || {};
 
@@ -212,13 +211,13 @@ class ConfigManager {
                 defaultTimeout: toolDefaults.defaultTimeout || 10000, //unused
             },
 
-            // Logging Settings
-            logging: {
-                defaultLevel: loggingDefaults.defaultLevel || 2, //unused
-                enableHttpLogging: loggingDefaults.enableHttpLogging || false, //unused
-                enableToolLogging: loggingDefaults.enableToolLogging !== false, //unused
-                enableErrorLogging: loggingDefaults.enableErrorLogging !== false, //unused
-            },
+            // Logging Settings - removed: redundant with global.verbosityLevel
+            // logging: {
+            //     defaultLevel: redundant with global.verbosityLevel
+            //     enableHttpLogging: covered by verbosity level 5
+            //     enableToolLogging: covered by verbosity levels 2-4
+            //     enableErrorLogging: errors always shown regardless of verbosity
+            // },
 
             // Safety Settings
             safety: {
