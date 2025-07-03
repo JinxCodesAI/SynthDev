@@ -24,7 +24,11 @@ class SystemMessages {
         }
 
         // Load roles from multiple files in the roles directory
-        this._rolesConfig = this.configLoader.loadRolesFromDirectory('roles');
+        const rolesData = this.configLoader.loadRolesFromDirectory('roles');
+
+        // Extract roles and groups from the new structure
+        this._rolesConfig = rolesData.roles || rolesData; // Backward compatibility
+        this._roleGroups = rolesData.roleGroups || {};
 
         // Ensure we have at least some roles loaded
         if (!this._rolesConfig || Object.keys(this._rolesConfig).length === 0) {
@@ -328,6 +332,74 @@ class SystemMessages {
     static getAvailableRoles() {
         const instance = new SystemMessages();
         return Object.keys(instance.roles);
+    }
+
+    /**
+     * Get all available role groups
+     * @returns {string[]} Array of available group names
+     */
+    static getAvailableGroups() {
+        const instance = new SystemMessages();
+        instance._loadRolesConfig(); // Ensure groups are loaded
+        return Object.keys(instance._roleGroups || {});
+    }
+
+    /**
+     * Get roles by group
+     * @param {string} group - The group name ('global', 'testing', etc.)
+     * @returns {string[]} Array of role names in the group
+     */
+    static getRolesByGroup(group) {
+        const instance = new SystemMessages();
+        instance._loadRolesConfig(); // Ensure groups are loaded
+        return instance._roleGroups[group] || [];
+    }
+
+    /**
+     * Get the group for a specific role
+     * @param {string} role - The role name
+     * @returns {string} The group name for the role
+     */
+    static getRoleGroup(role) {
+        const instance = new SystemMessages();
+        const roleConfig = instance.roles[role];
+        return roleConfig?._group || 'global';
+    }
+
+    /**
+     * Resolve a role name that might include a group prefix
+     * @param {string} roleSpec - Role specification (e.g., 'coder' or 'testing.dude')
+     * @returns {Object} Object with {roleName, group, found}
+     */
+    static resolveRole(roleSpec) {
+        const instance = new SystemMessages();
+
+        // Check if roleSpec contains a group prefix
+        if (roleSpec.includes('.')) {
+            const [group, roleName] = roleSpec.split('.', 2);
+
+            // Check if role exists in the specified group
+            const rolesInGroup = SystemMessages.getRolesByGroup(group);
+            if (rolesInGroup.includes(roleName)) {
+                return { roleName, group, found: true };
+            }
+
+            return { roleName, group, found: false };
+        } else {
+            // No group specified, look in global first, then any group
+            const globalRoles = SystemMessages.getRolesByGroup('global');
+            if (globalRoles.includes(roleSpec)) {
+                return { roleName: roleSpec, group: 'global', found: true };
+            }
+
+            // Check if role exists in any group
+            if (instance.roles[roleSpec]) {
+                const group = SystemMessages.getRoleGroup(roleSpec);
+                return { roleName: roleSpec, group, found: true };
+            }
+
+            return { roleName: roleSpec, group: 'global', found: false };
+        }
     }
 
     /**

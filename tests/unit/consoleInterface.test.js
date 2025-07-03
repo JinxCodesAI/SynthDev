@@ -376,6 +376,62 @@ describe('ConsoleInterface', () => {
                 expect.stringContaining('🔧 Tools: 8/10 available (2 filtered for role)')
             );
         });
+
+        it('should show startup message with environment info', () => {
+            const model = 'gpt-4';
+            const totalToolsCount = 10;
+            const envInfo = '.env (loaded)';
+
+            consoleInterface.showStartupMessage(model, totalToolsCount, null, null, null, envInfo);
+
+            expect(mockLogger.user).toHaveBeenCalledWith(
+                expect.stringContaining('📄 Environment: .env (loaded)')
+            );
+        });
+
+        it('should show startup message with git info', () => {
+            const model = 'gpt-4';
+            const totalToolsCount = 10;
+            const gitInfo = 'branch: main';
+
+            consoleInterface.showStartupMessage(
+                model,
+                totalToolsCount,
+                null,
+                null,
+                null,
+                null,
+                gitInfo
+            );
+
+            expect(mockLogger.user).toHaveBeenCalledWith(
+                expect.stringContaining('🌿 Git: branch: main')
+            );
+        });
+
+        it('should show startup message with both environment and git info', () => {
+            const model = 'gpt-4';
+            const totalToolsCount = 10;
+            const envInfo = '.env (loaded)';
+            const gitInfo = 'branch: main';
+
+            consoleInterface.showStartupMessage(
+                model,
+                totalToolsCount,
+                null,
+                null,
+                null,
+                envInfo,
+                gitInfo
+            );
+
+            expect(mockLogger.user).toHaveBeenCalledWith(
+                expect.stringContaining('📄 Environment: .env (loaded)')
+            );
+            expect(mockLogger.user).toHaveBeenCalledWith(
+                expect.stringContaining('🌿 Git: branch: main')
+            );
+        });
     });
 
     describe('showGoodbye', () => {

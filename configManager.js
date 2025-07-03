@@ -2,6 +2,7 @@ import { config } from 'dotenv';
 import { createInterface } from 'readline';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { existsSync } from 'fs';
 import { getConfigurationValidator } from './configurationValidator.js';
 import { getConfigurationLoader } from './configurationLoader.js';
 
@@ -19,7 +20,12 @@ class ConfigManager {
         }
 
         // Load environment variables from .env file in synth-dev installation directory
-        config({ path: join(__dirname, '.env') });
+        this.envFilePath = join(__dirname, '.env');
+        this.envFileExists = existsSync(this.envFilePath);
+
+        if (this.envFileExists) {
+            config({ path: this.envFilePath });
+        }
 
         // Load application defaults
         this.configLoader = getConfigurationLoader();
@@ -404,6 +410,18 @@ class ConfigManager {
     getValidationRules() {
         const validator = getConfigurationValidator();
         return validator.getValidationRules();
+    }
+
+    /**
+     * Get environment file information
+     * @returns {Object} Environment file path and existence status
+     */
+    getEnvFileInfo() {
+        return {
+            path: this.envFilePath,
+            exists: this.envFileExists,
+            absolutePath: this.envFilePath,
+        };
     }
 }
 
