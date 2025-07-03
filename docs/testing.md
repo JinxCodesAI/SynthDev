@@ -215,7 +215,7 @@ describe('Workflow E2E Test', () => {
         // Setup environment variables
         originalEnv = process.env;
         process.env.MODEL = 'gpt-4.1-nano';
-        process.env.API_KEY = 'test-key';
+        process.env.SYNTHDEV_API_KEY = 'test-key';
 
         // Setup HTTP mocking
         await setupHttpMocking();
@@ -336,7 +336,7 @@ beforeEach(() => {
 
     // Set test environment
     process.env.NODE_ENV = 'test';
-    process.env.API_KEY = 'test-key';
+    process.env.SYNTHDEV_API_KEY = 'test-key';
 });
 
 afterEach(() => {

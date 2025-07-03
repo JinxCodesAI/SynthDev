@@ -69,24 +69,24 @@ Edit your `.env` file:
 
 ```env
 # Base Model Configuration (Required)
-API_KEY=your_api_key_here
-BASE_MODEL=gpt-4.1-mini
-BASE_URL=https://api.openai.com/v1
+SYNTHDEV_API_KEY=your_api_key_here
+SYNTHDEV_BASE_MODEL=gpt-4.1-mini
+SYNTHDEV_BASE_URL=https://api.openai.com/v1
 
 # Smart Model (for Architect role)
-SMART_API_KEY=your_smart_api_key
-SMART_MODEL=gpt-4.1-mini
-SMART_BASE_URL=https://api.openai.com/v1
+SYNTHDEV_SMART_API_KEY=your_smart_api_key
+SYNTHDEV_SMART_MODEL=gpt-4.1-mini
+SYNTHDEV_SMART_BASE_URL=https://api.openai.com/v1
 
 # Fast Model (for quick tasks)
-FAST_API_KEY=your_fast_api_key
-FAST_MODEL=gpt-4.1-nano
-FAST_BASE_URL=https://api.openai.com/v1
+SYNTHDEV_FAST_API_KEY=your_fast_api_key
+SYNTHDEV_FAST_MODEL=gpt-4.1-nano
+SYNTHDEV_FAST_BASE_URL=https://api.openai.com/v1
 
 # Application Settings
-MAX_TOOL_CALLS=50
-ENABLE_PROMPT_ENHANCEMENT=false
-VERBOSITY_LEVEL=2
+SYNTHDEV_MAX_TOOL_CALLS=50
+SYNTHDEV_ENABLE_PROMPT_ENHANCEMENT=false
+SYNTHDEV_VERBOSITY_LEVEL=2
 ```
 
 ## Core Features

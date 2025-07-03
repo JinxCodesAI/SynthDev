@@ -19,34 +19,34 @@ SynthDev uses a layered configuration system:
 
 ```env
 # Base Model (Required)
-API_KEY=your_api_key_here
-BASE_MODEL=gpt-4.1-mini
-BASE_URL=https://api.openai.com/v1
+SYNTHDEV_API_KEY=your_api_key_here
+SYNTHDEV_BASE_MODEL=gpt-4.1-mini
+SYNTHDEV_BASE_URL=https://api.openai.com/v1
 ```
 
 #### Multi-Model Setup
 
 ```env
 # Smart Model (for complex reasoning)
-SMART_API_KEY=your_smart_api_key
-SMART_MODEL=gpt-4.1-mini
-SMART_BASE_URL=https://api.openai.com/v1
+SYNTHDEV_SMART_API_KEY=your_smart_api_key
+SYNTHDEV_SMART_MODEL=gpt-4.1-mini
+SYNTHDEV_SMART_BASE_URL=https://api.openai.com/v1
 
 # Fast Model (for quick tasks)
-FAST_API_KEY=your_fast_api_key
-FAST_MODEL=gpt-4.1-nano
-FAST_BASE_URL=https://api.openai.com/v1
+SYNTHDEV_FAST_API_KEY=your_fast_api_key
+SYNTHDEV_FAST_MODEL=gpt-4.1-nano
+SYNTHDEV_FAST_BASE_URL=https://api.openai.com/v1
 ```
 
 #### Application Settings
 
 ```env
 # Tool Execution
-MAX_TOOL_CALLS=50              # Range: 1-200
-ENABLE_PROMPT_ENHANCEMENT=false # true/false
+SYNTHDEV_MAX_TOOL_CALLS=50              # Range: 1-200
+SYNTHDEV_ENABLE_PROMPT_ENHANCEMENT=false # true/false
 
 # Output Control
-VERBOSITY_LEVEL=2              # Range: 0-5
+SYNTHDEV_VERBOSITY_LEVEL=2              # Range: 0-5
 
 # Development
 NODE_ENV=development           # development/production/test
@@ -55,7 +55,7 @@ DEBUG=false                    # true/false
 
 ### Verbosity Levels
 
-Control output detail with `VERBOSITY_LEVEL`:
+Control output detail with `SYNTHDEV_VERBOSITY_LEVEL`:
 
 - **Level 0**: Only user messages and errors
 - **Level 1**: + Status messages (🔄 Enhancing prompt..., 🧠 AI thinking...)
@@ -69,33 +69,33 @@ Control output detail with `VERBOSITY_LEVEL`:
 #### OpenAI
 
 ```env
-API_KEY=sk-your-openai-key
-BASE_MODEL=gpt-4.1-mini
-BASE_URL=https://api.openai.com/v1
+SYNTHDEV_API_KEY=sk-your-openai-key
+SYNTHDEV_BASE_MODEL=gpt-4.1-mini
+SYNTHDEV_BASE_URL=https://api.openai.com/v1
 ```
 
 #### Anthropic Claude
 
 ```env
-API_KEY=sk-ant-your-anthropic-key
-BASE_MODEL=claude-3-haiku-20240307
-BASE_URL=https://api.anthropic.com/v1
+SYNTHDEV_API_KEY=sk-ant-your-anthropic-key
+SYNTHDEV_BASE_MODEL=claude-3-haiku-20240307
+SYNTHDEV_BASE_URL=https://api.anthropic.com/v1
 ```
 
 #### Google AI
 
 ```env
-API_KEY=your-google-ai-key
-BASE_MODEL=gemini-1.5-flash
-BASE_URL=https://generativelanguage.googleapis.com/v1beta
+SYNTHDEV_API_KEY=your-google-ai-key
+SYNTHDEV_BASE_MODEL=gemini-1.5-flash
+SYNTHDEV_BASE_URL=https://generativelanguage.googleapis.com/v1beta
 ```
 
 #### Local/Custom Provider
 
 ```env
-API_KEY=your-local-key
-BASE_MODEL=your-model-name
-BASE_URL=http://localhost:8080/v1
+SYNTHDEV_API_KEY=your-local-key
+SYNTHDEV_BASE_MODEL=your-model-name
+SYNTHDEV_BASE_URL=http://localhost:8080/v1
 ```
 
 ## Configuration Files
@@ -380,9 +380,9 @@ console.log(global.debug); // Boolean
 
 The system validates configuration on startup:
 
-- **Required fields**: Ensures `API_KEY` is provided
+- **Required fields**: Ensures `SYNTHDEV_API_KEY` is provided
 - **URL validation**: Validates URL formats for all base URLs
-- **Range validation**: Ensures `MAX_TOOL_CALLS` is between 1-200
+- **Range validation**: Ensures `SYNTHDEV_MAX_TOOL_CALLS` is between 1-200
 - **Type validation**: Converts strings to appropriate types
 
 ### Error Handling
@@ -403,8 +403,8 @@ try {
 ```env
 NODE_ENV=development
 DEBUG=true
-VERBOSITY_LEVEL=3
-ENABLE_PROMPT_ENHANCEMENT=true
+SYNTHDEV_VERBOSITY_LEVEL=3
+SYNTHDEV_ENABLE_PROMPT_ENHANCEMENT=true
 ```
 
 ### Production Environment
@@ -412,9 +412,9 @@ ENABLE_PROMPT_ENHANCEMENT=true
 ```env
 NODE_ENV=production
 DEBUG=false
-VERBOSITY_LEVEL=1
-ENABLE_PROMPT_ENHANCEMENT=false
-MAX_TOOL_CALLS=30
+SYNTHDEV_VERBOSITY_LEVEL=1
+SYNTHDEV_ENABLE_PROMPT_ENHANCEMENT=false
+SYNTHDEV_MAX_TOOL_CALLS=30
 ```
 
 ### Testing Environment
@@ -422,8 +422,8 @@ MAX_TOOL_CALLS=30
 ```env
 NODE_ENV=test
 DEBUG=false
-VERBOSITY_LEVEL=0
-API_KEY=test-key-for-mocking
+SYNTHDEV_VERBOSITY_LEVEL=0
+SYNTHDEV_API_KEY=test-key-for-mocking
 ```
 
 ## Advanced Configuration
@@ -434,29 +434,29 @@ For specialized use cases:
 
 ```env
 # Research Model
-RESEARCH_API_KEY=your_research_key
-RESEARCH_MODEL=gpt-4-research
-RESEARCH_BASE_URL=https://api.research.com/v1
+SYNTHDEV_RESEARCH_API_KEY=your_research_key
+SYNTHDEV_RESEARCH_MODEL=gpt-4-research
+SYNTHDEV_RESEARCH_BASE_URL=https://api.research.com/v1
 
 # Code Model
-CODE_API_KEY=your_code_key
-CODE_MODEL=codex-advanced
-CODE_BASE_URL=https://api.code.com/v1
+SYNTHDEV_CODE_API_KEY=your_code_key
+SYNTHDEV_CODE_MODEL=codex-advanced
+SYNTHDEV_CODE_BASE_URL=https://api.code.com/v1
 ```
 
 ### Performance Tuning
 
 ```env
 # Reduce API calls
-MAX_TOOL_CALLS=20
-ENABLE_PROMPT_ENHANCEMENT=false
+SYNTHDEV_MAX_TOOL_CALLS=20
+SYNTHDEV_ENABLE_PROMPT_ENHANCEMENT=false
 
 # Increase output for debugging
-VERBOSITY_LEVEL=5
+SYNTHDEV_VERBOSITY_LEVEL=5
 DEBUG=true
 
 # Optimize for speed
-FAST_MODEL=gpt-3.5-turbo
+SYNTHDEV_FAST_MODEL=gpt-3.5-turbo
 ```
 
 ## Migration from Old Configuration
@@ -490,8 +490,8 @@ coder: {
 **Old way:**
 
 ```javascript
-const apiKey = process.env.API_KEY;
-const maxCalls = parseInt(process.env.MAX_TOOL_CALLS) || 50;
+const apiKey = process.env.SYNTHDEV_API_KEY;
+const maxCalls = parseInt(process.env.SYNTHDEV_MAX_TOOL_CALLS) || 50;
 ```
 
 **New way:**
@@ -517,15 +517,15 @@ const maxCalls = config.getConfig().global.maxToolCalls;
 #### Missing API Key
 
 ```
-Configuration error: API_KEY is required
+Configuration error: SYNTHDEV_API_KEY is required
 ```
 
-**Solution**: Add `API_KEY=your_key` to `.env` file
+**Solution**: Add `SYNTHDEV_API_KEY=your_key` to `.env` file
 
 #### Invalid URL Format
 
 ```
-Configuration error: Invalid BASE_URL format
+Configuration error: Invalid SYNTHDEV_BASE_URL format
 ```
 
 **Solution**: Ensure URL includes protocol (http:// or https://)
@@ -533,10 +533,10 @@ Configuration error: Invalid BASE_URL format
 #### Tool Call Limit Out of Range
 
 ```
-Configuration error: MAX_TOOL_CALLS must be between 1 and 200
+Configuration error: SYNTHDEV_MAX_TOOL_CALLS must be between 1 and 200
 ```
 
-**Solution**: Set `MAX_TOOL_CALLS` to a value between 1-200
+**Solution**: Set `SYNTHDEV_MAX_TOOL_CALLS` to a value between 1-200
 
 ---
 
