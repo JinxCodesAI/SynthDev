@@ -84,7 +84,33 @@ class AICoderConsole {
         this.logger = getLogger();
 
         this.costsManager = costsManager;
-        const baseModel = config.getModel('base');
+
+        // Initialize basic components first
+        this.consoleInterface = new ConsoleInterface();
+        this.toolManager = new ToolManager();
+        this.snapshotManager = new SnapshotManager();
+        this.gitUtils = new GitUtils();
+
+        // Defer API client initialization until after configuration check
+        this.apiClient = null;
+        this.promptEnhancer = null;
+        this.workflowStateMachine = null;
+        this.commandHandler = null;
+
+        // State management for input blocking
+        this.isProcessing = false;
+    }
+
+    /**
+     * Initialize API client and dependent components after configuration is ready
+     * @private
+     */
+    _initializeAPIComponents() {
+        if (this.apiClient) {
+            return; // Already initialized
+        }
+
+        const baseModel = this.config.getModel('base');
         this.apiClient = new AIAPIClient(
             this.costsManager,
             baseModel.apiKey,
@@ -92,11 +118,7 @@ class AICoderConsole {
             baseModel.baseModel
         );
 
-        this.consoleInterface = new ConsoleInterface();
-        this.toolManager = new ToolManager();
-        this.snapshotManager = new SnapshotManager();
         this.promptEnhancer = new PromptEnhancer(this.costsManager, this.toolManager);
-        this.gitUtils = new GitUtils();
         this.workflowStateMachine = new WorkflowStateMachine(
             this.config,
             this.toolManager,
@@ -112,9 +134,6 @@ class AICoderConsole {
             this.snapshotManager,
             this
         );
-
-        // State management for input blocking
-        this.isProcessing = false;
 
         this._setupAPIClientCallbacks();
     }
@@ -191,6 +210,37 @@ class AICoderConsole {
     }
 
     async start() {
+        // Check if configuration wizard should be started first
+        if (this.config.shouldStartConfigurationWizard()) {
+            this.logger.info('🔧 Configuration incomplete. Starting configuration wizard...');
+
+            // Initialize minimal command handler for wizard only
+            this.commandHandler = new CommandHandler(
+                null, // No API client yet
+                this.toolManager,
+                this.consoleInterface,
+                this.costsManager,
+                this.snapshotManager,
+                this
+            );
+
+            // Set up event handlers
+            this.consoleInterface.setupEventHandlers(
+                async input => await this.handleInput(input),
+                () => this.handleExit()
+            );
+
+            // Auto-start configuration wizard
+            setTimeout(async () => {
+                await this.commandHandler.handleCommand('/configure');
+            }, 100);
+
+            return;
+        }
+
+        // Initialize API components now that configuration is complete
+        this._initializeAPIComponents();
+
         await this.toolManager.loadTools();
 
         // Set tools in API client

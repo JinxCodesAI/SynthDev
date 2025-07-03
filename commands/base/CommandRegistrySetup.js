@@ -20,6 +20,7 @@ import IndexCommand from '../indexing/IndexCommand.js';
 import CmdCommand from '../terminal/CmdCommand.js';
 import WorkflowsCommand from '../workflow/WorkflowsCommand.js';
 import WorkflowCommand from '../workflow/WorkflowCommand.js';
+import { ConfigureCommand } from '../config/ConfigureCommand.js';
 
 /**
  * Create and configure a command registry with all available commands
@@ -42,6 +43,9 @@ export function createCommandRegistry() {
 
         // System commands
         registry.register(new ExitCommand());
+
+        // Configuration
+        registry.register(new ConfigureCommand());
 
         // Role management
         registry.register(new RoleCommand());
