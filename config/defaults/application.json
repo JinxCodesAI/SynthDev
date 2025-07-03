@@ -51,6 +51,7 @@
         "enableSnapshots": true,
         "enableIndexing": true,
         "enableCommandHistory": true,
-        "enableContextIntegration": false
+        "enableContextIntegration": false,
+        "enableWorkflows": false
     }
 }

@@ -21,6 +21,16 @@ export default class WorkflowsCommand extends BaseCommand {
         const logger = getLogger();
 
         try {
+            // Check if workflow system is available
+            const { workflowStateMachine } = context;
+            if (!workflowStateMachine) {
+                logger.error('❌ Workflow system not available');
+                logger.info('💡 Workflow functionality has been moved to a tool');
+                logger.info('💡 Use the workflow_tool with action "enable" to activate workflows');
+                logger.info('💡 Or set features.enableWorkflows to true in configuration');
+                return true;
+            }
+
             const workflowsPath = join(process.cwd(), 'config', 'workflows');
 
             if (!existsSync(workflowsPath)) {

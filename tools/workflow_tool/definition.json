@@ -1,0 +1,39 @@
+{
+    "name": "workflow_tool",
+    "description": "Multi-agent workflow system for complex task orchestration",
+    "auto_run": false,
+    "requires_backup": false,
+    "backup_resource_path_property_name": "",
+    "category": "utility",
+    "version": "1.0.0",
+    "tags": ["workflow", "multi-agent", "orchestration", "state-machine"],
+    "schema": {
+        "type": "function",
+        "function": {
+            "name": "workflow_tool",
+            "description": "Execute multi-agent workflows for complex task orchestration. This tool encapsulates the complete workflow system including state machines, agent management, and workflow execution. Supports listing available workflows, getting workflow information, executing workflows, and enabling/disabling the workflow system.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "action": {
+                        "type": "string",
+                        "enum": ["list", "execute", "info", "enable", "disable"],
+                        "description": "Action to perform: 'list' to show available workflows, 'execute' to run a workflow, 'info' to get workflow details, 'enable' to activate workflow system, or 'disable' to deactivate workflow system"
+                    },
+                    "workflow_name": {
+                        "type": "string",
+                        "description": "Name of the workflow to operate on (required for execute and info actions). Must match an existing workflow configuration file name without the .json extension"
+                    },
+                    "input_params": {
+                        "type": "string",
+                        "description": "Input parameters for workflow execution (required for execute action). Should match the input type expected by the workflow configuration"
+                    }
+                },
+                "required": ["action"]
+            },
+            "response_format": {
+                "description": "Returns formatted text with workflow information, execution results, or status messages. For 'list' action: shows available workflows with descriptions. For 'info' action: displays detailed workflow metadata. For 'execute' action: provides execution results and output. For 'enable'/'disable' actions: confirms system status changes."
+            }
+        }
+    }
+}

@@ -15,7 +15,24 @@ SynthDev's workflow system provides:
 
 ## Quick Start
 
+**Note:** Workflow functionality is currently disabled by default and has been moved to a tool for better modularity.
+
+### Enabling Workflows
+
+To enable workflow functionality, you have two options:
+
+1. **Using the workflow tool:**
+
+    ```
+    Use the workflow_tool with action "enable"
+    ```
+
+2. **Configuration file:**
+   Set `features.enableWorkflows` to `true` in `config/defaults/application.json`
+
 ### Running a Workflow
+
+Once enabled:
 
 ```bash
 # List available workflows
@@ -23,6 +40,13 @@ SynthDev's workflow system provides:
 
 # Execute a workflow
 /workflow grocery_store_test
+```
+
+Or use the workflow tool directly:
+
+```
+workflow_tool with action "list"
+workflow_tool with action "execute", workflow_name "grocery_store_test", input_params "your input"
 ```
 
 ### Basic Workflow Structure

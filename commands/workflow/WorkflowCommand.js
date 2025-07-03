@@ -21,7 +21,10 @@ export default class WorkflowCommand extends BaseCommand {
 
         try {
             if (!workflowStateMachine) {
-                logger.error('Workflow system not available');
+                logger.error('❌ Workflow system not available');
+                logger.info('💡 Workflow functionality has been moved to a tool');
+                logger.info('💡 Use the workflow_tool with action "enable" to activate workflows');
+                logger.info('💡 Or set features.enableWorkflows to true in configuration');
                 return true;
             }
 

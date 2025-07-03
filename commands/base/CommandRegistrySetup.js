@@ -18,8 +18,8 @@ import RolesCommand from '../role/RolesCommand.js';
 import SnapshotsCommand from '../snapshots/SnapshotsCommand.js';
 import IndexCommand from '../indexing/IndexCommand.js';
 import CmdCommand from '../terminal/CmdCommand.js';
-import WorkflowsCommand from '../workflow/WorkflowsCommand.js';
-import WorkflowCommand from '../workflow/WorkflowCommand.js';
+// import WorkflowsCommand from '../workflow/WorkflowsCommand.js'; // Hidden in workflow-tool
+// import WorkflowCommand from '../workflow/WorkflowCommand.js'; // Hidden in workflow-tool
 
 /**
  * Create and configure a command registry with all available commands
@@ -56,9 +56,9 @@ export function createCommandRegistry() {
         // Terminal commands
         registry.register(new CmdCommand());
 
-        // Workflow commands
-        registry.register(new WorkflowsCommand());
-        registry.register(new WorkflowCommand());
+        // Workflow commands - Hidden in workflow-tool
+        // registry.register(new WorkflowsCommand());
+        // registry.register(new WorkflowCommand());
 
         logger.debug(`✅ Registered ${registry.getAllCommands().length} commands successfully`);
     } catch (error) {

@@ -68,7 +68,7 @@ import ConsoleInterface from './consoleInterface.js';
 import costsManager from './costsManager.js';
 import SnapshotManager from './snapshotManager.js';
 import PromptEnhancer from './promptEnhancer.js';
-import WorkflowStateMachine from './workflow/WorkflowStateMachine.js';
+// import WorkflowStateMachine from './workflow/WorkflowStateMachine.js'; // Hidden in workflow-tool
 import { initializeLogger, getLogger } from './logger.js';
 import GitUtils from './utils/GitUtils.js';
 
@@ -97,13 +97,13 @@ class AICoderConsole {
         this.snapshotManager = new SnapshotManager();
         this.promptEnhancer = new PromptEnhancer(this.costsManager, this.toolManager);
         this.gitUtils = new GitUtils();
-        this.workflowStateMachine = new WorkflowStateMachine(
-            this.config,
-            this.toolManager,
-            this.snapshotManager,
-            this.consoleInterface,
-            this.costsManager
-        );
+        // this.workflowStateMachine = new WorkflowStateMachine( // Hidden in workflow-tool
+        //     this.config,
+        //     this.toolManager,
+        //     this.snapshotManager,
+        //     this.consoleInterface,
+        //     this.costsManager
+        // );
         this.commandHandler = new CommandHandler(
             this.apiClient,
             this.toolManager,
@@ -199,8 +199,8 @@ class AICoderConsole {
         // Set default role and system message
         await this.apiClient.setSystemMessage(SystemMessages.getSystemMessage('coder'), 'coder');
 
-        // Load workflow configurations
-        await this.workflowStateMachine.loadWorkflowConfigs();
+        // Load workflow configurations - Hidden in workflow-tool
+        // await this.workflowStateMachine.loadWorkflowConfigs();
 
         await this.snapshotManager.initialize();
 
