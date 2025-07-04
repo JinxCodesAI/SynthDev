@@ -25,12 +25,38 @@ describe('ConfigurationWizard', () => {
             providers: [
                 {
                     name: 'OpenAI',
-                    models: ['gpt-4.1', 'gpt-4.1-mini'],
+                    models: [
+                        {
+                            name: 'gpt-4.1',
+                            contextSize: 1000000,
+                            maxResponseSize: 32000,
+                            inputPricePerMillionTokens: 2.0,
+                            outputPricePerMillionTokens: 8.0,
+                            cachedPricePerMillionTokens: 0.5,
+                        },
+                        {
+                            name: 'gpt-4.1-mini',
+                            contextSize: 1000000,
+                            maxResponseSize: 32000,
+                            inputPricePerMillionTokens: 0.4,
+                            outputPricePerMillionTokens: 1.6,
+                            cachedPricePerMillionTokens: 0.1,
+                        },
+                    ],
                     baseUrl: 'https://api.openai.com/v1',
                 },
                 {
                     name: 'Anthropic',
-                    models: ['claude-3-5-haiku'],
+                    models: [
+                        {
+                            name: 'claude-3-5-haiku',
+                            contextSize: 1000000,
+                            maxResponseSize: 32000,
+                            inputPricePerMillionTokens: 0.1,
+                            outputPricePerMillionTokens: 0.4,
+                            cachedPricePerMillionTokens: 0.025,
+                        },
+                    ],
                     baseUrl: 'https://api.anthropic.com/v1/',
                 },
             ],
