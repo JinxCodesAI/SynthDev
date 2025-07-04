@@ -34,7 +34,14 @@ export class ConfigurationWizard {
     _loadProviders() {
         try {
             const providersData = readFileSync(this.providersPath, 'utf8');
-            return JSON.parse(providersData);
+            const raw = JSON.parse(providersData);
+            return {
+                providers: raw.providers.map(p => ({
+                    name: p.name,
+                    models: p.models.map(x => x.name),
+                    baseUrl: p.baseUrl,
+                })),
+            };
         } catch (error) {
             this.logger.error('Failed to load providers configuration:', error);
             return { providers: [] };

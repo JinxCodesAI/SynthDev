@@ -3,43 +3,187 @@
         {
             "name": "OpenAI",
             "models": [
-                "gpt-4.1-mini",
-                "gpt-4.1-nano",
-                "gpt-4.1",
-                "o4-mini",
-                "gpt-4o",
-                "gpt-4o-mini"
+                {
+                    "name": "gpt-4.1-mini",
+                    "contextSize": 1000000,
+                    "maxResponseSize": 32000,
+                    "inputPricePerMillionTokens": 0.4,
+                    "outputPricePerMillionTokens": 1.6,
+                    "cachedPricePerMillionTokens": 0.1
+                },
+                {
+                    "name": "gpt-4.1-nano",
+                    "contextSize": 1000000,
+                    "maxResponseSize": 32000,
+                    "inputPricePerMillionTokens": 0.1,
+                    "outputPricePerMillionTokens": 0.4,
+                    "cachedPricePerMillionTokens": 0.025
+                },
+                {
+                    "name": "gpt-4.1",
+                    "contextSize": 1000000,
+                    "maxResponseSize": 32000,
+                    "inputPricePerMillionTokens": 2.0,
+                    "outputPricePerMillionTokens": 8.0,
+                    "cachedPricePerMillionTokens": 0.5
+                },
+                {
+                    "name": "o4-mini",
+                    "contextSize": 200000,
+                    "maxResponseSize": 100000,
+                    "inputPricePerMillionTokens": 1.1,
+                    "outputPricePerMillionTokens": 4.4,
+                    "cachedPricePerMillionTokens": 0.275,
+                    "reasoning": true
+                },
+                {
+                    "name": "gpt-4o",
+                    "contextSize": 128000,
+                    "maxResponseSize": 16000,
+                    "inputPricePerMillionTokens": 2.5,
+                    "outputPricePerMillionTokens": 10,
+                    "cachedPricePerMillionTokens": 1.25,
+                    "reasoning": false
+                },
+                {
+                    "name": "gpt-4o-mini",
+                    "contextSize": 128000,
+                    "maxResponseSize": 16000,
+                    "inputPricePerMillionTokens": 0.4,
+                    "outputPricePerMillionTokens": 1.6,
+                    "cachedPricePerMillionTokens": 0.1,
+                    "reasoning": false
+                }
             ],
             "baseUrl": "https://api.openai.com/v1"
         },
         {
             "name": "Google",
-            "models": ["gemini-2.5-flash", "gemini-2.5-pro", "gemini-2.5-flash-lite-preview-06-17"],
+            "models": [
+                {
+                    "name": "gemini-2.5-flash",
+                    "contextSize": 1000000,
+                    "maxResponseSize": 32000,
+                    "inputPricePerMillionTokens": 0.3,
+                    "outputPricePerMillionTokens": 2.5,
+                    "cachedPricePerMillionTokens": 0.0875
+                },
+                {
+                    "name": "gemini-2.5-pro",
+                    "contextSize": 1000000,
+                    "maxResponseSize": 32000,
+                    "inputPricePerMillionTokens": 1.25,
+                    "outputPricePerMillionTokens": 10,
+                    "cachedPricePerMillionTokens": 0.3125
+                },
+                {
+                    "name": "gemini-2.5-flash-lite-preview-06-17",
+                    "contextSize": 1000000,
+                    "maxResponseSize": 64000,
+                    "inputPricePerMillionTokens": 0.1,
+                    "outputPricePerMillionTokens": 0.4,
+                    "cachedPricePerMillionTokens": 0.025
+                }
+            ],
             "baseUrl": "https://generativelanguage.googleapis.com/v1beta/openai/"
         },
         {
             "name": "OpenRouter",
             "models": [
-                "google/gemini-2.5-flash-lite-preview-06-17",
-                "google/gemini-2.5-flash",
-                "google/gemini-2.5-pro",
-                "deepseek/deepseek-r1-0528",
-                "deepseek/deepseek-chat-v3-0324",
-                "anthropic/claude-sonnet-4",
-                "anthropic/claude-4-opus-20250522",
-                "anthropic/claude-3.5-haiku",
-                "google/gemini-2.5-flash-lite-preview-06-17",
-                "google/gemini-2.5-flash",
-                "google/gemini-2.5-pro"
+                {
+                    "name": "google/gemini-2.5-flash-lite-preview-06-17",
+                    "contextSize": 1000000,
+                    "maxResponseSize": 64000,
+                    "inputPricePerMillionTokens": 0.1,
+                    "outputPricePerMillionTokens": 0.4,
+                    "cachedPricePerMillionTokens": 0.025
+                },
+                {
+                    "name": "google/gemini-2.5-flash",
+                    "contextSize": 1000000,
+                    "maxResponseSize": 32000,
+                    "inputPricePerMillionTokens": 0.3,
+                    "outputPricePerMillionTokens": 2.5,
+                    "cachedPricePerMillionTokens": 0.0875
+                },
+                {
+                    "name": "google/gemini-2.5-pro",
+                    "contextSize": 1000000,
+                    "maxResponseSize": 32000,
+                    "inputPricePerMillionTokens": 1.25,
+                    "outputPricePerMillionTokens": 10,
+                    "cachedPricePerMillionTokens": 0.3125
+                },
+                {
+                    "name": "deepseek/deepseek-r1-0528",
+                    "contextSize": 1000000,
+                    "maxResponseSize": 32000,
+                    "inputPricePerMillionTokens": 0.1,
+                    "outputPricePerMillionTokens": 0.4,
+                    "cachedPricePerMillionTokens": 0.025
+                },
+                {
+                    "name": "deepseek/deepseek-chat-v3-0324",
+                    "contextSize": 1000000,
+                    "maxResponseSize": 32000,
+                    "inputPricePerMillionTokens": 0.1,
+                    "outputPricePerMillionTokens": 0.4,
+                    "cachedPricePerMillionTokens": 0.025
+                },
+                {
+                    "name": "anthropic/claude-sonnet-4",
+                    "contextSize": 1000000,
+                    "maxResponseSize": 32000,
+                    "inputPricePerMillionTokens": 0.1,
+                    "outputPricePerMillionTokens": 0.4,
+                    "cachedPricePerMillionTokens": 0.025
+                },
+                {
+                    "name": "anthropic/claude-4-opus-20250522",
+                    "contextSize": 1000000,
+                    "maxResponseSize": 32000,
+                    "inputPricePerMillionTokens": 0.1,
+                    "outputPricePerMillionTokens": 0.4,
+                    "cachedPricePerMillionTokens": 0.025
+                },
+                {
+                    "name": "anthropic/claude-3.5-haiku",
+                    "contextSize": 1000000,
+                    "maxResponseSize": 32000,
+                    "inputPricePerMillionTokens": 0.1,
+                    "outputPricePerMillionTokens": 0.4,
+                    "cachedPricePerMillionTokens": 0.025
+                }
             ],
             "baseUrl": "https://openrouter.ai/api/v1"
         },
         {
             "name": "Anthropic",
             "models": [
-                "claude-sonnet-4-20250514",
-                "claude-opus-4-20250514",
-                "claude-3-5-haiku-20241022"
+                {
+                    "name": "claude-sonnet-4-20250514",
+                    "contextSize": 200000,
+                    "maxResponseSize": 64000,
+                    "inputPricePerMillionTokens": 3,
+                    "outputPricePerMillionTokens": 15,
+                    "cachedPricePerMillionTokens": 0.75
+                },
+                {
+                    "name": "claude-opus-4-20250514",
+                    "contextSize": 200000,
+                    "maxResponseSize": 32000,
+                    "inputPricePerMillionTokens": 15,
+                    "outputPricePerMillionTokens": 75,
+                    "cachedPricePerMillionTokens": 3.75
+                },
+                {
+                    "name": "claude-3-5-haiku-20241022",
+                    "contextSize": 200000,
+                    "maxResponseSize": 32000,
+                    "inputPricePerMillionTokens": 0.8,
+                    "outputPricePerMillionTokens": 4,
+                    "cachedPricePerMillionTokens": 0.2
+                }
             ],
             "baseUrl": "https://api.anthropic.com/v1/"
         }
