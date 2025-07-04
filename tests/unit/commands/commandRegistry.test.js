@@ -2,7 +2,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { CommandRegistry } from '../../../src/commands/base/CommandRegistry.js';
 import { BaseCommand } from '../../../src/commands/base/BaseCommand.js';
-import json from '../../../config/ui/console-messages.json';
+import json from '../../../src/config/ui/console-messages.json';
 
 // Mock logger
 vi.mock('../../../src/core/managers/logger.js', () => ({

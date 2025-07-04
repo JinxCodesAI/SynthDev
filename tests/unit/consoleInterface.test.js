@@ -38,7 +38,7 @@ describe('ConsoleInterface', () => {
 
         const __filename = fileURLToPath(import.meta.url);
         const __dirname = dirname(__filename);
-        const configDir = join(__dirname, '../../config');
+        const configDir = join(__dirname, '../../src/config');
 
         try {
             realConfigMessages = JSON.parse(

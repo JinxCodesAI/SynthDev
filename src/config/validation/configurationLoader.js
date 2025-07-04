@@ -19,7 +19,7 @@ class ConfigurationLoader {
     constructor() {
         this.configCache = new Map();
         // Use the synth-dev installation directory instead of current working directory
-        this.configDir = join(__dirname, '../../../config');
+        this.configDir = join(__dirname, '..');
         this.logger = getLogger();
     }
 

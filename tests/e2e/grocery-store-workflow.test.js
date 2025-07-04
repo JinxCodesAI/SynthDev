@@ -197,6 +197,7 @@ describe('Grocery Store Workflow E2E Test', () => {
         // Load the workflow using mocked file system
         const workflowConfigPath = join(
             process.cwd(),
+            'src',
             'config',
             'workflows',
             'grocery_store_test.json'
@@ -297,6 +298,7 @@ describe('Grocery Store Workflow E2E Test', () => {
 
         const workflowConfigPath = join(
             process.cwd(),
+            'src',
             'config',
             'workflows',
             'grocery_store_test.json'
@@ -322,18 +324,19 @@ describe('Grocery Store Workflow E2E Test', () => {
     it('should use mocked configuration files', async () => {
         // Verify that mocked files are accessible
         expect(
-            existsSync(join(process.cwd(), 'config', 'workflows', 'grocery_store_test.json'))
+            existsSync(join(process.cwd(), 'src', 'config', 'workflows', 'grocery_store_test.json'))
         ).toBe(true);
         expect(
             existsSync(
-                join(process.cwd(), 'config', 'workflows', 'grocery_store_test', 'script.js')
+                join(process.cwd(), 'src', 'config', 'workflows', 'grocery_store_test', 'script.js')
             )
         ).toBe(true);
-        expect(existsSync(join(process.cwd(), 'config', 'roles', 'roles.json'))).toBe(true);
+        expect(existsSync(join(process.cwd(), 'src', 'config', 'roles', 'roles.json'))).toBe(true);
 
         // Load workflow using mocked file system
         const workflowConfigPath = join(
             process.cwd(),
+            'src',
             'config',
             'workflows',
             'grocery_store_test.json'
@@ -355,6 +358,7 @@ describe('Grocery Store Workflow E2E Test', () => {
 
         const workflowConfigPath = join(
             process.cwd(),
+            'src',
             'config',
             'workflows',
             'grocery_store_test.json'
@@ -383,6 +387,7 @@ describe('Grocery Store Workflow E2E Test', () => {
 
         const workflowConfigPath = join(
             process.cwd(),
+            'src',
             'config',
             'workflows',
             'grocery_store_test.json'

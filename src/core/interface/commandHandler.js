@@ -1,7 +1,7 @@
 import {
     createCommandRegistry,
     validateRegistry,
-} from '../../../commands/base/CommandRegistrySetup.js';
+} from '../../commands/base/CommandRegistrySetup.js';
 import { getLogger } from '../managers/logger.js';
 
 /**

@@ -15,9 +15,9 @@ export class ConfigurationWizard {
     constructor() {
         this.logger = getLogger();
         // Get the root directory (where .env should be)
-        const rootDir = join(__dirname, '../..');
+        const rootDir = join(__dirname, '../../..');
         this.envFilePath = join(rootDir, '.env');
-        this.providersPath = join(rootDir, 'config/defaults/providers.json');
+        this.providersPath = join(rootDir, 'src/config/defaults/providers.json');
         this.exampleEnvPath = join(rootDir, 'config.example.env');
         this.openRouterExamplePath = join(rootDir, 'config.example.openrouter.env');
 

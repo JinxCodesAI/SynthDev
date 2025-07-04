@@ -44,7 +44,7 @@ export default class WorkflowStateMachine {
      */
     async loadWorkflowConfigs() {
         try {
-            const workflowsPath = join(process.cwd(), 'config', 'workflows');
+            const workflowsPath = join(process.cwd(), 'src', 'config', 'workflows');
 
             if (!existsSync(workflowsPath)) {
                 this.logger.debug('📁 No workflows directory found');
