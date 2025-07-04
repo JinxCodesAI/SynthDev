@@ -8,7 +8,7 @@ vi.mock('../../../src/core/managers/logger.js', () => ({
 }));
 
 // Mock UI config manager
-vi.mock('../../../uiConfigManager.js', () => ({
+vi.mock('../../../src/config/managers/uiConfigManager.js', () => ({
     getUIConfigManager: vi.fn().mockReturnValue({
         getCommandHelp: vi.fn().mockReturnValue({
             help: {
@@ -50,7 +50,9 @@ describe('HelpCommand', () => {
         getLogger.mockReturnValue(mockLogger);
 
         // Setup UI config mock
-        const { getUIConfigManager } = await import('../../../uiConfigManager.js');
+        const { getUIConfigManager } = await import(
+            '../../../src/config/managers/uiConfigManager.js'
+        );
         getUIConfigManager.mockReturnValue({
             getCommandHelp: vi.fn().mockReturnValue({
                 help: {

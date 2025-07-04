@@ -27,7 +27,7 @@ vi.mock('../../../src/core/managers/logger.js', () => ({
     getLogger: vi.fn(),
 }));
 
-vi.mock('../../../toolConfigManager.js', () => ({
+vi.mock('../../../src/config/managers/toolConfigManager.js', () => ({
     getToolConfigManager: vi.fn().mockReturnValue({
         getToolDescription: vi.fn().mockReturnValue('Execute JavaScript code safely'),
         getErrorMessage: vi.fn((key, params = {}) => {

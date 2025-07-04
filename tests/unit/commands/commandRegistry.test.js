@@ -17,7 +17,7 @@ vi.mock('../../../src/core/managers/logger.js', () => ({
 }));
 
 // Mock UI config manager with static config values
-vi.mock('../../../uiConfigManager.js', () => ({
+vi.mock('../../../src/config/managers/uiConfigManager.js', () => ({
     getUIConfigManager: vi.fn().mockReturnValue({
         getMessage: vi.fn((path, params = {}) => {
             // Mock config messages to avoid ES module loading issues

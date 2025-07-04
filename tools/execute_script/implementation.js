@@ -6,7 +6,7 @@
 import { spawn } from 'child_process';
 import { writeFileSync, unlinkSync, existsSync } from 'fs';
 import { join } from 'path';
-import ConfigManager from '../../configManager.js';
+import ConfigManager from '../../src/config/managers/configManager.js';
 import AIAPIClient from '../../aiAPIClient.js';
 import { CommandBaseTool } from '../common/base-tool.js';
 import { getLogger } from '../../src/core/managers/logger.js';

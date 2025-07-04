@@ -1,6 +1,6 @@
 import { createInterface } from 'readline';
 import { getLogger } from './src/core/managers/logger.js';
-import { getUIConfigManager } from './uiConfigManager.js';
+import { getUIConfigManager } from './src/config/managers/uiConfigManager.js';
 
 /**
  * Handles all console interface operations

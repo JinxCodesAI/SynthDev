@@ -1,6 +1,6 @@
 // tests/unit/snapshotManager.cleanup.test.js
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import SnapshotManager from '../../snapshotManager.js';
+import SnapshotManager from '../../src/core/managers/snapshotManager.js';
 
 describe('SnapshotManager Cleanup', () => {
     let snapshotManager;

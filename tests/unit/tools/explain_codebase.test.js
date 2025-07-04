@@ -14,13 +14,13 @@ vi.mock('openai', () => ({
     OpenAI: vi.fn(),
 }));
 
-vi.mock('../../../configManager.js', () => ({
+vi.mock('../../../src/config/managers/configManager.js', () => ({
     default: {
         getInstance: vi.fn(),
     },
 }));
 
-vi.mock('../../../toolConfigManager.js', () => ({
+vi.mock('../../../src/config/managers/toolConfigManager.js', () => ({
     getToolConfigManager: vi.fn().mockReturnValue({
         getToolDescription: vi.fn().mockReturnValue('Explain codebase tool'),
         getErrorMessage: vi.fn().mockReturnValue('Error message'),
@@ -64,7 +64,7 @@ describe('Explain Codebase Tool', () => {
         const openai = await import('openai');
         mockOpenAI = openai.OpenAI;
 
-        const configManager = await import('../../../configManager.js');
+        const configManager = await import('../../../src/config/managers/configManager.js');
         mockConfigManager = configManager.default.getInstance;
 
         const path = await import('path');

@@ -5,7 +5,7 @@
 // import { join, dirname } from 'path';
 // import { fileURLToPath } from 'url';
 import ConfigManager from './src/config/managers/configManager.js';
-import SystemMessages from './systemMessages.js';
+import SystemMessages from './src/core/ai/systemMessages.js';
 import { getUIConfigManager } from './src/config/managers/uiConfigManager.js';
 import { getConfigurationLoader } from './src/config/validation/configurationLoader.js';
 
@@ -61,13 +61,13 @@ ${cliHelp.examples.map(ex => `  ${ex}`).join('\n')}
 // const __filename = fileURLToPath(import.meta.url);
 // const __dirname = dirname(__filename);
 
-import AIAPIClient from './aiAPIClient.js';
-import ToolManager from './toolManager.js';
+import AIAPIClient from './src/core/ai/aiAPIClient.js';
+import ToolManager from './src/core/managers/toolManager.js';
 import CommandHandler from './commandHandler.js';
 import ConsoleInterface from './consoleInterface.js';
-import costsManager from './costsManager.js';
-import SnapshotManager from './snapshotManager.js';
-import PromptEnhancer from './promptEnhancer.js';
+import costsManager from './src/core/managers/costsManager.js';
+import SnapshotManager from './src/core/managers/snapshotManager.js';
+import PromptEnhancer from './src/core/ai/promptEnhancer.js';
 import WorkflowStateMachine from './workflow/WorkflowStateMachine.js';
 import { initializeLogger, getLogger } from './src/core/managers/logger.js';
 import GitUtils from './utils/GitUtils.js';

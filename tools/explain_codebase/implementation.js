@@ -1,6 +1,6 @@
 import { readFileSync } from 'fs';
 import { join } from 'path';
-import ConfigManager from '../../configManager.js';
+import ConfigManager from '../../src/config/managers/configManager.js';
 import AIAPIClient from '../../aiAPIClient.js';
 import SystemMessages from '../../systemMessages.js';
 import { CommandBaseTool } from '../common/base-tool.js';

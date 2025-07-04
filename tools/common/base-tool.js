@@ -4,7 +4,7 @@
  */
 
 import { join, resolve, relative } from 'path';
-import costsManager from '../../costsManager.js';
+import costsManager from '../../src/core/managers/costsManager.js';
 import { getToolConfigManager } from '../../src/config/managers/toolConfigManager.js';
 import { getLogger } from '../../src/core/managers/logger.js';
 

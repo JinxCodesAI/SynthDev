@@ -3,7 +3,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import CommandGenerator from '../../../commands/terminal/CommandGenerator.js';
 
 // Mock dependencies
-vi.mock('../../../configManager.js', () => ({
+vi.mock('../../../src/config/managers/configManager.js', () => ({
     default: {
         getInstance: vi.fn(),
     },
@@ -44,7 +44,8 @@ describe('CommandGenerator', () => {
                 model: 'gpt-4',
             }),
         };
-        const ConfigManager = (await import('../../../configManager.js')).default;
+        const ConfigManager = (await import('../../../src/config/managers/configManager.js'))
+            .default;
         ConfigManager.getInstance.mockReturnValue(mockConfigManager);
 
         // Setup AIAPIClient mock

@@ -3,7 +3,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import PromptEnhancer from '../../promptEnhancer.js';
 
 // Mock dependencies
-vi.mock('../../configManager.js', () => ({
+vi.mock('../../src/config/managers/configManager.js', () => ({
     default: {
         getInstance: vi.fn(),
     },
@@ -53,7 +53,7 @@ describe('PromptEnhancer', () => {
         };
 
         // Setup ConfigManager mock
-        const ConfigManagerModule = await import('../../configManager.js');
+        const ConfigManagerModule = await import('../../src/config/managers/configManager.js');
         mockConfigManager = {
             getConfig: vi.fn().mockReturnValue({
                 global: { enablePromptEnhancement: true },

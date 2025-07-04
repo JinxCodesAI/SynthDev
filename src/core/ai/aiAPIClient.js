@@ -1,9 +1,9 @@
 import { OpenAI } from 'openai';
 import { dirname } from 'path';
 import { fileURLToPath } from 'url';
-import ConfigManager from './src/config/managers/configManager.js';
+import ConfigManager from '../../config/managers/configManager.js';
 import SystemMessages from './systemMessages.js';
-import { getLogger } from './src/core/managers/logger.js';
+import { getLogger } from '../managers/logger.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);

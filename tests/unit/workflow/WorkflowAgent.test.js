@@ -1,11 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import WorkflowAgent from '../../../workflow/WorkflowAgent.js';
 import AIAPIClient from '../../../aiAPIClient.js';
-import ConfigManager from '../../../configManager.js';
+import ConfigManager from '../../../src/config/managers/configManager.js';
 
 // Mock dependencies
 vi.mock('../../../aiAPIClient.js');
-vi.mock('../../../configManager.js');
+vi.mock('../../../src/config/managers/configManager.js');
 vi.mock('../../../src/core/managers/logger.js', () => ({
     getLogger: vi.fn(() => ({
         debug: vi.fn(),
@@ -80,7 +80,6 @@ describe('WorkflowAgent', () => {
                 model: 'gpt-4',
             }),
         };
-        vi.mocked(ConfigManager.getInstance).mockReturnValue(mockConfigManager);
 
         // Mock additional dependencies
         mockToolManager = {

@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import SnapshotManager from '../../snapshotManager.js';
+import SnapshotManager from '../../src/core/managers/snapshotManager.js';
 
 // Mock dependencies
 vi.mock('fs', () => ({

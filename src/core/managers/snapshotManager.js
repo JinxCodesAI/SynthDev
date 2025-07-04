@@ -1,6 +1,6 @@
 import { readFileSync, existsSync } from 'fs';
-import { getLogger } from './src/core/managers/logger.js';
-import GitUtils from './utils/GitUtils.js';
+import { getLogger } from './logger.js';
+import GitUtils from '../../../utils/GitUtils.js';
 
 /**
  * Manages in-memory snapshots for file backup and restoration with Git integration
@@ -344,7 +344,7 @@ Original instruction: ${sanitizedInstruction}`;
                     } else {
                         // File existed in the snapshot - restore its content
                         const writeFileModule = await import(
-                            './tools/write_file/implementation.js'
+                            '../../../tools/write_file/implementation.js'
                         );
                         const writeFile = writeFileModule.default;
 

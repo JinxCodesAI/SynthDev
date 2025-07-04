@@ -8,7 +8,7 @@ vi.mock('openai', () => ({
     OpenAI: vi.fn(),
 }));
 
-vi.mock('../../../configManager.js', () => ({
+vi.mock('../../../src/config/managers/configManager.js', () => ({
     default: {
         getInstance: vi.fn(),
     },
@@ -79,7 +79,7 @@ describe('AIAPIClient', () => {
         const { OpenAI } = await import('openai');
         OpenAI.mockImplementation(() => mockOpenAI);
 
-        const ConfigManager = await import('../../../configManager.js');
+        const ConfigManager = await import('../../../src/config/managers/configManager.js');
         ConfigManager.default.getInstance.mockReturnValue(mockConfig);
 
         const SystemMessages = await import('../../../systemMessages.js');

@@ -1,6 +1,6 @@
 // tests/e2e/workflow.test.js
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import ToolManager from '../../toolManager.js';
+import ToolManager from '../../src/core/managers/toolManager.js';
 import ConfigManager from '../../src/config/managers/configManager.js';
 import { CommandRegistry } from '../../commands/base/CommandRegistry.js';
 import AIAPIClient from '../../aiAPIClient.js';

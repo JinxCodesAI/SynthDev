@@ -21,7 +21,7 @@ vi.mock('../../../indexing/IndexingUtils.js', () => ({
     },
 }));
 
-vi.mock('../../../configManager.js', () => ({
+vi.mock('../../../src/config/managers/configManager.js', () => ({
     default: {
         getInstance: vi.fn(),
     },
@@ -115,7 +115,7 @@ describe('IndexCommand', () => {
         mockIndexingUtils.formatDuration.mockReturnValue('1.2s');
 
         // Setup ConfigManager mock
-        mockConfigManager = (await import('../../../configManager.js')).default;
+        mockConfigManager = (await import('../../../src/config/managers/configManager.js')).default;
         mockConfigManager.getInstance.mockReturnValue({
             hasAIConfig: vi.fn().mockReturnValue(true),
             hasFastModelConfig: vi.fn().mockReturnValue(true),

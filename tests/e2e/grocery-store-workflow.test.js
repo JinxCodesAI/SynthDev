@@ -4,10 +4,10 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import WorkflowStateMachine from '../../workflow/WorkflowStateMachine.js';
 import ConfigManager from '../../src/config/managers/configManager.js';
-import ToolManager from '../../toolManager.js';
-import SnapshotManager from '../../snapshotManager.js';
+import ToolManager from '../../src/core/managers/toolManager.js';
+import SnapshotManager from '../../src/core/managers/snapshotManager.js';
 import ConsoleInterface from '../../consoleInterface.js';
-import costsManager from '../../costsManager.js';
+import costsManager from '../../src/core/managers/costsManager.js';
 import { groceryStoreHttpMocks } from '../mocks/grocery-store-http.js';
 
 // Get current directory for ES modules

@@ -2,7 +2,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import ToolManager from '../../../toolManager.js';
+import ToolManager from '../../../src/core/managers/toolManager.js';
 import { createMockConsoleInterface } from '../../mocks/consoleInterface.js';
 
 const __filename = fileURLToPath(import.meta.url);

@@ -11,7 +11,7 @@ vi.mock('../../src/core/managers/logger.js', () => ({
     getLogger: vi.fn(),
 }));
 
-vi.mock('../../uiConfigManager.js', () => ({
+vi.mock('../../src/config/managers/uiConfigManager.js', () => ({
     getUIConfigManager: vi.fn(),
 }));
 
@@ -133,7 +133,7 @@ describe('ConsoleInterface', () => {
         const loggerModule = await import('../../src/core/managers/logger.js');
         loggerModule.getLogger.mockReturnValue(mockLogger);
 
-        const uiConfigModule = await import('../../uiConfigManager.js');
+        const uiConfigModule = await import('../../src/config/managers/uiConfigManager.js');
         uiConfigModule.getUIConfigManager.mockReturnValue(mockUIConfigManager);
 
         // Create ConsoleInterface instance
