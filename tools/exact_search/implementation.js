@@ -6,7 +6,7 @@
 import { join } from 'path';
 import { scanDirectory, safeReadFile } from '../common/fs_utils.js';
 import { BaseTool } from '../common/base-tool.js';
-import { getToolConfigManager } from '../../toolConfigManager.js';
+import { getToolConfigManager } from '../../src/config/managers/toolConfigManager.js';
 
 class ExactSearchTool extends BaseTool {
     constructor() {

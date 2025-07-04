@@ -7,7 +7,7 @@ import { statSync, readdirSync, readFileSync, existsSync } from 'fs';
 import { join, relative, extname, resolve } from 'path';
 import { scanDirectory } from '../common/fs_utils.js';
 import { FileBaseTool } from '../common/base-tool.js';
-import { getToolConfigManager } from '../../toolConfigManager.js';
+import { getToolConfigManager } from '../../src/config/managers/toolConfigManager.js';
 
 class ListDirectoryTool extends FileBaseTool {
     constructor() {

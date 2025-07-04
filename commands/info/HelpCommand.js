@@ -5,7 +5,7 @@
 
 import { BaseCommand } from '../base/BaseCommand.js';
 import { getLogger } from '../../src/core/managers/logger.js';
-import { getUIConfigManager } from '../../uiConfigManager.js';
+import { getUIConfigManager } from '../../src/config/managers/uiConfigManager.js';
 
 export class HelpCommand extends BaseCommand {
     constructor() {

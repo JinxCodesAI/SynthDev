@@ -1,4 +1,4 @@
-import { getConfigurationLoader } from './src/config/validation/configurationLoader.js';
+import { getConfigurationLoader } from '../validation/configurationLoader.js';
 import ConfigManager from './configManager.js';
 
 /**

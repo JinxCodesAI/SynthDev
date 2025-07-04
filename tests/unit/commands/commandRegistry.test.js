@@ -56,7 +56,7 @@ vi.mock('../../../uiConfigManager.js', () => ({
 }));
 
 // Mock configuration loader
-vi.mock('../../../configurationLoader.js', () => ({
+vi.mock('../../../src/config/validation/configurationLoader.js', () => ({
     getConfigurationLoader: vi.fn(),
 }));
 

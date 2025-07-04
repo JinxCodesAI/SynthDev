@@ -3,7 +3,7 @@ import { existsSync, readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import WorkflowStateMachine from '../../workflow/WorkflowStateMachine.js';
-import ConfigManager from '../../configManager.js';
+import ConfigManager from '../../src/config/managers/configManager.js';
 import ToolManager from '../../toolManager.js';
 import SnapshotManager from '../../snapshotManager.js';
 import ConsoleInterface from '../../consoleInterface.js';

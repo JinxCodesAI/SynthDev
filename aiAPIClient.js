@@ -1,7 +1,7 @@
 import { OpenAI } from 'openai';
 import { dirname } from 'path';
 import { fileURLToPath } from 'url';
-import ConfigManager from './configManager.js';
+import ConfigManager from './src/config/managers/configManager.js';
 import SystemMessages from './systemMessages.js';
 import { getLogger } from './src/core/managers/logger.js';
 

@@ -5,7 +5,7 @@
 
 import { join, resolve, relative } from 'path';
 import costsManager from '../../costsManager.js';
-import { getToolConfigManager } from '../../toolConfigManager.js';
+import { getToolConfigManager } from '../../src/config/managers/toolConfigManager.js';
 import { getLogger } from '../../src/core/managers/logger.js';
 
 export class BaseTool {

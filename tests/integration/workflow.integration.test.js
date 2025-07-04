@@ -39,7 +39,7 @@ vi.mock('../../aiAPIClient.js', () => ({
     }),
 }));
 
-vi.mock('../../configManager.js', () => ({
+vi.mock('../../src/config/managers/configManager.js', () => ({
     default: {
         getInstance: vi.fn().mockReturnValue({
             getModel: vi.fn().mockReturnValue({

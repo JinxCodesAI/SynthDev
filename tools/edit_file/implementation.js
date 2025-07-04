@@ -16,7 +16,7 @@
 
 import { readFileSync, writeFileSync, existsSync, statSync } from 'fs';
 import { FileBaseTool } from '../common/base-tool.js';
-import { getToolConfigManager } from '../../toolConfigManager.js';
+import { getToolConfigManager } from '../../src/config/managers/toolConfigManager.js';
 
 class EditFileTool extends FileBaseTool {
     constructor() {

@@ -7,7 +7,7 @@ import { InteractiveCommand } from '../base/BaseCommand.js';
 import IndexingUtils from '../utils/IndexingUtils.js';
 import { readFileSync, mkdirSync, existsSync } from 'fs';
 import { join, resolve } from 'path';
-import ConfigManager from '../../configManager.js';
+import ConfigManager from '../../src/config/managers/configManager.js';
 import { safeWriteFile, fileExists } from '../../tools/common/fs_utils.js';
 import { getLogger } from '../../src/core/managers/logger.js';
 import AIAPIClient from '../../aiAPIClient.js';

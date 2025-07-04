@@ -2,7 +2,7 @@ import { InteractiveCommand } from '../base/BaseCommand.js';
 import CommandGenerator from './CommandGenerator.js';
 import { getLogger } from '../../src/core/managers/logger.js';
 import executeTerminal from '../../tools/execute_terminal/implementation.js';
-import { getUIConfigManager } from '../../uiConfigManager.js';
+import { getUIConfigManager } from '../../src/config/managers/uiConfigManager.js';
 
 /**
  * Command for executing terminal commands with AI assistance

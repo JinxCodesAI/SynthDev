@@ -4,9 +4,9 @@
 // import { readFileSync, readdirSync } from 'fs';
 // import { join, dirname } from 'path';
 // import { fileURLToPath } from 'url';
-import ConfigManager from './configManager.js';
+import ConfigManager from './src/config/managers/configManager.js';
 import SystemMessages from './systemMessages.js';
-import { getUIConfigManager } from './uiConfigManager.js';
+import { getUIConfigManager } from './src/config/managers/uiConfigManager.js';
 import { getConfigurationLoader } from './src/config/validation/configurationLoader.js';
 
 /**

@@ -7,7 +7,7 @@
 import { writeFileSync, existsSync, statSync, mkdirSync } from 'fs';
 import { join, dirname } from 'path';
 import { FileBaseTool } from '../common/base-tool.js';
-import { getToolConfigManager } from '../../toolConfigManager.js';
+import { getToolConfigManager } from '../../src/config/managers/toolConfigManager.js';
 
 class WriteFileTool extends FileBaseTool {
     constructor() {

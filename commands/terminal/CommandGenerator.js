@@ -1,4 +1,4 @@
-import ConfigManager from '../../configManager.js';
+import ConfigManager from '../../src/config/managers/configManager.js';
 import AIAPIClient from '../../aiAPIClient.js';
 import SystemMessages from '../../systemMessages.js';
 import { getLogger } from '../../src/core/managers/logger.js';

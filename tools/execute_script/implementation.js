@@ -10,7 +10,7 @@ import ConfigManager from '../../configManager.js';
 import AIAPIClient from '../../aiAPIClient.js';
 import { CommandBaseTool } from '../common/base-tool.js';
 import { getLogger } from '../../src/core/managers/logger.js';
-import { getToolConfigManager } from '../../toolConfigManager.js';
+import { getToolConfigManager } from '../../src/config/managers/toolConfigManager.js';
 
 class ExecuteScriptTool extends CommandBaseTool {
     constructor() {
