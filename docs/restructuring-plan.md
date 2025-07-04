@@ -7,6 +7,7 @@ The SynthDev project currently has **22 JavaScript files** and **multiple config
 ### Current Root Directory Issues
 
 **Core Files (22 JS files in root):**
+
 - `app.js` - Main entry point
 - `aiAPIClient.js` - AI API communication
 - `commandHandler.js` - Command routing
@@ -25,6 +26,7 @@ The SynthDev project currently has **22 JavaScript files** and **multiple config
 - `uiConfigManager.js` - UI configuration
 
 **Other Root Files:**
+
 - Configuration files (`.env` examples)
 - Docker files
 - Package files
@@ -74,6 +76,7 @@ src/
 ```
 
 **Root Directory (cleaned up):**
+
 ```
 ├── src/                    # All source code
 ├── docs/                   # Documentation (existing)
@@ -96,66 +99,71 @@ src/
 ### Phase 1: Create New Directory Structure
 
 1. **Create main source directory structure:**
-   ```bash
-   mkdir -p src/core/ai
-   mkdir -p src/core/interface
-   mkdir -p src/core/managers
-   mkdir -p src/config/managers
-   mkdir -p src/shared
-   ```
+
+    ```bash
+    mkdir -p src/core/ai
+    mkdir -p src/core/interface
+    mkdir -p src/core/managers
+    mkdir -p src/config/managers
+    mkdir -p src/shared
+    ```
 
 2. **Move configuration system:**
-   ```bash
-   # Move config managers
-   mv configManager.js src/config/managers/
-   mv toolConfigManager.js src/config/managers/
-   mv uiConfigManager.js src/config/managers/
-   mv configurationChecker.js src/config/validation/
-   mv configurationLoader.js src/config/validation/
-   mv configurationValidator.js src/config/validation/
-   
-   # Move existing config directory contents to src/config/
-   mv config/* src/config/
-   rmdir config
-   ```
+
+    ```bash
+    # Move config managers
+    mv configManager.js src/config/managers/
+    mv toolConfigManager.js src/config/managers/
+    mv uiConfigManager.js src/config/managers/
+    mv configurationChecker.js src/config/validation/
+    mv configurationLoader.js src/config/validation/
+    mv configurationValidator.js src/config/validation/
+
+    # Move existing config directory contents to src/config/
+    mv config/* src/config/
+    rmdir config
+    ```
 
 ### Phase 2: Reorganize Core Components
 
 3. **Move AI-related components:**
-   ```bash
-   mv aiAPIClient.js src/core/ai/
-   mv systemMessages.js src/core/ai/
-   mv promptEnhancer.js src/core/ai/
-   ```
+
+    ```bash
+    mv aiAPIClient.js src/core/ai/
+    mv systemMessages.js src/core/ai/
+    mv promptEnhancer.js src/core/ai/
+    ```
 
 4. **Move interface components:**
-   ```bash
-   mv consoleInterface.js src/core/interface/
-   mv commandHandler.js src/core/interface/
-   ```
+
+    ```bash
+    mv consoleInterface.js src/core/interface/
+    mv commandHandler.js src/core/interface/
+    ```
 
 5. **Move core managers:**
-   ```bash
-   mv costsManager.js src/core/managers/
-   mv snapshotManager.js src/core/managers/
-   mv toolManager.js src/core/managers/
-   mv logger.js src/core/managers/
-   ```
+
+    ```bash
+    mv costsManager.js src/core/managers/
+    mv snapshotManager.js src/core/managers/
+    mv toolManager.js src/core/managers/
+    mv logger.js src/core/managers/
+    ```
 
 6. **Move main application:**
-   ```bash
-   mv app.js src/core/
-   ```
+    ```bash
+    mv app.js src/core/
+    ```
 
 ### Phase 3: Move Existing Structured Directories
 
 7. **Move existing well-structured directories:**
-   ```bash
-   mv commands src/
-   mv tools src/
-   mv workflow src/
-   mv utils src/
-   ```
+    ```bash
+    mv commands src/
+    mv tools src/
+    mv workflow src/
+    mv utils src/
+    ```
 
 ### Phase 4: Update Import Paths
 
@@ -189,27 +197,32 @@ src/
 ## Benefits of This Restructuring
 
 ### 1. **Clear Separation of Concerns**
+
 - **Core logic** separated from configuration
 - **AI components** grouped together
 - **Interface components** isolated
 - **Managers** organized by responsibility
 
 ### 2. **Improved Maintainability**
+
 - Easier to locate specific functionality
 - Clearer dependencies between modules
 - Better organization for new developers
 
 ### 3. **Scalability**
+
 - Room for growth in each category
 - Clear patterns for adding new components
 - Modular structure supports future features
 
 ### 4. **Better Testing**
+
 - Easier to write focused unit tests
 - Clear boundaries for integration tests
 - Simplified mocking and dependency injection
 
 ### 5. **Enhanced Developer Experience**
+
 - Faster navigation in IDEs
 - Clearer mental model of the codebase
 - Reduced cognitive load when working on specific features
@@ -217,12 +230,14 @@ src/
 ## Migration Strategy
 
 ### Approach: Gradual Migration
+
 1. **Phase-by-phase implementation** to avoid breaking changes
 2. **Comprehensive testing** after each phase
 3. **Backward compatibility** during transition
 4. **Documentation updates** alongside code changes
 
 ### Risk Mitigation
+
 - **Backup current state** before starting
 - **Test thoroughly** after each phase
 - **Update CI/CD** configurations as needed
@@ -233,29 +248,32 @@ src/
 ### Critical Import Relationships to Update
 
 **app.js imports (will become src/core/app.js):**
+
 ```javascript
 // Current imports that need path updates:
-import AIAPIClient from './aiAPIClient.js';           // → './ai/aiAPIClient.js'
-import ToolManager from './toolManager.js';          // → './managers/toolManager.js'
-import CommandHandler from './commandHandler.js';    // → './interface/commandHandler.js'
+import AIAPIClient from './aiAPIClient.js'; // → './ai/aiAPIClient.js'
+import ToolManager from './toolManager.js'; // → './managers/toolManager.js'
+import CommandHandler from './commandHandler.js'; // → './interface/commandHandler.js'
 import ConsoleInterface from './consoleInterface.js'; // → './interface/consoleInterface.js'
-import costsManager from './costsManager.js';        // → './managers/costsManager.js'
-import SnapshotManager from './snapshotManager.js';  // → './managers/snapshotManager.js'
-import PromptEnhancer from './promptEnhancer.js';    // → './ai/promptEnhancer.js'
+import costsManager from './costsManager.js'; // → './managers/costsManager.js'
+import SnapshotManager from './snapshotManager.js'; // → './managers/snapshotManager.js'
+import PromptEnhancer from './promptEnhancer.js'; // → './ai/promptEnhancer.js'
 import WorkflowStateMachine from './workflow/WorkflowStateMachine.js'; // → '../workflow/WorkflowStateMachine.js'
 import { initializeLogger, getLogger } from './logger.js'; // → './managers/logger.js'
-import GitUtils from './utils/GitUtils.js';          // → '../utils/GitUtils.js'
+import GitUtils from './utils/GitUtils.js'; // → '../utils/GitUtils.js'
 ```
 
 **Configuration Manager imports:**
+
 ```javascript
 // Files importing configuration managers need updates:
-import ConfigManager from './configManager.js';      // → '../config/managers/configManager.js'
+import ConfigManager from './configManager.js'; // → '../config/managers/configManager.js'
 import { getToolConfigManager } from './toolConfigManager.js'; // → '../config/managers/toolConfigManager.js'
 import { getUIConfigManager } from './uiConfigManager.js'; // → '../config/managers/uiConfigManager.js'
 ```
 
 **Cross-module dependencies:**
+
 - **aiAPIClient.js** imports ConfigManager, logger
 - **toolManager.js** imports logger, tool schema from tools/common/
 - **systemMessages.js** imports configurationLoader
@@ -274,18 +292,21 @@ import { getUIConfigManager } from './uiConfigManager.js'; // → '../config/man
 ## Implementation Checklist
 
 ### Pre-Migration Checklist
+
 - [ ] Create backup branch
 - [ ] Run full test suite to establish baseline
 - [ ] Document current test coverage
 - [ ] Verify all current functionality works
 
 ### Phase 1: Directory Structure
+
 - [ ] Create src/ directory structure
 - [ ] Create src/core/ subdirectories
 - [ ] Create src/config/managers/ directory
 - [ ] Verify directory permissions
 
 ### Phase 2: Move Configuration System
+
 - [ ] Move config managers to src/config/managers/
 - [ ] Move validation files to src/config/validation/
 - [ ] Move config/ contents to src/config/
@@ -293,6 +314,7 @@ import { getUIConfigManager } from './uiConfigManager.js'; // → '../config/man
 - [ ] Test configuration loading
 
 ### Phase 3: Move Core Components
+
 - [ ] Move AI components to src/core/ai/
 - [ ] Move interface components to src/core/interface/
 - [ ] Move managers to src/core/managers/
@@ -300,6 +322,7 @@ import { getUIConfigManager } from './uiConfigManager.js'; // → '../config/man
 - [ ] Update core component imports
 
 ### Phase 4: Move Structured Directories
+
 - [ ] Move commands/ to src/commands/
 - [ ] Move tools/ to src/tools/
 - [ ] Move workflow/ to src/workflow/
@@ -307,18 +330,21 @@ import { getUIConfigManager } from './uiConfigManager.js'; // → '../config/man
 - [ ] Update cross-directory imports
 
 ### Phase 5: Update Entry Points
+
 - [ ] Update package.json main field
 - [ ] Update package.json bin field
 - [ ] Update npm scripts if needed
 - [ ] Test npm start and npm install -g
 
 ### Phase 6: Update Build Configuration
+
 - [ ] Update vitest.config.js paths
 - [ ] Update eslint.config.js paths
 - [ ] Update any Docker file paths
 - [ ] Update GitHub Actions if present
 
 ### Phase 7: Testing and Validation
+
 - [ ] Run full test suite
 - [ ] Test all commands manually
 - [ ] Test tool execution
@@ -328,6 +354,7 @@ import { getUIConfigManager } from './uiConfigManager.js'; // → '../config/man
 - [ ] Verify no broken imports
 
 ### Phase 8: Documentation
+
 - [ ] Update README.md
 - [ ] Update docs/architecture.md
 - [ ] Update docs/configuration.md
