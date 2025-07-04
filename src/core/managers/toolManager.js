@@ -1,7 +1,7 @@
 import { readFileSync, readdirSync, existsSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import { validateToolDefinition } from '../../../tools/common/tool-schema.js';
+import { validateToolDefinition } from '../../tools/common/tool-schema.js';
 import { getLogger } from './logger.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -22,7 +22,7 @@ class ToolManager {
 
     async loadTools() {
         try {
-            const toolsDir = join(__dirname, '../../../tools');
+            const toolsDir = join(__dirname, '../../tools');
             const toolDirs = readdirSync(toolsDir, { withFileTypes: true })
                 .filter(
                     dirent =>

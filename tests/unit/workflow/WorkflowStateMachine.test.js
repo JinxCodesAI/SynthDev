@@ -1,13 +1,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import WorkflowStateMachine from '../../../workflow/WorkflowStateMachine.js';
-import WorkflowConfig from '../../../workflow/WorkflowConfig.js';
-import WorkflowAgent from '../../../workflow/WorkflowAgent.js';
-import WorkflowContext from '../../../workflow/WorkflowContext.js';
+import WorkflowStateMachine from '../../../src/workflow/WorkflowStateMachine.js';
+import WorkflowConfig from '../../../src/workflow/WorkflowConfig.js';
+import WorkflowAgent from '../../../src/workflow/WorkflowAgent.js';
+import WorkflowContext from '../../../src/workflow/WorkflowContext.js';
 
 // Mock dependencies
-vi.mock('../../../workflow/WorkflowConfig.js');
-vi.mock('../../../workflow/WorkflowAgent.js');
-vi.mock('../../../workflow/WorkflowContext.js');
+vi.mock('../../../src/workflow/WorkflowConfig.js');
+vi.mock('../../../src/workflow/WorkflowAgent.js');
+vi.mock('../../../src/workflow/WorkflowContext.js');
 vi.mock('../../../src/core/managers/logger.js', () => ({
     getLogger: vi.fn(() => ({
         debug: vi.fn(),

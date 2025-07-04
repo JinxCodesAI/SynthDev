@@ -12,11 +12,11 @@ vi.mock('../../src/core/managers/logger.js', () => ({
     getLogger: vi.fn(),
 }));
 
-vi.mock('../../utils/GitUtils.js', () => ({
+vi.mock('../../src/utils/GitUtils.js', () => ({
     default: vi.fn(),
 }));
 
-vi.mock('../../tools/write_file/implementation.js', () => ({
+vi.mock('../../src/tools/write_file/implementation.js', () => ({
     default: vi.fn(),
 }));
 
@@ -53,11 +53,11 @@ describe('SnapshotManager', () => {
         const loggerModule = await import('../../src/core/managers/logger.js');
         loggerModule.getLogger.mockReturnValue(mockLogger);
 
-        const GitUtilsModule = await import('../../utils/GitUtils.js');
+        const GitUtilsModule = await import('../../src/utils/GitUtils.js');
         GitUtilsModule.default.mockImplementation(() => mockGitUtils);
 
         mockFs = await import('fs');
-        mockWriteFile = (await import('../../tools/write_file/implementation.js')).default;
+        mockWriteFile = (await import('../../src/tools/write_file/implementation.js')).default;
 
         // Create SnapshotManager instance
         snapshotManager = new SnapshotManager();

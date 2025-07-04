@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import WorkflowContext from '../../../workflow/WorkflowContext.js';
+import WorkflowContext from '../../../src/workflow/WorkflowContext.js';
 
 // Mock dependencies
 vi.mock('../../../src/core/managers/logger.js', () => ({

@@ -1,7 +1,7 @@
 // tests/unit/commands/commandRegistry.test.js
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { CommandRegistry } from '../../../commands/base/CommandRegistry.js';
-import { BaseCommand } from '../../../commands/base/BaseCommand.js';
+import { CommandRegistry } from '../../../src/commands/base/CommandRegistry.js';
+import { BaseCommand } from '../../../src/commands/base/BaseCommand.js';
 import json from '../../../config/ui/console-messages.json';
 
 // Mock logger

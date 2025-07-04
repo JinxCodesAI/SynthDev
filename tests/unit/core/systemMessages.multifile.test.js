@@ -1,6 +1,6 @@
 // tests/unit/core/systemMessages.multifile.test.js
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import SystemMessages from '../../../systemMessages.js';
+import SystemMessages from '../../../src/core/ai/systemMessages.js';
 
 // Mock the configuration loader to simulate multi-file loading
 vi.mock('../../../src/config/validation/configurationLoader.js', () => ({

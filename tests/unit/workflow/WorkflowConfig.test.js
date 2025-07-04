@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { existsSync, readFileSync } from 'fs';
 import { join, dirname, basename, resolve } from 'path';
 import { pathToFileURL } from 'url';
-import WorkflowConfig from '../../../workflow/WorkflowConfig.js';
+import WorkflowConfig from '../../../src/workflow/WorkflowConfig.js';
 
 // Mock dependencies
 vi.mock('fs');

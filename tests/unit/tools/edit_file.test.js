@@ -2,7 +2,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { writeFileSync, unlinkSync, existsSync, readFileSync } from 'fs';
 import { join } from 'path';
-import editFile from '../../../tools/edit_file/implementation.js';
+import editFile from '../../../src/tools/edit_file/implementation.js';
 
 // Mock the logger specifically for this test
 vi.mock('../../../src/core/managers/logger.js', () => ({

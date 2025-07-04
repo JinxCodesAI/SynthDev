@@ -1,6 +1,6 @@
 // tests/unit/commands/reviewCommand.test.js
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import ReviewCommand from '../../../commands/info/ReviewCommand.js';
+import ReviewCommand from '../../../src/commands/info/ReviewCommand.js';
 
 // Mock logger
 vi.mock('../../../src/core/managers/logger.js', () => ({

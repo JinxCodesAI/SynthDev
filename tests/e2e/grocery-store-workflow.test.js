@@ -2,11 +2,11 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { existsSync, readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import WorkflowStateMachine from '../../workflow/WorkflowStateMachine.js';
+import WorkflowStateMachine from '../../src/workflow/WorkflowStateMachine.js';
 import ConfigManager from '../../src/config/managers/configManager.js';
 import ToolManager from '../../src/core/managers/toolManager.js';
 import SnapshotManager from '../../src/core/managers/snapshotManager.js';
-import ConsoleInterface from '../../consoleInterface.js';
+import ConsoleInterface from '../../src/core/interface/consoleInterface.js';
 import costsManager from '../../src/core/managers/costsManager.js';
 import { groceryStoreHttpMocks } from '../mocks/grocery-store-http.js';
 

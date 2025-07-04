@@ -1,6 +1,6 @@
 // tests/unit/commands/cmdCommand.test.js
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { CmdCommand } from '../../../commands/terminal/CmdCommand.js';
+import { CmdCommand } from '../../../src/commands/terminal/CmdCommand.js';
 
 // Mock logger
 vi.mock('../../../src/core/managers/logger.js', () => ({
@@ -8,14 +8,14 @@ vi.mock('../../../src/core/managers/logger.js', () => ({
 }));
 
 // Mock CommandGenerator
-vi.mock('../../../commands/terminal/CommandGenerator.js', () => ({
+vi.mock('../../../src/commands/terminal/CommandGenerator.js', () => ({
     default: vi.fn().mockImplementation(() => ({
         generateCommand: vi.fn(),
     })),
 }));
 
 // Mock execute_terminal
-vi.mock('../../../tools/execute_terminal/implementation.js', () => ({
+vi.mock('../../../src/tools/execute_terminal/implementation.js', () => ({
     default: vi.fn(),
 }));
 
@@ -43,8 +43,9 @@ describe('CmdCommand', () => {
         getLogger.mockReturnValue(mockLogger);
 
         // Setup CommandGenerator mock
-        const CommandGenerator = (await import('../../../commands/terminal/CommandGenerator.js'))
-            .default;
+        const CommandGenerator = (
+            await import('../../../src/commands/terminal/CommandGenerator.js')
+        ).default;
         mockCommandGenerator = {
             generateCommand: vi.fn().mockResolvedValue({
                 success: true,
@@ -54,8 +55,9 @@ describe('CmdCommand', () => {
         CommandGenerator.mockImplementation(() => mockCommandGenerator);
 
         // Setup execute_terminal mock
-        mockExecuteTerminal = (await import('../../../tools/execute_terminal/implementation.js'))
-            .default;
+        mockExecuteTerminal = (
+            await import('../../../src/tools/execute_terminal/implementation.js')
+        ).default;
         mockExecuteTerminal.mockResolvedValue({
             success: true,
             stdout: 'On branch main\nnothing to commit, working tree clean',

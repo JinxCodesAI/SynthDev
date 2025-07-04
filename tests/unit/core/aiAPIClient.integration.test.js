@@ -1,6 +1,6 @@
 // tests/unit/core/aiAPIClient.integration.test.js
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import AIAPIClient from '../../../aiAPIClient.js';
+import AIAPIClient from '../../../src/core/ai/aiAPIClient.js';
 import {
     createMockOpenAI,
     createMockOpenAIWithToolCalls,
@@ -19,7 +19,7 @@ vi.mock('../../../src/config/managers/configManager.js', () => ({
     },
 }));
 
-vi.mock('../../../systemMessages.js', () => ({
+vi.mock('../../../src/core/ai/systemMessages.js', () => ({
     default: {
         getSystemMessage: vi.fn(),
         getLevel: vi.fn(),
@@ -82,7 +82,7 @@ describe('AIAPIClient Integration Tests', () => {
         const ConfigManager = await import('../../../src/config/managers/configManager.js');
         ConfigManager.default.getInstance.mockReturnValue(mockConfig);
 
-        const SystemMessages = await import('../../../systemMessages.js');
+        const SystemMessages = await import('../../../src/core/ai/systemMessages.js');
         SystemMessages.default.getSystemMessage = mockSystemMessages.getSystemMessage;
         SystemMessages.default.getLevel = mockSystemMessages.getLevel;
         SystemMessages.default.getExcludedTools = mockSystemMessages.getExcludedTools;

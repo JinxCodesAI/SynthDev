@@ -4,7 +4,7 @@ import {
     BaseCommand,
     SimpleCommand,
     InteractiveCommand,
-} from '../../../commands/base/BaseCommand.js';
+} from '../../../src/commands/base/BaseCommand.js';
 
 // Mock logger
 vi.mock('../../../src/core/managers/logger.js', () => ({

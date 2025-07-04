@@ -1,6 +1,6 @@
 // tests/unit/commands/clearCommand.test.js
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { ClearCommand } from '../../../commands/conversation/ClearCommand.js';
+import { ClearCommand } from '../../../src/commands/conversation/ClearCommand.js';
 
 // Mock logger
 vi.mock('../../../src/core/managers/logger.js', () => ({

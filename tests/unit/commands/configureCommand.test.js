@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { ConfigureCommand } from '../../../commands/config/ConfigureCommand.js';
+import { ConfigureCommand } from '../../../src/commands/config/ConfigureCommand.js';
 
 describe('ConfigureCommand', () => {
     let configureCommand;

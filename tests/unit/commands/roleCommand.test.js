@@ -1,6 +1,6 @@
 // tests/unit/commands/roleCommand.test.js
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import RoleCommand from '../../../commands/role/RoleCommand.js';
+import RoleCommand from '../../../src/commands/role/RoleCommand.js';
 
 // Mock logger
 vi.mock('../../../src/core/managers/logger.js', () => ({
@@ -8,7 +8,7 @@ vi.mock('../../../src/core/managers/logger.js', () => ({
 }));
 
 // Mock SystemMessages
-vi.mock('../../../systemMessages.js', () => ({
+vi.mock('../../../src/core/ai/systemMessages.js', () => ({
     default: {
         hasRole: vi.fn(),
         getAvailableRoles: vi.fn(),
@@ -44,7 +44,7 @@ describe('RoleCommand', () => {
         getLogger.mockReturnValue(mockLogger);
 
         // Setup SystemMessages mock
-        mockSystemMessages = (await import('../../../systemMessages.js')).default;
+        mockSystemMessages = (await import('../../../src/core/ai/systemMessages.js')).default;
         mockSystemMessages.hasRole.mockReturnValue(true);
         mockSystemMessages.getAvailableRoles.mockReturnValue(['coder', 'reviewer', 'architect']);
         mockSystemMessages.getSystemMessage.mockReturnValue('You are a helpful assistant.');

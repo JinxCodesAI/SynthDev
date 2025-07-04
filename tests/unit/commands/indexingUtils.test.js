@@ -1,9 +1,9 @@
 // tests/unit/commands/indexingUtils.test.js
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { IndexingUtils } from '../../../commands/utils/IndexingUtils.js';
+import { IndexingUtils } from '../../../src/commands/utils/IndexingUtils.js';
 
 // Mock dependencies
-vi.mock('../../../tools/common/fs_utils.js', () => ({
+vi.mock('../../../src/tools/common/fs_utils.js', () => ({
     scanDirectory: vi.fn(),
     getFileMetadata: vi.fn(),
     calculateFileChecksum: vi.fn(),
@@ -43,7 +43,7 @@ describe('IndexingUtils', () => {
     let mockExtname;
 
     beforeEach(async () => {
-        const fsUtils = await import('../../../tools/common/fs_utils.js');
+        const fsUtils = await import('../../../src/tools/common/fs_utils.js');
         mockScanDirectory = fsUtils.scanDirectory;
         mockGetFileMetadata = fsUtils.getFileMetadata;
         mockCalculateFileChecksum = fsUtils.calculateFileChecksum;

@@ -1,6 +1,6 @@
 // tests/unit/tools/explain_codebase.test.js
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import explainCodebase from '../../../tools/explain_codebase/implementation.js';
+import explainCodebase from '../../../src/tools/explain_codebase/implementation.js';
 
 // Mock dependencies
 vi.mock('fs', () => ({

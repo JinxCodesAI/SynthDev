@@ -1,6 +1,6 @@
 // tests/unit/commands/costCommand.test.js
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import CostCommand from '../../../commands/info/CostCommand.js';
+import CostCommand from '../../../src/commands/info/CostCommand.js';
 
 // Mock logger
 vi.mock('../../../src/core/managers/logger.js', () => ({

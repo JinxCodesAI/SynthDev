@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import SystemMessages from '../../../systemMessages.js';
+import SystemMessages from '../../../src/core/ai/systemMessages.js';
 
 // Mock the configuration loader
 vi.mock('../../../src/config/validation/configurationLoader.js', () => ({

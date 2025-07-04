@@ -1,6 +1,6 @@
 // tests/unit/tools/getTime.test.js
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import getTime from '../../../tools/get_time/implementation.js';
+import getTime from '../../../src/tools/get_time/implementation.js';
 
 describe('GetTime Tool', () => {
     let originalDate;

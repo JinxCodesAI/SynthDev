@@ -1,6 +1,6 @@
 // tests/unit/commands/toolsCommand.test.js
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import ToolsCommand from '../../../commands/info/ToolsCommand.js';
+import ToolsCommand from '../../../src/commands/info/ToolsCommand.js';
 
 // Mock logger
 vi.mock('../../../src/core/managers/logger.js', () => ({

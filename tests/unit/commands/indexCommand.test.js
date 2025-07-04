@@ -1,6 +1,6 @@
 // tests/unit/commands/indexCommand.test.js
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import IndexCommand from '../../../commands/indexing/IndexCommand.js';
+import IndexCommand from '../../../src/commands/indexing/IndexCommand.js';
 
 // Mock dependencies
 vi.mock('../../../src/core/managers/logger.js', () => ({
@@ -27,7 +27,7 @@ vi.mock('../../../src/config/managers/configManager.js', () => ({
     },
 }));
 
-vi.mock('../../../tools/common/fs_utils.js', () => ({
+vi.mock('../../../src/tools/common/fs_utils.js', () => ({
     safeWriteFile: vi.fn(),
     fileExists: vi.fn(),
     scanDirectory: vi.fn(),
@@ -35,11 +35,11 @@ vi.mock('../../../tools/common/fs_utils.js', () => ({
     safeReadFile: vi.fn(),
 }));
 
-vi.mock('../../../aiAPIClient.js', () => ({
+vi.mock('../../../src/core/ai/aiAPIClient.js', () => ({
     default: vi.fn(),
 }));
 
-vi.mock('../../../systemMessages.js', () => ({
+vi.mock('../../../src/core/ai/systemMessages.js', () => ({
     default: {
         getSystemMessage: vi.fn(),
     },
@@ -127,7 +127,7 @@ describe('IndexCommand', () => {
         });
 
         // Setup fs_utils mock
-        mockFsUtils = await import('../../../tools/common/fs_utils.js');
+        mockFsUtils = await import('../../../src/tools/common/fs_utils.js');
         mockFsUtils.safeWriteFile.mockReturnValue({ success: true });
         mockFsUtils.fileExists.mockReturnValue(false);
         mockFsUtils.scanDirectory.mockReturnValue([

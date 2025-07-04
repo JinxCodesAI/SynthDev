@@ -2,8 +2,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import ToolManager from '../../src/core/managers/toolManager.js';
 import ConfigManager from '../../src/config/managers/configManager.js';
-import { CommandRegistry } from '../../commands/base/CommandRegistry.js';
-import AIAPIClient from '../../aiAPIClient.js';
+import { CommandRegistry } from '../../src/commands/base/CommandRegistry.js';
+import AIAPIClient from '../../src/core/ai/aiAPIClient.js';
 
 // Mock external dependencies
 vi.mock('openai', () => ({

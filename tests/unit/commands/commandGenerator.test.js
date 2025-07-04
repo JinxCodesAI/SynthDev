@@ -1,6 +1,6 @@
 // tests/unit/commands/commandGenerator.test.js
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import CommandGenerator from '../../../commands/terminal/CommandGenerator.js';
+import CommandGenerator from '../../../src/commands/terminal/CommandGenerator.js';
 
 // Mock dependencies
 vi.mock('../../../src/config/managers/configManager.js', () => ({
@@ -9,11 +9,11 @@ vi.mock('../../../src/config/managers/configManager.js', () => ({
     },
 }));
 
-vi.mock('../../../aiAPIClient.js', () => ({
+vi.mock('../../../src/core/ai/aiAPIClient.js', () => ({
     default: vi.fn(),
 }));
 
-vi.mock('../../../systemMessages.js', () => ({
+vi.mock('../../../src/core/ai/systemMessages.js', () => ({
     default: {
         getSystemMessage: vi.fn(),
     },
@@ -54,12 +54,12 @@ describe('CommandGenerator', () => {
             sendUserMessage: vi.fn().mockResolvedValue(true),
             setCallbacks: vi.fn(),
         };
-        const AIAPIClient = (await import('../../../aiAPIClient.js')).default;
+        const AIAPIClient = (await import('../../../src/core/ai/aiAPIClient.js')).default;
         AIAPIClient.mockImplementation(() => mockAIClient);
         mockAIAPIClient = mockAIClient;
 
         // Setup SystemMessages mock
-        mockSystemMessages = (await import('../../../systemMessages.js')).default;
+        mockSystemMessages = (await import('../../../src/core/ai/systemMessages.js')).default;
         mockSystemMessages.getSystemMessage.mockReturnValue('You are a command generator.');
 
         // Setup logger mock

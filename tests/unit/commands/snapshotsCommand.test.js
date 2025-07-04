@@ -1,6 +1,6 @@
 // tests/unit/commands/snapshotsCommand.test.js
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { SnapshotsCommand } from '../../../commands/snapshots/SnapshotsCommand.js';
+import { SnapshotsCommand } from '../../../src/commands/snapshots/SnapshotsCommand.js';
 
 // Mock logger
 vi.mock('../../../src/core/managers/logger.js', () => ({

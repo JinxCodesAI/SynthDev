@@ -1,6 +1,6 @@
 // tests/unit/tools/execute_script.test.js
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import executeScript from '../../../tools/execute_script/implementation.js';
+import executeScript from '../../../src/tools/execute_script/implementation.js';
 
 // Mock dependencies
 vi.mock('child_process', () => ({

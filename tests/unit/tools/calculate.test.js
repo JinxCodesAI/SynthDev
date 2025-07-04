@@ -14,7 +14,7 @@ vi.mock('../../../src/core/managers/logger.js', () => ({
     }),
 }));
 
-import calculate from '../../../tools/calculate/implementation.js';
+import calculate from '../../../src/tools/calculate/implementation.js';
 
 describe('Calculate Tool', () => {
     beforeEach(() => {

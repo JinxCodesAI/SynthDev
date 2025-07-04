@@ -1,6 +1,6 @@
 // tests/unit/commands/helpCommand.test.js
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import HelpCommand from '../../../commands/info/HelpCommand.js';
+import HelpCommand from '../../../src/commands/info/HelpCommand.js';
 
 // Mock logger
 vi.mock('../../../src/core/managers/logger.js', () => ({

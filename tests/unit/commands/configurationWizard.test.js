@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { ConfigurationWizard } from '../../../commands/config/ConfigurationWizard.js';
+import { ConfigurationWizard } from '../../../src/commands/config/ConfigurationWizard.js';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 
 // Mock fs module

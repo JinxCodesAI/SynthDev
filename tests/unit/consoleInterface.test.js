@@ -1,6 +1,6 @@
 // tests/unit/consoleInterface.test.js
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import ConsoleInterface from '../../consoleInterface.js';
+import ConsoleInterface from '../../src/core/interface/consoleInterface.js';
 
 // Mock dependencies
 vi.mock('readline', () => ({
