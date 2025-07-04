@@ -253,17 +253,19 @@ class ConfigManager {
         const validator = getConfigurationValidator();
         const errors = [];
 
-        // Check for required base configuration - prompt if missing
-        if (!this.config.base.apiKey) {
-            try {
-                const apiKey = await this._promptForApiKey();
-                this._updateApiKey(apiKey);
-            } catch (_error) {
-                errors.push('SYNTHDEV_API_KEY is required');
-            }
+        // Check if configuration is incomplete and needs wizard
+        const isIncomplete = this._isConfigurationIncomplete();
+
+        if (isIncomplete) {
+            // Mark that configuration wizard should be started
+            this.needsConfigurationWizard = true;
+
+            // Don't validate configuration if wizard is needed
+            // This allows the app to start and show the wizard
+            return;
         }
 
-        // Validate base configuration
+        // Validate base configuration only if not incomplete
         const baseValidation = validator.validateConfiguration(this.config.base, 'base_config');
         if (!baseValidation.success) {
             errors.push(...baseValidation.errors);
@@ -306,6 +308,44 @@ class ConfigManager {
         }
     }
 
+    /**
+     * Check if configuration is incomplete and needs wizard
+     * @private
+     * @returns {boolean} True if configuration is incomplete
+     */
+    _isConfigurationIncomplete() {
+        const required = ['SYNTHDEV_API_KEY', 'SYNTHDEV_BASE_URL', 'SYNTHDEV_BASE_MODEL'];
+
+        // Check if .env file exists
+        if (!this.envFileExists) {
+            return true;
+        }
+
+        // Check if required variables are set
+        for (const key of required) {
+            const value = process.env[key];
+            if (
+                !value ||
+                value.trim() === '' ||
+                value === 'your_base_model_api_key' ||
+                value === 'default-model' ||
+                value === 'https://api.example.com/v1'
+            ) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Check if configuration wizard should be started
+     * @returns {boolean} True if wizard should be started
+     */
+    shouldStartConfigurationWizard() {
+        return this.needsConfigurationWizard === true;
+    }
+
     getMaxTokens(model) {
         if (model.indexOf('qwen3-235b-a22b') !== -1) {
             return 16000;
@@ -340,49 +380,6 @@ class ConfigManager {
      */
     hasFastModelConfig() {
         return !!(this.config.fast.apiKey && this.config.fast.model);
-    }
-
-    /**
-     * Prompt user for API key interactively
-     * @private
-     * @returns {Promise<string>} The API key entered by user
-     */
-    async _promptForApiKey() {
-        // Use raw console.log for API key prompts since this is critical user interaction
-        // and logger may not be initialized yet during config setup
-        console.log('\n🔑 API Key Required');
-        console.log('No API key found in environment variables or command line arguments.');
-        console.log('Please provide your OpenAI API key to continue.');
-        console.log('You can get your API key from: https://platform.openai.com/api-keys\n');
-
-        const rl = createInterface({
-            input: process.stdin,
-            output: process.stdout,
-        });
-
-        return new Promise((resolve, reject) => {
-            rl.question('Enter your API key: ', apiKey => {
-                rl.close();
-
-                if (!apiKey || apiKey.trim().length === 0) {
-                    reject(new Error('API key cannot be empty'));
-                    return;
-                }
-
-                resolve(apiKey.trim());
-            });
-        });
-    }
-
-    /**
-     * Update the API key in configuration
-     * @private
-     * @param {string} apiKey - The new API key
-     */
-    _updateApiKey(apiKey) {
-        this.config.base.apiKey = apiKey;
-        this.config.smart.apiKey = this.config.smart.apiKey || apiKey;
-        this.config.fast.apiKey = this.config.fast.apiKey || apiKey;
     }
 
     /**
