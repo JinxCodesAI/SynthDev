@@ -1,4 +1,4 @@
-import { getConfigurationLoader } from './configurationLoader.js';
+import { getConfigurationLoader } from '../validation/configurationLoader.js';
 
 /**
  * Tool Configuration Manager

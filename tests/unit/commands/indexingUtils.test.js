@@ -10,7 +10,7 @@ vi.mock('../../../tools/common/fs_utils.js', () => ({
     calculateDirectoryChecksum: vi.fn(),
 }));
 
-vi.mock('../../../logger.js', () => ({
+vi.mock('../../../src/core/managers/logger.js', () => ({
     getLogger: vi.fn().mockReturnValue({
         info: vi.fn(),
         error: vi.fn(),

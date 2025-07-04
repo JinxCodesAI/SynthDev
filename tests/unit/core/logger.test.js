@@ -1,6 +1,6 @@
 // tests/unit/core/logger.test.js
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { getLogger, resetLogger, initializeLogger } from '../../../logger.js';
+import { getLogger, resetLogger, initializeLogger } from '../../../src/core/managers/logger.js';
 
 describe('Logger', () => {
     let logger;

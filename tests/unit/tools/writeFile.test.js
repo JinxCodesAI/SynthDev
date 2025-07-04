@@ -6,7 +6,7 @@ import writeFile from '../../../tools/write_file/implementation.js';
 import { cleanupTestDirectory, normalizePaths } from '../../helpers/testUtils.js';
 
 // Mock the logger specifically for this test
-vi.mock('../../../logger.js', () => ({
+vi.mock('../../../src/core/managers/logger.js', () => ({
     getLogger: vi.fn(() => ({
         debug: vi.fn(),
         info: vi.fn(),

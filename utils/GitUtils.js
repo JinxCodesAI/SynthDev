@@ -4,7 +4,7 @@
  */
 
 import executeTerminal from '../tools/execute_terminal/implementation.js';
-import { getLogger } from '../logger.js';
+import { getLogger } from '../src/core/managers/logger.js';
 
 class GitUtils {
     constructor() {

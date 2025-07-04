@@ -5,7 +5,7 @@
 
 import { BaseCommand } from '../base/BaseCommand.js';
 import SystemMessages from '../../systemMessages.js';
-import { getLogger } from '../../logger.js';
+import { getLogger } from '../../src/core/managers/logger.js';
 
 export class RoleCommand extends BaseCommand {
     constructor() {

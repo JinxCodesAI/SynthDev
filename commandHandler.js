@@ -1,5 +1,5 @@
 import { createCommandRegistry, validateRegistry } from './commands/base/CommandRegistrySetup.js';
-import { getLogger } from './logger.js';
+import { getLogger } from './src/core/managers/logger.js';
 
 /**
  * Handles console commands like /help, /tools, /review, etc.

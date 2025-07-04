@@ -3,8 +3,8 @@ import { createInterface } from 'readline';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { existsSync } from 'fs';
-import { getConfigurationValidator } from './configurationValidator.js';
-import { getConfigurationLoader } from './configurationLoader.js';
+import { getConfigurationValidator } from '../validation/configurationValidator.js';
+import { getConfigurationLoader } from '../validation/configurationLoader.js';
 
 // Get the directory where this module is located (synth-dev installation directory)
 const __filename = fileURLToPath(import.meta.url);

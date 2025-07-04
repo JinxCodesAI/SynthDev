@@ -9,7 +9,7 @@ import { join } from 'path';
 import ConfigManager from '../../configManager.js';
 import AIAPIClient from '../../aiAPIClient.js';
 import { CommandBaseTool } from '../common/base-tool.js';
-import { getLogger } from '../../logger.js';
+import { getLogger } from '../../src/core/managers/logger.js';
 import { getToolConfigManager } from '../../toolConfigManager.js';
 
 class ExecuteScriptTool extends CommandBaseTool {

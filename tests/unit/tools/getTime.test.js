@@ -6,7 +6,7 @@ describe('GetTime Tool', () => {
     let originalDate;
 
     // Mock logger
-    vi.mock('../../../logger.js', () => ({
+    vi.mock('../../../src/core/managers/logger.js', () => ({
         getLogger: vi.fn().mockReturnValue({
             raw: vi.fn(),
             error: vi.fn(),

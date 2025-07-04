@@ -9,7 +9,7 @@ import { readFileSync, mkdirSync, existsSync } from 'fs';
 import { join, resolve } from 'path';
 import ConfigManager from '../../configManager.js';
 import { safeWriteFile, fileExists } from '../../tools/common/fs_utils.js';
-import { getLogger } from '../../logger.js';
+import { getLogger } from '../../src/core/managers/logger.js';
 import AIAPIClient from '../../aiAPIClient.js';
 import SystemMessages from '../../systemMessages.js';
 

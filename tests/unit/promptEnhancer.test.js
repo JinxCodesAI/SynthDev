@@ -19,7 +19,7 @@ vi.mock('../../systemMessages.js', () => ({
     },
 }));
 
-vi.mock('../../logger.js', () => ({
+vi.mock('../../src/core/managers/logger.js', () => ({
     getLogger: vi.fn(),
 }));
 
@@ -83,7 +83,7 @@ describe('PromptEnhancer', () => {
         mockSystemMessages.getSystemMessage.mockReturnValue('Test system message');
 
         // Setup logger mock
-        const loggerModule = await import('../../logger.js');
+        const loggerModule = await import('../../src/core/managers/logger.js');
         loggerModule.getLogger.mockReturnValue(mockLogger);
 
         // Create PromptEnhancer instance

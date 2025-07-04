@@ -1,6 +1,6 @@
 import AIAPIClient from '../aiAPIClient.js';
 import SystemMessages from '../systemMessages.js';
-import { getLogger } from '../logger.js';
+import { getLogger } from '../src/core/managers/logger.js';
 
 /**
  * Represents an agent instance in a workflow with its own API client and context role

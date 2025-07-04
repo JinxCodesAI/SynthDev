@@ -19,7 +19,7 @@ vi.mock('../../../systemMessages.js', () => ({
     },
 }));
 
-vi.mock('../../../logger.js', () => ({
+vi.mock('../../../src/core/managers/logger.js', () => ({
     getLogger: vi.fn(),
 }));
 
@@ -66,7 +66,7 @@ describe('CommandGenerator', () => {
             debug: vi.fn(),
             error: vi.fn(),
         };
-        const { getLogger } = await import('../../../logger.js');
+        const { getLogger } = await import('../../../src/core/managers/logger.js');
         getLogger.mockReturnValue(mockLogger);
 
         // Create mock dependencies

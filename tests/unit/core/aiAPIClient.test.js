@@ -26,7 +26,7 @@ vi.mock('../../../systemMessages.js', () => ({
     },
 }));
 
-vi.mock('../../../logger.js', () => ({
+vi.mock('../../../src/core/managers/logger.js', () => ({
     getLogger: vi.fn(),
 }));
 
@@ -92,7 +92,7 @@ describe('AIAPIClient', () => {
         SystemMessages.default.getParsingTools = mockSystemMessages.getParsingTools;
         SystemMessages.default.getExamples = mockSystemMessages.getExamples;
 
-        const { getLogger } = await import('../../../logger.js');
+        const { getLogger } = await import('../../../src/core/managers/logger.js');
         getLogger.mockReturnValue(mockLogger);
 
         // Create AIAPIClient instance

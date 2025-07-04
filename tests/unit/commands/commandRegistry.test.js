@@ -5,7 +5,7 @@ import { BaseCommand } from '../../../commands/base/BaseCommand.js';
 import json from '../../../config/ui/console-messages.json';
 
 // Mock logger
-vi.mock('../../../logger.js', () => ({
+vi.mock('../../../src/core/managers/logger.js', () => ({
     getLogger: vi.fn().mockReturnValue({
         raw: vi.fn(),
         error: vi.fn(),
@@ -153,7 +153,7 @@ describe('CommandRegistry', () => {
             const command = new TestCommand();
             registry.register(command);
 
-            const { getLogger } = await import('../../../logger.js');
+            const { getLogger } = await import('../../../src/core/managers/logger.js');
             mockLogger = getLogger();
         });
 

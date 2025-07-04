@@ -1,7 +1,7 @@
 import ConfigManager from './configManager.js';
 import AIAPIClient from './aiAPIClient.js';
 import SystemMessages from './systemMessages.js';
-import { getLogger } from './logger.js';
+import { getLogger } from './src/core/managers/logger.js';
 import { type } from 'os';
 
 /**

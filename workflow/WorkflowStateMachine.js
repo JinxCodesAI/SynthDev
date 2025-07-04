@@ -1,6 +1,6 @@
 import { existsSync, readdirSync } from 'fs';
 import { join } from 'path';
-import { getLogger } from '../logger.js';
+import { getLogger } from '../src/core/managers/logger.js';
 import WorkflowConfig from './WorkflowConfig.js';
 import WorkflowContext from './WorkflowContext.js';
 import WorkflowAgent from './WorkflowAgent.js';

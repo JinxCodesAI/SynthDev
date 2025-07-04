@@ -5,7 +5,7 @@
 
 import { InteractiveCommand } from '../base/BaseCommand.js';
 import { ConfigurationWizard } from './ConfigurationWizard.js';
-import { getLogger } from '../../logger.js';
+import { getLogger } from '../../src/core/managers/logger.js';
 
 export class ConfigureCommand extends InteractiveCommand {
     constructor() {

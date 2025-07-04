@@ -3,7 +3,7 @@
  * Manages command registration, discovery, and execution routing
  */
 
-import { getLogger } from '../../logger.js';
+import { getLogger } from '../../src/core/managers/logger.js';
 import { getUIConfigManager } from '../../uiConfigManager.js';
 
 export class CommandRegistry {

@@ -1,6 +1,6 @@
 import { existsSync } from 'fs';
 import { platform } from 'os';
-import { getConfigurationLoader } from './configurationLoader.js';
+import { getConfigurationLoader } from './src/config/validation/configurationLoader.js';
 
 /**
  * System messages and role configurations for different AI personas

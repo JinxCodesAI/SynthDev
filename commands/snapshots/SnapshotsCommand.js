@@ -4,7 +4,7 @@
  */
 
 import { InteractiveCommand } from '../base/BaseCommand.js';
-import { getLogger } from '../../logger.js';
+import { getLogger } from '../../src/core/managers/logger.js';
 
 export class SnapshotsCommand extends InteractiveCommand {
     constructor() {

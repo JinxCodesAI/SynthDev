@@ -5,7 +5,7 @@ import { join } from 'path';
 import editFile from '../../../tools/edit_file/implementation.js';
 
 // Mock the logger specifically for this test
-vi.mock('../../../logger.js', () => ({
+vi.mock('../../../src/core/managers/logger.js', () => ({
     getLogger: vi.fn(() => ({
         debug: vi.fn(),
         info: vi.fn(),

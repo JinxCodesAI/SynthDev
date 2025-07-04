@@ -7,7 +7,7 @@
 import ConfigManager from './configManager.js';
 import SystemMessages from './systemMessages.js';
 import { getUIConfigManager } from './uiConfigManager.js';
-import { getConfigurationLoader } from './configurationLoader.js';
+import { getConfigurationLoader } from './src/config/validation/configurationLoader.js';
 
 /**
  * Parse command line arguments
@@ -69,7 +69,7 @@ import costsManager from './costsManager.js';
 import SnapshotManager from './snapshotManager.js';
 import PromptEnhancer from './promptEnhancer.js';
 import WorkflowStateMachine from './workflow/WorkflowStateMachine.js';
-import { initializeLogger, getLogger } from './logger.js';
+import { initializeLogger, getLogger } from './src/core/managers/logger.js';
 import GitUtils from './utils/GitUtils.js';
 
 /**

@@ -1,4 +1,4 @@
-import { getLogger } from '../logger.js';
+import { getLogger } from '../src/core/managers/logger.js';
 
 /**
  * Manages conversation context for workflow agents

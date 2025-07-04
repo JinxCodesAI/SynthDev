@@ -23,7 +23,7 @@ vi.mock('../../../configManager.js', () => ({
     },
 }));
 
-vi.mock('../../../logger.js', () => ({
+vi.mock('../../../src/core/managers/logger.js', () => ({
     getLogger: vi.fn(),
 }));
 
@@ -70,7 +70,7 @@ vi.mock('../../../toolConfigManager.js', () => ({
     }),
 }));
 
-vi.mock('../../../configurationLoader.js', () => ({
+vi.mock('../../../src/config/validation/configurationLoader.js', () => ({
     getConfigurationLoader: vi.fn(),
 }));
 
@@ -116,7 +116,7 @@ describe('Execute Script Tool', () => {
         const configManager = await import('../../../configManager.js');
         mockConfigManager = configManager.default.getInstance;
 
-        const logger = await import('../../../logger.js');
+        const logger = await import('../../../src/core/managers/logger.js');
         mockLogger = logger.getLogger;
 
         mockFs = await import('fs');

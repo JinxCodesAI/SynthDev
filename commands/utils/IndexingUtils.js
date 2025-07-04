@@ -11,7 +11,7 @@ import {
     calculateFileChecksum,
     calculateDirectoryChecksum,
 } from '../../tools/common/fs_utils.js';
-import { getLogger } from '../../logger.js';
+import { getLogger } from '../../src/core/managers/logger.js';
 
 export class IndexingUtils {
     /**

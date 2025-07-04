@@ -12,7 +12,7 @@ vi.mock('fs', () => ({
     unlinkSync: vi.fn(),
 }));
 
-vi.mock('../../logger.js', () => ({
+vi.mock('../../src/core/managers/logger.js', () => ({
     getLogger: vi.fn(),
 }));
 
@@ -55,7 +55,7 @@ describe('SnapshotManager - Enhanced File Handling', () => {
         };
 
         // Setup mocks
-        const loggerModule = await import('../../logger.js');
+        const loggerModule = await import('../../src/core/managers/logger.js');
         loggerModule.getLogger.mockReturnValue(mockLogger);
 
         const GitUtilsModule = await import('../../utils/GitUtils.js');

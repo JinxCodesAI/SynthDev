@@ -3,7 +3,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import SystemMessages from '../../../systemMessages.js';
 
 // Mock the configuration loader
-vi.mock('../../../configurationLoader.js', () => ({
+vi.mock('../../../src/config/validation/configurationLoader.js', () => ({
     getConfigurationLoader: vi.fn(() => ({
         loadConfig: vi.fn(path => {
             if (path === 'roles/roles.json') {

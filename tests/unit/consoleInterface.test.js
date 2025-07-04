@@ -7,7 +7,7 @@ vi.mock('readline', () => ({
     createInterface: vi.fn(),
 }));
 
-vi.mock('../../logger.js', () => ({
+vi.mock('../../src/core/managers/logger.js', () => ({
     getLogger: vi.fn(),
 }));
 
@@ -130,7 +130,7 @@ describe('ConsoleInterface', () => {
         mockReadline = readlineModule;
         mockReadline.createInterface.mockReturnValue(mockRl);
 
-        const loggerModule = await import('../../logger.js');
+        const loggerModule = await import('../../src/core/managers/logger.js');
         loggerModule.getLogger.mockReturnValue(mockLogger);
 
         const uiConfigModule = await import('../../uiConfigManager.js');

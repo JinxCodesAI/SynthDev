@@ -8,7 +8,7 @@ import WorkflowContext from '../../../workflow/WorkflowContext.js';
 vi.mock('../../../workflow/WorkflowConfig.js');
 vi.mock('../../../workflow/WorkflowAgent.js');
 vi.mock('../../../workflow/WorkflowContext.js');
-vi.mock('../../../logger.js', () => ({
+vi.mock('../../../src/core/managers/logger.js', () => ({
     getLogger: vi.fn(() => ({
         debug: vi.fn(),
         info: vi.fn(),

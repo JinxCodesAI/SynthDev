@@ -4,7 +4,7 @@
  */
 
 import { BaseCommand } from '../base/BaseCommand.js';
-import { getLogger } from '../../logger.js';
+import { getLogger } from '../../src/core/managers/logger.js';
 import { getUIConfigManager } from '../../uiConfigManager.js';
 
 export class HelpCommand extends BaseCommand {

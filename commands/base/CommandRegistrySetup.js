@@ -4,7 +4,7 @@
  */
 
 import CommandRegistry from './CommandRegistry.js';
-import { getLogger } from '../../logger.js';
+import { getLogger } from '../../src/core/managers/logger.js';
 
 // Import all command classes
 import HelpCommand from '../info/HelpCommand.js';

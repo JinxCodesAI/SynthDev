@@ -6,7 +6,7 @@
 import { readFileSync, existsSync, readdirSync, statSync } from 'fs';
 import { join, dirname, extname } from 'path';
 import { fileURLToPath } from 'url';
-import { getLogger } from './logger.js';
+import { getLogger } from '../../core/managers/logger.js';
 
 // Get the directory where this module is located (synth-dev installation directory)
 const __filename = fileURLToPath(import.meta.url);
@@ -19,7 +19,7 @@ class ConfigurationLoader {
     constructor() {
         this.configCache = new Map();
         // Use the synth-dev installation directory instead of current working directory
-        this.configDir = join(__dirname, 'config');
+        this.configDir = join(__dirname, '../../../config');
         this.logger = getLogger();
     }
 

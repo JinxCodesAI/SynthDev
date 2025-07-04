@@ -3,7 +3,7 @@
  * Abstract base class for all command implementations in the command system
  */
 
-import { getLogger } from '../../logger.js';
+import { getLogger } from '../../src/core/managers/logger.js';
 
 export class BaseCommand {
     /**

@@ -1,5 +1,5 @@
 import { readFileSync, existsSync } from 'fs';
-import { getLogger } from './logger.js';
+import { getLogger } from './src/core/managers/logger.js';
 import GitUtils from './utils/GitUtils.js';
 
 /**

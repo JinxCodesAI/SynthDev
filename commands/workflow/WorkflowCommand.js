@@ -1,5 +1,5 @@
 import { BaseCommand } from '../base/BaseCommand.js';
-import { getLogger } from '../../logger.js';
+import { getLogger } from '../../src/core/managers/logger.js';
 
 /**
  * Command to execute a specific workflow

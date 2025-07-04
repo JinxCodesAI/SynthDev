@@ -4,7 +4,7 @@ import { createCommandRegistry } from '../../../commands/base/CommandRegistrySet
 import CommandRegistry from '../../../commands/base/CommandRegistry.js';
 
 // Mock logger
-vi.mock('../../../logger.js', () => ({
+vi.mock('../../../src/core/managers/logger.js', () => ({
     getLogger: vi.fn().mockReturnValue({
         raw: vi.fn(),
         error: vi.fn(),
@@ -121,7 +121,7 @@ describe('CommandRegistrySetup', () => {
     beforeEach(async () => {
         registry = new CommandRegistry();
 
-        const { getLogger } = await import('../../../logger.js');
+        const { getLogger } = await import('../../../src/core/managers/logger.js');
         mockLogger = getLogger();
 
         // Clear all mocks

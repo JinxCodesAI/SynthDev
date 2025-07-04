@@ -1,7 +1,7 @@
 import { existsSync, readFileSync } from 'fs';
 import { join, dirname, basename, resolve } from 'path';
 import { pathToFileURL } from 'url';
-import { getLogger } from '../logger.js';
+import { getLogger } from '../src/core/managers/logger.js';
 
 /**
  * Workflow configuration parser and validator
