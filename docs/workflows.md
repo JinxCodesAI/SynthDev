@@ -1,64 +1,98 @@
-# Workflow System Guide
+# SynthDev Multi-Agent Workflows
 
-This comprehensive guide covers SynthDev's advanced multi-agent workflow system, which enables complex interactions between multiple AI agents with shared context and state management.
+This guide covers SynthDev's multi-agent workflow system, including configuration, development, and execution of complex AI-powered workflows.
 
 ## Overview
 
-SynthDev's workflow system provides:
+SynthDev's workflow system enables complex multi-agent interactions where different AI personas collaborate to accomplish sophisticated tasks. The system provides state machine execution, shared context management, and custom script integration.
+
+### Key Features
 
 - **🤖 Multi-Agent Orchestration**: Multiple AI agents with different roles working together
-- **🔄 State Machine Execution**: Structured workflow execution with defined states and transitions
+- **🔄 State Machine Execution**: Structured workflow with defined states and transitions
 - **💬 Shared Context Management**: Agents share conversation context with role-based message mapping
 - **📝 Custom Script Integration**: JavaScript functions for complex workflow logic
 - **🎯 Parsing Tools**: Structured output handling for decision-making
 - **📊 Execution Tracking**: Detailed logging and state history
 
-## Quick Start
+## Workflow Architecture
 
-### Running a Workflow
+### Core Components
 
-```bash
-# List available workflows
-/workflows
+#### WorkflowStateMachine (`src/workflow/WorkflowStateMachine.js`)
 
-# Execute a workflow
-/workflow grocery_store_test
-```
+Main orchestrator that manages:
 
-### Basic Workflow Structure
+- Agent lifecycle and execution
+- State transitions and flow control
+- Context synchronization between agents
+- Execution tracking and logging
+- Error handling and recovery
 
-```
-config/workflows/
-├── my_workflow.json          # Workflow configuration
-└── my_workflow/              # Workflow scripts directory
-    └── script.js             # Custom JavaScript functions
-```
+#### WorkflowAgent (`src/workflow/WorkflowAgent.js`)
+
+Individual AI agent instances that handle:
+
+- Role-specific configuration and behavior
+- API client management and communication
+- Tool filtering and access control
+- Parsing tool responses for structured output
+
+#### WorkflowContext (`src/workflow/WorkflowContext.js`)
+
+Shared conversation context that provides:
+
+- Role-based message mapping and filtering
+- Message length management and truncation
+- Context isolation between different conversation threads
+
+#### WorkflowConfig (`src/workflow/WorkflowConfig.js`)
+
+Configuration validation and management:
+
+- Script module loading and validation
+- State and transition validation
+- Agent setup and configuration
 
 ## Workflow Configuration
 
-### Basic Configuration Structure
+### Directory Structure
+
+```
+src/config/workflows/
+├── grocery_store_test.json          # Workflow configuration
+├── grocery_store_test/              # Workflow scripts directory
+│   └── script.js                    # Custom JavaScript functions
+├── my_workflow.json                 # Another workflow
+└── my_workflow/
+    └── script.js
+```
+
+### Basic Workflow Configuration
+
+Create a workflow configuration file in `src/config/workflows/`:
 
 ```json
 {
-    "workflow_name": "my_workflow",
-    "description": "Description of what this workflow does",
+    "workflow_name": "example_workflow",
+    "description": "Example multi-agent workflow demonstrating basic concepts",
     "input": {
-        "name": "user_input",
+        "name": "user_request",
         "type": "string",
-        "description": "Input parameter description"
+        "description": "User's initial request or question"
     },
     "output": {
-        "name": "workflow_result",
+        "name": "final_result",
         "type": "string",
-        "description": "Output description"
+        "description": "Final workflow result or answer"
     },
     "variables": {
-        "max_iterations": 10,
-        "custom_setting": "value"
+        "max_iterations": 5,
+        "confidence_threshold": 0.8
     },
     "contexts": [
         {
-            "name": "shared_conversation",
+            "name": "shared_context",
             "starting_messages": [],
             "max_length": 30000
         }
@@ -66,12 +100,12 @@ config/workflows/
     "agents": [
         {
             "agent_role": "coder",
-            "context": "shared_conversation",
+            "context": "shared_context",
             "role": "assistant"
         },
         {
             "agent_role": "reviewer",
-            "context": "shared_conversation",
+            "context": "shared_context",
             "role": "user"
         }
     ],
@@ -79,13 +113,20 @@ config/workflows/
         {
             "name": "start",
             "agent": "coder",
-            "pre_handler": "setupInitialContext",
-            "post_handler": "processCoderResponse",
-            "transition_handler": "decideNextState"
+            "pre_handler": "setupInitialRequest",
+            "post_handler": "captureCoderResponse",
+            "transition_handler": "decideNextStep"
+        },
+        {
+            "name": "review",
+            "agent": "reviewer",
+            "pre_handler": "setupReviewRequest",
+            "post_handler": "captureReviewResponse",
+            "transition_handler": "checkIfComplete"
         },
         {
             "name": "stop",
-            "input": "common_data.workflow_result"
+            "input": "common_data.final_result"
         }
     ]
 }
@@ -93,854 +134,396 @@ config/workflows/
 
 ### Configuration Properties
 
-#### **Workflow Metadata**
+#### Workflow Metadata
 
-- `workflow_name`: Unique identifier for the workflow
-- `description`: Human-readable description
-- `input`: Input parameter definition with name, type, and description
-- `output`: Output parameter definition
-- `variables`: Initial workflow variables (optional)
+- **workflow_name**: Unique identifier for the workflow
+- **description**: Human-readable description of the workflow purpose
+- **input**: Definition of workflow input parameters
+- **output**: Definition of expected workflow output
 
-#### **Contexts**
+#### Variables
 
-Define shared conversation spaces for agents:
+- **variables**: Global variables accessible throughout the workflow
+- Used for configuration, thresholds, and shared state
 
-```json
-"contexts": [
-    {
-        "name": "context_name",
-        "starting_messages": [
-            {
-                "role": "system",
-                "content": "Initial system message"
-            }
-        ],
-        "max_length": 50000
-    }
-]
-```
+#### Contexts
 
-#### **Agents**
+- **contexts**: Shared conversation contexts between agents
+- **name**: Unique identifier for the context
+- **starting_messages**: Initial messages to seed the context
+- **max_length**: Maximum context length before truncation
 
-Define AI agents participating in the workflow:
+#### Agents
 
-```json
-"agents": [
-    {
-        "agent_role": "role_name",     // Must match a role in roles.json
-        "context": "context_name",     // Context this agent uses
-        "role": "assistant"            // "user" or "assistant" in context
-    }
-]
-```
+- **agents**: AI agents participating in the workflow
+- **agent_role**: Role name from the AI roles configuration
+- **context**: Which context this agent uses
+- **role**: Agent's role in conversations ('assistant' or 'user')
 
-**Agent Role Mapping:**
+#### States
 
-- `role: "assistant"`: Agent's messages appear as assistant messages in context
-- `role: "user"`: Agent's messages appear as user messages in context
+- **states**: Workflow states and transitions
+- **name**: Unique state identifier
+- **agent**: Which agent executes this state
+- **pre_handler**: Function to call before API request
+- **post_handler**: Function to call after API response
+- **transition_handler**: Function to determine next state
 
-#### **States**
+## Custom Script Functions
 
-Define workflow execution states:
+Create custom JavaScript functions in the workflow's script directory:
 
-```json
-"states": [
-    {
-        "name": "state_name",
-        "agent": "agent_role",                    // Agent to execute
-        "pre_handler": "function_name",           // Before API call (optional)
-        "post_handler": "function_name",          // After API call (optional)
-        "transition_handler": "function_name"     // Decide next state (optional)
-    }
-]
-```
-
-**Special States:**
-
-- `start`: Required initial state
-- `stop`: Terminal state (can specify output with `input` property)
-
-## Script Functions
-
-### Script File Structure
-
-Create `config/workflows/workflow_name/script.js`:
+### Script Structure
 
 ```javascript
+// src/config/workflows/example_workflow/script.js
 export default {
-    // Pre-handler: Modify context before API call
-    setupInitialContext() {
-        const context = this.workflow_contexts.get('shared_conversation');
-        context.addMessage({
-            role: 'user',
-            content: this.common_data.user_input,
-        });
-    },
-
-    // Post-handler: Process API response
-    processResponse() {
-        const responseContent = this.last_response?.choices?.[0]?.message?.content;
-        if (responseContent) {
-            this.common_data.agent_response = responseContent;
-        }
-    },
-
-    // Transition-handler: Decide next state
-    decideNextState() {
-        const toolCalls = this.last_response?.choices?.[0]?.message?.tool_calls || [];
-
-        if (toolCalls.length > 0) {
-            return 'process_tools';
-        }
-        return 'stop';
-    },
-};
-```
-
-### Script Context
-
-Script functions have access to `this` context containing:
-
-```javascript
-{
-    common_data: {},                    // Shared workflow variables
-    last_response: {},                  // Raw API response from last agent call
-    workflow_contexts: Map,             // Map of WorkflowContext instances
-    input: "user_input_value"          // Input parameters
-}
-```
-
-### Common Script Patterns
-
-#### **Adding Messages to Context**
-
-```javascript
-addUserMessage() {
-    const context = this.workflow_contexts.get('conversation');
-    context.addMessage({
-        role: 'user',
-        content: this.common_data.user_request
-    });
-}
-```
-
-#### **Processing Tool Calls**
-
-```javascript
-processToolCall() {
-    const toolCalls = this.last_response?.choices?.[0]?.message?.tool_calls || [];
-    const decisionCall = toolCalls.find(call => call.function?.name === 'make_decision');
-
-    if (decisionCall) {
-        const args = JSON.parse(decisionCall.function.arguments);
-        this.common_data.decision = args.decision;
-    }
-}
-```
-
-#### **Conditional State Transitions**
-
-```javascript
-decideNextAction() {
-    const args = this._parseToolCall('action_decision');
-
-    if (args?.continue === true) {
-        return 'continue_workflow';
-    } else {
-        this.common_data.final_result = args?.summary;
-        return 'stop';
-    }
-}
-```
-
-## Parsing Tools
-
-### Role Configuration with Parsing Tools
-
-```json
-{
-    "decision_maker": {
-        "level": "fast",
-        "systemMessage": "You make decisions and provide structured output.",
-        "parsingTools": [
-            {
-                "type": "function",
-                "function": {
-                    "name": "make_decision",
-                    "description": "Make a structured decision",
-                    "parameters": {
-                        "type": "object",
-                        "properties": {
-                            "continue": {
-                                "type": "boolean",
-                                "description": "Whether to continue the workflow"
-                            },
-                            "reason": {
-                                "type": "string",
-                                "description": "Reason for the decision"
-                            }
-                        },
-                        "required": ["continue"]
-                    }
-                },
-                "parsingOnly": true
-            }
-        ]
-    }
-}
-```
-
-### Processing Parsing Tool Calls
-
-```javascript
-processDecision() {
-    const toolCalls = this.last_response?.choices?.[0]?.message?.tool_calls || [];
-    const decisionCall = toolCalls.find(call => call.function?.name === 'make_decision');
-
-    if (decisionCall) {
-        try {
-            const decision = JSON.parse(decisionCall.function.arguments);
-            this.common_data.should_continue = decision.continue;
-            this.common_data.decision_reason = decision.reason;
-        } catch (error) {
-            console.error('Error parsing decision:', error);
-        }
-    }
-}
-```
-
-## Advanced Features
-
-### Multi-Context Workflows
-
-```json
-"contexts": [
-    {
-        "name": "planning_context",
-        "starting_messages": [],
-        "max_length": 20000
-    },
-    {
-        "name": "execution_context",
-        "starting_messages": [],
-        "max_length": 30000
-    }
-],
-"agents": [
-    {
-        "agent_role": "architect",
-        "context": "planning_context",
-        "role": "assistant"
-    },
-    {
-        "agent_role": "coder",
-        "context": "execution_context",
-        "role": "assistant"
-    }
-]
-```
-
-### Complex State Transitions
-
-```javascript
-// Helper function to parse tool calls
-_parseToolCall(toolName) {
-    const toolCalls = this.last_response?.choices?.[0]?.message?.tool_calls || [];
-    const call = toolCalls.find(c => c.function?.name === toolName);
-
-    if (call) {
-        try {
-            return JSON.parse(call.function.arguments);
-        } catch (error) {
-            return null;
-        }
-    }
-    return null;
-},
-
-// Complex transition logic
-decideWorkflowPath() {
-    const decision = this._parseToolCall('workflow_decision');
-
-    if (!decision) {
-        return 'error_state';
-    }
-
-    switch (decision.action) {
-        case 'review':
-            return 'review_state';
-        case 'implement':
-            return 'implementation_state';
-        case 'complete':
-            this.common_data.final_output = decision.summary;
-            return 'stop';
-        default:
-            return 'clarification_state';
-    }
-}
-```
-
-### Variable Management
-
-```javascript
-// Initialize workflow variables
-initializeWorkflow() {
-    this.common_data.iteration_count = 0;
-    this.common_data.max_iterations = 5;
-    this.common_data.results = [];
-},
-
-// Track progress
-trackProgress() {
-    this.common_data.iteration_count++;
-
-    if (this.common_data.iteration_count >= this.common_data.max_iterations) {
-        this.common_data.final_result = 'Maximum iterations reached';
-        return 'stop';
-    }
-
-    return 'continue_iteration';
-}
-```
-
-## Best Practices
-
-### Workflow Design
-
-1. **Clear State Purpose**: Each state should have a single, well-defined purpose
-2. **Minimal Context**: Keep shared context focused and relevant
-3. **Error Handling**: Include error states and validation
-4. **Iteration Limits**: Prevent infinite loops with maximum iteration counts
-
-### Script Organization
-
-1. **Function Naming**: Use descriptive names that indicate the handler type
-2. **Error Handling**: Wrap JSON parsing and API access in try-catch blocks
-3. **Logging**: Use console.log for debugging (visible in workflow execution)
-4. **Helper Functions**: Create reusable helper functions for common operations
-
-### Agent Configuration
-
-1. **Role Selection**: Choose appropriate AI roles for each agent's purpose
-2. **Context Mapping**: Carefully consider whether agents should be "user" or "assistant" in context
-3. **Tool Access**: Ensure agents have appropriate tools for their tasks
-4. **Parsing Tools**: Use parsing tools for structured decision-making
-
-### Performance Optimization
-
-1. **Context Length**: Set appropriate max_length for contexts to manage token usage
-2. **State Efficiency**: Minimize unnecessary state transitions
-3. **Tool Filtering**: Use role-based tool filtering to reduce API payload size
-4. **Caching**: Store computed results in common_data to avoid recomputation
-
-## Troubleshooting
-
-### Common Issues
-
-**Workflow Not Found**
-
-```bash
-❌ Workflow 'my_workflow' not found
-💡 Use /workflows to see available workflows
-```
-
-- Check workflow file exists in `config/workflows/`
-- Verify `workflow_name` matches filename
-
-**Script Function Not Found**
-
-```
-Function not found in script module: myFunction
-```
-
-- Ensure function is exported in `script.js`
-- Check function name spelling in workflow configuration
-
-**Agent Role Not Found**
-
-```
-Unknown agent: my_role
-```
-
-- Verify role exists in `config/roles/roles.json`
-- Check agent_role spelling in workflow configuration
-
-**Context Validation Error**
-
-```
-Agent my_agent: references unknown context my_context
-```
-
-- Ensure context is defined in contexts array
-- Check context name spelling in agent configuration
-
-### Debugging Workflows
-
-1. **Enable Debug Logging**: Set verbosity level to see detailed execution logs
-2. **Check Script Context**: Add console.log statements in script functions
-3. **Validate JSON**: Ensure workflow JSON is valid and well-formed
-4. **Test Incrementally**: Start with simple workflows and add complexity gradually
-
-### Testing Workflows
-
-Create test workflows to validate your setup:
-
-```json
-{
-    "workflow_name": "test_workflow",
-    "description": "Simple test workflow",
-    "input": {
-        "name": "test_input",
-        "type": "string",
-        "description": "Test input"
-    },
-    "output": {
-        "name": "test_output",
-        "type": "string",
-        "description": "Test output"
-    },
-    "contexts": [
-        {
-            "name": "test_context",
-            "starting_messages": [],
-            "max_length": 10000
-        }
-    ],
-    "agents": [
-        {
-            "agent_role": "dude",
-            "context": "test_context",
-            "role": "assistant"
-        }
-    ],
-    "states": [
-        {
-            "name": "start",
-            "agent": "dude",
-            "post_handler": "captureResponse",
-            "transition_handler": "finishTest"
-        },
-        {
-            "name": "stop",
-            "input": "common_data.test_output"
-        }
-    ]
-}
-```
-
-With corresponding `test_workflow/script.js`:
-
-```javascript
-export default {
-    captureResponse() {
-        const content = this.last_response?.choices?.[0]?.message?.content;
-        this.common_data.test_output = content || 'No response';
-    },
-
-    finishTest() {
-        return 'stop';
-    },
-};
-```
-
-## Complete Example: Grocery Store Workflow
-
-This example demonstrates a complex multi-agent workflow with decision-making and context management.
-
-### Configuration (`grocery_store_test.json`)
-
-```json
-{
-    "workflow_name": "grocery_store_test",
-    "description": "Simulates customer-grocery worker interaction with decision-making",
-    "input": {
-        "name": "customer_request",
-        "type": "string",
-        "description": "Initial customer request or question"
-    },
-    "output": {
-        "name": "shopping_summary",
-        "type": "string",
-        "description": "Final shopping interaction summary"
-    },
-    "variables": {
-        "max_interactions": 10,
-        "current_interaction": 0
-    },
-    "contexts": [
-        {
-            "name": "store_conversation",
-            "starting_messages": [],
-            "max_length": 30000
-        }
-    ],
-    "agents": [
-        {
-            "agent_role": "grocery_worker",
-            "context": "store_conversation",
-            "role": "assistant"
-        },
-        {
-            "agent_role": "customer",
-            "context": "store_conversation",
-            "role": "user"
-        }
-    ],
-    "states": [
-        {
-            "name": "start",
-            "agent": "grocery_worker",
-            "pre_handler": "setupInitialCustomerRequest",
-            "post_handler": "captureWorkerResponse",
-            "transition_handler": "moveToCustomerDecision"
-        },
-        {
-            "name": "customer_decision",
-            "agent": "customer",
-            "post_handler": "processCustomerDecision",
-            "transition_handler": "decideNextAction"
-        },
-        {
-            "name": "worker_response",
-            "agent": "grocery_worker",
-            "post_handler": "captureWorkerResponse",
-            "transition_handler": "checkContinueOrFinish"
-        },
-        {
-            "name": "stop",
-            "input": "common_data.shopping_summary"
-        }
-    ]
-}
-```
-
-### Script Implementation (`grocery_store_test/script.js`)
-
-```javascript
-export default {
-    // Initialize the conversation with customer request
-    setupInitialCustomerRequest() {
-        const context = this.workflow_contexts.get('store_conversation');
+    // Pre-handler: Setup before API call
+    setupInitialRequest() {
+        const context = this.workflow_contexts.get('shared_context');
         context.addMessage({
             role: 'user',
             content: this.input,
         });
 
-        this.common_data.interaction_count = 0;
-        this.common_data.customer_satisfied = false;
+        // Set initial variables
+        this.common_data.iteration_count = 0;
     },
 
-    // Capture grocery worker responses
-    captureWorkerResponse() {
+    // Post-handler: Process API response
+    captureCoderResponse() {
         const responseContent = this.last_response?.choices?.[0]?.message?.content;
         if (responseContent) {
-            this.common_data.last_worker_response = responseContent;
+            this.common_data.coder_response = responseContent;
+            this.common_data.iteration_count++;
         }
     },
 
-    // Move to customer decision state
-    moveToCustomerDecision() {
-        return 'customer_decision';
-    },
-
-    // Process customer's decision using parsing tools
-    processCustomerDecision() {
-        const toolCalls = this.last_response?.choices?.[0]?.message?.tool_calls || [];
-        const decisionCall = toolCalls.find(call => call.function?.name === 'interaction_decision');
-
-        if (decisionCall) {
-            try {
-                const decision = JSON.parse(decisionCall.function.arguments);
-                this.common_data.customer_satisfied = decision.satisfied;
-                this.common_data.customer_response = decision.response;
-
-                // Add customer response to context if continuing
-                if (!decision.satisfied) {
-                    const context = this.workflow_contexts.get('store_conversation');
-                    context.addMessage({
-                        role: 'user',
-                        content: decision.response,
-                    });
-                }
-            } catch (error) {
-                console.error('Error parsing customer decision:', error);
-                this.common_data.customer_satisfied = true; // Default to satisfied on error
-            }
-        }
-    },
-
-    // Decide next action based on customer satisfaction
-    decideNextAction() {
-        this.common_data.interaction_count++;
-
-        // Check if customer is satisfied or max interactions reached
-        if (this.common_data.customer_satisfied || this.common_data.interaction_count >= 10) {
-            // Generate final shopping summary
-            this.common_data.shopping_summary = this._generateShoppingSummary();
+    // Transition-handler: Decide next state
+    decideNextStep() {
+        if (this.common_data.iteration_count >= this.variables.max_iterations) {
             return 'stop';
         }
 
-        return 'worker_response';
+        // Check if response indicates completion
+        const response = this.common_data.coder_response || '';
+        if (
+            response.toLowerCase().includes('complete') ||
+            response.toLowerCase().includes('finished')
+        ) {
+            return 'review';
+        }
+
+        return 'start'; // Continue iterating
     },
 
-    // Check if conversation should continue
-    checkContinueOrFinish() {
-        return 'customer_decision';
+    setupReviewRequest() {
+        const context = this.workflow_contexts.get('shared_context');
+        context.addMessage({
+            role: 'user',
+            content: `Please review this response: ${this.common_data.coder_response}`,
+        });
     },
 
-    // Helper function to generate shopping summary
-    _generateShoppingSummary() {
-        const context = this.workflow_contexts.get('store_conversation');
-        const messages = context.getMessages();
+    captureReviewResponse() {
+        const responseContent = this.last_response?.choices?.[0]?.message?.content;
+        if (responseContent) {
+            this.common_data.review_response = responseContent;
+        }
+    },
 
-        // Extract key information from conversation
-        const workerResponses = messages
-            .filter(msg => msg.role === 'assistant')
-            .map(msg => msg.content);
+    checkIfComplete() {
+        const review = this.common_data.review_response || '';
+        if (
+            review.toLowerCase().includes('approved') ||
+            review.toLowerCase().includes('looks good')
+        ) {
+            this.common_data.final_result = this.common_data.coder_response;
+            return 'stop';
+        }
 
-        const customerRequests = messages
-            .filter(msg => msg.role === 'user')
-            .map(msg => msg.content);
-
-        // Create summary based on conversation
-        return (
-            `Shopping interaction completed. Customer made ${customerRequests.length} requests, ` +
-            `worker provided ${workerResponses.length} responses. ` +
-            `Interaction ${this.common_data.customer_satisfied ? 'successful' : 'ended due to limits'}.`
-        );
+        return 'start'; // Need more work
     },
 };
 ```
 
-### Required Roles
+### Available Context
 
-The workflow requires these specialized roles in `config/roles/roles.json`:
+Script functions have access to:
+
+#### Workflow State
+
+- `this.input`: Workflow input parameters
+- `this.variables`: Workflow variables
+- `this.common_data`: Shared data between states
+- `this.current_state`: Current state information
+
+#### API Responses
+
+- `this.last_response`: Last API response from the agent
+- `this.last_request`: Last API request sent to the agent
+
+#### Context Management
+
+- `this.workflow_contexts`: Map of all workflow contexts
+- Context methods: `addMessage()`, `getMessages()`, `clear()`
+
+#### Utilities
+
+- `this.logger`: Logging functionality
+- `this.config`: Workflow configuration access
+
+## Parsing Tools
+
+Workflows can use parsing tools for structured output and decision-making:
+
+### Configuration
 
 ```json
 {
-    "grocery_worker": {
-        "level": "fast",
-        "systemMessage": "You are Sam, a helpful employee at FreshMart grocery store. You assist customers with finding products, providing information about items, and helping with their shopping needs. Be friendly, knowledgeable, and helpful.",
-        "excludedTools": ["*file*", "*terminal*", "*git*"]
-    },
-    "customer": {
-        "level": "fast",
-        "systemMessage": "You are a customer shopping at FreshMart grocery store. You have specific needs and questions. Make decisions about whether you're satisfied with the worker's help or need more assistance.",
-        "parsingTools": [
-            {
-                "type": "function",
-                "function": {
-                    "name": "interaction_decision",
-                    "description": "Decide whether you're satisfied with the worker's response or need more help",
+    "agents": [
+        {
+            "agent_role": "decision_maker",
+            "context": "shared_context",
+            "role": "assistant",
+            "parsing_tools": [
+                {
+                    "name": "make_decision",
+                    "description": "Make a structured decision",
                     "parameters": {
                         "type": "object",
                         "properties": {
-                            "satisfied": {
-                                "type": "boolean",
-                                "description": "Whether you're satisfied with the help received"
-                            },
-                            "response": {
+                            "decision": {
                                 "type": "string",
-                                "description": "Your response or follow-up question if not satisfied"
+                                "enum": ["continue", "stop", "retry"]
+                            },
+                            "confidence": {
+                                "type": "number",
+                                "minimum": 0,
+                                "maximum": 1
+                            },
+                            "reasoning": {
+                                "type": "string"
                             }
                         },
-                        "required": ["satisfied"]
+                        "required": ["decision", "confidence"]
                     }
-                },
-                "parsingOnly": true
-            }
-        ]
-    }
-}
-```
-
-## Workflow System Architecture
-
-### Core Components
-
-#### **WorkflowStateMachine**
-
-- Main orchestrator for workflow execution
-- Manages agent lifecycle and state transitions
-- Handles context synchronization
-- Provides execution tracking and logging
-
-#### **WorkflowAgent**
-
-- Individual AI agent instances with role-specific configuration
-- Manages API client and tool filtering
-- Handles parsing tool responses
-- Maintains agent-specific state
-
-#### **WorkflowContext**
-
-- Shared conversation context between agents
-- Role-based message mapping (user/assistant)
-- Message length management and truncation
-- Context isolation between workflows
-
-#### **WorkflowConfig**
-
-- Configuration validation and loading
-- Script module management
-- State and transition validation
-- Agent and context setup
-
-### Execution Flow
-
-```mermaid
-graph TD
-    A[Load Workflow Config] --> B[Initialize Contexts]
-    B --> C[Create Agents]
-    C --> D[Start State Machine]
-    D --> E[Execute Current State]
-    E --> F[Run Pre-Handler]
-    F --> G[Make API Call]
-    G --> H[Run Post-Handler]
-    H --> I[Run Transition Handler]
-    I --> J{Next State?}
-    J -->|Continue| E
-    J -->|Stop| K[Return Result]
-    J -->|Error| L[Handle Error]
-```
-
-### Message Flow Between Agents
-
-```mermaid
-sequenceDiagram
-    participant SM as State Machine
-    participant A1 as Agent 1 (Assistant)
-    participant CTX as Shared Context
-    participant A2 as Agent 2 (User)
-
-    SM->>A1: Execute State
-    A1->>CTX: Add Assistant Message
-    CTX->>A2: Sync Messages
-    SM->>A2: Execute Next State
-    A2->>CTX: Add User Message
-    CTX->>A1: Sync Messages
-```
-
-## Advanced Workflow Patterns
-
-### Iterative Refinement Pattern
-
-```javascript
-// Workflow for iterative code improvement
-export default {
-    initializeIteration() {
-        this.common_data.iteration = 0;
-        this.common_data.max_iterations = 3;
-        this.common_data.improvements = [];
-    },
-
-    processCodeReview() {
-        const review = this._parseToolCall('code_review');
-        if (review) {
-            this.common_data.improvements.push(review);
-            this.common_data.needs_improvement = review.needs_improvement;
+                }
+            ]
         }
-    },
-
-    decideIteration() {
-        this.common_data.iteration++;
-
-        if (
-            !this.common_data.needs_improvement ||
-            this.common_data.iteration >= this.common_data.max_iterations
-        ) {
-            return 'finalize';
-        }
-
-        return 'improve_code';
-    },
-};
-```
-
-### Parallel Processing Pattern
-
-```json
-{
-    "contexts": [
-        { "name": "analysis_context", "max_length": 20000 },
-        { "name": "implementation_context", "max_length": 20000 }
-    ],
-    "agents": [
-        { "agent_role": "analyst", "context": "analysis_context", "role": "assistant" },
-        { "agent_role": "coder", "context": "implementation_context", "role": "assistant" }
-    ],
-    "states": [
-        { "name": "parallel_analysis", "agent": "analyst" },
-        { "name": "parallel_implementation", "agent": "coder" },
-        { "name": "merge_results", "transition_handler": "combineResults" }
     ]
 }
 ```
 
-### Decision Tree Pattern
+### Using Parsing Tools
 
 ```javascript
-export default {
-    classifyRequest() {
-        const classification = this._parseToolCall('request_classifier');
-        this.common_data.request_type = classification?.type;
-
-        switch (classification?.type) {
-            case 'bug_report':
-                return 'handle_bug';
-            case 'feature_request':
-                return 'handle_feature';
-            case 'question':
-                return 'handle_question';
-            default:
-                return 'handle_general';
-        }
-    },
-};
-```
-
-## Integration with SynthDev
-
-### Command Integration
-
-Workflows integrate seamlessly with SynthDev's command system:
-
-```bash
-# List all available workflows
-/workflows
-
-# Execute specific workflow
-/workflow my_workflow
-
-# Execute with alias
-/wf my_workflow
-```
-
-### Tool Integration
-
-Workflows can use any available tools through agent role configuration:
-
-```json
-{
-    "coder_agent": {
-        "level": "base",
-        "systemMessage": "You are a coding assistant.",
-        "includedTools": ["read_file", "write_file", "execute_terminal"]
+// In script functions
+captureDecision() {
+    const toolCalls = this.last_response?.choices?.[0]?.message?.tool_calls;
+    if (toolCalls && toolCalls.length > 0) {
+        const decision = JSON.parse(toolCalls[0].function.arguments);
+        this.common_data.decision = decision.decision;
+        this.common_data.confidence = decision.confidence;
+        this.common_data.reasoning = decision.reasoning;
     }
+},
+
+checkDecision() {
+    const decision = this.common_data.decision;
+    const confidence = this.common_data.confidence || 0;
+
+    if (confidence < this.variables.confidence_threshold) {
+        return 'retry';
+    }
+
+    return decision === 'continue' ? 'next_state' : 'stop';
 }
 ```
 
-### Configuration Integration
+## Execution
 
-Workflows use the same configuration system as the rest of SynthDev:
+### Running Workflows
 
-- Environment variables for API keys and models
-- Role-based tool filtering
-- Multi-model support (base/smart/fast)
-- Logging and debugging configuration
+```bash
+# List available workflows
+/workflows
+
+# Execute a specific workflow
+/workflow grocery_store_test
+
+# Execute with custom input
+/workflow example_workflow "Analyze the authentication system"
+```
+
+### Execution Flow
+
+1. **Initialization**: Load workflow configuration and validate
+2. **Context Setup**: Initialize shared contexts and agents
+3. **State Execution**: Execute states in sequence
+4. **Agent Interaction**: Agents process requests and generate responses
+5. **Script Execution**: Custom functions handle pre/post processing
+6. **State Transitions**: Determine next state based on logic
+7. **Completion**: Return final result when reaching stop state
+
+### Monitoring Execution
+
+The workflow system provides detailed logging:
+
+```
+🔄 Starting workflow: grocery_store_test
+📝 Initializing context: customer_worker_interaction
+🤖 Setting up agent: customer (role: user)
+🤖 Setting up agent: worker (role: assistant)
+⚡ Executing state: start
+🧠 Agent customer thinking...
+✅ State start completed
+⚡ Executing state: worker_response
+🧠 Agent worker thinking...
+✅ State worker_response completed
+🎯 Workflow completed successfully
+```
+
+## Example: Grocery Store Workflow
+
+The grocery store workflow demonstrates a complete multi-agent interaction:
+
+### Scenario
+
+A customer interacts with a grocery store worker, with decision-making based on customer satisfaction.
+
+### Configuration Highlights
+
+```json
+{
+    "workflow_name": "grocery_store_test",
+    "description": "Multi-agent grocery store customer-worker interaction",
+    "contexts": [
+        {
+            "name": "customer_worker_interaction",
+            "starting_messages": [
+                {
+                    "role": "system",
+                    "content": "You are in a grocery store. A customer is approaching a worker for help."
+                }
+            ],
+            "max_length": 30000
+        }
+    ],
+    "agents": [
+        {
+            "agent_role": "customer",
+            "context": "customer_worker_interaction",
+            "role": "user",
+            "parsing_tools": [
+                {
+                    "name": "customer_satisfaction",
+                    "description": "Rate customer satisfaction",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "satisfied": { "type": "boolean" },
+                            "rating": { "type": "integer", "minimum": 1, "maximum": 5 }
+                        }
+                    }
+                }
+            ]
+        },
+        {
+            "agent_role": "worker",
+            "context": "customer_worker_interaction",
+            "role": "assistant"
+        }
+    ]
+}
+```
+
+### Key Features Demonstrated
+
+- **Context Sharing**: Both agents share the same conversation context
+- **Role Mapping**: Customer acts as 'user', worker as 'assistant'
+- **Parsing Tools**: Customer provides structured satisfaction feedback
+- **Decision Logic**: Workflow continues based on customer satisfaction
+- **State Transitions**: Dynamic flow based on interaction outcomes
+
+## Best Practices
+
+### Workflow Design
+
+1. **Clear Objectives**: Define clear input/output and success criteria
+2. **Modular States**: Keep states focused on single responsibilities
+3. **Error Handling**: Include error states and recovery mechanisms
+4. **Context Management**: Use appropriate context sizes and cleanup
+5. **Variable Usage**: Use variables for configuration and thresholds
+
+### Script Development
+
+1. **Defensive Programming**: Check for null/undefined values
+2. **Logging**: Use logger for debugging and monitoring
+3. **State Validation**: Validate state before transitions
+4. **Data Persistence**: Store important data in common_data
+5. **Clean Transitions**: Ensure clear state transition logic
+
+### Testing
+
+1. **Unit Tests**: Test individual script functions
+2. **Integration Tests**: Test agent interactions
+3. **End-to-End Tests**: Test complete workflow execution
+4. **Mock Responses**: Use HTTP mocking for consistent testing
+5. **Edge Cases**: Test error conditions and edge cases
+
+### Performance
+
+1. **Context Size**: Monitor and manage context length
+2. **API Calls**: Minimize unnecessary API requests
+3. **State Efficiency**: Avoid redundant state transitions
+4. **Memory Usage**: Clean up unused data
+5. **Execution Time**: Set appropriate timeouts
+
+## Troubleshooting
+
+### Common Issues
+
+#### Workflow Not Found
+
+```
+Error: Workflow 'my_workflow' not found
+```
+
+**Solution**: Ensure workflow JSON file exists in `src/config/workflows/`
+
+#### Script Function Error
+
+```
+Error: Function 'myFunction' not found in workflow script
+```
+
+**Solution**: Check script.js exports and function names
+
+#### Context Overflow
+
+```
+Warning: Context 'shared_context' approaching max length
+```
+
+**Solution**: Increase max_length or implement context cleanup
+
+#### Agent Configuration Error
+
+```
+Error: Agent role 'invalid_role' not found
+```
+
+**Solution**: Ensure agent_role exists in AI roles configuration
+
+### Debugging
+
+1. **Increase Verbosity**: Set `SYNTHDEV_VERBOSITY_LEVEL=4` for detailed logs
+2. **Check Script Syntax**: Validate JavaScript syntax in script files
+3. **Validate Configuration**: Ensure JSON configuration is valid
+4. **Test Incrementally**: Start with simple workflows and add complexity
+5. **Monitor Context**: Watch context length and message flow
 
 ---
 
-_For role configuration and AI personas, see [AI Roles & Few-Shot Prompting](roles-and-prompting.md)_
-_For tool development, see [Tool Development](tool-development.md)_
-_For configuration details, see [Configuration Guide](configuration.md)_
+_For AI role configuration, see the Configuration guide. For tool usage in workflows, see the Tools guide._

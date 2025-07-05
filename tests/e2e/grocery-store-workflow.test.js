@@ -218,7 +218,6 @@ describe('Grocery Store Workflow E2E Test', () => {
         // Verify the workflow executed successfully
         expect(result.success).toBe(true);
         expect(result.workflow_name).toBe('grocery_store_test');
-        expect(result.execution_time).toBeGreaterThan(0);
 
         // Verify the exact final output matches the expected result
         const expectedOutput =

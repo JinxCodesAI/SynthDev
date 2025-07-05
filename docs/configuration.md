@@ -1,13 +1,13 @@
-# Configuration Guide
+# SynthDev Configuration Guide
 
-This guide covers all configuration options for SynthDev, including environment variables, configuration files, and customization options.
+This guide covers all configuration options for SynthDev, including environment variables, configuration files, and customization options based on the actual implementation.
 
 ## Configuration System Overview
 
-SynthDev uses a layered configuration system:
+SynthDev uses a layered configuration system with clear priority order:
 
 1. **Built-in defaults** (lowest priority)
-2. **Configuration files** (`config/` directory)
+2. **Configuration files** (`src/config/` directory)
 3. **Environment variables** (`.env` file)
 4. **Command line arguments** (highest priority)
 
@@ -103,7 +103,18 @@ SYNTHDEV_BASE_URL=http://localhost:8080/v1
 ### Directory Structure
 
 ```
-config/
+src/config/
+├── managers/                    # Configuration managers
+│   ├── configManager.js        # Main configuration orchestrator
+│   ├── toolConfigManager.js    # Tool-specific configuration
+│   └── uiConfigManager.js      # UI configuration
+├── validation/                  # Configuration validation
+│   ├── configurationChecker.js # Config validation
+│   ├── configurationLoader.js  # File loading and caching
+│   ├── configurationValidator.js # Validation logic
+│   └── config-validation.json  # Validation rules
+├── defaults/                    # Default configurations
+│   └── application.json        # Application defaults
 ├── roles/                       # AI role definitions (multi-file support)
 │   ├── roles.json              # Main role configurations (legacy)
 │   ├── core-roles.json         # Core system roles
@@ -116,45 +127,87 @@ config/
 ├── ui/                         # User interface text
 │   ├── console-messages.json   # Console interface messages
 │   └── command-help.json       # Command descriptions
-├── validation/                 # Validation rules
-│   └── config-validation.json  # Configuration validation
-└── defaults/                   # Default values
-    └── application.json        # Application defaults
+└── workflows/                   # Workflow configurations
+    ├── my_workflow.json        # Workflow configuration
+    └── my_workflow/            # Workflow scripts directory
+        └── script.js           # Custom JavaScript functions
 ```
 
 ### AI Roles Configuration
 
-SynthDev supports multi-file role configuration. You can organize roles across multiple JSON files in the `config/roles/` directory and subdirectories.
+SynthDev supports multi-file role configuration. You can organize roles across multiple JSON files in the `src/config/roles/` directory and subdirectories.
 
-#### **Multi-File Organization**
+#### Multi-File Organization
 
 Create role files anywhere in the roles directory:
 
-- `config/roles/roles.json` (main/legacy file)
-- `config/roles/core-roles.json` (core system roles)
-- `config/roles/specialized/testing-roles.json` (specialized roles)
-- `config/roles/custom/my-roles.json` (your custom roles)
+- `src/config/roles/roles.json` (main/legacy file)
+- `src/config/roles/core-roles.json` (core system roles)
+- `src/config/roles/specialized/testing-roles.json` (specialized roles)
+- `src/config/roles/custom/my-roles.json` (your custom roles)
 
-#### **Role Definition Example**
+#### Role Definition Example
 
-Edit any JSON file in `config/roles/` to customize AI behavior:
+Edit any JSON file in `src/config/roles/` to customize AI behavior:
+
+```json
+{
+    "custom_role": {
+        "level": "base",
+        "systemMessage": "You are a specialized assistant for...",
+        "excludedTools": ["execute_terminal"],
+        "reminder": "Remember to follow security guidelines",
+        "examples": [
+            {
+                "role": "user",
+                "content": "Example input"
+            },
+            {
+                "role": "assistant",
+                "content": "Example response"
+            }
+        ]
+    }
+}
+```
+
+#### Role Properties
+
+- **level**: Model level (`base`, `smart`, `fast`)
+- **systemMessage**: Core instructions for the AI role
+- **excludedTools**: Tools this role cannot access (supports wildcards and regex)
+- **includedTools**: Tools this role can access (mutually exclusive with excludedTools)
+- **reminder**: Additional instructions during tool execution
+- **examples**: Conversation examples for few-shot prompting
+- **parsingTools**: Special tools for structured output (parsing only)
+
+#### Tool Filtering Patterns
+
+```json
+"excludedTools": [
+    "exact_tool_name",     // Exact match
+    "*file",               // Wildcard: matches any tool ending with "file"
+    "execute_*",           // Wildcard: matches any tool starting with "execute_"
+    "/^dangerous_/i"       // Regex: case-insensitive match
+]
+```
 
 ### Multi-Agent Workflows Configuration
 
-Configure complex multi-agent workflows in `config/workflows/`:
+Configure complex multi-agent workflows in `src/config/workflows/`:
 
-#### **Workflow Structure**
+#### Workflow Structure
 
 ```
-config/workflows/
+src/config/workflows/
 ├── my_workflow.json          # Workflow configuration
 └── my_workflow/              # Workflow scripts directory
     └── script.js             # Custom JavaScript functions
 ```
 
-#### **Basic Workflow Configuration**
+#### Basic Workflow Configuration
 
-Create `config/workflows/example_workflow.json`:
+Create `src/config/workflows/example_workflow.json`:
 
 ```json
 {
@@ -208,9 +261,9 @@ Create `config/workflows/example_workflow.json`:
 }
 ```
 
-#### **Workflow Script Functions**
+#### Workflow Script Functions
 
-Create `config/workflows/example_workflow/script.js`:
+Create `src/config/workflows/example_workflow/script.js`:
 
 ```javascript
 export default {
@@ -238,61 +291,9 @@ export default {
 };
 ```
 
-#### **Workflow Execution**
-
-```bash
-# List available workflows
-/workflows
-
-# Execute workflow
-/workflow example_workflow
-```
-
-```json
-{
-    "custom_role": {
-        "level": "base",
-        "systemMessage": "You are a specialized assistant for...",
-        "excludedTools": ["execute_terminal"],
-        "reminder": "Remember to follow security guidelines",
-        "examples": [
-            {
-                "role": "user",
-                "content": "Example input"
-            },
-            {
-                "role": "assistant",
-                "content": "Example response"
-            }
-        ]
-    }
-}
-```
-
-#### Role Properties
-
-- **level**: Model level (`base`, `smart`, `fast`)
-- **systemMessage**: Core instructions for the AI role
-- **excludedTools**: Tools this role cannot access (supports wildcards and regex)
-- **includedTools**: Tools this role can access (mutually exclusive with excludedTools)
-- **reminder**: Additional instructions during tool execution
-- **examples**: Conversation examples for few-shot prompting
-- **parsingTools**: Special tools for structured output (parsing only)
-
-#### Tool Filtering Patterns
-
-```json
-"excludedTools": [
-    "exact_tool_name",     // Exact match
-    "*file",               // Wildcard: matches any tool ending with "file"
-    "execute_*",           // Wildcard: matches any tool starting with "execute_"
-    "/^dangerous_/i"       // Regex: case-insensitive match
-]
-```
-
 ### UI Customization
 
-Edit `config/ui/console-messages.json`:
+Edit `src/config/ui/console-messages.json`:
 
 ```json
 {
@@ -309,7 +310,7 @@ Edit `config/ui/console-messages.json`:
 
 ### Tool Safety Configuration
 
-Edit `config/tools/safety-patterns.json`:
+Edit `src/config/tools/safety-patterns.json`:
 
 ```json
 {
@@ -331,7 +332,7 @@ Edit `config/tools/safety-patterns.json`:
 ### Basic Usage
 
 ```javascript
-import ConfigManager from './configManager.js';
+import ConfigManager from './src/config/managers/configManager.js';
 
 // Get singleton instance
 const config = ConfigManager.getInstance();
@@ -374,134 +375,6 @@ console.log(global.environment); // String: development/production/test
 console.log(global.debug); // Boolean
 ```
 
-## Validation
-
-### Configuration Validation
-
-The system validates configuration on startup:
-
-- **Required fields**: Ensures `SYNTHDEV_API_KEY` is provided
-- **URL validation**: Validates URL formats for all base URLs
-- **Range validation**: Ensures `SYNTHDEV_MAX_TOOL_CALLS` is between 1-200
-- **Type validation**: Converts strings to appropriate types
-
-### Error Handling
-
-```javascript
-try {
-    const config = ConfigManager.getInstance();
-} catch (error) {
-    console.error('Configuration error:', error.message);
-    // Handle configuration errors appropriately
-}
-```
-
-## Environment-Specific Configuration
-
-### Development Environment
-
-```env
-NODE_ENV=development
-DEBUG=true
-SYNTHDEV_VERBOSITY_LEVEL=3
-SYNTHDEV_ENABLE_PROMPT_ENHANCEMENT=true
-```
-
-### Production Environment
-
-```env
-NODE_ENV=production
-DEBUG=false
-SYNTHDEV_VERBOSITY_LEVEL=1
-SYNTHDEV_ENABLE_PROMPT_ENHANCEMENT=false
-SYNTHDEV_MAX_TOOL_CALLS=30
-```
-
-### Testing Environment
-
-```env
-NODE_ENV=test
-DEBUG=false
-SYNTHDEV_VERBOSITY_LEVEL=0
-SYNTHDEV_API_KEY=test-key-for-mocking
-```
-
-## Advanced Configuration
-
-### Custom Model Configurations
-
-For specialized use cases:
-
-```env
-# Research Model
-SYNTHDEV_RESEARCH_API_KEY=your_research_key
-SYNTHDEV_RESEARCH_MODEL=gpt-4-research
-SYNTHDEV_RESEARCH_BASE_URL=https://api.research.com/v1
-
-# Code Model
-SYNTHDEV_CODE_API_KEY=your_code_key
-SYNTHDEV_CODE_MODEL=codex-advanced
-SYNTHDEV_CODE_BASE_URL=https://api.code.com/v1
-```
-
-### Performance Tuning
-
-```env
-# Reduce API calls
-SYNTHDEV_MAX_TOOL_CALLS=20
-SYNTHDEV_ENABLE_PROMPT_ENHANCEMENT=false
-
-# Increase output for debugging
-SYNTHDEV_VERBOSITY_LEVEL=5
-DEBUG=true
-
-# Optimize for speed
-SYNTHDEV_FAST_MODEL=gpt-3.5-turbo
-```
-
-## Migration from Old Configuration
-
-### From systemMessages.js
-
-**Old format:**
-
-```javascript
-coder: {
-    level: 'base',
-    systemMessage: 'You are a coder...',
-    excludedTools: ['tool1']
-}
-```
-
-**New format:**
-
-```json
-{
-    "coder": {
-        "level": "base",
-        "systemMessage": "You are a coder...",
-        "excludedTools": ["tool1"]
-    }
-}
-```
-
-### From Direct Environment Access
-
-**Old way:**
-
-```javascript
-const apiKey = process.env.SYNTHDEV_API_KEY;
-const maxCalls = parseInt(process.env.SYNTHDEV_MAX_TOOL_CALLS) || 50;
-```
-
-**New way:**
-
-```javascript
-const config = ConfigManager.getInstance();
-const apiKey = config.getModel('base').apiKey;
-const maxCalls = config.getConfig().global.maxToolCalls;
-```
-
 ## Best Practices
 
 1. **Use ConfigManager**: Always use `ConfigManager.getInstance()` instead of direct `process.env`
@@ -540,4 +413,4 @@ Configuration error: SYNTHDEV_MAX_TOOL_CALLS must be between 1 and 200
 
 ---
 
-_For role-specific configuration, see [AI Roles & Few-Shot Prompting](roles-and-prompting.md)_
+_For role-specific configuration, see the AI Roles section. For workflow configuration, see the Multi-Agent Workflows section._
