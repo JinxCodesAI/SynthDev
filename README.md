@@ -1,6 +1,12 @@
 # SynthDev - AI Coding Assistant
 
-SynthDev is a powerful Node.js console-based AI coding assistant designed to explore agentic capabilities of less powerful AI models. It provides comprehensive development tools, multi-model support, and sophisticated conversation management capabilities.
+Deeply inspired by [Aider](https://github.com/Aider-AI/aider), [Cline](https://github.com/cline/cline), [Roo-Code](https://github.com/RooCodeInc/Roo-Code), [Augument Code](https://www.augmentcode.com/) and [Cursor](https://www.cursor.com/).
+
+Shamelessly vibe-coded with use of Cursor and Augument Code, blissfully in JavaScript, like [Dylan's Beattie's song](https://www.youtube.com/watch?v=jxi0ETwDvws&t=250s) never existed.
+
+Code tested with GPT-4.1-mini and GPT-4.1-nano (fast) and alternatively with Gemini Flash 2.5 with sensible results.
+
+SynthDev is Node.js console-based AI coding assistant designed to explore agentic capabilities of less powerful AI models. It provides comprehensive development tools, multi-model support, and conversation management capabilities.
 
 ## What is SynthDev?
 
@@ -375,21 +381,19 @@ This documentation is organized into comprehensive guides:
 
 ### Core Guides
 
-- **[Installation Guide](Installation.md)**: Complete setup instructions and requirements
-- **[Configuration Guide](Configuration.md)**: Environment variables, AI roles, and system configuration
-- **[Architecture Overview](Architecture.md)**: System design, components, and data flow
+- **[Installation Guide](docs/Installation.md)**: Complete setup instructions and requirements
+- **[Configuration Guide](docs/Configuration.md)**: Environment variables, AI roles, and system configuration
+- **[Architecture Overview](docs/Architecture.md)**: System design, components, and data flow
 
 ### Feature Guides
 
-- **[Tools Reference](Tools.md)**: Complete tool documentation with examples and security features
-- **[Multi-Agent Workflows](Workflows.md)**: Creating and executing complex multi-agent workflows
-- **[Testing Guide](Testing.md)**: Testing strategies, best practices, and coverage goals
+- **[Tools Reference](docs/Tools.md)**: Complete tool documentation with examples and security features
+- **[Multi-Agent Workflows](docs/workflows.md)**: Creating and executing complex multi-agent workflows
+- **[Testing Guide](docs/Testing.md)**: Testing strategies, best practices, and coverage goals
 
 ### Development Resources
 
-- **[ADRs/](ADRs/)**: Architecture Decision Records for development patterns
-- **[Command Reference](../commands.md)**: All available commands and usage
-- **[Troubleshooting](../troubleshooting.md)**: Common issues and solutions
+- **[ADRs/](docs/ADRs/)**: Architecture Decision Records for development patterns
 
 ## Getting Help
 
