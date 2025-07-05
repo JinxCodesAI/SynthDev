@@ -2,7 +2,7 @@
     "api_key_validation": {
         "required": true,
         "min_length": 10,
-        "pattern": "^sk-",
+        "pattern": null,
         "error_message": "API key must start with 'sk-' and be at least 10 characters long"
     },
     "url_validation": {
