@@ -65,6 +65,8 @@ describe('AIAPIClient Integration Tests', () => {
             hasSmartModelConfig: vi.fn().mockReturnValue(false),
             hasFastModelConfig: vi.fn().mockReturnValue(false),
             getMaxTokens: vi.fn().mockReturnValue(4000),
+            isReasoningModel: vi.fn().mockReturnValue(false),
+            getReasoningEffort: vi.fn().mockReturnValue('medium'),
         };
 
         mockSystemMessages = {
