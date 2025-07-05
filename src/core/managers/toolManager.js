@@ -268,9 +268,10 @@ class ToolManager {
             }
         }
 
-        // Handle file backup if tool requires it
+        // Handle file backup and Git operations if tool requires it
         if (toolDefinition && toolDefinition.requires_backup && snapshotManager) {
             await this._handleFileBackup(toolName, toolArgs, snapshotManager);
+            await this._handlePreExecutionGitOperations(toolName, toolArgs, snapshotManager);
         }
 
         const implementation = this.toolImplementations.get(toolName);
@@ -341,6 +342,79 @@ class ToolManager {
 
         if (filePath) {
             await snapshotManager.backupFileIfNeeded(filePath);
+        }
+    }
+
+    /**
+     * Handles Git operations before tool execution
+     * Creates snapshot, checks for uncommitted changes, and creates branch/commit if needed
+     * @param {string} toolName - Name of the tool being executed
+     * @param {Object} toolArgs - Arguments passed to the tool
+     * @param {SnapshotManager} snapshotManager - Snapshot manager instance
+     */
+    async _handlePreExecutionGitOperations(toolName, toolArgs, snapshotManager) {
+        const gitStatus = snapshotManager.getGitStatus();
+
+        // Only proceed if Git is available and we're in a repo
+        if (!gitStatus.gitAvailable || !gitStatus.isGitRepo) {
+            this.logger.debug('Git not available, skipping Git operations', 'Pre-execution Git');
+            return;
+        }
+
+        try {
+            // Check if there are uncommitted changes that need to be committed
+            const statusResult = await snapshotManager.gitUtils.hasUncommittedChanges();
+            if (!statusResult.success) {
+                this.logger.warn(
+                    `Failed to check Git status: ${statusResult.error}`,
+                    'Pre-execution Git'
+                );
+                return;
+            }
+
+            if (statusResult.hasUncommittedChanges) {
+                this.logger.debug(
+                    'Uncommitted changes detected, committing before tool execution',
+                    'Pre-execution Git'
+                );
+
+                // If not in Git mode yet, we need to create a snapshot and branch
+                if (!gitStatus.gitMode) {
+                    // Create a snapshot which will trigger branch creation if needed
+                    await snapshotManager.createSnapshot(`Pre-execution commit for ${toolName}`);
+                }
+
+                // Add all changes and commit them
+                const addResult = await snapshotManager.gitUtils.addFiles(['.']);
+                if (!addResult.success) {
+                    this.logger.warn(
+                        `Failed to add files: ${addResult.error}`,
+                        'Pre-execution Git'
+                    );
+                    return;
+                }
+
+                // Commit the existing changes
+                const commitResult = await snapshotManager.commitChangesToGit(['.']);
+                if (!commitResult.success) {
+                    this.logger.warn(
+                        `Failed to commit changes: ${commitResult.error}`,
+                        'Pre-execution Git'
+                    );
+                }
+            } else {
+                this.logger.debug('No uncommitted changes detected', 'Pre-execution Git');
+
+                // Even if no uncommitted changes, ensure we have a snapshot for this session
+                if (!snapshotManager.getCurrentSnapshot()) {
+                    await snapshotManager.createSnapshot(`Tool execution: ${toolName}`);
+                }
+            }
+        } catch (error) {
+            this.logger.warn(
+                `Pre-execution Git operations failed: ${error.message}`,
+                'Pre-execution Git'
+            );
         }
     }
 
