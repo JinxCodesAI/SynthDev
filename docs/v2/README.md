@@ -166,51 +166,100 @@ Access powerful commands via `/` prefix:
 
 ### AI Role System
 
-SynthDev features specialized AI personas for different tasks:
+SynthDev features specialized AI personas with different model tiers and tool access:
 
 #### Development Roles
 
-- **coder**: Software development and implementation
-- **reviewer**: Code review and quality assurance
-- **architect**: System design and architecture planning
-- **test_writer**: Specialized test writing assistant
-- **qa_specialist**: Quality assurance and bug detection
+- **coder** (base): Software development with full tool access except time/calculation utilities
+- **reviewer** (base): Code review with read-only access (no file modification)
+- **architect** (smart): System design using advanced model, read-only access for analysis
+- **test_writer** (base): Specialized test writing, most tools except terminal execution
+- **qa_specialist** (base): Quality assurance with read-only tools for code analysis
 
-#### Analysis Roles
+#### Analysis Roles (Parsing-Only)
 
-- **codebase_explainer**: Explaining codebase functionality
-- **file_summarizer**: Analyzing and summarizing individual files
-- **directory_summarizer**: Analyzing directory structures
-- **research_assistant**: Information gathering and analysis
+- **codebase_explainer** (fast): Explains codebase using indexed summaries, parsing tools only
+- **file_summarizer** (fast): Analyzes individual files, highly restricted tool access
+- **directory_summarizer** (fast): Analyzes directory structures, limited to analysis tools
 
 #### Utility Roles
 
-- **prompt_enhancer**: Improving user prompts with AI assistance
-- **command_generator**: Converting natural language to terminal commands
-- **file_reader**: File reading and analysis only
-- **dude**: Helpful assistant for wide range of tasks
+- **prompt_enhancer** (fast): Improves prompts with few-shot examples, analysis tools only
+- **command_generator** (fast): Converts natural language to terminal commands, no tools
+- **file_reader** (fast): Limited to read_file, list_directory, exact_search only
+- **dude** (fast): General-purpose assistant with all tools available
+
+#### Role Features
+
+- **Model Tiers**: base (default), smart (complex reasoning), fast (quick tasks)
+- **Tool Filtering**: Role-based access control with wildcards and regex patterns
+- **Parsing Tools**: Structured output tools for decision-making workflows
+- **Few-Shot Learning**: Examples guide AI behavior for consistent responses
 
 Switch roles with: `/role <role_name>`
 
 ### Tool System
 
-Comprehensive tool categories:
+Comprehensive tool categories with security and validation:
 
-- **File Operations**: read_file, write_file, edit_file, list_directory
-- **Search & Analysis**: exact_search, explain_codebase
-- **Code Execution**: execute_script, execute_terminal
-- **Utilities**: calculate, get_time
+#### File Operations
+
+- **read_file**: Read file contents with encoding support and size limits
+- **write_file**: Create/overwrite files with backup and validation
+- **edit_file**: Modify files with line-based editing and safety checks
+- **list_directory**: Directory listing with filtering and depth control
+
+#### Search & Analysis
+
+- **exact_search**: Fast text search with regex support and context
+- **explain_codebase**: AI-powered codebase analysis using indexed summaries
+
+#### Code Execution
+
+- **execute_terminal**: System command execution with safety patterns
+- **execute_script**: JavaScript execution in sandboxed environment with AI safety assessment
+
+#### Utilities
+
+- **get_time**: Current time and date information
+- **calculate**: Mathematical calculations and expressions
+
+#### Security Features
+
+- **Path Validation**: All file operations restricted to project directory
+- **AI Safety Assessment**: Dynamic code analysis for script execution
+- **Tool Filtering**: Role-based access control with pattern matching
+- **Backup System**: Automatic backups for destructive operations
 
 ### Multi-Agent Workflows
 
-SynthDev supports complex multi-agent workflows where different AI personas collaborate:
+Execute complex multi-agent workflows with state management:
 
-- **🔄 State Machine Execution**: Structured workflow with defined states and transitions
-- **💬 Shared Context**: Agents share conversation context with role-based message mapping
-- **📝 Custom Scripts**: JavaScript functions for complex workflow logic
+```bash
+# List available workflows
+/workflows
+
+# Execute workflow
+/workflow grocery_store_test
+```
+
+#### Workflow Features
+
+- **🤖 Multi-Agent Orchestration**: Multiple AI agents with different roles working together
+- **🔄 State Machine Execution**: Structured workflow execution with defined states and transitions
+- **💬 Shared Context Management**: Agents share conversation context with role-based message mapping
+- **📝 Custom Script Integration**: JavaScript functions for complex workflow logic
 - **🎯 Parsing Tools**: Structured output handling for decision-making
+- **📊 Execution Tracking**: Detailed logging and state history
 
-Execute workflows with: `/workflow <workflow_name>`
+#### Example: Grocery Store Workflow
+
+A complete multi-agent simulation demonstrating:
+
+- Customer-worker interaction with decision-making
+- Context sharing between agents
+- Structured output with parsing tools
+- State transitions based on customer satisfaction
 
 ### Codebase Intelligence
 
@@ -255,26 +304,92 @@ npm run test:coverage
 ### Project Structure
 
 ```
-synth-dev/
-├── src/
-│   ├── commands/        # Command implementations
-│   ├── config/          # Configuration files
-│   ├── core/           # Core application logic
-│   ├── tools/          # Tool implementations
-│   ├── utils/          # Utility functions
-│   └── workflow/       # Workflow system
-├── tests/              # Test files
-├── docs/               # Documentation
-└── examples/           # Example configurations
+src/
+├── core/                    # Core application logic
+│   ├── app.js              # Main application orchestrator
+│   ├── ai/                 # AI-related components
+│   │   ├── aiAPIClient.js  # Centralized API client with cost tracking
+│   │   ├── systemMessages.js # AI role management
+│   │   └── promptEnhancer.js # Prompt enhancement
+│   ├── interface/          # User interface components
+│   │   ├── consoleInterface.js # Console interaction
+│   │   └── commandHandler.js   # Command routing
+│   └── managers/           # Core managers
+│       ├── costsManager.js     # API cost tracking
+│       ├── snapshotManager.js  # Conversation snapshots
+│       ├── toolManager.js      # Tool loading and execution
+│       └── logger.js           # Centralized logging
+├── config/                 # Configuration system
+│   ├── managers/           # Configuration managers
+│   │   ├── configManager.js    # Main configuration
+│   │   ├── toolConfigManager.js # Tool configuration
+│   │   └── uiConfigManager.js   # UI configuration
+│   ├── validation/         # Configuration validation
+│   ├── defaults/           # Default configurations
+│   ├── roles/              # AI role definitions (multi-file support)
+│   ├── tools/              # Tool configurations
+│   ├── ui/                 # UI configurations
+│   └── workflows/          # Workflow configurations
+├── commands/               # Command system
+│   ├── base/               # Base command classes
+│   ├── config/             # Configuration commands
+│   ├── conversation/       # Conversation management
+│   ├── info/               # Information commands
+│   ├── role/               # Role switching
+│   ├── snapshots/          # Snapshot management
+│   ├── system/             # System commands
+│   ├── terminal/           # Terminal commands
+│   ├── utils/              # Command utilities
+│   └── workflow/           # Workflow commands
+├── tools/                  # Tool implementations
+│   ├── common/             # Base tool classes and utilities
+│   ├── calculate/          # Mathematical calculations
+│   ├── edit_file/          # File editing with line-based operations
+│   ├── exact_search/       # Text search with regex support
+│   ├── execute_script/     # JavaScript execution with AI safety
+│   ├── execute_terminal/   # System command execution
+│   ├── explain_codebase/   # AI-powered codebase analysis
+│   ├── get_time/           # Time and date utilities
+│   ├── list_directory/     # Directory listing
+│   ├── read_file/          # File reading with encoding support
+│   └── write_file/         # File writing with backup
+├── workflow/               # Multi-agent workflow system
+│   ├── WorkflowStateMachine.js # Main workflow orchestrator
+│   ├── WorkflowAgent.js        # Individual AI agent instances
+│   ├── WorkflowContext.js      # Shared conversation context
+│   └── WorkflowConfig.js       # Configuration validation
+└── utils/                  # Utility functions
+    └── GitUtils.js         # Git integration utilities
+
+tests/                      # Comprehensive test suite
+├── unit/                   # Unit tests for individual components
+├── integration/            # Integration tests for component interactions
+├── e2e/                    # End-to-end workflow tests
+├── mocks/                  # Mock implementations for testing
+└── helpers/                # Test utilities and helpers
 ```
 
-## Documentation
+## 📚 Documentation
 
-This documentation is organized into focused guides:
+This documentation is organized into comprehensive guides:
 
-- **[Architecture](Architecture.md)** - System design and components
-- **[Configuration](Configuration.md)** - Complete configuration reference
-- **[ADRs/](ADRs/)** - Architecture Decision Records for development patterns
+### Core Guides
+
+- **[Installation Guide](Installation.md)**: Complete setup instructions and requirements
+- **[Configuration Guide](Configuration.md)**: Environment variables, AI roles, and system configuration
+- **[Architecture Overview](Architecture.md)**: System design, components, and data flow
+
+### Feature Guides
+
+- **[Tools Reference](Tools.md)**: Complete tool documentation with examples and security features
+- **[Multi-Agent Workflows](Workflows.md)**: Creating and executing complex multi-agent workflows
+- **[Testing Guide](Testing.md)**: Testing strategies, best practices, and coverage goals
+
+### Development Resources
+
+- **[ADRs/](ADRs/)**: Architecture Decision Records for development patterns
+- **[Command Reference](../commands.md)**: All available commands and usage
+- **[Troubleshooting](../troubleshooting.md)**: Common issues and solutions
 
 ## Getting Help
 

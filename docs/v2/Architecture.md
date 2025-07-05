@@ -1,360 +1,354 @@
 # SynthDev Architecture
 
-This document provides a comprehensive overview of SynthDev's architecture, including core components, data flow, and system design patterns.
+This document provides a comprehensive overview of SynthDev's architecture, based on analysis of the actual codebase structure and implementation patterns.
 
 ## System Overview
 
-SynthDev is built as a modular Node.js application with a clear separation of concerns:
+SynthDev is a sophisticated AI-powered development assistant built with a modular, extensible architecture. The system orchestrates multiple AI agents, manages tool execution, and provides a rich command interface for development workflows.
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    Console Interface                        │
-├─────────────────────────────────────────────────────────────┤
-│                    Command System                           │
-├─────────────────────────────────────────────────────────────┤
-│  AI API Client  │  Tool Manager  │  Workflow System        │
-├─────────────────────────────────────────────────────────────┤
-│           Configuration & State Management                  │
-├─────────────────────────────────────────────────────────────┤
-│              Core Services & Utilities                      │
-└─────────────────────────────────────────────────────────────┘
-```
+### Core Principles
 
-## Core Components
+- **Modular Design**: Clear separation of concerns with well-defined interfaces
+- **Security First**: Path validation, AI safety assessment, and role-based access control
+- **Extensibility**: Plugin-like architecture for tools, commands, and workflows
+- **Multi-Model Support**: Different AI models for different complexity levels
+- **Comprehensive Testing**: Unit, integration, and end-to-end test coverage
 
-### 1. Application Entry Point (`src/core/app.js`)
+## Architecture Layers
 
-The main application class `AICoderConsole` orchestrates all components:
+### 1. Application Layer (`src/core/app.js`)
 
-- **Initialization**: Sets up configuration, managers, and services
-- **Startup Flow**: Handles configuration wizard if needed
-- **Event Coordination**: Manages interactions between components
-- **Lifecycle Management**: Handles startup, runtime, and shutdown
+The main application orchestrator that:
 
-**Key Responsibilities:**
+- Initializes all system components
+- Manages application lifecycle
+- Handles command-line argument parsing
+- Coordinates between different subsystems
 
-- Configuration validation and loading
-- Component initialization and dependency injection
-- Event handling setup
-- Error handling and recovery
+### 2. Interface Layer (`src/core/interface/`)
 
-### 2. Configuration System (`src/config/`)
+#### ConsoleInterface (`consoleInterface.js`)
 
-A hierarchical configuration system with multiple layers:
+- User interaction management
+- Input/output handling
+- Prompt formatting and display
+- Configuration-driven UI messages
 
-```
-Configuration Hierarchy (lowest to highest priority):
-1. Built-in defaults
-2. Configuration files (src/config/)
-3. Environment variables (.env)
-4. Command line arguments
-```
+#### CommandHandler (`commandHandler.js`)
 
-**Configuration Managers:**
+- Command parsing and routing
+- Command registry management
+- Context preparation for command execution
+- Error handling and response formatting
 
-- `ConfigManager`: Main configuration orchestrator
-- `ConfigurationLoader`: File loading and caching
-- `UIConfigManager`: User interface text and messages
-- `ToolConfigManager`: Tool-specific configurations
+### 3. AI Layer (`src/core/ai/`)
 
-**Configuration Files:**
+#### AIAPIClient (`aiAPIClient.js`)
 
-- `defaults/application.json`: Core application settings
-- `roles/`: AI role definitions (supports multiple files)
-- `tools/`: Tool configurations and safety patterns
-- `ui/`: Console interface messages
-- `validation/`: Configuration validation rules
-- `workflows/`: Workflow definitions
+- Centralized API communication
+- Cost tracking and token management
+- Multi-model support (base/smart/fast)
+- Response handling and error management
+- Callback system for response processing
 
-### 3. Command System (`src/commands/`)
+#### SystemMessages (`systemMessages.js`)
 
-A registry-based command system with automatic discovery:
+- AI role management and loading
+- Multi-file role configuration support
+- Tool filtering and access control
+- Few-shot prompting with examples
 
-```
-CommandRegistry
-├── BaseCommand (abstract)
-├── Command Categories:
-│   ├── config/         # Configuration commands
-│   ├── conversation/   # Chat management
-│   ├── indexing/       # Codebase indexing
-│   ├── info/          # Information display
-│   ├── role/          # Role management
-│   ├── snapshots/     # Git integration
-│   ├── system/        # System commands
-│   ├── terminal/      # Terminal integration
-│   ├── utils/         # Utility commands
-│   └── workflow/      # Workflow execution
-```
+#### PromptEnhancer (`promptEnhancer.js`)
 
-**Command Features:**
+- AI-powered prompt improvement
+- Context-aware enhancement suggestions
+- Integration with role system
 
-- Automatic registration and discovery
-- Alias support
-- Argument parsing
-- Context injection
+### 4. Management Layer (`src/core/managers/`)
+
+#### ToolManager (`toolManager.js`)
+
+- Dynamic tool discovery and loading
+- Tool execution with validation
+- Security enforcement
+- Tool schema validation
+
+#### ConfigManager (`configManager.js`)
+
+- Centralized configuration management
+- Environment variable processing
+- Multi-model configuration
+- Validation and error handling
+
+#### CostsManager (`costsManager.js`)
+
+- API usage tracking
+- Token counting and cost calculation
+- Usage reporting and analytics
+
+#### SnapshotManager (`snapshotManager.js`)
+
+- Conversation state management
+- Git integration for versioning
+- Backup and restore functionality
+
+#### Logger (`logger.js`)
+
+- Centralized logging system
+- Configurable verbosity levels
+- Structured logging with metadata
+
+## Component Architecture
+
+### Command System (`src/commands/`)
+
+#### Base Classes (`src/commands/base/`)
+
+**BaseCommand** - Abstract base class providing:
+
+- Standardized execution flow
+- Context validation
+- Error handling
+- Help text generation
+
+**SimpleCommand** - For synchronous operations
+**InteractiveCommand** - For user interaction requiring prompts
+
+#### Command Categories
+
+- **Config Commands**: Configuration management and wizards
+- **Conversation Commands**: Chat history and context management
+- **Info Commands**: System information and help
+- **Role Commands**: AI persona switching
+- **Snapshot Commands**: State management
+- **System Commands**: Application control
+- **Terminal Commands**: Command execution and generation
+- **Workflow Commands**: Multi-agent workflow execution
+
+### Tool System (`src/tools/`)
+
+#### Base Classes (`src/tools/common/`)
+
+**BaseTool** - Foundation class providing:
+
+- Standardized response format
+- Parameter validation
+- Path security validation
 - Error handling
 
-### 4. Tool System (`src/tools/`)
+**FileBaseTool** - Specialized for file operations:
 
-An extensible tool system with automatic loading:
+- File size validation
+- File system error handling
+- Path traversal protection
 
-```
-ToolManager
-├── Tool Discovery & Loading
-├── Tool Categories:
-│   ├── File Operations: read_file, write_file, edit_file, list_directory
-│   ├── Search & Analysis: exact_search, explain_codebase
-│   ├── Code Execution: execute_script, execute_terminal
-│   └── Utilities: calculate, get_time
-├── Safety & Validation
-└── Result Standardization
-```
+**CommandBaseTool** - Specialized for command execution:
 
-**Tool Architecture:**
+- Command validation
+- Execution response formatting
+- Security constraints
 
-- Each tool is a separate directory with `definition.json` and `implementation.js`
-- Automatic discovery and loading
-- Role-based filtering
-- Safety validation for dangerous operations
-- Standardized result format
+#### Tool Categories
 
-### 5. AI Integration (`src/core/ai/`)
+- **File Operations**: read_file, write_file, edit_file, list_directory
+- **Search & Analysis**: exact_search, explain_codebase
+- **Code Execution**: execute_script, execute_terminal
+- **Utilities**: calculate, get_time
 
-Multi-model AI integration with role-based behavior:
+#### Security Features
 
-```
-AIAPIClient
-├── Model Management (base/smart/fast)
-├── Role System Integration
-├── Message Management
-├── Tool Call Handling
-├── Cost Tracking
-└── Response Processing
-```
+- **Path Validation**: All file operations restricted to project directory
+- **AI Safety Assessment**: Dynamic code analysis for script execution
+- **Tool Filtering**: Role-based access control with pattern matching
+- **Backup System**: Automatic backups for destructive operations
 
-**Key Features:**
+### Configuration System (`src/config/`)
 
-- Multiple model support (base, smart, fast)
-- Role-specific system messages
-- Tool filtering per role
-- Conversation management
-- Cost tracking and reporting
+#### Multi-Layered Configuration
 
-### 6. Workflow System (`src/workflow/`)
+1. **Built-in defaults** (lowest priority)
+2. **Configuration files** (`config/` directory)
+3. **Environment variables** (`.env` file)
+4. **Command line arguments** (highest priority)
 
-A sophisticated multi-agent workflow system:
+#### Configuration Managers
 
-```
-WorkflowStateMachine
-├── WorkflowConfig          # Configuration validation and loading
-├── WorkflowContext         # Shared conversation contexts
-├── WorkflowAgent          # Individual AI agent instances
-└── Script Execution       # Custom JavaScript functions
-```
+**ConfigManager** - Main configuration orchestrator
+**ToolConfigManager** - Tool-specific configuration
+**UIConfigManager** - User interface configuration
 
-**Workflow Components:**
+#### Multi-File Support
 
-#### WorkflowStateMachine
+- **Role Definitions**: Organized across multiple JSON files
+- **Workflow Configurations**: Separate files with script directories
+- **Tool Configurations**: Individual tool settings
+- **UI Customization**: Configurable interface messages
 
-- Main orchestrator for workflow execution
-- Manages agent lifecycle and state transitions
-- Handles context synchronization
-- Provides execution tracking and logging
+### Workflow System (`src/workflow/`)
 
-#### WorkflowAgent
+#### Core Components
 
-- Individual AI agent instances with role-specific configuration
-- Manages API client and tool filtering
-- Handles parsing tool responses
-- Maintains agent-specific state
+**WorkflowStateMachine** - Main orchestrator:
 
-#### WorkflowContext
+- Agent lifecycle management
+- State transitions
+- Context synchronization
+- Execution tracking
 
-- Shared conversation context between agents
-- Role-based message mapping (user/assistant)
-- Message length management and truncation
-- Context isolation between workflows
+**WorkflowAgent** - Individual AI agents:
 
-#### WorkflowConfig
+- Role-specific configuration
+- API client management
+- Tool filtering
+- Parsing tool responses
 
-- Configuration validation and loading
-- Script function binding
-- State machine definition
-- Input/output mapping
+**WorkflowContext** - Shared conversation context:
+
+- Role-based message mapping
+- Message length management
+- Context isolation
+
+**WorkflowConfig** - Configuration validation:
+
+- Script module management
+- State validation
+- Agent setup
+
+#### Features
+
+- **Multi-Agent Orchestration**: Multiple AI agents with different roles
+- **State Machine Execution**: Structured workflow with defined states
+- **Shared Context Management**: Role-based message mapping
+- **Custom Script Integration**: JavaScript functions for workflow logic
+- **Parsing Tools**: Structured output for decision-making
+- **Execution Tracking**: Detailed logging and state history
 
 ## Data Flow
 
 ### 1. User Input Processing
 
 ```
-User Input → Console Interface → Command Registry → Command Execution
-                                ↓
-                            AI API Client → Tool Manager → Tool Execution
-                                ↓
-                            Response Processing → Console Output
+User Input → ConsoleInterface → CommandHandler → Command Implementation
 ```
 
-### 2. Workflow Execution
+### 2. AI Interaction Flow
 
 ```
-Workflow Request → WorkflowStateMachine → State Execution
-                                        ↓
-                    WorkflowAgent → AI API Call → Tool Execution
-                                        ↓
-                    Context Update → State Transition → Next State
+Command → AIAPIClient → External API → Response Processing → Tool Execution
 ```
 
-### 3. Configuration Loading
+### 3. Tool Execution Flow
 
 ```
-Startup → ConfigManager → ConfigurationLoader → File Loading
-                       ↓
-                   Validation → Caching → Component Initialization
+Tool Request → ToolManager → Tool Validation → Tool Implementation → Response
 ```
 
-## State Management
+### 4. Workflow Execution Flow
 
-### 1. Application State
+```
+Workflow Request → WorkflowStateMachine → Agent Execution → State Transition → Result
+```
 
-- Configuration settings
-- Current AI role
-- Conversation history
-- Tool execution state
-- Cost tracking
+## Security Architecture
 
-### 2. Workflow State
+### Path Security
 
-- Current workflow execution
-- Agent states
-- Shared contexts
-- Execution history
+- All file operations use `validateAndResolvePath()`
+- Prevents directory traversal attacks
+- Restricts access to project directory only
 
-### 3. Session State
+### AI Safety Assessment
 
-- User preferences
-- Command history
-- Snapshot management
-- Git integration state
+- Dynamic code analysis for script execution
+- Pattern-based safety checks as fallback
+- Configurable safety patterns and limits
 
-## Security Considerations
+### Role-Based Access Control
 
-### 1. Tool Safety
+- Tool filtering based on AI roles
+- Wildcard and regex pattern support
+- Parsing-only tools for structured output
 
-- Safety pattern validation for code execution
-- AI-based safety assessment
-- Execution limits and timeouts
-- Sandboxing for dangerous operations
+### Input Validation
 
-### 2. Configuration Security
-
-- Environment variable validation
-- API key protection
-- File system access controls
-- Input sanitization
-
-### 3. Workflow Security
-
-- Script execution sandboxing
-- Context isolation
-- Resource limits
-- Error handling
-
-## Extension Points
-
-### 1. Adding New Tools
-
-1. Create tool directory in `src/tools/`
-2. Implement `definition.json` and `implementation.js`
-3. Follow tool interface contract
-4. Add safety patterns if needed
-
-### 2. Adding New Commands
-
-1. Create command class extending `BaseCommand`
-2. Implement required methods
-3. Place in appropriate category directory
-4. Commands are auto-discovered
-
-### 3. Adding New Roles
-
-1. Add role definition to `src/config/roles/`
-2. Define system message and tool filtering
-3. Optionally add few-shot examples
-4. Roles are auto-loaded
-
-### 4. Adding New Workflows
-
-1. Create workflow configuration JSON
-2. Implement custom script functions if needed
-3. Define states, agents, and transitions
-4. Place in `src/config/workflows/`
-
-## Performance Considerations
-
-### 1. Configuration Caching
-
-- Configuration files are cached after first load
-- Hot reload available for development
-- Validation caching for performance
-
-### 2. Tool Loading
-
-- Lazy loading of tool implementations
-- Caching of tool definitions
-- Parallel tool discovery
-
-### 3. AI API Optimization
-
-- Request batching where possible
-- Response caching for repeated queries
-- Cost-aware model selection
-
-### 4. Memory Management
-
-- Conversation history limits
-- Context truncation strategies
-- Garbage collection optimization
-
-## Error Handling
-
-### 1. Graceful Degradation
-
-- Fallback behaviors for missing components
-- Partial functionality when tools fail
-- User-friendly error messages
-
-### 2. Recovery Mechanisms
-
-- Automatic retry for transient failures
-- State recovery after errors
-- Snapshot-based rollback
-
-### 3. Logging and Debugging
-
-- Structured logging with verbosity levels
-- Debug information for development
-- Error tracking and reporting
+- Parameter type checking
+- Required field validation
+- Size and format constraints
 
 ## Testing Architecture
 
-### 1. Unit Tests
+### Test Structure
 
-- Component isolation with mocking
-- Comprehensive coverage of core logic
-- Fast execution for development feedback
+```
+tests/
+├── unit/           # Individual component tests
+├── integration/    # Component interaction tests
+├── e2e/           # End-to-end workflow tests
+├── mocks/         # Mock implementations
+└── helpers/       # Test utilities
+```
 
-### 2. Integration Tests
+### Testing Strategies
 
-- Component interaction testing
-- Configuration system validation
-- End-to-end command execution
+- **Unit Tests**: Component isolation with comprehensive mocking
+- **Integration Tests**: Real component interactions
+- **E2E Tests**: Complete workflow validation with HTTP mocking
+- **Mock System**: Sophisticated mocking for external dependencies
 
-### 3. E2E Tests
+### Coverage Goals
 
-- Full application workflow testing
-- Real API interaction simulation
-- User scenario validation
+- Overall: 40%+ lines, branches, functions
+- Core modules: Higher coverage expected
+- Continuous validation through CI/CD
 
----
+## Performance Considerations
 
-_For specific implementation details, see the ADRs in the ADRs/ directory._
+### Token Management
+
+- Cost tracking across all API calls
+- Model selection based on task complexity
+- Token usage optimization
+
+### Caching
+
+- Configuration caching
+- Tool schema caching
+- Conversation context management
+
+### Resource Management
+
+- File size limits
+- Execution timeouts
+- Memory usage monitoring
+
+## Extensibility Points
+
+### Adding New Tools
+
+1. Create tool directory with `definition.json` and `implementation.js`
+2. Use base tool classes for standardization
+3. Implement security validation
+4. Add comprehensive tests
+
+### Adding New Commands
+
+1. Extend BaseCommand or specialized base classes
+2. Implement required methods
+3. Register in command system
+4. Add help documentation
+
+### Adding New Workflows
+
+1. Create workflow configuration JSON
+2. Implement custom script functions
+3. Define agents and contexts
+4. Test with mock HTTP responses
+
+### Adding New Roles
+
+1. Define role in configuration files
+2. Specify tool access patterns
+3. Add few-shot examples if needed
+4. Test role behavior
+
+This architecture enables SynthDev to be both powerful and maintainable, with clear separation of concerns and extensive customization capabilities.

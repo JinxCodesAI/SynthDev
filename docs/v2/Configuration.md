@@ -1,24 +1,21 @@
-# Configuration Guide
+# SynthDev Configuration Guide
 
-This guide covers all configuration options for SynthDev, including environment variables, configuration files, and customization options.
+This guide covers all configuration options for SynthDev, including environment variables, configuration files, and customization options based on the actual implementation.
 
 ## Configuration System Overview
 
 SynthDev uses a layered configuration system with clear priority order:
 
-```
-Configuration Hierarchy (lowest to highest priority):
-1. Built-in defaults (src/config/defaults/)
-2. Configuration files (src/config/)
-3. Environment variables (.env file)
-4. Command line arguments
-```
+1. **Built-in defaults** (lowest priority)
+2. **Configuration files** (`src/config/` directory)
+3. **Environment variables** (`.env` file)
+4. **Command line arguments** (highest priority)
 
 ## Environment Configuration
 
-### Required Configuration
+### Core Settings (.env file)
 
-The minimum configuration needed to run SynthDev:
+#### Required Configuration
 
 ```env
 # Base Model (Required)
@@ -27,74 +24,21 @@ SYNTHDEV_BASE_MODEL=gpt-4.1-mini
 SYNTHDEV_BASE_URL=https://api.openai.com/v1
 ```
 
-### Multi-Model Setup
-
-SynthDev supports three model tiers for different use cases and multiple AI providers:
-
-#### Supported Providers
-
-SynthDev includes built-in support for:
-
-- **XAI**: Grok models (grok-3-mini-beta)
-- **OpenAI**: GPT-4.1 series, GPT-4o series, o4-mini
-- **Google**: Gemini 2.5 Flash and Pro models
-- **OpenRouter**: Access to multiple providers through OpenRouter API
-- **Anthropic**: Claude Sonnet 4, Claude Opus 4, Claude 3.5 Haiku
-
-#### Multi-Tier Configuration
+#### Multi-Model Setup
 
 ```env
-# Base Model (Required) - Default model for most operations
-SYNTHDEV_API_KEY=your_api_key_here
-SYNTHDEV_BASE_MODEL=gpt-4.1-mini
-SYNTHDEV_BASE_URL=https://api.openai.com/v1
-
-# Smart Model (Optional) - For complex reasoning tasks (architect role)
+# Smart Model (for complex reasoning)
 SYNTHDEV_SMART_API_KEY=your_smart_api_key
 SYNTHDEV_SMART_MODEL=gpt-4.1-mini
 SYNTHDEV_SMART_BASE_URL=https://api.openai.com/v1
 
-# Fast Model (Optional) - For quick tasks and simple operations
+# Fast Model (for quick tasks)
 SYNTHDEV_FAST_API_KEY=your_fast_api_key
 SYNTHDEV_FAST_MODEL=gpt-4.1-nano
 SYNTHDEV_FAST_BASE_URL=https://api.openai.com/v1
 ```
 
-#### Provider-Specific Examples
-
-**XAI Configuration:**
-
-```env
-SYNTHDEV_API_KEY=your_xai_api_key
-SYNTHDEV_BASE_MODEL=grok-3-mini-beta
-SYNTHDEV_BASE_URL=https://api.x.ai/v1
-```
-
-**Google Configuration:**
-
-```env
-SYNTHDEV_API_KEY=your_google_api_key
-SYNTHDEV_BASE_MODEL=gemini-2.5-flash
-SYNTHDEV_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai/
-```
-
-**Anthropic Configuration:**
-
-```env
-SYNTHDEV_API_KEY=your_anthropic_api_key
-SYNTHDEV_BASE_MODEL=claude-sonnet-4-20250514
-SYNTHDEV_BASE_URL=https://api.anthropic.com/v1/
-```
-
-**OpenRouter Configuration:**
-
-```env
-SYNTHDEV_API_KEY=your_openrouter_api_key
-SYNTHDEV_BASE_MODEL=google/gemini-2.5-flash
-SYNTHDEV_BASE_URL=https://openrouter.ai/api/v1
-```
-
-### Application Settings
+#### Application Settings
 
 ```env
 # Tool Execution
@@ -113,453 +57,360 @@ DEBUG=false                    # true/false
 
 Control output detail with `SYNTHDEV_VERBOSITY_LEVEL`:
 
-- **0**: Only information directly affecting the user
-- **1**: Short messages like "🔄 Enhancing prompt..."
-- **2**: Compressed tool arguments (default)
-- **3**: Uncompressed arguments but no tool results
-- **4**: Both arguments and tool results
-- **5**: Every HTTP request and response
+- **Level 0**: Only user messages and errors
+- **Level 1**: + Status messages (🔄 Enhancing prompt..., 🧠 AI thinking...)
+- **Level 2**: + Compressed tool arguments (default)
+- **Level 3**: + Uncompressed tool arguments and debug messages
+- **Level 4**: + Tool execution results
+- **Level 5**: + Complete HTTP request/response logging
 
-## Interactive Configuration
+### API Provider Examples
 
-### Configuration Wizard
+#### OpenAI
 
-SynthDev includes an interactive configuration wizard:
-
-```bash
-# Auto-starts if no .env file exists
-npm start
-
-# Or manually start the wizard
-/configure
+```env
+SYNTHDEV_API_KEY=sk-your-openai-key
+SYNTHDEV_BASE_MODEL=gpt-4.1-mini
+SYNTHDEV_BASE_URL=https://api.openai.com/v1
 ```
 
-The wizard provides:
+#### Anthropic Claude
 
-- **Provider Selection**: Choose from OpenAI, Google, etc.
-- **Model Configuration**: Set models for base/smart/fast tiers
-- **API Key Management**: Secure API key input
-- **Settings Configuration**: Verbosity, tool limits, etc.
-- **Validation**: Real-time configuration validation
+```env
+SYNTHDEV_API_KEY=sk-ant-your-anthropic-key
+SYNTHDEV_BASE_MODEL=claude-3-haiku-20240307
+SYNTHDEV_BASE_URL=https://api.anthropic.com/v1
+```
 
-### Wizard Features
+#### Google AI
 
-1. **Completeness Check**: Validates required configuration
-2. **Provider Templates**: Pre-configured settings for popular providers
-3. **Configuration Copy**: Copy base settings to smart/fast models
-4. **Live Validation**: Immediate feedback on configuration errors
-5. **Safe Saving**: Backup existing configuration before changes
+```env
+SYNTHDEV_API_KEY=your-google-ai-key
+SYNTHDEV_BASE_MODEL=gemini-1.5-flash
+SYNTHDEV_BASE_URL=https://generativelanguage.googleapis.com/v1beta
+```
+
+#### Local/Custom Provider
+
+```env
+SYNTHDEV_API_KEY=your-local-key
+SYNTHDEV_BASE_MODEL=your-model-name
+SYNTHDEV_BASE_URL=http://localhost:8080/v1
+```
 
 ## Configuration Files
 
-### File Structure
+### Directory Structure
 
 ```
 src/config/
-├── defaults/                    # Application defaults
-│   ├── application.json         # Core settings and limits
-│   └── environment-template.json # Environment info template
-├── roles/                       # AI role definitions
-│   ├── roles.json              # Main role configurations
+├── managers/                    # Configuration managers
+│   ├── configManager.js        # Main configuration orchestrator
+│   ├── toolConfigManager.js    # Tool-specific configuration
+│   └── uiConfigManager.js      # UI configuration
+├── validation/                  # Configuration validation
+│   ├── configurationChecker.js # Config validation
+│   ├── configurationLoader.js  # File loading and caching
+│   ├── configurationValidator.js # Validation logic
+│   └── config-validation.json  # Validation rules
+├── defaults/                    # Default configurations
+│   └── application.json        # Application defaults
+├── roles/                       # AI role definitions (multi-file support)
+│   ├── roles.json              # Main role configurations (legacy)
 │   ├── core-roles.json         # Core system roles
-│   ├── specialized-roles.json  # Specialized roles
-│   └── custom/                 # Custom role subdirectories
+│   ├── specialized/            # Specialized role subdirectories
+│   │   └── testing-roles.json  # Testing-specific roles
+│   └── environment-template.json # Environment info template
 ├── tools/                       # Tool configuration
-│   ├── tool-messages.json      # Tool descriptions and messages
+│   ├── tool-messages.json      # Common tool messages
 │   └── safety-patterns.json    # Security patterns
 ├── ui/                         # User interface text
 │   ├── console-messages.json   # Console interface messages
 │   └── command-help.json       # Command descriptions
-├── validation/                 # Configuration validation
-│   └── config-validation.json  # Validation rules
-└── workflows/                  # Workflow definitions
-    └── *.json                  # Workflow configuration files
+└── workflows/                   # Workflow configurations
+    ├── my_workflow.json        # Workflow configuration
+    └── my_workflow/            # Workflow scripts directory
+        └── script.js           # Custom JavaScript functions
 ```
 
-### Core Configuration Files
+### AI Roles Configuration
 
-#### `defaults/application.json`
+SynthDev supports multi-file role configuration. You can organize roles across multiple JSON files in the `src/config/roles/` directory and subdirectories.
 
-Defines default application behavior:
+#### Multi-File Organization
+
+Create role files anywhere in the roles directory:
+
+- `src/config/roles/roles.json` (main/legacy file)
+- `src/config/roles/core-roles.json` (core system roles)
+- `src/config/roles/specialized/testing-roles.json` (specialized roles)
+- `src/config/roles/custom/my-roles.json` (your custom roles)
+
+#### Role Definition Example
+
+Edit any JSON file in `src/config/roles/` to customize AI behavior:
 
 ```json
 {
-    "models": {
-        "base": {
-            "model": "gpt-4.1-mini",
-            "baseUrl": "https://api.openai.com/v1"
-        },
-        "smart": { "model": null, "baseUrl": null },
-        "fast": { "model": null, "baseUrl": null }
-    },
-    "global_settings": {
-        "maxToolCalls": 50,
-        "enablePromptEnhancement": false,
-        "verbosityLevel": 2
-    },
-    "ui_settings": {
-        "defaultRole": "dude",
-        "showStartupBanner": true,
-        "enableColors": true,
-        "promptPrefix": "💭 You: "
-    },
-    "tool_settings": {
-        "autoRun": true,
-        "requiresBackup": false,
-        "defaultEncoding": "utf8",
-        "maxFileSize": 10485760,
-        "defaultTimeout": 10000
-    },
-    "safety": {
-        "enableAISafetyCheck": true,
-        "fallbackToPatternMatching": true,
-        "maxScriptSize": 50000,
-        "scriptTimeout": {
-            "min": 1000,
-            "max": 30000,
-            "default": 10000
-        }
-    }
-}
-```
-
-#### `roles/` Directory
-
-AI role definitions with multi-file support:
-
-```json
-{
-    "coder": {
+    "custom_role": {
         "level": "base",
-        "systemMessage": "You are a skilled software developer...",
-        "excludedTools": [],
-        "reminderMessage": "Focus on clean, maintainable code.",
+        "systemMessage": "You are a specialized assistant for...",
+        "excludedTools": ["execute_terminal"],
+        "reminder": "Remember to follow security guidelines",
         "examples": [
             {
-                "user": "Create a function to calculate factorial",
-                "assistant": "I'll create a factorial function for you..."
+                "role": "user",
+                "content": "Example input"
+            },
+            {
+                "role": "assistant",
+                "content": "Example response"
             }
         ]
+    }
+}
+```
+
+#### Role Properties
+
+- **level**: Model level (`base`, `smart`, `fast`)
+- **systemMessage**: Core instructions for the AI role
+- **excludedTools**: Tools this role cannot access (supports wildcards and regex)
+- **includedTools**: Tools this role can access (mutually exclusive with excludedTools)
+- **reminder**: Additional instructions during tool execution
+- **examples**: Conversation examples for few-shot prompting
+- **parsingTools**: Special tools for structured output (parsing only)
+
+#### Tool Filtering Patterns
+
+```json
+"excludedTools": [
+    "exact_tool_name",     // Exact match
+    "*file",               // Wildcard: matches any tool ending with "file"
+    "execute_*",           // Wildcard: matches any tool starting with "execute_"
+    "/^dangerous_/i"       // Regex: case-insensitive match
+]
+```
+
+### Multi-Agent Workflows Configuration
+
+Configure complex multi-agent workflows in `src/config/workflows/`:
+
+#### Workflow Structure
+
+```
+src/config/workflows/
+├── my_workflow.json          # Workflow configuration
+└── my_workflow/              # Workflow scripts directory
+    └── script.js             # Custom JavaScript functions
+```
+
+#### Basic Workflow Configuration
+
+Create `src/config/workflows/example_workflow.json`:
+
+```json
+{
+    "workflow_name": "example_workflow",
+    "description": "Example multi-agent workflow",
+    "input": {
+        "name": "user_request",
+        "type": "string",
+        "description": "User's initial request"
     },
-    "architect": {
-        "level": "smart",
-        "systemMessage": "You are a software architect...",
-        "excludedTools": ["execute_script"],
-        "reminderMessage": "Consider scalability and maintainability."
-    }
-}
-```
-
-**Role Configuration Options:**
-
-- `level`: Model tier to use (base/smart/fast)
-- `systemMessage`: AI persona definition and behavior instructions
-- `excludedTools`: Tools not available to this role
-- `reminderMessage`: Additional context for the AI
-- `examples`: Few-shot learning examples for better AI behavior
-- `parsingOnly`: If true, role can only use parsing tools (no file operations)
-- `parsingTools`: Array of parsing tools available to this role
-
-#### Parsing Tools and Role Behavior
-
-Some roles are configured with `parsingOnly: true` and specific `parsingTools`. These roles are designed for analysis and structured output without file modification capabilities:
-
-```json
-{
-    "file_summarizer": {
-        "level": "base",
-        "systemMessage": "You are a file analysis specialist...",
-        "parsingOnly": true,
-        "parsingTools": ["parse_code_structure", "parse_dependencies"],
-        "excludedTools": ["write_file", "edit_file", "execute_script"]
-    }
-}
-```
-
-**Parsing Tools vs Regular Tools:**
-
-- **Regular Tools**: Can perform file operations, execute code, modify system state
-- **Parsing Tools**: Extract structured information, analyze content, provide insights
-- **parsingOnly Roles**: Limited to analysis and information extraction only
-
-#### Role Examples from Core Configuration
-
-**Development Roles:**
-
-```json
-{
-    "coder": {
-        "level": "base",
-        "systemMessage": "You are a skilled software developer focused on writing clean, efficient, and well-documented code...",
-        "reminderMessage": "Always consider code quality, maintainability, and best practices."
+    "output": {
+        "name": "final_result",
+        "type": "string",
+        "description": "Final workflow result"
     },
-    "architect": {
-        "level": "smart",
-        "systemMessage": "You are a software architect with deep expertise in system design...",
-        "excludedTools": ["execute_script"],
-        "reminderMessage": "Focus on scalability, maintainability, and architectural patterns."
-    }
-}
-```
-
-**Analysis Roles:**
-
-```json
-{
-    "codebase_explainer": {
-        "level": "base",
-        "systemMessage": "You are a codebase analysis expert...",
-        "parsingOnly": true,
-        "parsingTools": ["parse_code_structure", "analyze_dependencies"],
-        "excludedTools": ["write_file", "edit_file", "execute_script"]
-    }
-}
-```
-
-#### `tools/tool-messages.json`
-
-Tool descriptions and error messages:
-
-```json
-{
-    "descriptions": {
-        "read_file": "Read and display the contents of a file",
-        "write_file": "Create or overwrite a file with new content"
+    "variables": {
+        "max_iterations": 5
     },
-    "errors": {
-        "file_not_found": "File not found: {path}",
-        "permission_denied": "Permission denied: {path}"
-    },
-    "validation": {
-        "invalid_path": "Invalid file path provided",
-        "file_too_large": "File size exceeds maximum limit"
-    }
-}
-```
-
-#### `tools/safety-patterns.json`
-
-Security patterns for code execution:
-
-```json
-{
-    "ai_safety_prompt": "Analyze this code for security risks...",
-    "dangerous_patterns": [
+    "contexts": [
         {
-            "pattern": "rm -rf",
-            "description": "Recursive file deletion",
-            "severity": "high"
+            "name": "shared_context",
+            "starting_messages": [],
+            "max_length": 30000
         }
     ],
-    "error_messages": {
-        "dangerous_code_detected": "Dangerous code pattern detected: {pattern}",
-        "ai_safety_check_failed": "AI safety check failed: {reason}"
-    }
-}
-```
-
-## Configuration Management
-
-### ConfigManager
-
-The main configuration orchestrator:
-
-```javascript
-import { ConfigManager } from './src/core/managers/configManager.js';
-
-const config = ConfigManager.getInstance();
-await config.initialize();
-
-// Access configuration
-const baseModel = config.getModel('base');
-const settings = config.getConfig().global;
-```
-
-### Configuration Loading
-
-Configuration files are loaded and cached:
-
-1. **Discovery**: Automatic file discovery in config directories
-2. **Loading**: JSON parsing with error handling
-3. **Merging**: Multi-file configurations are merged
-4. **Validation**: Schema validation and type checking
-5. **Caching**: Results cached for performance
-
-### Hot Reload
-
-For development, configuration can be reloaded:
-
-```javascript
-import { getConfigurationLoader } from './src/config/managers/configurationLoader.js';
-
-const loader = getConfigurationLoader();
-await loader.reloadConfig('roles');
-```
-
-## Validation
-
-### Configuration Validation
-
-The system validates configuration on startup:
-
-- **Required Fields**: Ensures essential configuration is present
-- **URL Validation**: Validates URL formats for all endpoints
-- **Range Validation**: Ensures numeric values are within valid ranges
-- **Type Validation**: Converts strings to appropriate types
-- **Model Validation**: Checks model name formats
-
-### Validation Rules
-
-Defined in `validation/config-validation.json`:
-
-```json
-{
-    "api_key_patterns": {
-        "openai": "^sk-[a-zA-Z0-9]{48}$",
-        "google": "^[a-zA-Z0-9_-]{39}$"
-    },
-    "url_validation": {
-        "allowed_protocols": ["http", "https"],
-        "required_paths": ["/v1"]
-    },
-    "limits": {
-        "max_tool_calls": { "min": 1, "max": 200 },
-        "verbosity_level": { "min": 0, "max": 5 }
-    },
-    "required_fields": {
-        "base_config": ["apiKey", "baseModel", "baseUrl"]
-    }
-}
-```
-
-### Error Handling
-
-Configuration errors are handled gracefully:
-
-- **Startup Errors**: Clear error messages with resolution steps
-- **Validation Errors**: Specific field-level error reporting
-- **Missing Files**: Automatic fallback to defaults where possible
-- **Recovery**: Configuration wizard auto-starts for incomplete config
-
-## Advanced Configuration
-
-### Custom Providers
-
-You can add custom AI providers by extending the `src/config/defaults/providers.json` file:
-
-```json
-{
-    "providers": [
+    "agents": [
         {
-            "name": "Custom Provider",
-            "models": [
-                {
-                    "name": "custom-model-1",
-                    "contextSize": 128000,
-                    "maxResponseSize": 32000,
-                    "inputPricePerMillionTokens": 1.0,
-                    "outputPricePerMillionTokens": 3.0,
-                    "cachedPricePerMillionTokens": 0.25,
-                    "reasoning": false
-                }
-            ],
-            "baseUrl": "https://api.custom.com/v1"
+            "agent_role": "coder",
+            "context": "shared_context",
+            "role": "assistant"
+        },
+        {
+            "agent_role": "reviewer",
+            "context": "shared_context",
+            "role": "user"
+        }
+    ],
+    "states": [
+        {
+            "name": "start",
+            "agent": "coder",
+            "pre_handler": "setupRequest",
+            "post_handler": "captureResponse",
+            "transition_handler": "moveToReview"
+        },
+        {
+            "name": "stop",
+            "input": "common_data.final_result"
         }
     ]
 }
 ```
 
-#### Provider Configuration Fields
+#### Workflow Script Functions
 
-- **name**: Display name for the provider
-- **baseUrl**: API endpoint URL
-- **models**: Array of supported models with:
-    - **name**: Model identifier
-    - **contextSize**: Maximum context window in tokens
-    - **maxResponseSize**: Maximum response length in tokens
-    - **inputPricePerMillionTokens**: Cost per million input tokens
-    - **outputPricePerMillionTokens**: Cost per million output tokens
-    - **cachedPricePerMillionTokens**: Cost per million cached tokens
-    - **reasoning**: Whether the model supports reasoning (optional)
+Create `src/config/workflows/example_workflow/script.js`:
 
-#### Using Custom Providers
+```javascript
+export default {
+    // Pre-handler: Setup before API call
+    setupRequest() {
+        const context = this.workflow_contexts.get('shared_context');
+        context.addMessage({
+            role: 'user',
+            content: this.input,
+        });
+    },
 
-After adding a custom provider:
+    // Post-handler: Process API response
+    captureResponse() {
+        const responseContent = this.last_response?.choices?.[0]?.message?.content;
+        if (responseContent) {
+            this.common_data.coder_response = responseContent;
+        }
+    },
 
-1. **Update Configuration**: Add the provider to `providers.json`
-2. **Set Environment Variables**: Use the custom model in your `.env` file
-3. **Restart Application**: Reload to pick up the new provider
-4. **Use Configuration Wizard**: The new provider will appear in the wizard
-
-Example usage:
-
-```env
-SYNTHDEV_API_KEY=your_custom_api_key
-SYNTHDEV_BASE_MODEL=custom-model-1
-SYNTHDEV_BASE_URL=https://api.custom.com/v1
+    // Transition-handler: Decide next state
+    moveToReview() {
+        return 'review_state';
+    },
+};
 ```
 
-### Role Groups
+### UI Customization
 
-Organize roles into groups:
+Edit `src/config/ui/console-messages.json`:
 
 ```json
 {
-    "groups": {
-        "testing": {
-            "test_writer": {
-                /* role config */
-            },
-            "qa_specialist": {
-                /* role config */
-            }
-        }
+    "startup": {
+        "title": "🎯 My Custom Dev Assistant",
+        "subtitle": "Ready to help with your development tasks"
+    },
+    "prompts": {
+        "user_input": "You: ",
+        "confirmation": "Proceed? (y/n): "
     }
 }
 ```
 
-### Environment-Specific Configuration
+### Tool Safety Configuration
 
-Use different configurations per environment:
+Edit `src/config/tools/safety-patterns.json`:
 
-```env
-NODE_ENV=development
-SYNTHDEV_VERBOSITY_LEVEL=5  # Verbose for development
-
-NODE_ENV=production
-SYNTHDEV_VERBOSITY_LEVEL=1  # Quiet for production
+```json
+{
+    "dangerous_patterns": [
+        {
+            "pattern": "rm -rf",
+            "reason": "Dangerous file deletion command"
+        },
+        {
+            "pattern": "format c:",
+            "reason": "System format command"
+        }
+    ]
+}
 ```
+
+## ConfigManager API
+
+### Basic Usage
+
+```javascript
+import ConfigManager from './src/config/managers/configManager.js';
+
+// Get singleton instance
+const config = ConfigManager.getInstance();
+
+// Access model configurations
+const baseModel = config.getModel('base');
+const smartModel = config.getModel('smart');
+const fastModel = config.getModel('fast');
+
+// Access global settings
+const globalConfig = config.getConfig().global;
+```
+
+### Model Configuration Access
+
+```javascript
+// Base model (always available)
+const base = config.getModel('base');
+console.log(base.apiKey, base.baseModel, base.baseUrl);
+
+// Smart model (check availability first)
+if (config.hasSmartModelConfig()) {
+    const smart = config.getModel('smart');
+    console.log(smart.model);
+}
+
+// Fast model (check availability first)
+if (config.hasFastModelConfig()) {
+    const fast = config.getModel('fast');
+    console.log(fast.model);
+}
+```
+
+### Global Settings
+
+```javascript
+const global = config.getConfig().global;
+console.log(global.maxToolCalls); // Number: 1-200
+console.log(global.environment); // String: development/production/test
+console.log(global.debug); // Boolean
+```
+
+## Best Practices
+
+1. **Use ConfigManager**: Always use `ConfigManager.getInstance()` instead of direct `process.env`
+2. **Environment Separation**: Use different `.env` files for different environments
+3. **Security**: Never commit `.env` files to version control
+4. **Validation**: Always wrap ConfigManager usage in try-catch blocks
+5. **Documentation**: Document custom configuration options
 
 ## Troubleshooting
 
-### Common Issues
+### Common Configuration Issues
 
-1. **Missing API Key**: Use `/configure` to set up credentials
-2. **Invalid URL**: Check URL format and protocol
-3. **Model Not Found**: Verify model name with provider
-4. **Permission Errors**: Check file permissions for config directory
+#### Missing API Key
 
-### Debug Configuration
-
-Enable debug mode for configuration issues:
-
-```env
-DEBUG=true
-SYNTHDEV_VERBOSITY_LEVEL=5
+```
+Configuration error: SYNTHDEV_API_KEY is required
 ```
 
-### Configuration Reset
+**Solution**: Add `SYNTHDEV_API_KEY=your_key` to `.env` file
 
-Reset configuration to defaults:
+#### Invalid URL Format
 
-```bash
-# Delete .env file
-rm .env
-
-# Restart application (wizard will auto-start)
-npm start
 ```
+Configuration error: Invalid SYNTHDEV_BASE_URL format
+```
+
+**Solution**: Ensure URL includes protocol (http:// or https://)
+
+#### Tool Call Limit Out of Range
+
+```
+Configuration error: SYNTHDEV_MAX_TOOL_CALLS must be between 1 and 200
+```
+
+**Solution**: Set `SYNTHDEV_MAX_TOOL_CALLS` to a value between 1-200
 
 ---
 
-_For role-specific configuration details, see the ADRs in the ADRs/ directory._
+_For role-specific configuration, see the AI Roles section. For workflow configuration, see the Multi-Agent Workflows section._
