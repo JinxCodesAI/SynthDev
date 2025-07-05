@@ -2,12 +2,12 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { existsSync, readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
-import WorkflowStateMachine from '../../workflow/WorkflowStateMachine.js';
-import ConfigManager from '../../configManager.js';
-import ToolManager from '../../toolManager.js';
-import SnapshotManager from '../../snapshotManager.js';
-import ConsoleInterface from '../../consoleInterface.js';
-import costsManager from '../../costsManager.js';
+import WorkflowStateMachine from '../../src/workflow/WorkflowStateMachine.js';
+import ConfigManager from '../../src/config/managers/configManager.js';
+import ToolManager from '../../src/core/managers/toolManager.js';
+import SnapshotManager from '../../src/core/managers/snapshotManager.js';
+import ConsoleInterface from '../../src/core/interface/consoleInterface.js';
+import costsManager from '../../src/core/managers/costsManager.js';
 import { groceryStoreHttpMocks } from '../mocks/grocery-store-http.js';
 
 // Get current directory for ES modules
@@ -197,6 +197,7 @@ describe('Grocery Store Workflow E2E Test', () => {
         // Load the workflow using mocked file system
         const workflowConfigPath = join(
             process.cwd(),
+            'src',
             'config',
             'workflows',
             'grocery_store_test.json'
@@ -297,6 +298,7 @@ describe('Grocery Store Workflow E2E Test', () => {
 
         const workflowConfigPath = join(
             process.cwd(),
+            'src',
             'config',
             'workflows',
             'grocery_store_test.json'
@@ -322,18 +324,19 @@ describe('Grocery Store Workflow E2E Test', () => {
     it('should use mocked configuration files', async () => {
         // Verify that mocked files are accessible
         expect(
-            existsSync(join(process.cwd(), 'config', 'workflows', 'grocery_store_test.json'))
+            existsSync(join(process.cwd(), 'src', 'config', 'workflows', 'grocery_store_test.json'))
         ).toBe(true);
         expect(
             existsSync(
-                join(process.cwd(), 'config', 'workflows', 'grocery_store_test', 'script.js')
+                join(process.cwd(), 'src', 'config', 'workflows', 'grocery_store_test', 'script.js')
             )
         ).toBe(true);
-        expect(existsSync(join(process.cwd(), 'config', 'roles', 'roles.json'))).toBe(true);
+        expect(existsSync(join(process.cwd(), 'src', 'config', 'roles', 'roles.json'))).toBe(true);
 
         // Load workflow using mocked file system
         const workflowConfigPath = join(
             process.cwd(),
+            'src',
             'config',
             'workflows',
             'grocery_store_test.json'
@@ -355,6 +358,7 @@ describe('Grocery Store Workflow E2E Test', () => {
 
         const workflowConfigPath = join(
             process.cwd(),
+            'src',
             'config',
             'workflows',
             'grocery_store_test.json'
@@ -383,6 +387,7 @@ describe('Grocery Store Workflow E2E Test', () => {
 
         const workflowConfigPath = join(
             process.cwd(),
+            'src',
             'config',
             'workflows',
             'grocery_store_test.json'

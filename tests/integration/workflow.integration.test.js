@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { existsSync, readFileSync } from 'fs';
-import WorkflowStateMachine from '../../workflow/WorkflowStateMachine.js';
+import WorkflowStateMachine from '../../src/workflow/WorkflowStateMachine.js';
 
 // Mock file system for testing
 vi.mock('fs');
-vi.mock('../../logger.js', () => ({
+vi.mock('../../src/core/managers/logger.js', () => ({
     getLogger: vi.fn(() => ({
         debug: vi.fn(),
         info: vi.fn(),
@@ -14,7 +14,7 @@ vi.mock('../../logger.js', () => ({
 }));
 
 // Mock AIAPIClient and dependencies
-vi.mock('../../aiAPIClient.js', () => ({
+vi.mock('../../src/core/ai/aiAPIClient.js', () => ({
     default: vi.fn().mockImplementation(() => {
         const mockClient = {
             setCallbacks: vi.fn(),
@@ -39,7 +39,7 @@ vi.mock('../../aiAPIClient.js', () => ({
     }),
 }));
 
-vi.mock('../../configManager.js', () => ({
+vi.mock('../../src/config/managers/configManager.js', () => ({
     default: {
         getInstance: vi.fn().mockReturnValue({
             getModel: vi.fn().mockReturnValue({
@@ -52,7 +52,7 @@ vi.mock('../../configManager.js', () => ({
 }));
 
 // Mock SystemMessages
-vi.mock('../../systemMessages.js', () => ({
+vi.mock('../../src/core/ai/systemMessages.js', () => ({
     default: {
         getLevel: vi.fn().mockReturnValue('default'),
         getSystemMessage: vi.fn().mockReturnValue('You are a helpful assistant'),
@@ -519,7 +519,7 @@ describe('Workflow Integration Tests', () => {
 
                 // Manually create contexts and agents
                 const { default: WorkflowContext } = await import(
-                    '../../workflow/WorkflowContext.js'
+                    '../../src/workflow/WorkflowContext.js'
                 );
 
                 // Create context
@@ -713,7 +713,7 @@ describe('Workflow Integration Tests', () => {
 
                 // Manually create contexts and agents
                 const { default: WorkflowContext } = await import(
-                    '../../workflow/WorkflowContext.js'
+                    '../../src/workflow/WorkflowContext.js'
                 );
 
                 // Create context
@@ -822,7 +822,7 @@ describe('Workflow Integration Tests', () => {
 
                 // Manually create contexts and agents
                 const { default: WorkflowContext } = await import(
-                    '../../workflow/WorkflowContext.js'
+                    '../../src/workflow/WorkflowContext.js'
                 );
 
                 // Create context
@@ -950,7 +950,7 @@ describe('Workflow Integration Tests', () => {
 
                 // Manually create contexts and agents
                 const { default: WorkflowContext } = await import(
-                    '../../workflow/WorkflowContext.js'
+                    '../../src/workflow/WorkflowContext.js'
                 );
 
                 // Create context
@@ -1169,7 +1169,7 @@ describe('Workflow Integration Tests', () => {
 
                 // Manually create contexts and agents
                 const { default: WorkflowContext } = await import(
-                    '../../workflow/WorkflowContext.js'
+                    '../../src/workflow/WorkflowContext.js'
                 );
 
                 // Create context

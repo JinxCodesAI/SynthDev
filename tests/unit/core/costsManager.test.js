@@ -1,6 +1,6 @@
 // tests/unit/core/costsManager.test.js
 import { describe, it, expect, beforeEach } from 'vitest';
-import costsManager from '../../../costsManager.js';
+import costsManager from '../../../src/core/managers/costsManager.js';
 
 describe('CostsManager', () => {
     beforeEach(() => {

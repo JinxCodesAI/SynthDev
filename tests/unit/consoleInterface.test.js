@@ -1,21 +1,21 @@
 // tests/unit/consoleInterface.test.js
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import ConsoleInterface from '../../consoleInterface.js';
+import ConsoleInterface from '../../src/core/interface/consoleInterface.js';
 
 // Mock dependencies
 vi.mock('readline', () => ({
     createInterface: vi.fn(),
 }));
 
-vi.mock('../../logger.js', () => ({
+vi.mock('../../src/core/managers/logger.js', () => ({
     getLogger: vi.fn(),
 }));
 
-vi.mock('../../uiConfigManager.js', () => ({
+vi.mock('../../src/config/managers/uiConfigManager.js', () => ({
     getUIConfigManager: vi.fn(),
 }));
 
-vi.mock('../../configurationLoader.js', () => ({
+vi.mock('../../src/config/validation/configurationLoader.js', () => ({
     getConfigurationLoader: vi.fn(),
 }));
 
@@ -38,7 +38,7 @@ describe('ConsoleInterface', () => {
 
         const __filename = fileURLToPath(import.meta.url);
         const __dirname = dirname(__filename);
-        const configDir = join(__dirname, '../../config');
+        const configDir = join(__dirname, '../../src/config');
 
         try {
             realConfigMessages = JSON.parse(
@@ -130,10 +130,10 @@ describe('ConsoleInterface', () => {
         mockReadline = readlineModule;
         mockReadline.createInterface.mockReturnValue(mockRl);
 
-        const loggerModule = await import('../../logger.js');
+        const loggerModule = await import('../../src/core/managers/logger.js');
         loggerModule.getLogger.mockReturnValue(mockLogger);
 
-        const uiConfigModule = await import('../../uiConfigManager.js');
+        const uiConfigModule = await import('../../src/config/managers/uiConfigManager.js');
         uiConfigModule.getUIConfigManager.mockReturnValue(mockUIConfigManager);
 
         // Create ConsoleInterface instance

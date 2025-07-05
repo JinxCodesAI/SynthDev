@@ -1,14 +1,14 @@
 // tests/unit/commands/helpCommand.test.js
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import HelpCommand from '../../../commands/info/HelpCommand.js';
+import HelpCommand from '../../../src/commands/info/HelpCommand.js';
 
 // Mock logger
-vi.mock('../../../logger.js', () => ({
+vi.mock('../../../src/core/managers/logger.js', () => ({
     getLogger: vi.fn(),
 }));
 
 // Mock UI config manager
-vi.mock('../../../uiConfigManager.js', () => ({
+vi.mock('../../../src/config/managers/uiConfigManager.js', () => ({
     getUIConfigManager: vi.fn().mockReturnValue({
         getCommandHelp: vi.fn().mockReturnValue({
             help: {
@@ -24,7 +24,7 @@ vi.mock('../../../uiConfigManager.js', () => ({
 }));
 
 // Mock configuration loader
-vi.mock('../../../configurationLoader.js', () => ({
+vi.mock('../../../src/config/validation/configurationLoader.js', () => ({
     getConfigurationLoader: vi.fn(),
 }));
 
@@ -43,14 +43,17 @@ describe('HelpCommand', () => {
             warn: vi.fn(),
             error: vi.fn(),
             user: vi.fn(),
+            getVerbosityLevel: vi.fn().mockReturnValue(2),
         };
 
         // Setup logger mock
-        const { getLogger } = await import('../../../logger.js');
+        const { getLogger } = await import('../../../src/core/managers/logger.js');
         getLogger.mockReturnValue(mockLogger);
 
         // Setup UI config mock
-        const { getUIConfigManager } = await import('../../../uiConfigManager.js');
+        const { getUIConfigManager } = await import(
+            '../../../src/config/managers/uiConfigManager.js'
+        );
         getUIConfigManager.mockReturnValue({
             getCommandHelp: vi.fn().mockReturnValue({
                 help: {

@@ -1,6 +1,6 @@
 // tests/unit/core/systemMessages.test.js
 import { describe, it, expect } from 'vitest';
-import systemMessages from '../../../systemMessages.js';
+import systemMessages from '../../../src/core/ai/systemMessages.js';
 
 describe('SystemMessages', () => {
     describe('getSystemMessage', () => {

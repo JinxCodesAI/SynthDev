@@ -2,7 +2,7 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
 
 // Mock logger before importing the tool
-vi.mock('../../../logger.js', () => ({
+vi.mock('../../../src/core/managers/logger.js', () => ({
     getLogger: vi.fn().mockReturnValue({
         raw: vi.fn(),
         warn: vi.fn(),
@@ -14,7 +14,7 @@ vi.mock('../../../logger.js', () => ({
     }),
 }));
 
-import calculate from '../../../tools/calculate/implementation.js';
+import calculate from '../../../src/tools/calculate/implementation.js';
 
 describe('Calculate Tool', () => {
     beforeEach(() => {

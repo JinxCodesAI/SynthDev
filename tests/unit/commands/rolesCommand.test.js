@@ -1,14 +1,14 @@
 // tests/unit/commands/rolesCommand.test.js
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import RolesCommand from '../../../commands/role/RolesCommand.js';
+import RolesCommand from '../../../src/commands/role/RolesCommand.js';
 
 // Mock logger
-vi.mock('../../../logger.js', () => ({
+vi.mock('../../../src/core/managers/logger.js', () => ({
     getLogger: vi.fn(),
 }));
 
 // Mock SystemMessages
-vi.mock('../../../systemMessages.js', () => ({
+vi.mock('../../../src/core/ai/systemMessages.js', () => ({
     default: {
         getAvailableRoles: vi.fn(),
         getLevel: vi.fn(),
@@ -41,11 +41,11 @@ describe('RolesCommand', () => {
         };
 
         // Setup logger mock
-        const { getLogger } = await import('../../../logger.js');
+        const { getLogger } = await import('../../../src/core/managers/logger.js');
         getLogger.mockReturnValue(mockLogger);
 
         // Setup SystemMessages mock
-        mockSystemMessages = (await import('../../../systemMessages.js')).default;
+        mockSystemMessages = (await import('../../../src/core/ai/systemMessages.js')).default;
         mockSystemMessages.getAvailableRoles.mockReturnValue(['coder', 'reviewer', 'architect']);
         mockSystemMessages.getAvailableGroups.mockReturnValue(['global', 'testing']);
         mockSystemMessages.getRolesByGroup.mockImplementation(group => {

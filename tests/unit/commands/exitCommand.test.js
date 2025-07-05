@@ -1,6 +1,6 @@
 // tests/unit/commands/exitCommand.test.js
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { ExitCommand } from '../../../commands/system/ExitCommand.js';
+import { ExitCommand } from '../../../src/commands/system/ExitCommand.js';
 
 describe('ExitCommand', () => {
     let exitCommand;

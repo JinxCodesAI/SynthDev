@@ -1,12 +1,12 @@
 // tests/unit/tools/getTime.test.js
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import getTime from '../../../tools/get_time/implementation.js';
+import getTime from '../../../src/tools/get_time/implementation.js';
 
 describe('GetTime Tool', () => {
     let originalDate;
 
     // Mock logger
-    vi.mock('../../../logger.js', () => ({
+    vi.mock('../../../src/core/managers/logger.js', () => ({
         getLogger: vi.fn().mockReturnValue({
             raw: vi.fn(),
             error: vi.fn(),

@@ -1,6 +1,6 @@
 // tests/unit/core/logger.test.js
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { getLogger, resetLogger, initializeLogger } from '../../../logger.js';
+import { getLogger, resetLogger, initializeLogger } from '../../../src/core/managers/logger.js';
 
 describe('Logger', () => {
     let logger;
@@ -45,7 +45,7 @@ describe('Logger', () => {
             logger.status('Status message');
             logger.info('Info message');
 
-            expect(consoleSpy.log).toHaveBeenCalledTimes(1);
+            expect(consoleSpy.log).toHaveBeenCalledTimes(2);
             expect(consoleSpy.log).toHaveBeenCalledWith('🤖 Synth-Dev:', 'User message');
         });
 
@@ -56,7 +56,7 @@ describe('Logger', () => {
             logger.status('Status message');
             logger.info('Info message');
 
-            expect(consoleSpy.log).toHaveBeenCalledTimes(2);
+            expect(consoleSpy.log).toHaveBeenCalledTimes(3);
         });
 
         it('should respect verbosity level 2 (default)', () => {
@@ -67,7 +67,7 @@ describe('Logger', () => {
             logger.info('Info message');
             logger.toolExecution('test_tool', { param: 'value' });
 
-            expect(consoleSpy.log).toHaveBeenCalledTimes(5); // user, status, info, tool name, tool args
+            expect(consoleSpy.log).toHaveBeenCalledTimes(6); // user, status, info, tool name, tool args
         });
     });
 

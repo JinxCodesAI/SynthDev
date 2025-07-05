@@ -7,7 +7,7 @@ import {
     calculateFileChecksum,
     calculateDirectoryChecksum,
     calculateContentChecksum,
-} from '../../../tools/common/fs_utils.js';
+} from '../../../src/tools/common/fs_utils.js';
 import { readFileSync, statSync, writeFileSync, existsSync, mkdirSync, readdirSync } from 'fs';
 import { join, dirname } from 'path';
 

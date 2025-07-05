@@ -1,10 +1,10 @@
 // tests/unit/core/configManager.test.js
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import ConfigManager from '../../../configManager.js';
+import ConfigManager from '../../../src/config/managers/configManager.js';
 import { mockEnvVars } from '../../helpers/testUtils.js';
 
 // Mock logger
-vi.mock('../../../logger.js', () => ({
+vi.mock('../../../src/core/managers/logger.js', () => ({
     getLogger: vi.fn(() => ({
         debug: vi.fn(),
         warn: vi.fn(),

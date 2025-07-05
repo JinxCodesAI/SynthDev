@@ -1,25 +1,25 @@
 // tests/unit/promptEnhancer.test.js
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import PromptEnhancer from '../../promptEnhancer.js';
+import PromptEnhancer from '../../src/core/ai/promptEnhancer.js';
 
 // Mock dependencies
-vi.mock('../../configManager.js', () => ({
+vi.mock('../../src/config/managers/configManager.js', () => ({
     default: {
         getInstance: vi.fn(),
     },
 }));
 
-vi.mock('../../aiAPIClient.js', () => ({
+vi.mock('../../src/core/ai/aiAPIClient.js', () => ({
     default: vi.fn(),
 }));
 
-vi.mock('../../systemMessages.js', () => ({
+vi.mock('../../src/core/ai/systemMessages.js', () => ({
     default: {
         getSystemMessage: vi.fn(),
     },
 }));
 
-vi.mock('../../logger.js', () => ({
+vi.mock('../../src/core/managers/logger.js', () => ({
     getLogger: vi.fn(),
 }));
 
@@ -53,7 +53,7 @@ describe('PromptEnhancer', () => {
         };
 
         // Setup ConfigManager mock
-        const ConfigManagerModule = await import('../../configManager.js');
+        const ConfigManagerModule = await import('../../src/config/managers/configManager.js');
         mockConfigManager = {
             getConfig: vi.fn().mockReturnValue({
                 global: { enablePromptEnhancement: true },
@@ -68,7 +68,7 @@ describe('PromptEnhancer', () => {
         ConfigManagerModule.default.getInstance.mockReturnValue(mockConfigManager);
 
         // Setup AIAPIClient mock
-        const AIAPIClientModule = await import('../../aiAPIClient.js');
+        const AIAPIClientModule = await import('../../src/core/ai/aiAPIClient.js');
         mockAIAPIClient = {
             setTools: vi.fn(),
             setSystemMessage: vi.fn(),
@@ -78,12 +78,12 @@ describe('PromptEnhancer', () => {
         AIAPIClientModule.default.mockImplementation(() => mockAIAPIClient);
 
         // Setup SystemMessages mock
-        const SystemMessagesModule = await import('../../systemMessages.js');
+        const SystemMessagesModule = await import('../../src/core/ai/systemMessages.js');
         mockSystemMessages = SystemMessagesModule.default;
         mockSystemMessages.getSystemMessage.mockReturnValue('Test system message');
 
         // Setup logger mock
-        const loggerModule = await import('../../logger.js');
+        const loggerModule = await import('../../src/core/managers/logger.js');
         loggerModule.getLogger.mockReturnValue(mockLogger);
 
         // Create PromptEnhancer instance

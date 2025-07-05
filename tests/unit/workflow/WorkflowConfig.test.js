@@ -2,13 +2,13 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { existsSync, readFileSync } from 'fs';
 import { join, dirname, basename, resolve } from 'path';
 import { pathToFileURL } from 'url';
-import WorkflowConfig from '../../../workflow/WorkflowConfig.js';
+import WorkflowConfig from '../../../src/workflow/WorkflowConfig.js';
 
 // Mock dependencies
 vi.mock('fs');
 vi.mock('path');
 vi.mock('url');
-vi.mock('../../../logger.js', () => ({
+vi.mock('../../../src/core/managers/logger.js', () => ({
     getLogger: vi.fn(() => ({
         debug: vi.fn(),
         info: vi.fn(),

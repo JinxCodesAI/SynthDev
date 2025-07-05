@@ -1,6 +1,6 @@
 // tests/integration/roleGroups.integration.test.js
 import { describe, it, expect, beforeEach } from 'vitest';
-import SystemMessages from '../../systemMessages.js';
+import SystemMessages from '../../src/core/ai/systemMessages.js';
 
 describe('Role Groups Integration Test', () => {
     beforeEach(() => {

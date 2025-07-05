@@ -1,25 +1,25 @@
 // tests/unit/commands/commandGenerator.test.js
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import CommandGenerator from '../../../commands/terminal/CommandGenerator.js';
+import CommandGenerator from '../../../src/commands/terminal/CommandGenerator.js';
 
 // Mock dependencies
-vi.mock('../../../configManager.js', () => ({
+vi.mock('../../../src/config/managers/configManager.js', () => ({
     default: {
         getInstance: vi.fn(),
     },
 }));
 
-vi.mock('../../../aiAPIClient.js', () => ({
+vi.mock('../../../src/core/ai/aiAPIClient.js', () => ({
     default: vi.fn(),
 }));
 
-vi.mock('../../../systemMessages.js', () => ({
+vi.mock('../../../src/core/ai/systemMessages.js', () => ({
     default: {
         getSystemMessage: vi.fn(),
     },
 }));
 
-vi.mock('../../../logger.js', () => ({
+vi.mock('../../../src/core/managers/logger.js', () => ({
     getLogger: vi.fn(),
 }));
 
@@ -44,7 +44,8 @@ describe('CommandGenerator', () => {
                 model: 'gpt-4',
             }),
         };
-        const ConfigManager = (await import('../../../configManager.js')).default;
+        const ConfigManager = (await import('../../../src/config/managers/configManager.js'))
+            .default;
         ConfigManager.getInstance.mockReturnValue(mockConfigManager);
 
         // Setup AIAPIClient mock
@@ -53,12 +54,12 @@ describe('CommandGenerator', () => {
             sendUserMessage: vi.fn().mockResolvedValue(true),
             setCallbacks: vi.fn(),
         };
-        const AIAPIClient = (await import('../../../aiAPIClient.js')).default;
+        const AIAPIClient = (await import('../../../src/core/ai/aiAPIClient.js')).default;
         AIAPIClient.mockImplementation(() => mockAIClient);
         mockAIAPIClient = mockAIClient;
 
         // Setup SystemMessages mock
-        mockSystemMessages = (await import('../../../systemMessages.js')).default;
+        mockSystemMessages = (await import('../../../src/core/ai/systemMessages.js')).default;
         mockSystemMessages.getSystemMessage.mockReturnValue('You are a command generator.');
 
         // Setup logger mock
@@ -66,7 +67,7 @@ describe('CommandGenerator', () => {
             debug: vi.fn(),
             error: vi.fn(),
         };
-        const { getLogger } = await import('../../../logger.js');
+        const { getLogger } = await import('../../../src/core/managers/logger.js');
         getLogger.mockReturnValue(mockLogger);
 
         // Create mock dependencies
