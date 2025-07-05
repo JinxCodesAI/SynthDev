@@ -101,7 +101,15 @@ class SnapshotManager {
 
         // Handle Git integration for first snapshot
         if (this.gitAvailable && this.isGitRepo && snapshot.isFirstSnapshot) {
+            this.logger.debug(
+                `Handling first snapshot Git operations for: ${userInstruction}`,
+                '📸 Snapshot:'
+            );
             await this._handleFirstSnapshotGit(snapshot, userInstruction);
+            this.logger.debug(
+                `After Git operations: gitMode=${this.gitMode}, featureBranch=${this.featureBranch}`,
+                '📸 Snapshot:'
+            );
         }
 
         this.snapshots.push(snapshot);
@@ -163,8 +171,17 @@ class SnapshotManager {
      */
     async _shouldCreateNewBranch() {
         try {
+            this.logger.debug(
+                `Checking branch creation conditions. Current branch: ${this.originalBranch}`,
+                '📸 Snapshot:'
+            );
+
             // Check if we're already on a synth-dev branch
             if (this.originalBranch && this.originalBranch.startsWith('synth-dev/')) {
+                this.logger.debug(
+                    `Already on synth-dev branch: ${this.originalBranch}`,
+                    '📸 Snapshot:'
+                );
                 return {
                     create: false,
                     reason: `already on synth-dev branch: ${this.originalBranch}`,
@@ -173,6 +190,11 @@ class SnapshotManager {
 
             // Check if there are uncommitted changes
             const statusResult = await this.gitUtils.hasUncommittedChanges();
+            this.logger.debug(
+                `Git status check: success=${statusResult.success}, hasChanges=${statusResult.hasUncommittedChanges}`,
+                '📸 Snapshot:'
+            );
+
             if (!statusResult.success) {
                 this.logger.warn(
                     `Failed to check Git status: ${statusResult.error}`,
@@ -186,6 +208,10 @@ class SnapshotManager {
             }
 
             if (!statusResult.hasUncommittedChanges) {
+                this.logger.debug(
+                    'No uncommitted changes detected, skipping branch creation',
+                    '📸 Snapshot:'
+                );
                 return {
                     create: false,
                     reason: 'no uncommitted changes detected',
@@ -193,6 +219,7 @@ class SnapshotManager {
             }
 
             // All conditions met - create the branch
+            this.logger.debug('All conditions met for branch creation', '📸 Snapshot:');
             return {
                 create: true,
                 reason: 'uncommitted changes detected and not on synth-dev branch',

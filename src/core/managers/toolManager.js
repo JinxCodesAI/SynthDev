@@ -380,13 +380,17 @@ class ToolManager {
                     'Pre-execution Git'
                 );
 
-                // If not in Git mode yet, we need to create a snapshot and branch
-                if (!gitStatus.gitMode) {
-                    // Create a snapshot which will trigger branch creation if needed
-                    await snapshotManager.createSnapshot(`Pre-execution commit for ${toolName}`);
-                }
+                // Create a snapshot which will trigger branch creation if needed
+                await snapshotManager.createSnapshot(`Pre-execution commit for ${toolName}`);
 
-                // Commit the existing changes (commitChangesToGit will handle adding files)
+                // Debug: Check Git status after snapshot creation
+                const gitStatusAfterSnapshot = snapshotManager.getGitStatus();
+                this.logger.debug(
+                    `Git status after snapshot: gitMode=${gitStatusAfterSnapshot.gitMode}, featureBranch=${gitStatusAfterSnapshot.featureBranch}`,
+                    'Pre-execution Git'
+                );
+
+                // Now commit the existing changes (after snapshot/branch creation)
                 const commitResult = await snapshotManager.commitChangesToGit(['.']);
                 if (!commitResult.success) {
                     this.logger.warn(
