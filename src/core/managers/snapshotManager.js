@@ -116,6 +116,28 @@ class SnapshotManager {
      */
     async _handleFirstSnapshotGit(snapshot, userInstruction) {
         try {
+            // Check if we should create a new branch based on current state
+            const shouldCreateBranch = await this._shouldCreateNewBranch();
+
+            if (!shouldCreateBranch.create) {
+                this.logger.debug(
+                    `Skipping branch creation: ${shouldCreateBranch.reason}`,
+                    '📸 Snapshot:'
+                );
+
+                // If we're already on a synth-dev branch, enable Git mode
+                if (shouldCreateBranch.reason.includes('already on synth-dev branch')) {
+                    this.gitMode = true;
+                    this.featureBranch = this.originalBranch;
+                    snapshot.gitBranch = this.originalBranch;
+                    this.logger.debug(
+                        `Using existing synth-dev branch: ${this.originalBranch}`,
+                        '📸 Snapshot:'
+                    );
+                }
+                return;
+            }
+
             // Generate feature branch name
             const branchName = this.gitUtils.generateBranchName(userInstruction);
 
@@ -131,6 +153,56 @@ class SnapshotManager {
             }
         } catch (error) {
             this.logger.warn(`Git branch creation failed: ${error.message}`);
+        }
+    }
+
+    /**
+     * Determine if a new branch should be created based on current Git state
+     * @returns {Promise<{create: boolean, reason: string}>}
+     * @private
+     */
+    async _shouldCreateNewBranch() {
+        try {
+            // Check if we're already on a synth-dev branch
+            if (this.originalBranch && this.originalBranch.startsWith('synth-dev/')) {
+                return {
+                    create: false,
+                    reason: `already on synth-dev branch: ${this.originalBranch}`,
+                };
+            }
+
+            // Check if there are uncommitted changes
+            const statusResult = await this.gitUtils.hasUncommittedChanges();
+            if (!statusResult.success) {
+                this.logger.warn(
+                    `Failed to check Git status: ${statusResult.error}`,
+                    '📸 Snapshot:'
+                );
+                // If we can't check status, err on the side of caution and don't create branch
+                return {
+                    create: false,
+                    reason: `unable to check Git status: ${statusResult.error}`,
+                };
+            }
+
+            if (!statusResult.hasUncommittedChanges) {
+                return {
+                    create: false,
+                    reason: 'no uncommitted changes detected',
+                };
+            }
+
+            // All conditions met - create the branch
+            return {
+                create: true,
+                reason: 'uncommitted changes detected and not on synth-dev branch',
+            };
+        } catch (error) {
+            this.logger.warn(`Error checking branch creation conditions: ${error.message}`);
+            return {
+                create: false,
+                reason: `error checking conditions: ${error.message}`,
+            };
         }
     }
 

@@ -53,6 +53,7 @@ describe('SnapshotManager - Git Mode', () => {
             resetToCommit: vi.fn(),
             getCommitDetails: vi.fn(),
             commitExists: vi.fn(),
+            hasUncommittedChanges: vi.fn(),
         };
 
         // Setup mocks
@@ -82,6 +83,11 @@ describe('SnapshotManager - Git Mode', () => {
             // Setup Git mode
             mockGitUtils.generateBranchName.mockReturnValue('synth-dev/test-branch');
             mockGitUtils.createBranch.mockResolvedValue({ success: true });
+            // Mock that there are uncommitted changes to trigger branch creation
+            mockGitUtils.hasUncommittedChanges.mockResolvedValue({
+                success: true,
+                hasUncommittedChanges: true,
+            });
 
             await snapshotManager.createSnapshot('Test instruction');
         });
@@ -233,6 +239,11 @@ describe('SnapshotManager - Git Mode', () => {
             // Setup Git mode
             mockGitUtils.generateBranchName.mockReturnValue('synth-dev/test-branch');
             mockGitUtils.createBranch.mockResolvedValue({ success: true });
+            // Mock that there are uncommitted changes to trigger branch creation
+            mockGitUtils.hasUncommittedChanges.mockResolvedValue({
+                success: true,
+                hasUncommittedChanges: true,
+            });
 
             await snapshotManager.createSnapshot('Test instruction');
         });
