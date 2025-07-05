@@ -1,6 +1,20 @@
 {
     "providers": [
         {
+            "name": "XAI",
+            "models": [
+                {
+                    "name": "grok-3-mini-beta",
+                    "contextSize": 131072,
+                    "maxResponseSize": 32000,
+                    "inputPricePerMillionTokens": 0.3,
+                    "outputPricePerMillionTokens": 0.5,
+                    "cachedPricePerMillionTokens": 0.075
+                }
+            ],
+            "baseUrl": "https://api.x.ai/v1"
+        },
+        {
             "name": "OpenAI",
             "models": [
                 {
