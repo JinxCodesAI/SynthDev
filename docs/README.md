@@ -148,21 +148,21 @@ The wizard provides:
 
 Access powerful commands via `/` prefix:
 
-| Command          | Description                       |
-| ---------------- | --------------------------------- |
-| `/help`          | Show available commands and usage |
-| `/tools`         | List all available tools          |
-| `/cost`          | Display API usage costs           |
-| `/review`        | Show last API call details        |
-| `/clear`         | Clear conversation history        |
-| `/snapshots`     | Manage conversation snapshots     |
-| `/index`         | Index codebase for analysis       |
-| `/roles`         | Show available AI roles           |
-| `/role <name>`   | Switch to a specific role         |
-| `/cmd`           | Execute terminal commands with AI |
-| `/workflows`     | Manage and execute workflows      |
-| `/configure`     | Interactive configuration wizard  |
-| `/exit`, `/quit` | Exit the application              |
+| Command          | Description                        |
+| ---------------- | ---------------------------------- |
+| `/help`          | Show available commands and usage  |
+| `/tools`         | List all available tools           |
+| `/cost`          | Display detailed API costs & usage |
+| `/review`        | Show last API call details         |
+| `/clear`         | Clear conversation history         |
+| `/snapshots`     | Manage conversation snapshots      |
+| `/index`         | Index codebase for analysis        |
+| `/roles`         | Show available AI roles            |
+| `/role <name>`   | Switch to a specific role          |
+| `/cmd`           | Execute terminal commands with AI  |
+| `/workflows`     | Manage and execute workflows       |
+| `/configure`     | Interactive configuration wizard   |
+| `/exit`, `/quit` | Exit the application               |
 
 ### AI Role System
 
@@ -388,7 +388,7 @@ This documentation is organized into comprehensive guides:
 ### Development Resources
 
 - **[ADRs/](ADRs/)**: Architecture Decision Records for development patterns
-- **[Command Reference](../commands.md)**: All available commands and usage
+- **[Commands Reference](commands.md)**: Complete command documentation with examples
 - **[Troubleshooting](../troubleshooting.md)**: Common issues and solutions
 
 ## Getting Help

@@ -46,7 +46,7 @@ The main application orchestrator that:
 #### AIAPIClient (`aiAPIClient.js`)
 
 - Centralized API communication
-- Cost tracking and token management
+- Cost tracking with real-time USD calculation and token management
 - Multi-model support (base/smart/fast)
 - Response handling and error management
 - Callback system for response processing
@@ -82,9 +82,12 @@ The main application orchestrator that:
 
 #### CostsManager (`costsManager.js`)
 
-- API usage tracking
-- Token counting and cost calculation
-- Usage reporting and analytics
+- **Real-time Cost Tracking**: Automatic USD cost calculation based on provider pricing
+- **Multi-Model Support**: Separate tracking for each AI model used in session
+- **Comprehensive Token Analysis**: Tracks prompt, completion, cached, and reasoning tokens
+- **Pricing Data Integration**: Loads pricing from providers.json configuration
+- **Session Persistence**: Costs accumulate until application exit
+- **Cost Breakdown**: Detailed per-model and grand total cost reporting
 
 #### SnapshotManager (`snapshotManager.js`)
 
@@ -305,7 +308,7 @@ tests/
 
 ### Token Management
 
-- Cost tracking across all API calls
+- Real-time cost tracking with USD calculation across all API calls
 - Model selection based on task complexity
 - Token usage optimization
 
