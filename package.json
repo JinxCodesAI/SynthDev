@@ -2,14 +2,14 @@
     "name": "synth-dev",
     "version": "0.1.0",
     "description": "Console based ai coding assistant",
-    "main": "app.js",
+    "main": "src/core/app.js",
     "type": "module",
     "bin": {
-        "synth-dev": "./app.js"
+        "synth-dev": "./src/core/app.js"
     },
     "scripts": {
-        "start": "node app.js",
-        "dev": "node --watch app.js",
+        "start": "node src/core/app.js",
+        "dev": "node --watch src/core/app.js",
         "test": "vitest run",
         "test:watch": "vitest --watch",
         "test:coverage": "vitest run --coverage",

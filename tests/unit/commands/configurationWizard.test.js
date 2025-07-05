@@ -3,7 +3,7 @@
  */
 
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
-import { ConfigurationWizard } from '../../../commands/config/ConfigurationWizard.js';
+import { ConfigurationWizard } from '../../../src/commands/config/ConfigurationWizard.js';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 
 // Mock fs module
@@ -11,6 +11,28 @@ vi.mock('fs', () => ({
     readFileSync: vi.fn(),
     writeFileSync: vi.fn(),
     existsSync: vi.fn(),
+}));
+
+// Mock ConfigManager to avoid loading real configuration files
+vi.mock('../../../src/config/managers/configManager.js', () => ({
+    default: {
+        getInstance: vi.fn(() => ({
+            reloadConfiguration: vi.fn(),
+            getConfig: vi.fn(() => ({
+                global: { verbosityLevel: 2 },
+            })),
+        })),
+    },
+}));
+
+// Mock logger to avoid initialization issues
+vi.mock('../../../src/core/managers/logger.js', () => ({
+    getLogger: vi.fn(() => ({
+        error: vi.fn(),
+        warn: vi.fn(),
+        debug: vi.fn(),
+        setVerbosityLevel: vi.fn(),
+    })),
 }));
 
 describe('ConfigurationWizard', () => {

@@ -2,7 +2,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { writeFileSync, existsSync, mkdirSync, rmSync } from 'fs';
 import { join } from 'path';
-import listDirectory from '../../../tools/list_directory/implementation.js';
+import listDirectory from '../../../src/tools/list_directory/implementation.js';
 import { cleanupTestDirectory } from '../../helpers/testUtils.js';
 
 describe('ListDirectory Tool - Fixed Tests', () => {

@@ -1,12 +1,12 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import WorkflowAgent from '../../../workflow/WorkflowAgent.js';
-import AIAPIClient from '../../../aiAPIClient.js';
-import ConfigManager from '../../../configManager.js';
+import WorkflowAgent from '../../../src/workflow/WorkflowAgent.js';
+import AIAPIClient from '../../../src/core/ai/aiAPIClient.js';
+import ConfigManager from '../../../src/config/managers/configManager.js';
 
 // Mock dependencies
-vi.mock('../../../aiAPIClient.js');
-vi.mock('../../../configManager.js');
-vi.mock('../../../logger.js', () => ({
+vi.mock('../../../src/core/ai/aiAPIClient.js');
+vi.mock('../../../src/config/managers/configManager.js');
+vi.mock('../../../src/core/managers/logger.js', () => ({
     getLogger: vi.fn(() => ({
         debug: vi.fn(),
         info: vi.fn(),
@@ -16,9 +16,11 @@ vi.mock('../../../logger.js', () => ({
 }));
 
 // Mock SystemMessages
-vi.mock('../../../core/systemMessages.js', () => ({
+vi.mock('../../../src/core/ai/systemMessages.js', () => ({
     default: {
         getLevel: vi.fn().mockReturnValue('default'),
+        getSystemMessage: vi.fn().mockReturnValue('Test system message'),
+        getParsingTools: vi.fn().mockReturnValue([]),
     },
 }));
 
@@ -60,6 +62,7 @@ describe('WorkflowAgent', () => {
         mockAIAPIClient = {
             setCallbacks: vi.fn(),
             sendUserMessage: vi.fn().mockResolvedValue('AI response'),
+            sendMessage: vi.fn().mockResolvedValue('AI response'),
             getModel: vi.fn().mockReturnValue('gpt-4'),
             getToolCalls: vi.fn().mockReturnValue([]),
             getParsingToolCalls: vi.fn().mockReturnValue([]),
@@ -80,7 +83,6 @@ describe('WorkflowAgent', () => {
                 model: 'gpt-4',
             }),
         };
-        vi.mocked(ConfigManager.getInstance).mockReturnValue(mockConfigManager);
 
         // Mock additional dependencies
         mockToolManager = {
@@ -122,8 +124,8 @@ describe('WorkflowAgent', () => {
 
             workflowAgent = createWorkflowAgent(agentConfig);
 
-            // Wait a bit for the async _initializeAgent to complete
-            await new Promise(resolve => setTimeout(resolve, 10));
+            // Trigger initialization by calling a method that uses _ensureInitialized()
+            await workflowAgent.makeContextCall();
 
             // Check that setCallbacks was called (it's called during _initializeAgent)
             expect(mockAIAPIClient.setCallbacks).toHaveBeenCalled();
@@ -237,7 +239,7 @@ describe('WorkflowAgent', () => {
             workflowAgent = createWorkflowAgent(agentConfig);
         });
 
-        it('should capture response content and raw response', () => {
+        it('should capture response content and raw response', async () => {
             const response = {
                 choices: [
                     {
@@ -248,6 +250,9 @@ describe('WorkflowAgent', () => {
                     },
                 ],
             };
+
+            // Trigger initialization first
+            await workflowAgent.makeContextCall();
 
             // Simulate response callback
             const callbacks = mockAIAPIClient.setCallbacks.mock.calls[0][0];

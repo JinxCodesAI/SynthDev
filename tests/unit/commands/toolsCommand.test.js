@@ -1,9 +1,9 @@
 // tests/unit/commands/toolsCommand.test.js
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import ToolsCommand from '../../../commands/info/ToolsCommand.js';
+import ToolsCommand from '../../../src/commands/info/ToolsCommand.js';
 
 // Mock logger
-vi.mock('../../../logger.js', () => ({
+vi.mock('../../../src/core/managers/logger.js', () => ({
     getLogger: vi.fn(),
 }));
 
@@ -24,7 +24,7 @@ describe('ToolsCommand', () => {
         };
 
         // Setup logger mock
-        const { getLogger } = await import('../../../logger.js');
+        const { getLogger } = await import('../../../src/core/managers/logger.js');
         getLogger.mockReturnValue(mockLogger);
 
         // Create mock context

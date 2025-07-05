@@ -1,11 +1,11 @@
 // tests/unit/commands/commandRegistry.test.js
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { CommandRegistry } from '../../../commands/base/CommandRegistry.js';
-import { BaseCommand } from '../../../commands/base/BaseCommand.js';
-import json from '../../../config/ui/console-messages.json';
+import { CommandRegistry } from '../../../src/commands/base/CommandRegistry.js';
+import { BaseCommand } from '../../../src/commands/base/BaseCommand.js';
+import json from '../../../src/config/ui/console-messages.json';
 
 // Mock logger
-vi.mock('../../../logger.js', () => ({
+vi.mock('../../../src/core/managers/logger.js', () => ({
     getLogger: vi.fn().mockReturnValue({
         raw: vi.fn(),
         error: vi.fn(),
@@ -17,7 +17,7 @@ vi.mock('../../../logger.js', () => ({
 }));
 
 // Mock UI config manager with static config values
-vi.mock('../../../uiConfigManager.js', () => ({
+vi.mock('../../../src/config/managers/uiConfigManager.js', () => ({
     getUIConfigManager: vi.fn().mockReturnValue({
         getMessage: vi.fn((path, params = {}) => {
             // Mock config messages to avoid ES module loading issues
@@ -56,7 +56,7 @@ vi.mock('../../../uiConfigManager.js', () => ({
 }));
 
 // Mock configuration loader
-vi.mock('../../../configurationLoader.js', () => ({
+vi.mock('../../../src/config/validation/configurationLoader.js', () => ({
     getConfigurationLoader: vi.fn(),
 }));
 
@@ -153,7 +153,7 @@ describe('CommandRegistry', () => {
             const command = new TestCommand();
             registry.register(command);
 
-            const { getLogger } = await import('../../../logger.js');
+            const { getLogger } = await import('../../../src/core/managers/logger.js');
             mockLogger = getLogger();
         });
 

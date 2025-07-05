@@ -2,7 +2,7 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { writeFileSync, existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
-import readFile from '../../../tools/read_file/implementation.js';
+import readFile from '../../../src/tools/read_file/implementation.js';
 import { cleanupTestDirectory } from '../../helpers/testUtils.js';
 
 describe('ReadFile Tool - Fixed Tests', () => {

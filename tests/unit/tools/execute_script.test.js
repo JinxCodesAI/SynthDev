@@ -1,6 +1,6 @@
 // tests/unit/tools/execute_script.test.js
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import executeScript from '../../../tools/execute_script/implementation.js';
+import executeScript from '../../../src/tools/execute_script/implementation.js';
 
 // Mock dependencies
 vi.mock('child_process', () => ({
@@ -23,11 +23,11 @@ vi.mock('../../../configManager.js', () => ({
     },
 }));
 
-vi.mock('../../../logger.js', () => ({
+vi.mock('../../../src/core/managers/logger.js', () => ({
     getLogger: vi.fn(),
 }));
 
-vi.mock('../../../toolConfigManager.js', () => ({
+vi.mock('../../../src/config/managers/toolConfigManager.js', () => ({
     getToolConfigManager: vi.fn().mockReturnValue({
         getToolDescription: vi.fn().mockReturnValue('Execute JavaScript code safely'),
         getErrorMessage: vi.fn((key, params = {}) => {
@@ -70,7 +70,7 @@ vi.mock('../../../toolConfigManager.js', () => ({
     }),
 }));
 
-vi.mock('../../../configurationLoader.js', () => ({
+vi.mock('../../../src/config/validation/configurationLoader.js', () => ({
     getConfigurationLoader: vi.fn(),
 }));
 
@@ -116,7 +116,7 @@ describe('Execute Script Tool', () => {
         const configManager = await import('../../../configManager.js');
         mockConfigManager = configManager.default.getInstance;
 
-        const logger = await import('../../../logger.js');
+        const logger = await import('../../../src/core/managers/logger.js');
         mockLogger = logger.getLogger;
 
         mockFs = await import('fs');

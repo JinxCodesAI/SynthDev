@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import WorkflowCommand from '../../../commands/workflow/WorkflowCommand.js';
+import WorkflowCommand from '../../../src/commands/workflow/WorkflowCommand.js';
 
 describe('WorkflowCommand', () => {
     let workflowCommand;

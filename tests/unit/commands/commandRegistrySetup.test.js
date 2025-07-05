@@ -1,10 +1,10 @@
 // tests/unit/commands/commandRegistrySetup.test.js
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { createCommandRegistry } from '../../../commands/base/CommandRegistrySetup.js';
-import CommandRegistry from '../../../commands/base/CommandRegistry.js';
+import { createCommandRegistry } from '../../../src/commands/base/CommandRegistrySetup.js';
+import CommandRegistry from '../../../src/commands/base/CommandRegistry.js';
 
 // Mock logger
-vi.mock('../../../logger.js', () => ({
+vi.mock('../../../src/core/managers/logger.js', () => ({
     getLogger: vi.fn().mockReturnValue({
         raw: vi.fn(),
         error: vi.fn(),
@@ -15,7 +15,7 @@ vi.mock('../../../logger.js', () => ({
 }));
 
 // Mock all command imports
-vi.mock('../../../commands/info/HelpCommand.js', () => ({
+vi.mock('../../../src/commands/info/HelpCommand.js', () => ({
     default: vi.fn().mockImplementation(() => ({
         name: 'help',
         description: 'Show help',
@@ -24,7 +24,7 @@ vi.mock('../../../commands/info/HelpCommand.js', () => ({
     })),
 }));
 
-vi.mock('../../../commands/info/ToolsCommand.js', () => ({
+vi.mock('../../../src/commands/info/ToolsCommand.js', () => ({
     default: vi.fn().mockImplementation(() => ({
         name: 'tools',
         description: 'Show tools',
@@ -33,7 +33,7 @@ vi.mock('../../../commands/info/ToolsCommand.js', () => ({
     })),
 }));
 
-vi.mock('../../../commands/info/ReviewCommand.js', () => ({
+vi.mock('../../../src/commands/info/ReviewCommand.js', () => ({
     default: vi.fn().mockImplementation(() => ({
         name: 'review',
         description: 'Review conversation',
@@ -42,7 +42,7 @@ vi.mock('../../../commands/info/ReviewCommand.js', () => ({
     })),
 }));
 
-vi.mock('../../../commands/info/CostCommand.js', () => ({
+vi.mock('../../../src/commands/info/CostCommand.js', () => ({
     default: vi.fn().mockImplementation(() => ({
         name: 'cost',
         description: 'Show costs',
@@ -51,7 +51,7 @@ vi.mock('../../../commands/info/CostCommand.js', () => ({
     })),
 }));
 
-vi.mock('../../../commands/conversation/ClearCommand.js', () => ({
+vi.mock('../../../src/commands/conversation/ClearCommand.js', () => ({
     default: vi.fn().mockImplementation(() => ({
         name: 'clear',
         description: 'Clear conversation',
@@ -60,7 +60,7 @@ vi.mock('../../../commands/conversation/ClearCommand.js', () => ({
     })),
 }));
 
-vi.mock('../../../commands/system/ExitCommand.js', () => ({
+vi.mock('../../../src/commands/system/ExitCommand.js', () => ({
     default: vi.fn().mockImplementation(() => ({
         name: 'exit',
         description: 'Exit application',
@@ -69,7 +69,7 @@ vi.mock('../../../commands/system/ExitCommand.js', () => ({
     })),
 }));
 
-vi.mock('../../../commands/role/RoleCommand.js', () => ({
+vi.mock('../../../src/commands/role/RoleCommand.js', () => ({
     default: vi.fn().mockImplementation(() => ({
         name: 'role',
         description: 'Set role',
@@ -78,7 +78,7 @@ vi.mock('../../../commands/role/RoleCommand.js', () => ({
     })),
 }));
 
-vi.mock('../../../commands/role/RolesCommand.js', () => ({
+vi.mock('../../../src/commands/role/RolesCommand.js', () => ({
     default: vi.fn().mockImplementation(() => ({
         name: 'roles',
         description: 'List roles',
@@ -87,7 +87,7 @@ vi.mock('../../../commands/role/RolesCommand.js', () => ({
     })),
 }));
 
-vi.mock('../../../commands/snapshots/SnapshotsCommand.js', () => ({
+vi.mock('../../../src/commands/snapshots/SnapshotsCommand.js', () => ({
     default: vi.fn().mockImplementation(() => ({
         name: 'snapshots',
         description: 'Manage snapshots',
@@ -96,7 +96,7 @@ vi.mock('../../../commands/snapshots/SnapshotsCommand.js', () => ({
     })),
 }));
 
-vi.mock('../../../commands/indexing/IndexCommand.js', () => ({
+vi.mock('../../../src/commands/indexing/IndexCommand.js', () => ({
     default: vi.fn().mockImplementation(() => ({
         name: 'index',
         description: 'Index codebase',
@@ -105,7 +105,7 @@ vi.mock('../../../commands/indexing/IndexCommand.js', () => ({
     })),
 }));
 
-vi.mock('../../../commands/terminal/CmdCommand.js', () => ({
+vi.mock('../../../src/commands/terminal/CmdCommand.js', () => ({
     default: vi.fn().mockImplementation(() => ({
         name: 'cmd',
         description: 'Execute command',
@@ -121,7 +121,7 @@ describe('CommandRegistrySetup', () => {
     beforeEach(async () => {
         registry = new CommandRegistry();
 
-        const { getLogger } = await import('../../../logger.js');
+        const { getLogger } = await import('../../../src/core/managers/logger.js');
         mockLogger = getLogger();
 
         // Clear all mocks
