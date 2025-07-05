@@ -36,6 +36,7 @@ describe('SnapshotManager', () => {
             warn: vi.fn(),
             error: vi.fn(),
             user: vi.fn(),
+            debug: vi.fn(),
         };
 
         // Create mock GitUtils
@@ -47,6 +48,7 @@ describe('SnapshotManager', () => {
             switchBranch: vi.fn(),
             commit: vi.fn(),
             mergeBranch: vi.fn(),
+            hasUncommittedChanges: vi.fn(),
         };
 
         // Setup mocks
@@ -152,6 +154,11 @@ describe('SnapshotManager', () => {
             const instruction = 'Add new feature';
             mockGitUtils.generateBranchName.mockReturnValue('synth-dev/feature-branch');
             mockGitUtils.createBranch.mockResolvedValue({ success: true });
+            // Mock that there are uncommitted changes to trigger branch creation
+            mockGitUtils.hasUncommittedChanges.mockResolvedValue({
+                success: true,
+                hasUncommittedChanges: true,
+            });
 
             await snapshotManager.createSnapshot(instruction);
 
@@ -203,6 +210,11 @@ describe('SnapshotManager', () => {
             mockGitUtils.createBranch.mockResolvedValue({
                 success: false,
                 error: 'Branch creation failed',
+            });
+            // Mock that there are uncommitted changes to trigger branch creation attempt
+            mockGitUtils.hasUncommittedChanges.mockResolvedValue({
+                success: true,
+                hasUncommittedChanges: true,
             });
 
             await snapshotManager.createSnapshot(instruction);
