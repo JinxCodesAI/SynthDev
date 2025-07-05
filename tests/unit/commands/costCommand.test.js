@@ -30,21 +30,52 @@ describe('CostCommand', () => {
         // Create mock context
         mockContext = {
             costsManager: {
-                getTotalCosts: vi.fn().mockReturnValue({
-                    'gpt-4': {
-                        cached_tokens: 100,
-                        prompt_tokens: 1500,
-                        completion_tokens: 800,
-                        total_tokens: 2400,
-                        reasoning_tokens: 50,
+                getCostSummary: vi.fn().mockReturnValue({
+                    models: {
+                        'gpt-4': {
+                            cached_tokens: 100,
+                            prompt_tokens: 1500,
+                            completion_tokens: 800,
+                            total_tokens: 2400,
+                            reasoning_tokens: 50,
+                            inputCost: 0.0014,
+                            outputCost: 0.0032,
+                            cachedCost: 0.00001,
+                            totalCost: 0.00461,
+                        },
+                        'gpt-3.5-turbo': {
+                            cached_tokens: 50,
+                            prompt_tokens: 1000,
+                            completion_tokens: 500,
+                            total_tokens: 1550,
+                            reasoning_tokens: 25,
+                            inputCost: 0.00095,
+                            outputCost: 0.002,
+                            cachedCost: 0.000005,
+                            totalCost: 0.002955,
+                        },
                     },
-                    'gpt-3.5-turbo': {
-                        cached_tokens: 50,
-                        prompt_tokens: 1000,
-                        completion_tokens: 500,
-                        total_tokens: 1550,
-                        reasoning_tokens: 25,
-                    },
+                    grandTotal: 0.007565,
+                    modelCount: 2,
+                }),
+                getModelPricing: vi.fn().mockImplementation(modelName => {
+                    if (modelName === 'gpt-4') {
+                        return {
+                            inputPricePerMillionTokens: 1.0,
+                            outputPricePerMillionTokens: 4.0,
+                            cachedPricePerMillionTokens: 0.1,
+                            provider: 'OpenAI',
+                        };
+                    }
+                    if (modelName === 'gpt-3.5-turbo') {
+                        return {
+                            inputPricePerMillionTokens: 1.0,
+                            outputPricePerMillionTokens: 4.0,
+                            cachedPricePerMillionTokens: 0.1,
+                            provider: 'OpenAI',
+                        };
+                    }
+                    return null;
                 }),
             },
             consoleInterface: {
@@ -82,36 +113,36 @@ describe('CostCommand', () => {
 
             expect(result).toBe(true);
 
-            // Should call getTotalCosts
-            expect(mockContext.costsManager.getTotalCosts).toHaveBeenCalled();
+            // Should call getCostSummary
+            expect(mockContext.costsManager.getCostSummary).toHaveBeenCalled();
 
             // Should display cost information
             expect(mockContext.consoleInterface.showMessage).toHaveBeenCalledWith(
-                expect.stringContaining('📊 Accumulated API Costs By Model:')
+                expect.stringContaining('💰 Accumulated API Costs & Usage:')
             );
             expect(mockContext.consoleInterface.showMessage).toHaveBeenCalledWith(
-                expect.stringContaining('gpt-4:'),
+                expect.stringContaining('🤖 gpt-4:'),
                 'Model:'
             );
             expect(mockContext.consoleInterface.showMessage).toHaveBeenCalledWith(
-                '  Cached Tokens: 100',
-                ' '
-            );
-            expect(mockContext.consoleInterface.showMessage).toHaveBeenCalledWith(
-                '  Prompt Tokens: 1500',
-                ' '
+                expect.stringContaining('Grand Total Cost:'),
+                'Total:'
             );
         });
 
         it('should handle empty costs', async () => {
-            mockContext.costsManager.getTotalCosts.mockReturnValue({});
+            mockContext.costsManager.getCostSummary.mockReturnValue({
+                models: {},
+                grandTotal: 0,
+                modelCount: 0,
+            });
 
             const result = await costCommand.implementation('', mockContext);
 
             expect(result).toBe(true);
 
-            // Should call getTotalCosts
-            expect(mockContext.costsManager.getTotalCosts).toHaveBeenCalled();
+            // Should call getCostSummary
+            expect(mockContext.costsManager.getCostSummary).toHaveBeenCalled();
 
             // Should display no data message
             expect(mockContext.consoleInterface.showMessage).toHaveBeenCalledWith(
@@ -126,11 +157,11 @@ describe('CostCommand', () => {
 
             // Should display model-specific information
             expect(mockContext.consoleInterface.showMessage).toHaveBeenCalledWith(
-                expect.stringContaining('gpt-3.5-turbo:'),
+                expect.stringContaining('🤖 gpt-3.5-turbo:'),
                 'Model:'
             );
             expect(mockContext.consoleInterface.showMessage).toHaveBeenCalledWith(
-                '  Total Tokens: 1550',
+                expect.stringContaining('Total Tokens: 1,550'),
                 ' '
             );
         });
@@ -141,7 +172,7 @@ describe('CostCommand', () => {
             expect(result).toBe(true);
 
             // Args are ignored, should still work
-            expect(mockContext.costsManager.getTotalCosts).toHaveBeenCalled();
+            expect(mockContext.costsManager.getCostSummary).toHaveBeenCalled();
         });
     });
 
@@ -154,7 +185,7 @@ describe('CostCommand', () => {
 
     describe('error handling', () => {
         it('should handle costsManager errors', async () => {
-            mockContext.costsManager.getTotalCosts.mockImplementation(() => {
+            mockContext.costsManager.getCostSummary.mockImplementation(() => {
                 throw new Error('Cost manager error');
             });
 

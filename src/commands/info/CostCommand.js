@@ -27,34 +27,86 @@ export class CostCommand extends BaseCommand {
     async implementation(args, context) {
         const { costsManager, consoleInterface } = context;
 
-        const costs = costsManager.getTotalCosts();
-        const modelNames = Object.keys(costs);
+        const costSummary = costsManager.getCostSummary();
+        const modelNames = Object.keys(costSummary.models);
 
         if (modelNames.length === 0) {
             consoleInterface.showMessage('\n📊 No API usage data available yet.');
         } else {
-            consoleInterface.showMessage('\n📊 Accumulated API Costs By Model:');
-            consoleInterface.showMessage('─'.repeat(50));
+            consoleInterface.showMessage('\n💰 Accumulated API Costs & Usage:');
+            consoleInterface.showMessage('═'.repeat(60));
 
             for (const modelName of modelNames) {
-                const modelCost = costs[modelName];
+                const modelCost = costSummary.models[modelName];
+                const pricing = costsManager.getModelPricing(modelName);
+
+                consoleInterface.showMessage(`\n🤖 ${modelName}:`, 'Model:');
+
+                // Token usage
+                consoleInterface.showMessage('  📊 Token Usage:', ' ');
                 consoleInterface.showMessage(
-                    `
-${modelName}:`,
-                    'Model:'
-                );
-                consoleInterface.showMessage(`  Cached Tokens: ${modelCost.cached_tokens}`, ' ');
-                consoleInterface.showMessage(`  Prompt Tokens: ${modelCost.prompt_tokens}`, ' ');
-                consoleInterface.showMessage(
-                    `  Completion Tokens: ${modelCost.completion_tokens}`,
+                    `    • Prompt Tokens: ${modelCost.prompt_tokens.toLocaleString()}`,
                     ' '
                 );
-                consoleInterface.showMessage(`  Total Tokens: ${modelCost.total_tokens}`, ' ');
                 consoleInterface.showMessage(
-                    `  Reasoning Tokens: ${modelCost.reasoning_tokens}`,
+                    `    • Completion Tokens: ${modelCost.completion_tokens.toLocaleString()}`,
                     ' '
+                );
+                if (modelCost.cached_tokens > 0) {
+                    consoleInterface.showMessage(
+                        `    • Cached Tokens: ${modelCost.cached_tokens.toLocaleString()}`,
+                        ' '
+                    );
+                }
+                if (modelCost.reasoning_tokens > 0) {
+                    consoleInterface.showMessage(
+                        `    • Reasoning Tokens: ${modelCost.reasoning_tokens.toLocaleString()}`,
+                        ' '
+                    );
+                }
+                consoleInterface.showMessage(
+                    `    • Total Tokens: ${modelCost.total_tokens.toLocaleString()}`,
+                    ' '
+                );
+
+                // Cost breakdown
+                if (pricing && modelCost.totalCost > 0) {
+                    consoleInterface.showMessage('  💵 Cost Breakdown:', ' ');
+                    consoleInterface.showMessage(
+                        `    • Input Cost: $${modelCost.inputCost.toFixed(6)}`,
+                        ' '
+                    );
+                    consoleInterface.showMessage(
+                        `    • Output Cost: $${modelCost.outputCost.toFixed(6)}`,
+                        ' '
+                    );
+                    if (modelCost.cachedCost > 0) {
+                        consoleInterface.showMessage(
+                            `    • Cached Cost: $${modelCost.cachedCost.toFixed(6)}`,
+                            ' '
+                        );
+                    }
+                    consoleInterface.showMessage(
+                        `    • Model Total: $${modelCost.totalCost.toFixed(6)}`,
+                        ' '
+                    );
+                } else if (!pricing) {
+                    consoleInterface.showMessage(
+                        '  ⚠️  Pricing information not available for this model',
+                        ' '
+                    );
+                }
+            }
+
+            // Grand total
+            consoleInterface.showMessage(`\n${'─'.repeat(60)}`);
+            if (costSummary.grandTotal > 0) {
+                consoleInterface.showMessage(
+                    `💰 Grand Total Cost: $${costSummary.grandTotal.toFixed(6)}`,
+                    'Total:'
                 );
             }
+            consoleInterface.showMessage(`📈 Models Used: ${costSummary.modelCount}`, 'Summary:');
             consoleInterface.newLine();
         }
 
