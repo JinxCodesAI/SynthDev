@@ -1,6 +1,6 @@
-# SynthDev Documentation v2
+# SynthDev - AI Coding Assistant
 
-**SynthDev** is a powerful Node.js console-based AI coding assistant with an extensible tool system and command interface. It provides comprehensive development tools, multi-model support, and sophisticated conversation management capabilities. Its main intention is to **explore agentic capabilities** of **less powerful AI models**.
+SynthDev is a powerful Node.js console-based AI coding assistant designed to explore agentic capabilities of less powerful AI models. It provides comprehensive development tools, multi-model support, and sophisticated conversation management capabilities.
 
 ## What is SynthDev?
 
@@ -12,6 +12,7 @@ SynthDev is an AI-powered development assistant that provides:
 - **🎭 AI Role System**: Specialized AI personas with role-specific behaviors and few-shot prompting
 - **🔧 Extensible Architecture**: Easy to add new tools and commands
 - **📊 Advanced Features**: Conversation snapshots, codebase indexing, prompt enhancement, and cost tracking
+- **🔄 Multi-Agent Workflows**: Complex workflows where different AI personas collaborate
 
 ## Quick Start
 
@@ -22,6 +23,16 @@ SynthDev is an AI-powered development assistant that provides:
 - **AI API**: Tested on less powerful models like google-Flash-2.5 and gpt-4.1-mini/nano
 
 ### Installation Options
+
+#### Repository Setup
+
+First, clone the repository from the stable branch:
+
+```bash
+# Clone the repository (stable branch recommended)
+git clone --branch stable https://github.com/JinxCodesAI/SynthDev.git
+cd SynthDev
+```
 
 #### Option 1: Native Installation
 
@@ -56,7 +67,7 @@ npm start
 #### Option 3: Global Installation
 
 ```bash
-# Install globally
+# Install globally from the cloned repository
 npm install -g .
 
 # Use from any directory
@@ -65,7 +76,7 @@ synth-dev
 
 ### Basic Configuration
 
-Edit your `.env` file:
+Edit your `.env` file with the required settings:
 
 ```env
 # Base Model Configuration (Required)
@@ -89,6 +100,48 @@ SYNTHDEV_ENABLE_PROMPT_ENHANCEMENT=false
 SYNTHDEV_VERBOSITY_LEVEL=2
 ```
 
+### Interactive Configuration
+
+SynthDev includes a comprehensive configuration wizard for easy setup:
+
+#### Automatic Configuration Wizard
+
+If no `.env` file exists, the wizard starts automatically when you run the application:
+
+```bash
+# For native or Docker installation
+npm start
+# Wizard starts automatically if no .env file exists
+
+# For global installation
+synth-dev
+# Wizard starts automatically if no .env file exists
+```
+
+#### Manual Configuration Wizard
+
+You can also start the configuration wizard manually at any time:
+
+```bash
+# From within the application
+/configure
+
+# Or start the application and use the configure command
+npm start
+# Then type: /configure
+```
+
+#### Configuration Wizard Features
+
+The wizard provides:
+
+- **Provider Selection**: Choose from XAI, OpenAI, Google, OpenRouter, Anthropic, or custom providers
+- **Multi-Model Setup**: Configure base, smart, and fast model tiers
+- **API Key Management**: Secure input for API credentials
+- **Settings Configuration**: Verbosity levels, tool limits, prompt enhancement
+- **Real-time Validation**: Immediate feedback on configuration errors
+- **Configuration Copy**: Copy base settings to smart/fast models for convenience
+
 ## Core Features
 
 ### Command System
@@ -108,55 +161,105 @@ Access powerful commands via `/` prefix:
 | `/role <name>`   | Switch to a specific role         |
 | `/cmd`           | Execute terminal commands with AI |
 | `/workflows`     | Manage and execute workflows      |
+| `/configure`     | Interactive configuration wizard  |
 | `/exit`, `/quit` | Exit the application              |
 
 ### AI Role System
 
-SynthDev features specialized AI personas for different tasks:
+SynthDev features specialized AI personas with different model tiers and tool access:
 
-#### **Development Roles**
+#### Development Roles
 
-- **coder**: Software development and implementation
-- **reviewer**: Code review and quality assurance
-- **architect**: System design and architecture planning
-- **test_writer**: Specialized test writing assistant
-- **qa_specialist**: Quality assurance and bug detection
+- **coder** (base): Software development with full tool access except time/calculation utilities
+- **reviewer** (base): Code review with read-only access (no file modification)
+- **architect** (smart): System design using advanced model, read-only access for analysis
+- **test_writer** (base): Specialized test writing, most tools except terminal execution
+- **qa_specialist** (base): Quality assurance with read-only tools for code analysis
 
-#### **Analysis Roles**
+#### Analysis Roles (Parsing-Only)
 
-- **codebase_explainer**: Explaining codebase functionality
-- **file_summarizer**: Analyzing and summarizing individual files
-- **directory_summarizer**: Analyzing directory structures
-- **research_assistant**: Information gathering and analysis
+- **codebase_explainer** (fast): Explains codebase using indexed summaries, parsing tools only
+- **file_summarizer** (fast): Analyzes individual files, highly restricted tool access
+- **directory_summarizer** (fast): Analyzes directory structures, limited to analysis tools
 
-#### **Utility Roles**
+#### Utility Roles
 
-- **prompt_enhancer**: Improving user prompts with AI assistance
-- **command_generator**: Converting natural language to terminal commands
-- **file_reader**: File reading and analysis only
-- **dude**: Helpful assistant for wide range of tasks
+- **prompt_enhancer** (fast): Improves prompts with few-shot examples, analysis tools only
+- **command_generator** (fast): Converts natural language to terminal commands, no tools
+- **file_reader** (fast): Limited to read_file, list_directory, exact_search only
+- **dude** (fast): General-purpose assistant with all tools available
+
+#### Role Features
+
+- **Model Tiers**: base (default), smart (complex reasoning), fast (quick tasks)
+- **Tool Filtering**: Role-based access control with wildcards and regex patterns
+- **Parsing Tools**: Structured output tools for decision-making workflows
+- **Few-Shot Learning**: Examples guide AI behavior for consistent responses
 
 Switch roles with: `/role <role_name>`
 
-### Multi-Agent Workflows
-
-SynthDev supports complex multi-agent workflows where different AI personas collaborate:
-
-- **🔄 State Machine Execution**: Structured workflow with defined states and transitions
-- **💬 Shared Context**: Agents share conversation context with role-based message mapping
-- **📝 Custom Scripts**: JavaScript functions for complex workflow logic
-- **🎯 Parsing Tools**: Structured output handling for decision-making
-
-Execute workflows with: `/workflow <workflow_name>`
-
 ### Tool System
 
-Comprehensive tool categories:
+Comprehensive tool categories with security and validation:
 
-- **File Operations**: read_file, write_file, edit_file, list_directory
-- **Search & Analysis**: exact_search, explain_codebase
-- **Code Execution**: execute_script, execute_terminal
-- **Utilities**: calculate, get_time
+#### File Operations
+
+- **read_file**: Read file contents with encoding support and size limits
+- **write_file**: Create/overwrite files with backup and validation
+- **edit_file**: Modify files with line-based editing and safety checks
+- **list_directory**: Directory listing with filtering and depth control
+
+#### Search & Analysis
+
+- **exact_search**: Fast text search with regex support and context
+- **explain_codebase**: AI-powered codebase analysis using indexed summaries
+
+#### Code Execution
+
+- **execute_terminal**: System command execution with safety patterns
+- **execute_script**: JavaScript execution in sandboxed environment with AI safety assessment
+
+#### Utilities
+
+- **get_time**: Current time and date information
+- **calculate**: Mathematical calculations and expressions
+
+#### Security Features
+
+- **Path Validation**: All file operations restricted to project directory
+- **AI Safety Assessment**: Dynamic code analysis for script execution
+- **Tool Filtering**: Role-based access control with pattern matching
+- **Backup System**: Automatic backups for destructive operations
+
+### Multi-Agent Workflows
+
+Execute complex multi-agent workflows with state management:
+
+```bash
+# List available workflows
+/workflows
+
+# Execute workflow
+/workflow grocery_store_test
+```
+
+#### Workflow Features
+
+- **🤖 Multi-Agent Orchestration**: Multiple AI agents with different roles working together
+- **🔄 State Machine Execution**: Structured workflow execution with defined states and transitions
+- **💬 Shared Context Management**: Agents share conversation context with role-based message mapping
+- **📝 Custom Script Integration**: JavaScript functions for complex workflow logic
+- **🎯 Parsing Tools**: Structured output handling for decision-making
+- **📊 Execution Tracking**: Detailed logging and state history
+
+#### Example: Grocery Store Workflow
+
+A complete multi-agent simulation demonstrating:
+
+- Customer-worker interaction with decision-making
+- Context sharing between agents
+- Structured output with parsing tools
+- State transitions based on customer satisfaction
 
 ### Codebase Intelligence
 
@@ -168,29 +271,131 @@ Index your codebase for AI-powered understanding:
 /index --include-hidden   # Include hidden files
 ```
 
-Ask questions about your codebase:
+## Development Setup
 
-- "What tools are available in this codebase?"
-- "How is file editing handled?"
-- "Explain the architecture of the command system"
+### Prerequisites
 
-## Documentation Structure
+1. Node.js 20.10.0 or higher
+2. Git (for snapshot management)
+3. AI API key (OpenAI, Google, etc.)
 
-This documentation is organized into focused guides:
+### Development Installation
 
-- **[Installation & Setup](installation.md)** - Detailed installation instructions for all platforms
-- **[Configuration Guide](configuration.md)** - Complete configuration reference
-- **[AI Roles & Few-Shot Prompting](roles-and-prompting.md)** - Role system and examples
-- **[Workflow System Guide](workflows.md)** - Multi-agent workflows and state machines
-- **[Tool Development](tool-development.md)** - Creating custom tools and commands
-- **[Testing Guide](testing.md)** - Comprehensive testing documentation
-- **[Architecture Overview](architecture.md)** - System design and components
+```bash
+# Clone and install
+git clone https://github.com/your-repo-url.git
+cd synth-dev
+npm install
+
+# Set up environment
+cp config.example.env .env
+# Edit .env with your API keys
+
+# Run in development mode
+npm run dev
+
+# Run tests
+npm test
+
+# Run with coverage
+npm run test:coverage
+```
+
+### Project Structure
+
+```
+src/
+├── core/                    # Core application logic
+│   ├── app.js              # Main application orchestrator
+│   ├── ai/                 # AI-related components
+│   │   ├── aiAPIClient.js  # Centralized API client with cost tracking
+│   │   ├── systemMessages.js # AI role management
+│   │   └── promptEnhancer.js # Prompt enhancement
+│   ├── interface/          # User interface components
+│   │   ├── consoleInterface.js # Console interaction
+│   │   └── commandHandler.js   # Command routing
+│   └── managers/           # Core managers
+│       ├── costsManager.js     # API cost tracking
+│       ├── snapshotManager.js  # Conversation snapshots
+│       ├── toolManager.js      # Tool loading and execution
+│       └── logger.js           # Centralized logging
+├── config/                 # Configuration system
+│   ├── managers/           # Configuration managers
+│   │   ├── configManager.js    # Main configuration
+│   │   ├── toolConfigManager.js # Tool configuration
+│   │   └── uiConfigManager.js   # UI configuration
+│   ├── validation/         # Configuration validation
+│   ├── defaults/           # Default configurations
+│   ├── roles/              # AI role definitions (multi-file support)
+│   ├── tools/              # Tool configurations
+│   ├── ui/                 # UI configurations
+│   └── workflows/          # Workflow configurations
+├── commands/               # Command system
+│   ├── base/               # Base command classes
+│   ├── config/             # Configuration commands
+│   ├── conversation/       # Conversation management
+│   ├── info/               # Information commands
+│   ├── role/               # Role switching
+│   ├── snapshots/          # Snapshot management
+│   ├── system/             # System commands
+│   ├── terminal/           # Terminal commands
+│   ├── utils/              # Command utilities
+│   └── workflow/           # Workflow commands
+├── tools/                  # Tool implementations
+│   ├── common/             # Base tool classes and utilities
+│   ├── calculate/          # Mathematical calculations
+│   ├── edit_file/          # File editing with line-based operations
+│   ├── exact_search/       # Text search with regex support
+│   ├── execute_script/     # JavaScript execution with AI safety
+│   ├── execute_terminal/   # System command execution
+│   ├── explain_codebase/   # AI-powered codebase analysis
+│   ├── get_time/           # Time and date utilities
+│   ├── list_directory/     # Directory listing
+│   ├── read_file/          # File reading with encoding support
+│   └── write_file/         # File writing with backup
+├── workflow/               # Multi-agent workflow system
+│   ├── WorkflowStateMachine.js # Main workflow orchestrator
+│   ├── WorkflowAgent.js        # Individual AI agent instances
+│   ├── WorkflowContext.js      # Shared conversation context
+│   └── WorkflowConfig.js       # Configuration validation
+└── utils/                  # Utility functions
+    └── GitUtils.js         # Git integration utilities
+
+tests/                      # Comprehensive test suite
+├── unit/                   # Unit tests for individual components
+├── integration/            # Integration tests for component interactions
+├── e2e/                    # End-to-end workflow tests
+├── mocks/                  # Mock implementations for testing
+└── helpers/                # Test utilities and helpers
+```
+
+## 📚 Documentation
+
+This documentation is organized into comprehensive guides:
+
+### Core Guides
+
+- **[Installation Guide](Installation.md)**: Complete setup instructions and requirements
+- **[Configuration Guide](Configuration.md)**: Environment variables, AI roles, and system configuration
+- **[Architecture Overview](Architecture.md)**: System design, components, and data flow
+
+### Feature Guides
+
+- **[Tools Reference](Tools.md)**: Complete tool documentation with examples and security features
+- **[Multi-Agent Workflows](Workflows.md)**: Creating and executing complex multi-agent workflows
+- **[Testing Guide](Testing.md)**: Testing strategies, best practices, and coverage goals
+
+### Development Resources
+
+- **[ADRs/](ADRs/)**: Architecture Decision Records for development patterns
+- **[Command Reference](../commands.md)**: All available commands and usage
+- **[Troubleshooting](../troubleshooting.md)**: Common issues and solutions
 
 ## Getting Help
 
 - **Issues**: Report bugs and request features via GitHub Issues
 - **Discussions**: Ask questions in GitHub Discussions
-- **Documentation**: Check the guides in this v2 documentation folder
+- **Documentation**: Check the guides in this documentation folder
 - **Examples**: Look at existing tools and commands for patterns
 
 ## Contributing
@@ -198,8 +403,12 @@ This documentation is organized into focused guides:
 1. **Fork and Clone** the repository
 2. **Set Up Development Environment** with your API keys
 3. **Run in Development Mode**: `npm run dev`
-4. **Follow Guidelines**: See tool-development.md for creating new tools
+4. **Follow Guidelines**: See ADRs for development patterns
 5. **Submit Pull Requests**: Clear description and test coverage
+
+## License
+
+MIT
 
 ---
 
