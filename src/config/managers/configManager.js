@@ -5,6 +5,7 @@ import { fileURLToPath } from 'url';
 import { existsSync } from 'fs';
 import { getConfigurationValidator } from '../validation/configurationValidator.js';
 import { getConfigurationLoader } from '../validation/configurationLoader.js';
+import { getLogger } from '../../core/managers/logger.js';
 
 // Get the directory where this module is located (synth-dev installation directory)
 const __filename = fileURLToPath(import.meta.url);
@@ -20,11 +21,14 @@ class ConfigManager {
         }
 
         // Load environment variables from .env file in synth-dev installation directory
-        this.envFilePath = join(__dirname, '.env');
+        this.envFilePath = join(__dirname, '/../../../.env');
         this.envFileExists = existsSync(this.envFilePath);
 
         if (this.envFileExists) {
             config({ path: this.envFilePath });
+        } else {
+            this.logger = getLogger();
+            this.logger.warn(`No .env file found in :${this.envFilePath}`);
         }
 
         // Load application defaults
