@@ -241,13 +241,22 @@ class SnapshotManager {
     /**
      * Commit changes to Git if in Git mode
      * @param {string[]} modifiedFiles - Array of modified file paths
+     * @param {boolean} addFiles - Whether to add files to staging area before committing (default: true)
      */
-    async commitChangesToGit(modifiedFiles) {
+    async commitChangesToGit(modifiedFiles, addFiles = true) {
         if (!this.gitMode || !this.currentSnapshot) {
             return { success: false, error: 'Not in Git mode or no active snapshot' };
         }
 
         try {
+            // Add files to staging area if requested
+            if (addFiles && modifiedFiles.length > 0) {
+                const addResult = await this.gitUtils.addFiles(modifiedFiles);
+                if (!addResult.success) {
+                    return { success: false, error: `Failed to add files: ${addResult.error}` };
+                }
+            }
+
             // Create commit message with timestamp and affected files
             const timestamp = new Date().toISOString().slice(0, 19).replace('T', ' ');
             const fileList =

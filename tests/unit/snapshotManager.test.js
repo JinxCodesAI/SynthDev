@@ -49,6 +49,7 @@ describe('SnapshotManager', () => {
             commit: vi.fn(),
             mergeBranch: vi.fn(),
             hasUncommittedChanges: vi.fn(),
+            addFiles: vi.fn(),
         };
 
         // Setup mocks
@@ -533,11 +534,13 @@ describe('SnapshotManager', () => {
 
         it('should commit changes successfully', async () => {
             const modifiedFiles = ['test1.js', 'test2.js'];
+            mockGitUtils.addFiles.mockResolvedValue({ success: true });
             mockGitUtils.commit.mockResolvedValue({ success: true });
 
             const result = await snapshotManager.commitChangesToGit(modifiedFiles);
 
             expect(result.success).toBe(true);
+            expect(mockGitUtils.addFiles).toHaveBeenCalledWith(modifiedFiles);
             expect(mockGitUtils.commit).toHaveBeenCalledWith(expect.stringContaining('Synth-Dev'));
             expect(mockLogger.info).toHaveBeenCalledWith(
                 '📝 Committed changes to Git: test1.js, test2.js'
@@ -558,6 +561,7 @@ describe('SnapshotManager', () => {
 
         it('should handle commit failure', async () => {
             const modifiedFiles = ['test.js'];
+            mockGitUtils.addFiles.mockResolvedValue({ success: true });
             mockGitUtils.commit.mockResolvedValue({
                 success: false,
                 error: 'Commit failed',
@@ -573,13 +577,31 @@ describe('SnapshotManager', () => {
 
         it('should handle many files in commit message', async () => {
             const modifiedFiles = ['file1.js', 'file2.js', 'file3.js', 'file4.js', 'file5.js'];
+            mockGitUtils.addFiles.mockResolvedValue({ success: true });
             mockGitUtils.commit.mockResolvedValue({ success: true });
 
             await snapshotManager.commitChangesToGit(modifiedFiles);
 
+            expect(mockGitUtils.addFiles).toHaveBeenCalledWith(modifiedFiles);
             expect(mockGitUtils.commit).toHaveBeenCalledWith(
                 expect.stringContaining('file1.js, file2.js, file3.js and 2 more')
             );
+        });
+
+        it('should handle addFiles failure', async () => {
+            const modifiedFiles = ['test.js'];
+            mockGitUtils.addFiles.mockResolvedValue({
+                success: false,
+                error: 'Add files failed',
+            });
+
+            const result = await snapshotManager.commitChangesToGit(modifiedFiles);
+
+            expect(result).toEqual({
+                success: false,
+                error: 'Failed to add files: Add files failed',
+            });
+            expect(mockGitUtils.commit).not.toHaveBeenCalled();
         });
     });
 

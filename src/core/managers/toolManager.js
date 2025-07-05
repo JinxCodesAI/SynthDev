@@ -268,10 +268,12 @@ class ToolManager {
             }
         }
 
-        // Handle file backup and Git operations if tool requires it
+        // Handle Git operations and file backup if tool requires it
         if (toolDefinition && toolDefinition.requires_backup && snapshotManager) {
-            await this._handleFileBackup(toolName, toolArgs, snapshotManager);
+            // First: Handle pre-execution Git operations (commit existing changes)
             await this._handlePreExecutionGitOperations(toolName, toolArgs, snapshotManager);
+            // Then: Backup current file state (after any commits)
+            await this._handleFileBackup(toolName, toolArgs, snapshotManager);
         }
 
         const implementation = this.toolImplementations.get(toolName);
@@ -384,17 +386,7 @@ class ToolManager {
                     await snapshotManager.createSnapshot(`Pre-execution commit for ${toolName}`);
                 }
 
-                // Add all changes and commit them
-                const addResult = await snapshotManager.gitUtils.addFiles(['.']);
-                if (!addResult.success) {
-                    this.logger.warn(
-                        `Failed to add files: ${addResult.error}`,
-                        'Pre-execution Git'
-                    );
-                    return;
-                }
-
-                // Commit the existing changes
+                // Commit the existing changes (commitChangesToGit will handle adding files)
                 const commitResult = await snapshotManager.commitChangesToGit(['.']);
                 if (!commitResult.success) {
                     this.logger.warn(
@@ -463,24 +455,7 @@ class ToolManager {
                     return;
                 }
 
-                // Add the modified files to Git staging area
-                const addResult = await gitUtils.addFiles(modifiedFiles);
-
-                if (!addResult.success) {
-                    this.logger.warn(`Git add failed: ${addResult.error}`, 'Git auto-commit');
-                    return;
-                }
-
-                // Check status again after adding files
-                const statusAfterAdd = await gitUtils.getStatus();
-                if (statusAfterAdd.success) {
-                    this.logger.debug(
-                        `Git status after add: ${statusAfterAdd.status}`,
-                        'Git auto-commit'
-                    );
-                }
-
-                // Then commit the changes
+                // Commit the changes (commitChangesToGit will handle adding files)
                 const commitResult = await snapshotManager.commitChangesToGit(modifiedFiles);
                 if (!commitResult.success) {
                     // Show full error message with proper formatting
