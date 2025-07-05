@@ -85,6 +85,19 @@ class SnapshotManager {
         ) {
             this.currentSnapshot.instruction = userInstruction;
             this.currentSnapshot.timestamp = new Date().toISOString();
+
+            // Still need to handle Git operations if not in Git mode yet
+            if (this.gitAvailable && this.isGitRepo && !this.gitMode) {
+                this.logger.debug(
+                    `Handling Git operations for reused snapshot: ${userInstruction}`,
+                    '📸 Snapshot:'
+                );
+                await this._handleFirstSnapshotGit(this.currentSnapshot, userInstruction);
+                this.logger.debug(
+                    `After Git operations: gitMode=${this.gitMode}, featureBranch=${this.featureBranch}`,
+                    '📸 Snapshot:'
+                );
+            }
             return;
         }
 
@@ -99,10 +112,10 @@ class SnapshotManager {
             isFirstSnapshot: this.snapshots.length === 0,
         };
 
-        // Handle Git integration for first snapshot
-        if (this.gitAvailable && this.isGitRepo && snapshot.isFirstSnapshot) {
+        // Handle Git integration for first snapshot OR when not in Git mode yet
+        if (this.gitAvailable && this.isGitRepo && (snapshot.isFirstSnapshot || !this.gitMode)) {
             this.logger.debug(
-                `Handling first snapshot Git operations for: ${userInstruction}`,
+                `Handling snapshot Git operations for: ${userInstruction} (first=${snapshot.isFirstSnapshot}, gitMode=${this.gitMode})`,
                 '📸 Snapshot:'
             );
             await this._handleFirstSnapshotGit(snapshot, userInstruction);
