@@ -35,6 +35,9 @@ class ConfigManager {
         this.configLoader = getConfigurationLoader();
         this.applicationDefaults = this._loadApplicationDefaults();
 
+        // Load providers configuration
+        this.providersConfig = this._loadProvidersConfig();
+
         // Store command line provided options
         this.cliOptions = {
             apiKey: options.apiKey,
@@ -94,6 +97,21 @@ class ConfigManager {
      */
     _loadApplicationDefaults() {
         return this.configLoader.loadConfig('defaults/application.json', {}, true);
+    }
+
+    /**
+     * Load providers configuration from providers.json
+     * @private
+     * @returns {Object} Providers configuration
+     */
+    _loadProvidersConfig() {
+        try {
+            return this.configLoader.loadConfig('defaults/providers.json', {}, true);
+        } catch (error) {
+            this.logger = this.logger || getLogger();
+            this.logger.warn(`Failed to load providers configuration: ${error.message}`);
+            return { providers: [] };
+        }
     }
 
     /**
@@ -427,6 +445,65 @@ class ConfigManager {
             exists: this.envFileExists,
             absolutePath: this.envFilePath,
         };
+    }
+
+    /**
+     * Get model properties from providers.json by model name
+     * @param {string} modelName - The name of the model
+     * @returns {Object|null} Model properties or null if not found
+     */
+    getModelProperties(modelName) {
+        if (!this.providersConfig || !this.providersConfig.providers) {
+            return null;
+        }
+
+        for (const provider of this.providersConfig.providers) {
+            if (provider.models) {
+                const model = provider.models.find(m => m.name === modelName);
+                if (model) {
+                    return {
+                        ...model,
+                        provider: provider.name,
+                        baseUrl: provider.baseUrl,
+                    };
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Check if a model supports reasoning
+     * @param {string} modelName - The name of the model
+     * @returns {boolean} True if the model supports reasoning
+     */
+    isReasoningModel(modelName) {
+        const modelProps = this.getModelProperties(modelName);
+        return modelProps ? modelProps.isReasoning === true : false;
+    }
+
+    /**
+     * Get reasoning effort level from environment variable
+     * @returns {string} Reasoning effort level ('low', 'medium', 'high')
+     */
+    getReasoningEffort() {
+        const effort = process.env.SYNTHDEV_REASONING_EFFORT;
+        const validEfforts = ['low', 'medium', 'high'];
+
+        if (effort && validEfforts.includes(effort.toLowerCase())) {
+            return effort.toLowerCase();
+        }
+
+        // Default to 'medium' if not set or invalid
+        return 'medium';
+    }
+
+    /**
+     * Get providers configuration
+     * @returns {Object} Providers configuration
+     */
+    getProvidersConfig() {
+        return { ...this.providersConfig };
     }
 }
 

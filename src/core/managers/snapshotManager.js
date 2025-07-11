@@ -85,6 +85,19 @@ class SnapshotManager {
         ) {
             this.currentSnapshot.instruction = userInstruction;
             this.currentSnapshot.timestamp = new Date().toISOString();
+
+            // Still need to handle Git operations if not in Git mode yet
+            if (this.gitAvailable && this.isGitRepo && !this.gitMode) {
+                this.logger.debug(
+                    `Handling Git operations for reused snapshot: ${userInstruction}`,
+                    '📸 Snapshot:'
+                );
+                await this._handleFirstSnapshotGit(this.currentSnapshot, userInstruction);
+                this.logger.debug(
+                    `After Git operations: gitMode=${this.gitMode}, featureBranch=${this.featureBranch}`,
+                    '📸 Snapshot:'
+                );
+            }
             return;
         }
 
@@ -99,9 +112,17 @@ class SnapshotManager {
             isFirstSnapshot: this.snapshots.length === 0,
         };
 
-        // Handle Git integration for first snapshot
-        if (this.gitAvailable && this.isGitRepo && snapshot.isFirstSnapshot) {
+        // Handle Git integration for first snapshot OR when not in Git mode yet
+        if (this.gitAvailable && this.isGitRepo && (snapshot.isFirstSnapshot || !this.gitMode)) {
+            this.logger.debug(
+                `Handling snapshot Git operations for: ${userInstruction} (first=${snapshot.isFirstSnapshot}, gitMode=${this.gitMode})`,
+                '📸 Snapshot:'
+            );
             await this._handleFirstSnapshotGit(snapshot, userInstruction);
+            this.logger.debug(
+                `After Git operations: gitMode=${this.gitMode}, featureBranch=${this.featureBranch}`,
+                '📸 Snapshot:'
+            );
         }
 
         this.snapshots.push(snapshot);
@@ -163,8 +184,17 @@ class SnapshotManager {
      */
     async _shouldCreateNewBranch() {
         try {
+            this.logger.debug(
+                `Checking branch creation conditions. Current branch: ${this.originalBranch}`,
+                '📸 Snapshot:'
+            );
+
             // Check if we're already on a synth-dev branch
             if (this.originalBranch && this.originalBranch.startsWith('synth-dev/')) {
+                this.logger.debug(
+                    `Already on synth-dev branch: ${this.originalBranch}`,
+                    '📸 Snapshot:'
+                );
                 return {
                     create: false,
                     reason: `already on synth-dev branch: ${this.originalBranch}`,
@@ -173,6 +203,11 @@ class SnapshotManager {
 
             // Check if there are uncommitted changes
             const statusResult = await this.gitUtils.hasUncommittedChanges();
+            this.logger.debug(
+                `Git status check: success=${statusResult.success}, hasChanges=${statusResult.hasUncommittedChanges}`,
+                '📸 Snapshot:'
+            );
+
             if (!statusResult.success) {
                 this.logger.warn(
                     `Failed to check Git status: ${statusResult.error}`,
@@ -186,6 +221,10 @@ class SnapshotManager {
             }
 
             if (!statusResult.hasUncommittedChanges) {
+                this.logger.debug(
+                    'No uncommitted changes detected, skipping branch creation',
+                    '📸 Snapshot:'
+                );
                 return {
                     create: false,
                     reason: 'no uncommitted changes detected',
@@ -193,6 +232,7 @@ class SnapshotManager {
             }
 
             // All conditions met - create the branch
+            this.logger.debug('All conditions met for branch creation', '📸 Snapshot:');
             return {
                 create: true,
                 reason: 'uncommitted changes detected and not on synth-dev branch',
@@ -241,13 +281,22 @@ class SnapshotManager {
     /**
      * Commit changes to Git if in Git mode
      * @param {string[]} modifiedFiles - Array of modified file paths
+     * @param {boolean} addFiles - Whether to add files to staging area before committing (default: true)
      */
-    async commitChangesToGit(modifiedFiles) {
+    async commitChangesToGit(modifiedFiles, addFiles = true) {
         if (!this.gitMode || !this.currentSnapshot) {
             return { success: false, error: 'Not in Git mode or no active snapshot' };
         }
 
         try {
+            // Add files to staging area if requested
+            if (addFiles && modifiedFiles.length > 0) {
+                const addResult = await this.gitUtils.addFiles(modifiedFiles);
+                if (!addResult.success) {
+                    return { success: false, error: `Failed to add files: ${addResult.error}` };
+                }
+            }
+
             // Create commit message with timestamp and affected files
             const timestamp = new Date().toISOString().slice(0, 19).replace('T', ' ');
             const fileList =

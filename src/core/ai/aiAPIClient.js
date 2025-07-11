@@ -477,6 +477,17 @@ class AIAPIClient {
             }
         }
 
+        // Add reasoning configuration if model supports it
+        if (config.isReasoningModel(this.model)) {
+            const effort = config.getReasoningEffort();
+            requestData.reasoning = {
+                effort: effort,
+                exclude: false,
+                enabled: true,
+            };
+            this.logger.debug(`🧠 Adding reasoning configuration with effort: ${effort}`);
+        }
+
         // Store request data for review
         this.lastAPICall.request = JSON.parse(JSON.stringify(requestData));
         this.lastAPICall.timestamp = new Date().toISOString();
