@@ -1624,321 +1624,674 @@ class AlertingSystem {
 }
 ```
 
-## 11. Migration Strategy
+## 11. Detailed Implementation Plan
 
-### 11.1 Backward Compatibility
+This section provides a comprehensive task breakdown for implementing the SynthDev Snapshots system. Each task includes clear deliverables, acceptance criteria, and dependencies to guide the development process.
 
-#### 11.1.1 Legacy Format Support
+### 11.1 Phase 1: Foundation & Core Infrastructure
 
-```javascript
-class LegacySnapshotAdapter {
-    async convertLegacySnapshot(legacySnapshot) {
-        return {
-            id: legacySnapshot.id,
-            instruction: legacySnapshot.instruction,
-            timestamp: legacySnapshot.timestamp,
-            mode: 'file',
-            contentHash: this.calculateContentHash(legacySnapshot.files),
-            files: new Map(Object.entries(legacySnapshot.files)),
-            modifiedFiles: new Set(legacySnapshot.modifiedFiles || []),
-            fileChecksums: this.calculateFileChecksums(legacySnapshot.files),
-            // Legacy fields for compatibility
-            _legacy: true,
-            _originalFormat: legacySnapshot,
-        };
-    }
+#### Task 1.1: Project Setup and Architecture Foundation
 
-    async migrateLegacySnapshots(legacySnapshots) {
-        const migrated = [];
-        const errors = [];
+**Description**: Establish the basic project structure, dependencies, and core architectural components for the snapshot system.
 
-        for (const legacy of legacySnapshots) {
-            try {
-                const converted = await this.convertLegacySnapshot(legacy);
-                await this.validateMigratedSnapshot(converted);
-                migrated.push(converted);
-            } catch (error) {
-                errors.push({
-                    snapshotId: legacy.id,
-                    error: error.message,
-                });
-            }
-        }
+**Deliverables**:
 
-        return { migrated, errors };
-    }
-}
-```
+- Create directory structure under `src/core/snapshot/`
+- Set up package dependencies (crypto, fs, path utilities)
+- Implement base interfaces and abstract classes
+- Create configuration schema and environment variable handling
+- Set up logging infrastructure with structured logging
 
-#### 11.1.2 Gradual Migration Strategy
+**Acceptance Criteria**:
 
-```javascript
-class GradualMigrationManager {
-    constructor() {
-        this.migrationState = {
-            phase: 'assessment',
-            totalSnapshots: 0,
-            migratedSnapshots: 0,
-            errors: [],
-        };
-    }
+- [ ] Directory structure matches specification (Section 7.2)
+- [ ] All required dependencies are installed and configured
+- [ ] Base interfaces compile without errors
+- [ ] Configuration can be loaded from environment variables
+- [ ] Logging outputs structured JSON format
 
-    async startMigration() {
-        try {
-            await this.assessmentPhase();
-            await this.preparationPhase();
-            await this.migrationPhase();
-            await this.validationPhase();
-            await this.cleanupPhase();
-        } catch (error) {
-            await this.rollbackMigration();
-            throw error;
-        }
-    }
+**Estimated Time**: 1-2 days
 
-    async assessmentPhase() {
-        this.migrationState.phase = 'assessment';
+#### Task 1.2: Content Change Detection System
 
-        const legacySnapshots = await this.loadLegacySnapshots();
-        this.migrationState.totalSnapshots = legacySnapshots.length;
+**Description**: Implement the content hashing and change detection system that forms the foundation of efficient snapshot operations.
 
-        // Analyze compatibility issues
-        const compatibility = await this.analyzeCompatibility(legacySnapshots);
+**Deliverables**:
 
-        if (compatibility.criticalIssues.length > 0) {
-            throw new Error(
-                `Critical compatibility issues found: ${compatibility.criticalIssues.join(', ')}`
-            );
-        }
+- `ContentChangeDetector` class with MD5 hashing
+- `SnapshotIntegrityValidator` for validation
+- File checksum calculation and caching
+- Change detection algorithms
+- Performance optimization for large files
 
-        this.logger.info(
-            `Migration assessment complete: ${legacySnapshots.length} snapshots to migrate`
-        );
-    }
+**Acceptance Criteria**:
 
-    async migrationPhase() {
-        this.migrationState.phase = 'migration';
+- [ ] Can detect file changes using content hashing
+- [ ] Handles binary files correctly
+- [ ] Caches checksums to avoid recalculation
+- [ ] Validates snapshot integrity
+- [ ] Performance tests pass for files up to 10MB
 
-        const legacySnapshots = await this.loadLegacySnapshots();
-        const batchSize = 10;
+**Dependencies**: Task 1.1
+**Estimated Time**: 2-3 days
 
-        for (let i = 0; i < legacySnapshots.length; i += batchSize) {
-            const batch = legacySnapshots.slice(i, i + batchSize);
-            await this.migrateBatch(batch);
+#### Task 1.3: Core Data Models and Storage Interface
 
-            this.migrationState.migratedSnapshots += batch.length;
-            this.reportProgress();
-        }
-    }
-}
-```
+**Description**: Implement the core data structures and unified storage interface for both Git and file-based modes.
 
-### 11.2 Migration Process
+**Deliverables**:
 
-#### 11.2.1 Pre-Migration Validation
+- `Snapshot` data model with all required properties
+- `SnapshotMetadata` management class
+- `SnapshotStore` unified interface
+- In-memory storage implementation
+- Serialization/deserialization logic
 
-```javascript
-class PreMigrationValidator {
-    async validateMigrationReadiness() {
-        const checks = {
-            diskSpace: await this.checkDiskSpace(),
-            permissions: await this.checkPermissions(),
-            gitState: await this.checkGitState(),
-            dataIntegrity: await this.checkDataIntegrity(),
-        };
+**Acceptance Criteria**:
 
-        const issues = Object.entries(checks)
-            .filter(([_, result]) => !result.valid)
-            .map(([check, result]) => ({ check, issue: result.issue }));
+- [ ] Snapshot model supports both Git and file modes
+- [ ] Metadata includes all required fields from API specification
+- [ ] Storage interface is mode-agnostic
+- [ ] Can serialize/deserialize snapshots correctly
+- [ ] Memory usage is tracked and controlled
 
-        return {
-            ready: issues.length === 0,
-            issues: issues,
-        };
-    }
+**Dependencies**: Task 1.1, Task 1.2
+**Estimated Time**: 2-3 days
 
-    async checkDiskSpace() {
-        const required = await this.estimateRequiredSpace();
-        const available = await this.getAvailableSpace();
+#### Phase 1 Product Owner Testing
 
-        return {
-            valid: available > required * 1.5, // 50% buffer
-            issue:
-                available <= required * 1.5
-                    ? `Insufficient disk space. Required: ${required}MB, Available: ${available}MB`
-                    : null,
-        };
-    }
+**How to Test**: The product owner can validate the foundation is solid by:
 
-    async checkDataIntegrity() {
-        const snapshots = await this.loadLegacySnapshots();
-        const corruptedSnapshots = [];
+**Setup Verification**:
 
-        for (const snapshot of snapshots) {
-            if (!(await this.validateSnapshotIntegrity(snapshot))) {
-                corruptedSnapshots.push(snapshot.id);
-            }
-        }
+- [ ] Run `npm test` - all foundation tests pass
+- [ ] Check configuration loading: modify environment variables and verify they're reflected
+- [ ] Verify logging: check that structured JSON logs are generated for test operations
 
-        return {
-            valid: corruptedSnapshots.length === 0,
-            issue:
-                corruptedSnapshots.length > 0
-                    ? `Corrupted snapshots found: ${corruptedSnapshots.join(', ')}`
-                    : null,
-        };
-    }
-}
-```
+**Content Change Detection**:
 
-#### 11.2.2 Migration Rollback Strategy
+- [ ] Create a test file, modify it, verify system detects the change
+- [ ] Test with binary files (images, etc.) - system should handle without errors
+- [ ] Performance test: create 100 small files, verify change detection completes in <2 seconds
 
-```javascript
-class MigrationRollback {
-    async createRollbackPoint() {
-        const rollbackData = {
-            timestamp: new Date().toISOString(),
-            legacySnapshots: await this.exportLegacySnapshots(),
-            systemState: await this.captureSystemState(),
-            configuration: await this.exportConfiguration(),
-        };
+**Data Models**:
 
-        await this.saveRollbackData(rollbackData);
-        return rollbackData.timestamp;
-    }
+- [ ] Create a snapshot object, serialize/deserialize it, verify data integrity
+- [ ] Test both Git and file mode snapshot creation
+- [ ] Verify memory usage stays within configured limits
 
-    async performRollback(rollbackPointId) {
-        const rollbackData = await this.loadRollbackData(rollbackPointId);
+**Success Criteria**: All tests pass, configuration works, change detection is accurate, and performance meets thresholds.
 
-        // Restore legacy snapshots
-        await this.restoreLegacySnapshots(rollbackData.legacySnapshots);
+### 11.2 Phase 2: Git Integration Layer
 
-        // Restore system state
-        await this.restoreSystemState(rollbackData.systemState);
+#### Task 2.1: Git Command Wrapper and Safety Layer
 
-        // Restore configuration
-        await this.restoreConfiguration(rollbackData.configuration);
+**Description**: Create a secure, robust wrapper around Git command-line operations with proper error handling and security measures. Use src\utils\GitUtils.js implementation where possible, adjust if needed.
 
-        // Clean up migrated data
-        await this.cleanupMigratedData();
+**Deliverables**:
 
-        this.logger.info(`Rollback completed to point: ${rollbackPointId}`);
-    }
-}
-```
+- `GitIntegration` class with command execution
+- Command sanitization and injection prevention
+- Git availability detection
+- Repository state validation
+- Error handling and retry mechanisms
+- Structured logging for all Git operations
+- Unit tests for Git wrapper functionality
+- Security validation tests
 
-#### 11.2.3 Post-Migration Validation
+**Acceptance Criteria**:
 
-```javascript
-class PostMigrationValidator {
-    async validateMigration() {
-        const validationResults = {
-            dataIntegrity: await this.validateDataIntegrity(),
-            functionality: await this.validateFunctionality(),
-            performance: await this.validatePerformance(),
-            compatibility: await this.validateCompatibility(),
-        };
+- [ ] All Git commands are properly sanitized
+- [ ] Can detect Git availability and repository state
+- [ ] Handles Git command failures gracefully
+- [ ] Implements retry logic for transient failures
+- [ ] Security tests pass for command injection attempts
+- [ ] All Git operations are logged with structured format
+- [ ] Unit tests achieve >90% coverage
+- [ ] Performance tests validate command execution times
 
-        const overallSuccess = Object.values(validationResults).every(result => result.success);
+**Dependencies**: Task 1.1
+**Estimated Time**: 4-5 days
 
-        return {
-            success: overallSuccess,
-            results: validationResults,
-            recommendations: this.generateRecommendations(validationResults),
-        };
-    }
+#### Task 2.2: Branch Lifecycle Management
 
-    async validateDataIntegrity() {
-        const originalCount = await this.getLegacySnapshotCount();
-        const migratedCount = await this.getMigratedSnapshotCount();
+**Description**: Implement automatic branch creation, switching, and cleanup for Git-based snapshot operations.
 
-        if (originalCount !== migratedCount) {
-            return {
-                success: false,
-                issue: `Snapshot count mismatch: ${originalCount} original, ${migratedCount} migrated`,
-            };
-        }
+**Deliverables**:
 
-        // Validate content integrity
-        const integrityChecks = await this.performContentIntegrityChecks();
+- Branch naming utilities with timestamp generation
+- Automatic branch creation logic
+- Branch switching and merging operations
+- Cleanup mechanisms for abandoned branches
+- Uncommitted changes detection
+- Branch name validation and sanitization
+- Comprehensive logging for branch operations
+- Unit and integration tests for branch management
+- Performance optimization for branch operations
 
-        return {
-            success: integrityChecks.passed,
-            details: integrityChecks,
-        };
-    }
+**Acceptance Criteria**:
 
-    async validateFunctionality() {
-        const functionalTests = [
-            () => this.testSnapshotCreation(),
-            () => this.testSnapshotRestoration(),
-            () => this.testGitIntegration(),
-            () => this.testFileOperations(),
-        ];
+- [ ] Creates branches with proper naming convention
+- [ ] Only creates branches when uncommitted changes exist
+- [ ] Can switch between original and feature branches
+- [ ] Automatically cleans up empty branches
+- [ ] Handles edge cases (detached HEAD, etc.)
+- [ ] Branch names are validated and sanitized
+- [ ] All branch operations are logged
+- [ ] Tests cover all branch lifecycle scenarios
+- [ ] Branch operations complete within performance thresholds
 
-        const results = await Promise.allSettled(functionalTests.map(test => test()));
+**Dependencies**: Task 2.1
+**Estimated Time**: 3-4 days
 
-        const failures = results
-            .filter(result => result.status === 'rejected')
-            .map(result => result.reason.message);
+#### Task 2.3: Git-based Snapshot Strategy
 
-        return {
-            success: failures.length === 0,
-            failures: failures,
-        };
-    }
-}
-```
+**Description**: Implement the Git strategy for snapshot operations using commits and branch management.
 
-### 11.3 Migration Monitoring
+**Deliverables**:
 
-#### 11.3.1 Progress Tracking
+- `GitSnapshotStrategy` class implementation
+- Automatic commit functionality
+- Commit message generation and sanitization
+- Git-based snapshot retrieval
+- Integration with branch lifecycle
+- Error handling and recovery mechanisms
+- Comprehensive logging for Git strategy operations
+- Unit and integration tests with real Git repositories
+- Performance optimization for large repositories
 
-```javascript
-class MigrationProgressTracker {
-    constructor() {
-        this.progress = {
-            phase: 'not_started',
-            startTime: null,
-            currentStep: null,
-            totalSteps: 0,
-            completedSteps: 0,
-            errors: [],
-            estimatedCompletion: null,
-        };
-    }
+**Acceptance Criteria**:
 
-    updateProgress(step, completed, total) {
-        this.progress.currentStep = step;
-        this.progress.completedSteps = completed;
-        this.progress.totalSteps = total;
+- [ ] Creates snapshots as Git commits
+- [ ] Generates meaningful commit messages
+- [ ] Can retrieve snapshots from Git history
+- [ ] Integrates with branch management
+- [ ] Handles merge conflicts appropriately
+- [ ] Commit messages are properly sanitized
+- [ ] All operations are logged with context
+- [ ] Tests cover Git strategy with real repositories
+- [ ] Performance is acceptable for repositories with 1000+ files
 
-        if (this.progress.startTime) {
-            const elapsed = Date.now() - this.progress.startTime;
-            const rate = completed / elapsed;
-            const remaining = total - completed;
-            this.progress.estimatedCompletion = new Date(Date.now() + remaining / rate);
-        }
+**Dependencies**: Task 2.1, Task 2.2, Task 1.3
+**Estimated Time**: 4-5 days
 
-        this.reportProgress();
-    }
+#### Phase 2 Product Owner Testing
 
-    reportProgress() {
-        const percentage = (this.progress.completedSteps / this.progress.totalSteps) * 100;
+**How to Test**: The product owner can validate Git integration by testing in a real Git repository:
 
-        this.logger.info(
-            `Migration progress: ${percentage.toFixed(1)}% (${this.progress.completedSteps}/${this.progress.totalSteps})`,
-            {
-                phase: this.progress.phase,
-                currentStep: this.progress.currentStep,
-                estimatedCompletion: this.progress.estimatedCompletion,
-                errors: this.progress.errors.length,
-            }
-        );
-    }
-}
-```
+**Git Environment Setup**:
 
----
+- [ ] Navigate to a Git repository with uncommitted changes
+- [ ] Run snapshot creation test - verify it creates a `synth-dev/` branch
+- [ ] Check that original branch remains untouched
 
-**Implementation Note**: This specification defines a complete reimplementation approach that maintains the core value proposition while improving reliability, user experience, and maintainability. The modular architecture allows for incremental development and testing of individual components.
+**Branch Management**:
+
+- [ ] Test branch creation with various instruction types
+- [ ] Verify branch naming follows `synth-dev/YYYYMMDDTHHMMSS-description` format
+- [ ] Test branch switching and cleanup functionality
+
+**Git Operations**:
+
+- [ ] Create snapshot, make file changes, verify automatic commits
+- [ ] Test commit message generation - should include timestamp and instruction
+- [ ] Verify Git history shows proper commit sequence
+
+**Security & Error Handling**:
+
+- [ ] Test with malicious input (special characters in instructions) - should be sanitized
+- [ ] Test Git command failures (simulate by removing Git temporarily) - should fail gracefully
+- [ ] Test in non-Git directory - should detect and handle appropriately
+
+**Performance**:
+
+- [ ] Test with repository containing 500+ files - operations should complete in <5 seconds
+- [ ] Verify memory usage remains stable during Git operations
+
+**Success Criteria**: Git operations work correctly, branches are managed properly, security is enforced, and performance is acceptable.
+
+### 11.3 Phase 3: File-based Fallback System
+
+#### Task 3.1: File-based Storage Implementation
+
+**Description**: Implement the fallback file-based storage system for environments without Git or when Git operations fail.
+
+**Deliverables**:
+
+- `FileSnapshotStrategy` class implementation
+- In-memory file content storage with memory limits
+- File backup and restoration logic
+- Path validation and sanitization
+- File permission handling and security checks
+- Compression support for large files
+- Memory usage monitoring and optimization
+- Comprehensive logging for file operations
+- Unit tests for file strategy functionality
+- Cross-platform compatibility testing
+
+**Acceptance Criteria**:
+
+- [ ] Can backup and restore files without Git
+- [ ] Manages memory usage efficiently with configurable limits
+- [ ] Supports file compression when beneficial
+- [ ] Handles file permissions correctly
+- [ ] Works across different operating systems
+- [ ] All file paths are validated and sanitized
+- [ ] File operations are logged with details
+- [ ] Tests achieve >90% coverage
+- [ ] Performance is acceptable for 1000+ files
+
+**Dependencies**: Task 1.2, Task 1.3
+**Estimated Time**: 4-5 days
+
+#### Task 3.2: Strategy Pattern Implementation
+
+**Description**: Implement the strategy pattern for automatic mode selection and switching between Git and file-based operations.
+
+**Deliverables**:
+
+- `StrategyFactory` for automatic strategy selection
+- Mode detection logic with environment validation
+- Strategy switching mechanisms with state preservation
+- Graceful degradation from Git to file mode
+- Configuration-based mode forcing
+- Error handling for strategy failures
+- Comprehensive logging for strategy operations
+- Unit tests for strategy pattern implementation
+- Integration tests for strategy switching scenarios
+
+**Acceptance Criteria**:
+
+- [ ] Automatically selects appropriate strategy
+- [ ] Can switch strategies during runtime
+- [ ] Gracefully degrades when Git fails
+- [ ] Respects configuration overrides
+- [ ] Maintains state consistency during switches
+- [ ] Strategy operations are logged with context
+- [ ] Tests cover all strategy switching scenarios
+- [ ] Error handling prevents system instability
+
+**Dependencies**: Task 2.3, Task 3.1
+**Estimated Time**: 3-4 days
+
+#### Phase 3 Product Owner Testing
+
+**How to Test**: The product owner can validate the fallback system by testing without Git:
+
+**Non-Git Environment Setup**:
+
+- [ ] Test in directory without Git (or temporarily disable Git)
+- [ ] Verify system automatically switches to file-based mode
+- [ ] Check that appropriate mode indicator is shown
+
+**File-based Operations**:
+
+- [ ] Create snapshots in file mode - verify files are backed up in memory
+- [ ] Modify files, create new snapshot, verify only changed files are backed up
+- [ ] Test file restoration - verify files are restored to exact previous state
+
+**Strategy Switching**:
+
+- [ ] Start in Git mode, simulate Git failure, verify graceful fallback to file mode
+- [ ] Test configuration override to force file mode
+- [ ] Verify state consistency during mode switches
+
+**Memory Management**:
+
+- [ ] Create snapshots with 100+ files, verify memory usage is tracked
+- [ ] Test memory limits - system should handle gracefully when approaching limits
+- [ ] Verify compression works for large files (>1MB)
+
+**Cross-platform Testing**:
+
+- [ ] Test file operations on different operating systems
+- [ ] Verify file permissions are handled correctly
+- [ ] Test with various file types (text, binary, special characters in names)
+
+**Security Validation**:
+
+- [ ] Test with file paths containing `..` or `~` - should be rejected
+- [ ] Verify files outside project directory cannot be accessed
+- [ ] Test with files having special permissions
+
+**Success Criteria**: File-based mode works reliably, strategy switching is seamless, memory is managed efficiently, and security is enforced.
+
+### 11.4 Phase 4: Snapshot Manager and Core Logic
+
+#### Task 4.1: SnapshotManager Implementation
+
+**Description**: Implement the main orchestrator class that coordinates all snapshot operations and manages the overall system state.
+
+**Deliverables**:
+
+- `SnapshotManager` class with full API implementation
+- Snapshot creation and retrieval logic with validation
+- File operation coordination with error handling
+- State management and tracking with consistency checks
+- Integration with both strategies
+- Concurrent operation safety mechanisms
+- Performance monitoring and optimization
+- Comprehensive logging for all operations
+- Unit tests for SnapshotManager functionality
+- Integration tests with both strategies
+
+**Acceptance Criteria**:
+
+- [ ] Implements all methods from API specification
+- [ ] Coordinates between strategies correctly
+- [ ] Maintains consistent state
+- [ ] Handles concurrent operations safely
+- [ ] Provides comprehensive status information
+- [ ] All operations are logged with structured format
+- [ ] Tests achieve >90% coverage
+- [ ] Performance meets specified thresholds
+
+**Dependencies**: Task 3.2, Task 1.2
+**Estimated Time**: 5-6 days
+
+#### Task 4.2: Automatic Snapshot Creation Integration
+
+**Description**: Integrate snapshot creation with the existing tool execution system to automatically create snapshots before AI operations.
+
+**Deliverables**:
+
+- Integration hooks with tool execution system
+- Instruction parsing and snapshot triggering logic
+- Tool execution monitoring with change detection
+- Automatic commit after tool operations
+- Error handling and recovery during tool execution
+- Input validation and sanitization
+- Comprehensive logging for integration operations
+- Unit tests for integration functionality
+- End-to-end tests with real tool execution
+
+**Acceptance Criteria**:
+
+- [ ] Creates snapshots before tool execution
+- [ ] Monitors tool execution for file changes
+- [ ] Commits changes automatically after tools
+- [ ] Handles tool execution failures gracefully
+- [ ] Maintains snapshot consistency
+- [ ] All inputs are validated and sanitized
+- [ ] Integration operations are logged
+- [ ] Tests cover complete integration workflow
+
+**Dependencies**: Task 4.1
+**Estimated Time**: 3-4 days
+
+#### Phase 4 Product Owner Testing
+
+**How to Test**: The product owner can validate the core system functionality:
+
+**SnapshotManager API Testing**:
+
+- [ ] Test snapshot creation: provide instruction, verify snapshot is created with correct metadata
+- [ ] Test snapshot retrieval: create multiple snapshots, verify they can be listed and retrieved
+- [ ] Test both Git and file modes work through the same API
+
+**Automatic Integration Testing**:
+
+- [ ] Simulate tool execution: verify snapshot is created before tool runs
+- [ ] Make file changes during "tool execution", verify changes are committed automatically
+- [ ] Test error handling: simulate tool failure, verify system remains consistent
+
+**Concurrent Operations**:
+
+- [ ] Test multiple snapshot operations simultaneously - should handle safely
+- [ ] Verify state consistency under concurrent access
+- [ ] Test performance with multiple operations
+
+**Status and Information**:
+
+- [ ] Verify system provides accurate status information (mode, snapshot count, etc.)
+- [ ] Test health checks - should report system health accurately
+- [ ] Verify comprehensive logging for all operations
+
+**End-to-End Workflow**:
+
+- [ ] Complete workflow: instruction → snapshot creation → file changes → automatic commit
+- [ ] Test in both Git and file modes
+- [ ] Verify error recovery maintains system stability
+
+**Performance Validation**:
+
+- [ ] Create 50 snapshots, verify system remains responsive
+- [ ] Test with large files (10MB+), verify reasonable performance
+- [ ] Monitor memory usage during extended operations
+
+**Success Criteria**: Core system works reliably, automatic integration functions correctly, performance is acceptable, and error handling maintains stability.
+
+### 11.5 Phase 5: User Interface and Commands
+
+#### Task 5.1: Interactive Snapshots Command
+
+**Description**: Implement the `/snapshots` command with full interactive interface for snapshot management.
+
+**Deliverables**:
+
+- `SnapshotsCommand` class implementation
+- Interactive menu system with input validation
+- Snapshot listing with proper formatting
+- Context-aware command options
+- User input validation and sanitization
+- Error handling with user-friendly messages
+- Performance optimization for large snapshot lists
+- Comprehensive logging for user interactions
+- Unit tests for command functionality
+- Integration tests for complete user workflows
+
+**Acceptance Criteria**:
+
+- [ ] Displays snapshots in specified format
+- [ ] Shows different options for Git vs file mode
+- [ ] Handles user input validation
+- [ ] Provides clear error messages
+- [ ] Supports all specified commands
+- [ ] User inputs are validated and sanitized
+- [ ] Command interactions are logged
+- [ ] Tests cover all user interaction scenarios
+- [ ] Performance is acceptable with 100+ snapshots
+
+**Dependencies**: Task 4.1
+**Estimated Time**: 4-5 days
+
+#### Task 5.2: Snapshot Restoration Workflows
+
+**Description**: Implement the complete restoration workflows with confirmations and detailed feedback.
+
+**Deliverables**:
+
+- Restoration confirmation dialogs with impact preview
+- File restoration logic with validation
+- Git reset operations with safety checks
+- Progress indicators and user feedback
+- Detailed success/failure reporting
+- Error handling and recovery mechanisms
+- Security validation for restoration operations
+- Comprehensive logging for restoration activities
+- Unit tests for restoration logic
+- Integration tests for complete restoration workflows
+
+**Acceptance Criteria**:
+
+- [ ] Shows clear confirmation prompts
+- [ ] Displays impact of restoration operations
+- [ ] Provides detailed progress feedback
+- [ ] Reports all changes made during restoration
+- [ ] Handles restoration failures gracefully
+- [ ] Restoration operations are validated for security
+- [ ] All restoration activities are logged
+- [ ] Tests cover all restoration scenarios
+- [ ] Error recovery maintains system consistency
+
+**Dependencies**: Task 5.1
+**Estimated Time**: 3-4 days
+
+#### Task 5.3: Branch Management Commands
+
+**Description**: Implement Git-specific branch management commands for merging and switching.
+
+**Deliverables**:
+
+- Merge command implementation with conflict handling
+- Branch switching functionality with state preservation
+- Conflict detection and reporting with resolution guidance
+- Cleanup operations with safety checks
+- Integration with Git strategy
+- Error handling for branch operations
+- Performance optimization for large repositories
+- Comprehensive logging for branch management
+- Unit tests for branch commands
+- Integration tests with real Git scenarios
+
+**Acceptance Criteria**:
+
+- [ ] Can merge feature branches to original
+- [ ] Switches branches without losing work
+- [ ] Detects and reports merge conflicts
+- [ ] Cleans up branches appropriately
+- [ ] Provides clear status information
+- [ ] Branch operations are logged with context
+- [ ] Tests cover all branch management scenarios
+- [ ] Performance is acceptable for large repositories
+
+**Dependencies**: Task 5.1, Task 2.2
+**Estimated Time**: 3-4 days
+
+#### Phase 5 Product Owner Testing
+
+**How to Test**: The product owner can validate the complete user interface and experience:
+
+**Interactive Command Testing**:
+
+- [ ] Run `/snapshots` command, verify it shows snapshots in correct format
+- [ ] Test in Git mode: verify shows Git-specific options (merge, switch)
+- [ ] Test in file mode: verify shows file-specific options (delete, clear)
+- [ ] Verify snapshot listing shows all required information (timestamp, instruction, mode indicators)
+
+**Snapshot Management Operations**:
+
+- [ ] Test snapshot selection: enter number, verify correct snapshot details are shown
+- [ ] Test restoration workflow: select snapshot, confirm restoration, verify files are restored correctly
+- [ ] Test restoration confirmation: verify shows impact preview before proceeding
+
+**Git-specific Features**:
+
+- [ ] Test branch merging: create snapshots, test merge command, verify branch is merged to original
+- [ ] Test branch switching: verify can switch back to original branch without losing work
+- [ ] Test conflict handling: create conflicting changes, verify conflicts are detected and reported
+
+**User Experience Validation**:
+
+- [ ] Test input validation: enter invalid commands, verify clear error messages
+- [ ] Test with large number of snapshots (50+): verify interface remains responsive
+- [ ] Test cancellation: start operations and cancel, verify system handles gracefully
+
+**Error Scenarios**:
+
+- [ ] Test restoration of non-existent snapshot: verify appropriate error handling
+- [ ] Test operations with insufficient permissions: verify graceful failure
+- [ ] Test with corrupted snapshots: verify system detects and handles appropriately
+
+**Complete User Workflows**:
+
+- [ ] Full Git workflow: instruction → snapshot → changes → `/snapshots` → restoration → merge
+- [ ] Full file workflow: instruction → snapshot → changes → `/snapshots` → restoration → cleanup
+- [ ] Mixed workflow: start in Git mode, fallback to file mode, continue operations
+
+**Performance and Usability**:
+
+- [ ] All command responses should be immediate (<1 second)
+- [ ] Interface should be intuitive without requiring documentation
+- [ ] Error messages should be actionable and user-friendly
+
+**Success Criteria**: User interface is intuitive and responsive, all workflows function correctly, error handling is user-friendly, and performance meets expectations.
+
+### 11.6 Implementation Timeline and Dependencies
+
+#### Critical Path Analysis
+
+The implementation follows a logical progression with clear dependencies and built-in validation:
+
+1. **Foundation Phase** (Tasks 1.1-1.3): 5-8 days
+
+    - Must be completed before any other work
+    - Establishes core architecture and data models
+    - **Product Owner Testing**: Configuration, change detection, data models
+
+2. **Git Integration Phase** (Tasks 2.1-2.3): 11-13 days
+
+    - Git wrapper, branch management, and Git strategy
+    - Includes integrated security, testing, and performance work
+    - **Product Owner Testing**: Git operations, branch management, security validation
+
+3. **File-based Fallback Phase** (Tasks 3.1-3.2): 7-9 days
+
+    - File strategy and strategy pattern implementation
+    - Cross-platform compatibility and memory management
+    - **Product Owner Testing**: File operations, strategy switching, memory management
+
+4. **Core Logic Phase** (Tasks 4.1-4.2): 8-10 days
+
+    - SnapshotManager and automatic integration
+    - Comprehensive testing and logging integrated
+    - **Product Owner Testing**: API functionality, automatic integration, performance
+
+5. **User Interface Phase** (Tasks 5.1-5.3): 10-13 days
+    - Interactive commands and complete user workflows
+    - All user interaction testing included
+    - **Product Owner Testing**: Complete user workflows, interface usability, error handling
+
+#### Total Estimated Timeline
+
+- **Minimum**: 41-53 days (8-11 weeks)
+- **Realistic**: 50-65 days (10-13 weeks)
+- **With buffer**: 60-75 days (12-15 weeks)
+
+#### Product Owner Validation Benefits
+
+- **Incremental Validation**: Each phase is fully testable by the product owner
+- **Early Issue Detection**: Problems are caught and addressed within each phase
+- **Stakeholder Confidence**: Regular demonstrations of working functionality
+- **Quality Assurance**: Built-in testing ensures quality throughout development
+- **Risk Mitigation**: Issues are identified and resolved before they compound
+
+#### Resource Requirements
+
+- **Primary Developer**: Full-time throughout project
+- **Testing Specialist**: Part-time during testing phases
+- **DevOps Engineer**: Part-time for deployment preparation
+- **Technical Writer**: Part-time for documentation
+
+#### Risk Mitigation
+
+- **Git Integration Complexity**: Allocate extra time for Git edge cases and leverage existing GitUtils.js
+- **Cross-platform Issues**: Integrated testing covers different platforms throughout development
+- **Performance Requirements**: Performance optimization integrated into each task
+- **User Experience**: User interaction testing included in each UI task with product owner validation
+- **Security Concerns**: Security validation integrated into all relevant tasks
+- **Quality Assurance**: Testing integrated into each phase with product owner validation checkpoints
+
+#### Product Owner Testing Guidelines
+
+**Testing Environment Setup**:
+
+- Prepare test repositories (Git and non-Git environments)
+- Set up test files of various types and sizes
+- Configure different operating system environments for cross-platform testing
+
+**Testing Approach**:
+
+- Each phase includes specific, actionable test scenarios
+- Tests are designed to be performed by non-technical product owners
+- Clear success criteria provided for each test
+- Tests validate both functional and non-functional requirements
+
+**Documentation for Testing**:
+
+- Step-by-step testing instructions for each phase
+- Expected outcomes clearly defined
+- Troubleshooting guide for common issues during testing
+- Escalation path for technical issues discovered during testing
+
+This implementation plan provides a comprehensive roadmap with built-in product owner validation at each phase, ensuring that the SynthDev Snapshots system meets requirements and quality standards throughout development rather than only at the end.
