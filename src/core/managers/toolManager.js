@@ -268,11 +268,6 @@ class ToolManager {
             }
         }
 
-        // Handle file backup if tool requires it
-        if (toolDefinition && toolDefinition.requires_backup && snapshotManager) {
-            await this._handleFileBackup(toolName, toolArgs, snapshotManager);
-        }
-
         const implementation = this.toolImplementations.get(toolName);
 
         try {
@@ -286,11 +281,6 @@ class ToolManager {
                 tool_name: toolName,
                 ...result,
             };
-
-            // Handle Git commit if tool modifies files and we're in Git mode
-            if (toolDefinition && toolDefinition.requires_backup && snapshotManager) {
-                await this._handlePostExecutionGitCommit(toolName, toolArgs, snapshotManager);
-            }
 
             consoleInterface.showToolResult(standardizedResult);
 
@@ -315,115 +305,6 @@ class ToolManager {
                 tool_call_id: toolCall.id,
                 content: JSON.stringify(errorResult),
             };
-        }
-    }
-
-    /**
-     * Handles file backup before tool execution
-     * @param {string} toolName - Name of the tool being executed
-     * @param {Object} toolArgs - Arguments passed to the tool
-     * @param {SnapshotManager} snapshotManager - Snapshot manager instance
-     */
-    async _handleFileBackup(toolName, toolArgs, snapshotManager) {
-        const toolDefinition = this.toolDefinitions.get(toolName);
-
-        if (!toolDefinition || !toolDefinition.backup_resource_path_property_name) {
-            return; // No backup property defined
-        }
-
-        const pathPropertyName = toolDefinition.backup_resource_path_property_name;
-        const filePath = toolArgs[pathPropertyName];
-
-        this.logger.debug(
-            `Handling file backup for tool ${toolName} with file path ${filePath}`,
-            'File Backup'
-        );
-
-        if (filePath) {
-            await snapshotManager.backupFileIfNeeded(filePath);
-        }
-    }
-
-    /**
-     * Handles Git commit after tool execution if in Git mode
-     * @param {string} toolName - Name of the tool that was executed
-     * @param {Object} toolArgs - Arguments passed to the tool
-     * @param {SnapshotManager} snapshotManager - Snapshot manager instance
-     */
-    async _handlePostExecutionGitCommit(toolName, toolArgs, snapshotManager) {
-        const gitStatus = snapshotManager.getGitStatus();
-
-        // Only commit if we're in Git mode and have a current snapshot
-        if (!gitStatus.gitMode || !snapshotManager.getCurrentSnapshot()) {
-            return;
-        }
-
-        const currentSnapshot = snapshotManager.getCurrentSnapshot();
-        const modifiedFiles = Array.from(currentSnapshot.modifiedFiles);
-
-        // Only commit if there are modified files
-        if (modifiedFiles.length > 0) {
-            try {
-                const gitUtils = snapshotManager.gitUtils;
-
-                // First, check Git status to see what actually changed
-                const statusResult = await gitUtils.getStatus();
-                if (!statusResult.success) {
-                    this.logger.warn(
-                        `Git status check failed: ${statusResult.error}`,
-                        'Git auto-commit'
-                    );
-                    return;
-                }
-
-                this.logger.debug(
-                    `Git status before commit: ${statusResult.status}`,
-                    'Git auto-commit'
-                );
-
-                if (!statusResult.hasChanges) {
-                    this.logger.debug(
-                        'No Git changes detected, skipping commit',
-                        'Git auto-commit'
-                    );
-                    return;
-                }
-
-                // Add the modified files to Git staging area
-                const addResult = await gitUtils.addFiles(modifiedFiles);
-
-                if (!addResult.success) {
-                    this.logger.warn(`Git add failed: ${addResult.error}`, 'Git auto-commit');
-                    return;
-                }
-
-                // Check status again after adding files
-                const statusAfterAdd = await gitUtils.getStatus();
-                if (statusAfterAdd.success) {
-                    this.logger.debug(
-                        `Git status after add: ${statusAfterAdd.status}`,
-                        'Git auto-commit'
-                    );
-                }
-
-                // Then commit the changes
-                const commitResult = await snapshotManager.commitChangesToGit(modifiedFiles);
-                if (!commitResult.success) {
-                    // Show full error message with proper formatting
-                    this.logger.warn('Git commit failed:', 'Git auto-commit');
-                    const errorLines = commitResult.error.split('\n');
-                    errorLines.forEach(line => {
-                        if (line.trim()) {
-                            this.logger.warn(`  ${line}`, '');
-                        }
-                    });
-                }
-            } catch (error) {
-                this.logger.warn(`Git commit error: ${error.message}`, 'Git auto-commit');
-                if (error.stack) {
-                    this.logger.debug(`Stack trace: ${error.stack}`);
-                }
-            }
         }
     }
 }

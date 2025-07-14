@@ -9,10 +9,9 @@ import WorkflowAgent from './WorkflowAgent.js';
  * State machine engine for executing multi-agent workflows
  */
 export default class WorkflowStateMachine {
-    constructor(config, toolManager, snapshotManager, consoleInterface, costsManager) {
+    constructor(config, toolManager, consoleInterface, costsManager) {
         this.config = config;
         this.toolManager = toolManager;
-        this.snapshotManager = snapshotManager;
         this.consoleInterface = consoleInterface;
         this.costsManager = costsManager;
         this.logger = getLogger();
@@ -142,10 +141,7 @@ export default class WorkflowStateMachine {
             // Initialize workflow execution context
             const executionContext = await this._initializeWorkflow(config, inputParams);
 
-            // Create workflow snapshot if snapshot manager is available
-            if (this.snapshotManager) {
-                await this.snapshotManager.createSnapshot(`Workflow: ${workflowName}`);
-            }
+            // Snapshot functionality removed
 
             // Execute state machine
             const result = await this._executeStateMachine(executionContext);
@@ -213,7 +209,6 @@ export default class WorkflowStateMachine {
                 context,
                 this.config,
                 this.toolManager,
-                this.snapshotManager,
                 this.costsManager
             );
             this.agents.set(agentConfig.agent_role, agent);

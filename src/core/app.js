@@ -66,7 +66,7 @@ import ToolManager from './managers/toolManager.js';
 import CommandHandler from './interface/commandHandler.js';
 import ConsoleInterface from './interface/consoleInterface.js';
 import costsManager from './managers/costsManager.js';
-import SnapshotManager from './managers/snapshotManager.js';
+
 import PromptEnhancer from './ai/promptEnhancer.js';
 import WorkflowStateMachine from '../workflow/WorkflowStateMachine.js';
 import { initializeLogger, getLogger } from './managers/logger.js';
@@ -88,7 +88,7 @@ class AICoderConsole {
         // Initialize basic components first
         this.consoleInterface = new ConsoleInterface();
         this.toolManager = new ToolManager();
-        this.snapshotManager = new SnapshotManager();
+
         this.gitUtils = new GitUtils();
 
         // Defer API client initialization until after configuration check
@@ -122,7 +122,6 @@ class AICoderConsole {
         this.workflowStateMachine = new WorkflowStateMachine(
             this.config,
             this.toolManager,
-            this.snapshotManager,
             this.consoleInterface,
             this.costsManager
         );
@@ -131,7 +130,6 @@ class AICoderConsole {
             this.toolManager,
             this.consoleInterface,
             this.costsManager,
-            this.snapshotManager,
             this
         );
 
@@ -175,7 +173,7 @@ class AICoderConsole {
                 return await this.toolManager.executeToolCall(
                     toolCall,
                     this.consoleInterface,
-                    this.snapshotManager
+                    null // snapshotManager removed
                 );
             },
 
@@ -220,7 +218,6 @@ class AICoderConsole {
                 this.toolManager,
                 this.consoleInterface,
                 this.costsManager,
-                this.snapshotManager,
                 this
             );
 
@@ -256,8 +253,6 @@ class AICoderConsole {
         if (this.commandHandler.commandRegistry.getCommand('workflow')) {
             await this.workflowStateMachine.loadWorkflowConfigs();
         }
-
-        await this.snapshotManager.initialize();
 
         // Set up signal handlers for graceful shutdown
         this.setupSignalHandlers();
@@ -314,9 +309,6 @@ class AICoderConsole {
                 this.consoleInterface.prompt();
                 return;
             }
-
-            // Create snapshot for user instruction with the final prompt
-            await this.snapshotManager.createSnapshot(finalPrompt);
         }
 
         // Process user message through API client
@@ -461,17 +453,6 @@ class AICoderConsole {
         try {
             // Show goodbye message
             this.consoleInterface.showGoodbye();
-
-            // Perform automatic cleanup if conditions are met
-            const cleanupResult = await this.snapshotManager.performCleanup();
-            if (cleanupResult.success) {
-                this.logger.info('✅ Automatic cleanup completed successfully');
-            } else if (
-                cleanupResult.error &&
-                !cleanupResult.error.includes('Git integration not active')
-            ) {
-                this.logger.warn(`⚠️ Cleanup failed: ${cleanupResult.error}`);
-            }
         } catch (error) {
             this.logger.error('❌ Error during exit cleanup:', error.message);
         } finally {

@@ -2,8 +2,7 @@
     "name": "edit_file",
     "description": "Edit content of a file by replacing text between two unique boundary strings.",
     "auto_run": false,
-    "requires_backup": true,
-    "backup_resource_path_property_name": "file_path",
+
     "category": "file",
     "version": "2.0.0",
     "tags": ["file", "edit", "replace", "filesystem"],

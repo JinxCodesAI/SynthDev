@@ -15,7 +15,7 @@ import ClearCommand from '../conversation/ClearCommand.js';
 import ExitCommand from '../system/ExitCommand.js';
 import RoleCommand from '../role/RoleCommand.js';
 import RolesCommand from '../role/RolesCommand.js';
-import SnapshotsCommand from '../snapshots/SnapshotsCommand.js';
+
 import IndexCommand from '../indexing/IndexCommand.js';
 import CmdCommand from '../terminal/CmdCommand.js';
 import WorkflowsCommand from '../workflow/WorkflowsCommand.js';
@@ -50,9 +50,6 @@ export function createCommandRegistry() {
         // Role management
         registry.register(new RoleCommand());
         registry.register(new RolesCommand());
-
-        // Snapshot management
-        registry.register(new SnapshotsCommand());
 
         // Indexing
         registry.register(new IndexCommand());

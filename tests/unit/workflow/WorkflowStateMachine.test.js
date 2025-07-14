@@ -223,7 +223,6 @@ describe('WorkflowStateMachine', () => {
                 mockWorkflowContext,
                 stateMachine.config,
                 stateMachine.toolManager,
-                stateMachine.snapshotManager,
                 stateMachine.costsManager
             );
             stateMachine.agents.set(agentConfig.agent_role, agent);
@@ -233,7 +232,6 @@ describe('WorkflowStateMachine', () => {
                 mockWorkflowContext,
                 stateMachine.config,
                 stateMachine.toolManager,
-                stateMachine.snapshotManager,
                 stateMachine.costsManager
             );
             expect(stateMachine.agents.get('customer')).toBe(agent);

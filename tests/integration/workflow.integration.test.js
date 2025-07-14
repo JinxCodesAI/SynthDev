@@ -109,7 +109,7 @@ describe('Workflow Integration Tests', () => {
     let mockReadFileSync;
     let mockConfig;
     let mockToolManager;
-    let mockSnapshotManager;
+    // mockSnapshotManager removed
     let mockConsoleInterface;
     let mockCostsManager;
 
@@ -132,17 +132,12 @@ describe('Workflow Integration Tests', () => {
             getTools: vi.fn().mockReturnValue([]),
         };
 
-        mockSnapshotManager = {
-            createSnapshot: vi.fn().mockResolvedValue(),
-        };
-
         mockConsoleInterface = {};
         mockCostsManager = {};
 
         stateMachine = new WorkflowStateMachine(
             mockConfig,
             mockToolManager,
-            mockSnapshotManager,
             mockConsoleInterface,
             mockCostsManager
         );

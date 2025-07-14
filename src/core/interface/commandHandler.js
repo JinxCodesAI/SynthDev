@@ -9,19 +9,11 @@ import { getLogger } from '../managers/logger.js';
  * Now uses a modular command system with individual command classes
  */
 class CommandHandler {
-    constructor(
-        apiClient,
-        toolManager,
-        consoleInterface,
-        costsManager,
-        snapshotManager,
-        app = null
-    ) {
+    constructor(apiClient, toolManager, consoleInterface, costsManager, app = null) {
         this.apiClient = apiClient;
         this.toolManager = toolManager;
         this.consoleInterface = consoleInterface;
         this.costsManager = costsManager;
-        this.snapshotManager = snapshotManager;
         this.app = app;
         this.logger = getLogger();
 
@@ -47,7 +39,6 @@ class CommandHandler {
                 toolManager: this.toolManager,
                 consoleInterface: this.consoleInterface,
                 costsManager: this.costsManager,
-                snapshotManager: this.snapshotManager,
                 commandRegistry: this.commandRegistry,
                 workflowStateMachine: this.app?.workflowStateMachine,
                 app: this.app,

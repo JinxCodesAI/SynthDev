@@ -9,7 +9,7 @@
             "review": "Show raw content of last API request/response",
             "clear": "Clear conversation history",
             "cost": "Show accumulated API costs",
-            "snapshots": "Manage code checkpoints, revert AI changes",
+
             "index": "Index codebase with AI-powered summaries",
             "cmd": "Execute terminal commands or generate with AI",
             "exit": "Exit the application"

@@ -2,8 +2,7 @@
     "name": "read_file",
     "description": "Read the contents of a file from the file system using a relative path",
     "auto_run": true,
-    "requires_backup": false,
-    "backup_resource_path_property_name": "",
+
     "category": "file",
     "version": "2.0.0",
     "tags": ["file", "read", "filesystem", "io"],

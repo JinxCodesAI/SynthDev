@@ -1,5 +1,4 @@
 import { config } from 'dotenv';
-import { createInterface } from 'readline';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { existsSync } from 'fs';
