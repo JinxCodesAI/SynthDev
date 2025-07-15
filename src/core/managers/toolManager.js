@@ -268,6 +268,9 @@ class ToolManager {
             }
         }
 
+        // Check if tool modifies files and create snapshot if needed
+        await this._handlePreExecutionSnapshot(toolName, toolArgs, snapshotManager);
+
         const implementation = this.toolImplementations.get(toolName);
 
         try {
@@ -306,6 +309,103 @@ class ToolManager {
                 content: JSON.stringify(errorResult),
             };
         }
+    }
+
+    /**
+     * Handle pre-execution snapshot creation for file-modifying tools
+     * @private
+     * @param {string} toolName - Name of the tool being executed
+     * @param {Object} toolArgs - Tool arguments
+     * @param {Object} snapshotManager - Snapshot manager instance (optional)
+     */
+    async _handlePreExecutionSnapshot(toolName, toolArgs, snapshotManager) {
+        // Skip if no snapshot manager provided
+        if (!snapshotManager) {
+            return;
+        }
+
+        // Check if tool modifies files
+        if (!this._isFileModifyingTool(toolName)) {
+            return;
+        }
+
+        try {
+            // Extract file paths that will be modified
+            const filePaths = this._extractFilePathsFromArgs(toolName, toolArgs);
+
+            if (filePaths.length === 0) {
+                return;
+            }
+
+            // Create snapshot with file modification context
+            const instruction = `Pre-execution snapshot before ${toolName} on ${filePaths.join(', ')}`;
+
+            // Only create snapshot if files exist and will be modified
+            const existingFiles = new Map();
+            for (const filePath of filePaths) {
+                try {
+                    const fs = await import('fs');
+                    if (fs.existsSync(filePath)) {
+                        const content = fs.readFileSync(filePath, 'utf8');
+                        existingFiles.set(filePath, content);
+                    }
+                } catch (error) {
+                    // File doesn't exist or can't be read - skip
+                    continue;
+                }
+            }
+
+            // Only create snapshot if we have files to backup
+            if (existingFiles.size > 0) {
+                await snapshotManager.createSnapshot(instruction, existingFiles, {
+                    triggerType: 'tool_execution',
+                    toolName,
+                    filePaths,
+                });
+            }
+        } catch (error) {
+            // Log error but don't fail tool execution
+            console.warn(`Failed to create pre-execution snapshot: ${error.message}`);
+        }
+    }
+
+    /**
+     * Check if a tool modifies files
+     * @private
+     * @param {string} toolName - Name of the tool
+     * @returns {boolean} True if tool modifies files
+     */
+    _isFileModifyingTool(toolName) {
+        const fileModifyingTools = [
+            'write_file',
+            'edit_file',
+            // Add more file-modifying tools as needed
+        ];
+
+        return fileModifyingTools.includes(toolName);
+    }
+
+    /**
+     * Extract file paths from tool arguments
+     * @private
+     * @param {string} toolName - Name of the tool
+     * @param {Object} toolArgs - Tool arguments
+     * @returns {string[]} Array of file paths that will be modified
+     */
+    _extractFilePathsFromArgs(toolName, toolArgs) {
+        const filePaths = [];
+
+        switch (toolName) {
+            case 'write_file':
+            case 'edit_file':
+                if (toolArgs.file_path) {
+                    filePaths.push(toolArgs.file_path);
+                }
+                break;
+            // Add more tools and their file path extraction logic as needed
+        }
+
+        return filePaths;
     }
 }
 

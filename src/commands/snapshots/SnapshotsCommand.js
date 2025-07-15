@@ -10,7 +10,8 @@ import { SnapshotManager } from '../../core/snapshot/SnapshotManager.js';
 export class SnapshotsCommand extends InteractiveCommand {
     constructor() {
         super('snapshots', 'Interactive snapshot management interface');
-        this.snapshotManager = null; // Will be initialized in implementation
+        this.snapshotManager = null; // Will be initialized lazily
+        this.initializationPromise = null; // Track initialization state
     }
 
     /**
@@ -19,6 +20,48 @@ export class SnapshotsCommand extends InteractiveCommand {
      */
     getRequiredDependencies() {
         return ['consoleInterface', ...super.getRequiredDependencies()];
+    }
+
+    /**
+     * Initialize the snapshot manager (lazy initialization)
+     * @private
+     * @returns {Promise<void>}
+     */
+    async _initializeSnapshotManager() {
+        if (this.snapshotManager) {
+            return; // Already initialized
+        }
+
+        if (this.initializationPromise) {
+            await this.initializationPromise; // Wait for ongoing initialization
+            return;
+        }
+
+        this.initializationPromise = this._doInitialization();
+        await this.initializationPromise;
+    }
+
+    /**
+     * Perform the actual initialization
+     * @private
+     * @returns {Promise<void>}
+     */
+    async _doInitialization() {
+        const logger = getLogger();
+
+        try {
+            this.snapshotManager = new SnapshotManager();
+            const initResult = await this.snapshotManager.initialize();
+            if (!initResult.success) {
+                logger.raw(`❌ Failed to initialize snapshot system: ${initResult.error}`);
+                logger.raw('💡 Falling back to mock data for demonstration');
+                this.snapshotManager = this._createMockSnapshotManager();
+            }
+        } catch (error) {
+            logger.raw(`❌ Error initializing snapshot system: ${error.message}`);
+            logger.raw('💡 Falling back to mock data for demonstration');
+            this.snapshotManager = this._createMockSnapshotManager();
+        }
     }
 
     /**
@@ -69,20 +112,8 @@ export class SnapshotsCommand extends InteractiveCommand {
     async implementation(args, context) {
         const logger = getLogger();
 
-        // Initialize real snapshot manager
-        try {
-            this.snapshotManager = new SnapshotManager();
-            const initResult = await this.snapshotManager.initialize();
-            if (!initResult.success) {
-                logger.raw(`❌ Failed to initialize snapshot system: ${initResult.error}`);
-                logger.raw('💡 Falling back to mock data for demonstration');
-                this.snapshotManager = this._createMockSnapshotManager();
-            }
-        } catch (error) {
-            logger.raw(`❌ Error initializing snapshot system: ${error.message}`);
-            logger.raw('💡 Falling back to mock data for demonstration');
-            this.snapshotManager = this._createMockSnapshotManager();
-        }
+        // Initialize snapshot manager lazily
+        await this._initializeSnapshotManager();
 
         // Show header
         logger.raw('\n📸 Available Snapshots:');

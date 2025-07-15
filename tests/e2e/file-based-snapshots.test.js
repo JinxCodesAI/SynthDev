@@ -123,6 +123,10 @@ describe('File-based Snapshots Integration Test', () => {
         await snapshotManager.createSnapshot('First snapshot', new Map([[file1, 'Content 1']]), {
             validatePaths: false,
         });
+
+        // Add small delay to ensure different timestamps
+        await new Promise(resolve => setTimeout(resolve, 10));
+
         await snapshotManager.createSnapshot('Second snapshot', new Map([[file2, 'Content 2']]), {
             validatePaths: false,
         });

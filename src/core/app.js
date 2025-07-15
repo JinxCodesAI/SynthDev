@@ -71,6 +71,7 @@ import PromptEnhancer from './ai/promptEnhancer.js';
 import WorkflowStateMachine from '../workflow/WorkflowStateMachine.js';
 import { initializeLogger, getLogger } from './managers/logger.js';
 import GitUtils from '../utils/GitUtils.js';
+import { SnapshotManager } from './snapshot/SnapshotManager.js';
 
 /**
  * Main application orchestrator
@@ -90,6 +91,9 @@ class AICoderConsole {
         this.toolManager = new ToolManager();
 
         this.gitUtils = new GitUtils();
+
+        // Initialize snapshot manager for tool integration
+        this.snapshotManager = null;
 
         // Defer API client initialization until after configuration check
         this.apiClient = null;
@@ -136,6 +140,33 @@ class AICoderConsole {
         this._setupAPIClientCallbacks();
     }
 
+    /**
+     * Initialize snapshot manager for tool integration
+     * @private
+     */
+    async _initializeSnapshotManager() {
+        if (this.snapshotManager) {
+            return; // Already initialized
+        }
+
+        try {
+            this.snapshotManager = new SnapshotManager();
+            const initResult = await this.snapshotManager.initialize();
+
+            if (!initResult.success) {
+                this.logger.warn(`Failed to initialize snapshot system: ${initResult.error}`);
+                this.logger.warn('Tool integration snapshots will be disabled');
+                this.snapshotManager = null;
+            } else {
+                this.logger.info('Snapshot system initialized for tool integration');
+            }
+        } catch (error) {
+            this.logger.warn(`Error initializing snapshot system: ${error.message}`);
+            this.logger.warn('Tool integration snapshots will be disabled');
+            this.snapshotManager = null;
+        }
+    }
+
     _setupAPIClientCallbacks() {
         this.apiClient.setCallbacks({
             onThinking: () => {
@@ -173,7 +204,7 @@ class AICoderConsole {
                 return await this.toolManager.executeToolCall(
                     toolCall,
                     this.consoleInterface,
-                    null // snapshotManager removed
+                    this.snapshotManager // Pass snapshot manager for tool integration
                 );
             },
 
@@ -237,6 +268,9 @@ class AICoderConsole {
 
         // Initialize API components now that configuration is complete
         this._initializeAPIComponents();
+
+        // Initialize snapshot manager for tool integration
+        await this._initializeSnapshotManager();
 
         await this.toolManager.loadTools();
 
