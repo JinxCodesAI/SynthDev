@@ -62,21 +62,25 @@ const ENV_MAPPINGS = {
  * Configuration manager for the snapshot system
  */
 class SnapshotConfig {
-    constructor() {
+    constructor(customConfig = {}) {
         this.logger = getLogger();
-        this.config = this._loadConfiguration();
+        this.config = this._loadConfiguration(customConfig);
         this._validateConfiguration();
     }
 
     /**
-     * Load configuration from environment variables and defaults
+     * Load configuration from environment variables, custom config, and defaults
      * @private
+     * @param {Object} customConfig - Custom configuration to merge
      * @returns {Object} Loaded configuration
      */
-    _loadConfiguration() {
+    _loadConfiguration(customConfig = {}) {
         const config = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
 
-        // Apply environment variable overrides
+        // Apply custom configuration overrides first
+        this._mergeConfig(config, customConfig);
+
+        // Apply environment variable overrides (highest priority)
         for (const [envVar, configPath] of Object.entries(ENV_MAPPINGS)) {
             const envValue = process.env[envVar];
             if (envValue !== undefined) {
@@ -86,6 +90,31 @@ class SnapshotConfig {
 
         this.logger.debug('Snapshot configuration loaded', config);
         return config;
+    }
+
+    /**
+     * Merge custom configuration into the base configuration
+     * @private
+     * @param {Object} target - Target configuration object
+     * @param {Object} source - Source configuration to merge
+     */
+    _mergeConfig(target, source) {
+        for (const key in source) {
+            if (source.hasOwnProperty(key)) {
+                if (
+                    typeof source[key] === 'object' &&
+                    source[key] !== null &&
+                    !Array.isArray(source[key])
+                ) {
+                    if (!target[key] || typeof target[key] !== 'object') {
+                        target[key] = {};
+                    }
+                    this._mergeConfig(target[key], source[key]);
+                } else {
+                    target[key] = source[key];
+                }
+            }
+        }
     }
 
     /**

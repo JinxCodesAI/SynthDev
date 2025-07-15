@@ -140,6 +140,9 @@ export class FileSnapshotStrategy extends SnapshotStrategy {
             const estimatedSize = this.estimateSnapshotSize(snapshotFiles);
             await this.ensureMemoryCapacity(estimatedSize);
 
+            // Enforce maximum snapshot count
+            await this.enforceSnapshotLimit();
+
             // Add files to snapshot with optional compression
             let totalSize = 0;
             let compressedSize = 0;
@@ -715,6 +718,18 @@ export class FileSnapshotStrategy extends SnapshotStrategy {
             const evicted = await this.evictOldestSnapshot();
             if (!evicted) {
                 throw new Error('Cannot free enough memory for snapshot');
+            }
+        }
+    }
+
+    /**
+     * Enforce maximum snapshot count limit
+     */
+    async enforceSnapshotLimit() {
+        while (this.snapshots.size >= this.maxSnapshots) {
+            const evicted = await this.evictOldestSnapshot();
+            if (!evicted) {
+                throw new Error('Cannot evict snapshots to enforce limit');
             }
         }
     }
