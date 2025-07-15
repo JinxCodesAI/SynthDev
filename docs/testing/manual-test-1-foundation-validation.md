@@ -270,6 +270,6 @@ Cache hit rate: 33%
 
 ---
 
-**Tester Signature:** ******\_\_\_\_******  
-**Date Completed:** ******\_\_\_\_******  
-**Time Spent:** ******\_\_\_\_******
+**Tester Signature:** **\*\***\_\_\_\_**\*\***  
+**Date Completed:** **\*\***\_\_\_\_**\*\***  
+**Time Spent:** **\*\***\_\_\_\_**\*\***
