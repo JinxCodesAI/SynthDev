@@ -160,7 +160,7 @@ describe('RoleCommand', () => {
 
             // Should display success message
             expect(mockLogger.user).toHaveBeenCalledWith(
-                '🎭 Role switched from \'coder\' to \'reviewer\''
+                "🎭 Role switched from 'coder' to 'reviewer'"
             );
 
             // Should display tool count
@@ -221,7 +221,7 @@ describe('RoleCommand', () => {
             expect(result).toBe(true);
 
             // Should display switch message with 'none' as previous role
-            expect(mockLogger.user).toHaveBeenCalledWith('🎭 Role switched from \'none\' to \'coder\'');
+            expect(mockLogger.user).toHaveBeenCalledWith("🎭 Role switched from 'none' to 'coder'");
         });
 
         it('should handle setSystemMessage errors', async () => {
@@ -262,7 +262,7 @@ describe('RoleCommand', () => {
 
             // Should display success message with group info
             expect(mockLogger.user).toHaveBeenCalledWith(
-                '🎭 Role switched from \'coder\' to \'dude\' [testing]'
+                "🎭 Role switched from 'coder' to 'dude' [testing]"
             );
         });
 
@@ -279,7 +279,7 @@ describe('RoleCommand', () => {
 
             // Should display error for unknown role in group
             expect(mockLogger.error).toHaveBeenCalledWith('Unknown role: testing.unknown');
-            expect(mockLogger.info).toHaveBeenCalledWith('📖 Available roles in \'testing\': dude');
+            expect(mockLogger.info).toHaveBeenCalledWith("📖 Available roles in 'testing': dude");
         });
     });
 

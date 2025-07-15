@@ -263,7 +263,7 @@ describe('CommandRegistry', () => {
             registry.register(command1);
 
             expect(() => registry.register(command2)).toThrow(
-                'Alias \'shared\' is already registered'
+                "Alias 'shared' is already registered"
             );
         });
 

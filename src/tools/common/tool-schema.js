@@ -189,11 +189,11 @@ function validateBusinessRules(definition, errors, warnings) {
     if (definition.schema && definition.schema.function && definition.schema.function.parameters) {
         const params = definition.schema.function.parameters;
         if (params.type !== 'object') {
-            errors.push('Function parameters must be of type \'object\'');
+            errors.push("Function parameters must be of type 'object'");
         }
 
         if (!params.properties || typeof params.properties !== 'object') {
-            errors.push('Function parameters must have a \'properties\' object');
+            errors.push("Function parameters must have a 'properties' object");
         }
 
         // Validate required parameters exist in properties
@@ -277,19 +277,19 @@ export const STANDARD_PARAMETERS = {
     encoding: {
         type: 'string',
         description:
-            'Character encoding to use when reading/writing the file. Common options: \'utf8\' for standard text files, \'ascii\' for basic ASCII text, \'base64\' for binary representation.',
+            "Character encoding to use when reading/writing the file. Common options: 'utf8' for standard text files, 'ascii' for basic ASCII text, 'base64' for binary representation.",
         enum: ['utf8', 'ascii', 'base64', 'hex', 'latin1'],
         default: 'utf8',
     },
     command: {
         type: 'string',
         description:
-            'The terminal command to execute, including any arguments. Example: \'ls -la\', \'npm install\', \'node script.js\'.',
+            "The terminal command to execute, including any arguments. Example: 'ls -la', 'npm install', 'node script.js'.",
     },
     directory_path: {
         type: 'string',
         description:
-            'Relative path to the directory to list, starting from the current working directory. Use \'.\' for current directory or a relative path like \'src/components\'.',
+            "Relative path to the directory to list, starting from the current working directory. Use '.' for current directory or a relative path like 'src/components'.",
     },
     overwrite: {
         type: 'boolean',
@@ -299,7 +299,7 @@ export const STANDARD_PARAMETERS = {
     },
     create_directories: {
         type: 'boolean',
-        description: 'Whether to automatically create parent directories if they don\'t exist.',
+        description: "Whether to automatically create parent directories if they don't exist.",
         default: true,
     },
 };

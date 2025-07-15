@@ -19,7 +19,7 @@ const httpResponses = [
                 message: {
                     role: 'assistant',
                     content:
-                        'Hi! Yes, we do have a good selection of marinara sauces here at FreshMart. We carry both store brands and some premium options. For a pasta dinner for six, I recommend picking up a couple of jars to ensure you have enough sauce. \n\nWould you prefer a more traditional marinara, or are you looking for something with added herbs or a special flavor? Also, if you\'d like, I can suggest some pasta varieties and other ingredients to complete your meal.  \n\nCurrently, we\'re running a promotion on our store brand marinara—buy one, get a small discount—so it\'s a great time to stock up.',
+                        "Hi! Yes, we do have a good selection of marinara sauces here at FreshMart. We carry both store brands and some premium options. For a pasta dinner for six, I recommend picking up a couple of jars to ensure you have enough sauce. \n\nWould you prefer a more traditional marinara, or are you looking for something with added herbs or a special flavor? Also, if you'd like, I can suggest some pasta varieties and other ingredients to complete your meal.  \n\nCurrently, we're running a promotion on our store brand marinara—buy one, get a small discount—so it's a great time to stock up.",
                     refusal: null,
                     annotations: [],
                 },
@@ -107,7 +107,7 @@ const httpResponses = [
                 message: {
                     role: 'assistant',
                     content:
-                        'Absolutely! Let me guide you to the marinara sauces first.\n\nOur store brand marinara is located in the pasta aisle, aisle 3, near the other sauces. It\'s a solid choice with good flavor and a great price. The premium marinara is just a few shelves over, in the same aisle—it\'s made with extra fresh herbs and a richer taste. Both are in jars and easily accessible.\n\nFor the pasta, you\'ll find a wide selection on aisle 2. We have spaghetti, penne, and fusilli—most of it in both regular and organic varieties.\n\nThe garlic bread is baked fresh daily and found in the frozen section near the bakery, aisle 4. It\'s great for serving alongside pasta.\n\nAs for salad ingredients, you can pick up fresh lettuce, tomatoes, and cucumbers from our produce section, aisle 1. Since it\'s late fall, the tomatoes aren\'t at their peak, but greenhouse varieties are available for a decent flavor. I recommend grabbing some fresh lettuce and cucumbers to keep the salad light and refreshing.\n\nWould you like me to help you put together a quick shopping list or suggest some additional ingredients like Parmesan cheese or herbs?',
+                        "Absolutely! Let me guide you to the marinara sauces first.\n\nOur store brand marinara is located in the pasta aisle, aisle 3, near the other sauces. It's a solid choice with good flavor and a great price. The premium marinara is just a few shelves over, in the same aisle—it's made with extra fresh herbs and a richer taste. Both are in jars and easily accessible.\n\nFor the pasta, you'll find a wide selection on aisle 2. We have spaghetti, penne, and fusilli—most of it in both regular and organic varieties.\n\nThe garlic bread is baked fresh daily and found in the frozen section near the bakery, aisle 4. It's great for serving alongside pasta.\n\nAs for salad ingredients, you can pick up fresh lettuce, tomatoes, and cucumbers from our produce section, aisle 1. Since it's late fall, the tomatoes aren't at their peak, but greenhouse varieties are available for a decent flavor. I recommend grabbing some fresh lettuce and cucumbers to keep the salad light and refreshing.\n\nWould you like me to help you put together a quick shopping list or suggest some additional ingredients like Parmesan cheese or herbs?",
                     refusal: null,
                     annotations: [],
                 },
@@ -195,7 +195,7 @@ const httpResponses = [
                 message: {
                     role: 'assistant',
                     content:
-                        'Of course! Here\'s a suggested list of everything you\'ll need for your pasta dinner:\n\n- Store brand marinara sauce (located in aisle 3)\n- Premium marinara sauce (located in aisle 3, near the store brand)\n- Pasta (your choice of type in aisle 2)\n- Garlic bread (frozen section near the bakery in aisle 4)\n- Fresh lettuce, tomatoes, cucumbers (produce section, aisle 1)\n- Parmesan cheese (found in the dairy aisle, aisle 5)\n- Dried herbs such as basil, oregano, and parsley (spice aisle, aisle 6)\n\nIf you\'d like, I can recommend specific brands for Parmesan or herbs, or suggest pre-packaged herb mixes if you\'re short on time. Also, if you want, I can tell you about any current promotions on these items. Would you like me to prepare a printable shopping list for you?',
+                        "Of course! Here's a suggested list of everything you'll need for your pasta dinner:\n\n- Store brand marinara sauce (located in aisle 3)\n- Premium marinara sauce (located in aisle 3, near the store brand)\n- Pasta (your choice of type in aisle 2)\n- Garlic bread (frozen section near the bakery in aisle 4)\n- Fresh lettuce, tomatoes, cucumbers (produce section, aisle 1)\n- Parmesan cheese (found in the dairy aisle, aisle 5)\n- Dried herbs such as basil, oregano, and parsley (spice aisle, aisle 6)\n\nIf you'd like, I can recommend specific brands for Parmesan or herbs, or suggest pre-packaged herb mixes if you're short on time. Also, if you want, I can tell you about any current promotions on these items. Would you like me to prepare a printable shopping list for you?",
                     refusal: null,
                     annotations: [],
                 },
@@ -288,7 +288,7 @@ const httpRequests = [
             {
                 role: 'user',
                 content:
-                    'Hi, I\'m looking for ingredients to make pasta dinner for 6 people tomorrow. Do you have good marinara sauce?',
+                    "Hi, I'm looking for ingredients to make pasta dinner for 6 people tomorrow. Do you have good marinara sauce?",
             },
         ],
     },

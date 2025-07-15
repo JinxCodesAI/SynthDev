@@ -120,19 +120,19 @@ class IdGenerator {
         }
 
         switch (type) {
-        case 'snapshot':
-            return (
-                /^snap_\d+_[a-f0-9]{8}_[a-f0-9]{8}$/.test(id) ||
+            case 'snapshot':
+                return (
+                    /^snap_\d+_[a-f0-9]{8}_[a-f0-9]{8}$/.test(id) ||
                     /^snap_\d+_[a-f0-9]{8}$/.test(id)
-            );
-        case 'session':
-            return /^session_\d+_[a-f0-9]{12}$/.test(id);
-        case 'uuid':
-            return /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(
-                id
-            );
-        default:
-            return id.length > 0;
+                );
+            case 'session':
+                return /^session_\d+_[a-f0-9]{12}$/.test(id);
+            case 'uuid':
+                return /^[a-f0-9]{8}-[a-f0-9]{4}-4[a-f0-9]{3}-[89ab][a-f0-9]{3}-[a-f0-9]{12}$/i.test(
+                    id
+                );
+            default:
+                return id.length > 0;
         }
     }
 

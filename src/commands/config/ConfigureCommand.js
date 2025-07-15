@@ -28,7 +28,7 @@ export class ConfigureCommand extends InteractiveCommand {
         const completeness = this.wizard.checkCompleteness();
 
         if (!completeness.hasEnvFile) {
-            logger.raw('📝 No .env file found. Let\'s create one!');
+            logger.raw("📝 No .env file found. Let's create one!");
         } else if (!completeness.isComplete) {
             logger.raw('⚠️  Configuration is incomplete. Missing:');
             completeness.missing.forEach(key => {
@@ -207,7 +207,7 @@ export class ConfigureCommand extends InteractiveCommand {
             this.wizard.setConfigValue(`SYNTHDEV_${typeUpper}_MODEL`, '');
 
             logger.raw(`✅ Provider set to: ${selectedProvider.name}`);
-            logger.raw('💡 Don\'t forget to select a model and set your API key!');
+            logger.raw("💡 Don't forget to select a model and set your API key!");
         } else {
             logger.raw('❌ Invalid selection.');
         }

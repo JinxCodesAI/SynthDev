@@ -422,11 +422,11 @@ export class GitSnapshotStrategy extends SnapshotStrategy {
                 created: branch.created,
                 metadata: includeMetadata
                     ? {
-                        branchName: branch.name,
-                        commits: branch.commits,
-                        lastActivity: branch.lastActivity,
-                        isActive: branch.isActive,
-                    }
+                          branchName: branch.name,
+                          commits: branch.commits,
+                          lastActivity: branch.lastActivity,
+                          isActive: branch.isActive,
+                      }
                     : undefined,
             }));
 

@@ -29,7 +29,11 @@ export class SnapshotsCommand extends InteractiveCommand {
      */
     _normalizeStatus(statusResult) {
         // Handle real SnapshotManager format: {success: boolean, status: {...}}
-        if (statusResult && typeof statusResult === 'object' && statusResult.success !== undefined) {
+        if (
+            statusResult &&
+            typeof statusResult === 'object' &&
+            statusResult.success !== undefined
+        ) {
             const status = statusResult.status || {};
             return {
                 mode: status.strategy || status.mode || 'file',
@@ -40,18 +44,20 @@ export class SnapshotsCommand extends InteractiveCommand {
                 initialized: status.initialized,
                 strategy: status.strategy,
                 health: status.health,
-                metrics: status.metrics
+                metrics: status.metrics,
             };
         }
 
         // Handle mock format (direct status object)
-        return statusResult || {
-            mode: 'file',
-            gitStatus: 'Not Available',
-            originalBranch: null,
-            featureBranch: null,
-            ready: true
-        };
+        return (
+            statusResult || {
+                mode: 'file',
+                gitStatus: 'Not Available',
+                originalBranch: null,
+                featureBranch: null,
+                ready: true,
+            }
+        );
     }
 
     /**
@@ -871,7 +877,10 @@ export class SnapshotsCommand extends InteractiveCommand {
             logger.raw('\n🔄 Restoring snapshot...');
 
             // Use real snapshot manager if available, otherwise simulate
-            if (this.snapshotManager.restoreSnapshot && typeof this.snapshotManager.restoreSnapshot === 'function') {
+            if (
+                this.snapshotManager.restoreSnapshot &&
+                typeof this.snapshotManager.restoreSnapshot === 'function'
+            ) {
                 const result = await this.snapshotManager.restoreSnapshot(snapshot.id);
                 if (result.success) {
                     logger.raw(`✅ Successfully restored snapshot ${index + 1}`);
@@ -1063,7 +1072,10 @@ export class SnapshotsCommand extends InteractiveCommand {
             logger.raw('🗑️ Deleting snapshot...');
 
             // Use real snapshot manager if available, otherwise simulate
-            if (this.snapshotManager.deleteSnapshot && typeof this.snapshotManager.deleteSnapshot === 'function') {
+            if (
+                this.snapshotManager.deleteSnapshot &&
+                typeof this.snapshotManager.deleteSnapshot === 'function'
+            ) {
                 const result = await this.snapshotManager.deleteSnapshot(snapshot.id);
                 if (result.success) {
                     logger.raw(`✅ Snapshot ${index + 1} deleted`);
@@ -1103,7 +1115,10 @@ export class SnapshotsCommand extends InteractiveCommand {
             logger.raw('🗑️ Clearing all snapshots...');
 
             // Use real snapshot manager if available, otherwise simulate
-            if (this.snapshotManager.clearSnapshots && typeof this.snapshotManager.clearSnapshots === 'function') {
+            if (
+                this.snapshotManager.clearSnapshots &&
+                typeof this.snapshotManager.clearSnapshots === 'function'
+            ) {
                 const result = await this.snapshotManager.clearSnapshots();
                 if (result.success) {
                     logger.raw(`✅ All ${result.cleared || snapshots.length} snapshots cleared`);

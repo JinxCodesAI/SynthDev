@@ -128,7 +128,7 @@ describe('BaseCommand', () => {
             expect(result).toBe('error');
             expect(mockLogger.error).toHaveBeenCalledWith(
                 expect.any(Error),
-                'Error executing command \'test\''
+                "Error executing command 'test'"
             );
         });
 
@@ -141,7 +141,7 @@ describe('BaseCommand', () => {
             expect(result).toBe('error');
             expect(mockLogger.error).toHaveBeenCalledWith(
                 expect.any(Error),
-                'Error executing command \'testvalidation\''
+                "Error executing command 'testvalidation'"
             );
         });
 
@@ -154,7 +154,7 @@ describe('BaseCommand', () => {
             expect(result).toBe('error');
             expect(mockLogger.error).toHaveBeenCalledWith(
                 expect.any(Error),
-                'Error executing command \'testerror\''
+                "Error executing command 'testerror'"
             );
         });
 
@@ -236,7 +236,7 @@ describe('BaseCommand', () => {
             const result = command.handleError(error, 'test args', {});
 
             expect(result).toBe('error');
-            expect(mockLogger.error).toHaveBeenCalledWith(error, 'Error executing command \'test\'');
+            expect(mockLogger.error).toHaveBeenCalledWith(error, "Error executing command 'test'");
         });
     });
 

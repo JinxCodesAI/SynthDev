@@ -108,10 +108,10 @@ class ConsoleInterface {
             filteredToolsCount !== null &&
             allToolsCount !== filteredToolsCount
                 ? this.uiConfig.getMessage('startup.tools_filtered_info', {
-                    filtered: filteredToolsCount,
-                    total: allToolsCount,
-                    excluded: allToolsCount - filteredToolsCount,
-                })
+                      filtered: filteredToolsCount,
+                      total: allToolsCount,
+                      excluded: allToolsCount - filteredToolsCount,
+                  })
                 : this.uiConfig.getMessage('startup.tools_info', { count: totalToolsCount });
 
         const envInfoLine = envInfo

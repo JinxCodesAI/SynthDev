@@ -206,7 +206,7 @@ describe('Grocery Store Workflow E2E Test', () => {
 
         // Execute the workflow with the exact input from the logs
         const initialCustomerRequest =
-            'Hi, I\'m looking for ingredients to make pasta dinner for 6 people tomorrow. Do you have good marinara sauce?';
+            "Hi, I'm looking for ingredients to make pasta dinner for 6 people tomorrow. Do you have good marinara sauce?";
 
         const result = await stateMachine.executeWorkflow(
             'grocery_store_test',
@@ -366,7 +366,7 @@ describe('Grocery Store Workflow E2E Test', () => {
 
         const result = await stateMachine.executeWorkflow(
             'grocery_store_test',
-            'Hi, I\'m looking for ingredients to make pasta dinner for 6 people tomorrow. Do you have good marinara sauce?'
+            "Hi, I'm looking for ingredients to make pasta dinner for 6 people tomorrow. Do you have good marinara sauce?"
         );
 
         // The exact output should match what was logged in the original execution
@@ -394,7 +394,7 @@ describe('Grocery Store Workflow E2E Test', () => {
 
         await stateMachine.executeWorkflow(
             'grocery_store_test',
-            'Hi, I\'m looking for ingredients to make pasta dinner for 6 people tomorrow. Do you have good marinara sauce?'
+            "Hi, I'm looking for ingredients to make pasta dinner for 6 people tomorrow. Do you have good marinara sauce?"
         );
 
         // Verify the exact number of HTTP requests (6 from the logs)
