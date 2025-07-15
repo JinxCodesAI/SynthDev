@@ -465,6 +465,21 @@ export class GitSnapshotStrategy extends SnapshotStrategy {
     }
 
     /**
+     * Get all snapshots from Git branches
+     * TODO: Implement proper Git snapshot retrieval when Git functionality is ready
+     * For now, return empty array to allow file-based snapshots to work
+     * @returns {Promise<{success: boolean, snapshots: Array}>} Result with snapshots array
+     */
+    async getSnapshots() {
+        // TODO: Implement Git-based snapshot retrieval
+        // This should:
+        // 1. Get all snapshot branches from branchManager
+        // 2. Convert branch information to snapshot format
+        // 3. Return array of snapshot objects
+        return { success: true, snapshots: [] };
+    }
+
+    /**
      * Get strategy status and statistics
      * @returns {Object} Strategy status
      */

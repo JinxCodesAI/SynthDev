@@ -84,13 +84,48 @@ SYNTHDEV_ENABLE_PROMPT_ENHANCEMENT=false
         });
     };
 
-    const sendCommand = (process, command) => {
+    const sendCommand = (process, command, options = {}) => {
         return new Promise(resolve => {
             let output = '';
             let responseComplete = false;
+            const { stayInSnapshots = false } = options;
 
             const dataHandler = data => {
                 output += data.toString();
+
+                // Handle snapshots command specially
+                if (
+                    command === '/snapshots' &&
+                    output.includes('snapshots>') &&
+                    !responseComplete &&
+                    !stayInSnapshots
+                ) {
+                    // Wait a bit for the full output, then send 'q' to quit
+                    setTimeout(() => {
+                        process.stdin.write('q\n');
+                    }, 100);
+                } else if (
+                    command === '/snapshots' &&
+                    stayInSnapshots &&
+                    output.includes('snapshots>') &&
+                    !responseComplete
+                ) {
+                    // If we want to stay in snapshots interface, resolve when we see the prompt
+                    responseComplete = true;
+                    process.stdout.removeListener('data', dataHandler);
+                    resolve(output);
+                } else if (
+                    command !== '/snapshots' &&
+                    output.includes('snapshots>') &&
+                    !responseComplete
+                ) {
+                    // For non-snapshots commands, if we see snapshots> prompt, resolve immediately
+                    // This handles commands sent while in snapshots interface
+                    responseComplete = true;
+                    process.stdout.removeListener('data', dataHandler);
+                    resolve(output);
+                }
+
                 // Look for the next prompt to know command is complete
                 if (output.includes('💭 You:') && command !== '/exit') {
                     responseComplete = true;
@@ -133,8 +168,8 @@ SYNTHDEV_ENABLE_PROMPT_ENHANCEMENT=false
         const { process } = await startApp();
 
         try {
-            // First check empty state
-            let response = await sendCommand(process, '/snapshots');
+            // First check empty state - stay in snapshots interface
+            let response = await sendCommand(process, '/snapshots', { stayInSnapshots: true });
             expect(response).toContain('📭 No snapshots available');
 
             // Try to quit from snapshots interface (should work even when empty)
@@ -163,7 +198,8 @@ SYNTHDEV_ENABLE_PROMPT_ENHANCEMENT=false
         const { process } = await startApp();
 
         try {
-            let response = await sendCommand(process, '/snapshots');
+            // Enter snapshots interface but stay in it
+            let response = await sendCommand(process, '/snapshots', { stayInSnapshots: true });
             expect(response).toContain('📭 No snapshots available');
 
             // Try an invalid command in snapshots interface

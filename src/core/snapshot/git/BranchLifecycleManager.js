@@ -572,4 +572,18 @@ export class BranchLifecycleManager {
 
         return history.slice(0, limit);
     }
+
+    /**
+     * Get status information for the branch manager
+     * TODO: Implement proper Git branch status when Git functionality is ready
+     * @returns {Object} Status information
+     */
+    getStatus() {
+        return {
+            initialized: this.isInitialized,
+            gitIntegration: this.gitIntegration ? this.gitIntegration.getStatus() : null,
+            activeBranches: this.activeBranches.size,
+            // TODO: Add more branch-specific status information when Git functionality is implemented
+        };
+    }
 }

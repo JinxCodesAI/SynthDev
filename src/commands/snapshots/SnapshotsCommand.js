@@ -142,7 +142,14 @@ export class SnapshotsCommand extends InteractiveCommand {
      */
     async _showSnapshotsList(_context) {
         const logger = getLogger();
-        const snapshots = await this.snapshotManager.getSnapshots();
+        const result = await this.snapshotManager.getSnapshots();
+
+        if (!result.success) {
+            logger.raw(`❌ Error retrieving snapshots: ${result.error}`);
+            return;
+        }
+
+        const snapshots = result.snapshots;
 
         if (snapshots.length === 0) {
             logger.raw('📭 No snapshots available');
@@ -594,7 +601,14 @@ export class SnapshotsCommand extends InteractiveCommand {
      */
     async _showSnapshotDetails(index, context) {
         const logger = getLogger();
-        const snapshots = await this.snapshotManager.getSnapshots();
+        const result = await this.snapshotManager.getSnapshots();
+
+        if (!result.success) {
+            logger.raw(`❌ Error retrieving snapshots: ${result.error}`);
+            return;
+        }
+
+        const snapshots = result.snapshots;
 
         if (index < 0 || index >= snapshots.length) {
             logger.raw('❌ Invalid snapshot number');
@@ -851,7 +865,14 @@ export class SnapshotsCommand extends InteractiveCommand {
      */
     async _restoreSnapshot(index, context) {
         const logger = getLogger();
-        const snapshots = await this.snapshotManager.getSnapshots();
+        const result = await this.snapshotManager.getSnapshots();
+
+        if (!result.success) {
+            logger.raw(`❌ Error retrieving snapshots: ${result.error}`);
+            return;
+        }
+
+        const snapshots = result.snapshots;
 
         if (index < 0 || index >= snapshots.length) {
             logger.raw('❌ Invalid snapshot number');
@@ -926,113 +947,119 @@ export class SnapshotsCommand extends InteractiveCommand {
             },
 
             async getSnapshots() {
-                return [
-                    {
-                        id: '1',
-                        instruction:
-                            'Add authentication to the login form with validation and error handling',
-                        timestamp: new Date(Date.now() - 300000), // 5 minutes ago
-                        mode: 'file',
-                        files: new Map([
-                            ['src/auth/LoginForm.js', { size: 2048, modified: true }],
-                            ['src/auth/AuthService.js', { size: 1536, modified: true }],
-                            ['src/utils/validation.js', { size: 512, modified: false }],
-                            ['src/styles/auth.css', { size: 768, modified: true }],
-                            ['tests/auth/LoginForm.test.js', { size: 1024, modified: false }],
-                        ]),
-                        modifiedFiles: new Set([
-                            'src/auth/LoginForm.js',
-                            'src/auth/AuthService.js',
-                            'src/styles/auth.css',
-                        ]),
-                        fileCount: 5,
-                        totalSize: 5888,
-                        creationTime: 245,
-                        memoryUsage: 8192,
-                        compressionRatio: 0.35,
-                        checksum: 'sha256:a1b2c3d4e5f6789012345678901234567890abcdef',
-                        tags: ['authentication', 'security', 'forms'],
-                    },
-                    {
-                        id: '2',
-                        instruction:
-                            'Fix responsive layout issues in navigation and sidebar components',
-                        timestamp: new Date(Date.now() - 600000), // 10 minutes ago
-                        mode: 'file',
-                        files: new Map([
-                            ['src/components/Navigation.js', { size: 3072, modified: true }],
-                            ['src/components/Sidebar.js', { size: 2560, modified: true }],
-                            ['src/styles/responsive.css', { size: 1024, modified: true }],
-                            ['src/styles/navigation.css', { size: 768, modified: true }],
-                        ]),
-                        modifiedFiles: new Set([
-                            'src/components/Navigation.js',
-                            'src/components/Sidebar.js',
-                            'src/styles/responsive.css',
-                            'src/styles/navigation.css',
-                        ]),
-                        fileCount: 4,
-                        totalSize: 7424,
-                    },
-                    {
-                        id: '3',
-                        instruction: 'Implement user profile management system',
-                        timestamp: new Date(Date.now() - 1800000), // 30 minutes ago
-                        mode: 'git',
-                        gitHash: 'f1a2b3c4d5e6789012345678901234567890abcd',
-                        branchName: 'synth-dev/20241205T141500-profile',
-                        author: 'SynthDev',
-                        commitMessage:
-                            'feat: add comprehensive user profile management with avatar upload',
-                        parentHash: 'e4f5g6h7i8j9k0l1m2n3o4p5q6r7s8t9u0v1w2x3',
-                        filesChanged: [
-                            'src/profile/ProfileManager.js',
-                            'src/profile/ProfileForm.js',
-                            'src/api/profileApi.js',
-                            'src/components/AvatarUpload.js',
-                            'src/styles/profile.css',
-                            'tests/profile/ProfileManager.test.js',
-                        ],
-                        stats: {
-                            additions: 245,
-                            deletions: 18,
-                            filesChanged: 6,
+                return {
+                    success: true,
+                    snapshots: [
+                        {
+                            id: '1',
+                            instruction:
+                                'Add authentication to the login form with validation and error handling',
+                            timestamp: new Date(Date.now() - 300000), // 5 minutes ago
+                            mode: 'file',
+                            files: new Map([
+                                ['src/auth/LoginForm.js', { size: 2048, modified: true }],
+                                ['src/auth/AuthService.js', { size: 1536, modified: true }],
+                                ['src/utils/validation.js', { size: 512, modified: false }],
+                                ['src/styles/auth.css', { size: 768, modified: true }],
+                                ['tests/auth/LoginForm.test.js', { size: 1024, modified: false }],
+                            ]),
+                            modifiedFiles: new Set([
+                                'src/auth/LoginForm.js',
+                                'src/auth/AuthService.js',
+                                'src/styles/auth.css',
+                            ]),
+                            fileCount: 5,
+                            totalSize: 5888,
+                            creationTime: 245,
+                            memoryUsage: 8192,
+                            compressionRatio: 0.35,
+                            checksum: 'sha256:a1b2c3d4e5f6789012345678901234567890abcdef',
+                            tags: ['authentication', 'security', 'forms'],
                         },
-                        creationTime: 1250,
-                        tags: ['profile', 'user-management', 'ui'],
-                    },
-                    {
-                        id: '4',
-                        instruction: 'Update database schema for user preferences',
-                        timestamp: new Date(Date.now() - 3600000), // 1 hour ago
-                        mode: 'file',
-                        files: new Map([
-                            ['migrations/001_user_preferences.sql', { size: 1024, modified: true }],
-                            ['src/models/UserPreferences.js', { size: 2048, modified: true }],
-                        ]),
-                        modifiedFiles: new Set([
-                            'migrations/001_user_preferences.sql',
-                            'src/models/UserPreferences.js',
-                        ]),
-                        fileCount: 2,
-                        totalSize: 3072,
-                    },
-                    {
-                        id: '5',
-                        instruction: 'Add comprehensive error logging and monitoring',
-                        timestamp: new Date(Date.now() - 7200000), // 2 hours ago
-                        mode: 'git',
-                        gitHash: 'g7h8i9j0k1l2',
-                        branchName: 'synth-dev/20241205T123000-logging',
-                        author: 'SynthDev',
-                        filesChanged: [
-                            'src/utils/logger.js',
-                            'src/middleware/errorHandler.js',
-                            'src/monitoring/metrics.js',
-                            'config/logging.json',
-                        ],
-                    },
-                ];
+                        {
+                            id: '2',
+                            instruction:
+                                'Fix responsive layout issues in navigation and sidebar components',
+                            timestamp: new Date(Date.now() - 600000), // 10 minutes ago
+                            mode: 'file',
+                            files: new Map([
+                                ['src/components/Navigation.js', { size: 3072, modified: true }],
+                                ['src/components/Sidebar.js', { size: 2560, modified: true }],
+                                ['src/styles/responsive.css', { size: 1024, modified: true }],
+                                ['src/styles/navigation.css', { size: 768, modified: true }],
+                            ]),
+                            modifiedFiles: new Set([
+                                'src/components/Navigation.js',
+                                'src/components/Sidebar.js',
+                                'src/styles/responsive.css',
+                                'src/styles/navigation.css',
+                            ]),
+                            fileCount: 4,
+                            totalSize: 7424,
+                        },
+                        {
+                            id: '3',
+                            instruction: 'Implement user profile management system',
+                            timestamp: new Date(Date.now() - 1800000), // 30 minutes ago
+                            mode: 'git',
+                            gitHash: 'f1a2b3c4d5e6789012345678901234567890abcd',
+                            branchName: 'synth-dev/20241205T141500-profile',
+                            author: 'SynthDev',
+                            commitMessage:
+                                'feat: add comprehensive user profile management with avatar upload',
+                            parentHash: 'e4f5g6h7i8j9k0l1m2n3o4p5q6r7s8t9u0v1w2x3',
+                            filesChanged: [
+                                'src/profile/ProfileManager.js',
+                                'src/profile/ProfileForm.js',
+                                'src/api/profileApi.js',
+                                'src/components/AvatarUpload.js',
+                                'src/styles/profile.css',
+                                'tests/profile/ProfileManager.test.js',
+                            ],
+                            stats: {
+                                additions: 245,
+                                deletions: 18,
+                                filesChanged: 6,
+                            },
+                            creationTime: 1250,
+                            tags: ['profile', 'user-management', 'ui'],
+                        },
+                        {
+                            id: '4',
+                            instruction: 'Update database schema for user preferences',
+                            timestamp: new Date(Date.now() - 3600000), // 1 hour ago
+                            mode: 'file',
+                            files: new Map([
+                                [
+                                    'migrations/001_user_preferences.sql',
+                                    { size: 1024, modified: true },
+                                ],
+                                ['src/models/UserPreferences.js', { size: 2048, modified: true }],
+                            ]),
+                            modifiedFiles: new Set([
+                                'migrations/001_user_preferences.sql',
+                                'src/models/UserPreferences.js',
+                            ]),
+                            fileCount: 2,
+                            totalSize: 3072,
+                        },
+                        {
+                            id: '5',
+                            instruction: 'Add comprehensive error logging and monitoring',
+                            timestamp: new Date(Date.now() - 7200000), // 2 hours ago
+                            mode: 'git',
+                            gitHash: 'g7h8i9j0k1l2',
+                            branchName: 'synth-dev/20241205T123000-logging',
+                            author: 'SynthDev',
+                            filesChanged: [
+                                'src/utils/logger.js',
+                                'src/middleware/errorHandler.js',
+                                'src/monitoring/metrics.js',
+                                'config/logging.json',
+                            ],
+                        },
+                    ],
+                };
             },
         };
     }
@@ -1055,7 +1082,14 @@ export class SnapshotsCommand extends InteractiveCommand {
      */
     async _deleteSnapshot(index, context) {
         const logger = getLogger();
-        const snapshots = await this.snapshotManager.getSnapshots();
+        const result = await this.snapshotManager.getSnapshots();
+
+        if (!result.success) {
+            logger.raw(`❌ Error retrieving snapshots: ${result.error}`);
+            return;
+        }
+
+        const snapshots = result.snapshots;
 
         if (index < 0 || index >= snapshots.length) {
             logger.raw('❌ Invalid snapshot number');
@@ -1099,7 +1133,14 @@ export class SnapshotsCommand extends InteractiveCommand {
      */
     async _clearAllSnapshots(context) {
         const logger = getLogger();
-        const snapshots = await this.snapshotManager.getSnapshots();
+        const result = await this.snapshotManager.getSnapshots();
+
+        if (!result.success) {
+            logger.raw(`❌ Error retrieving snapshots: ${result.error}`);
+            return;
+        }
+
+        const snapshots = result.snapshots;
 
         if (snapshots.length === 0) {
             logger.raw('📭 No snapshots to clear');

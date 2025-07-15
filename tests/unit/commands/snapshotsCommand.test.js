@@ -61,12 +61,13 @@ describe('SnapshotsCommand', () => {
 
         it('should return mock snapshots', async () => {
             const mockManager = command._createMockSnapshotManager();
-            const snapshots = await mockManager.getSnapshots();
+            const result = await mockManager.getSnapshots();
 
-            expect(Array.isArray(snapshots)).toBe(true);
-            expect(snapshots.length).toBeGreaterThan(0);
+            expect(result.success).toBe(true);
+            expect(Array.isArray(result.snapshots)).toBe(true);
+            expect(result.snapshots.length).toBeGreaterThan(0);
 
-            snapshots.forEach(snapshot => {
+            result.snapshots.forEach(snapshot => {
                 expect(snapshot).toHaveProperty('id');
                 expect(snapshot).toHaveProperty('instruction');
                 expect(snapshot).toHaveProperty('timestamp');
@@ -288,11 +289,11 @@ describe('SnapshotsCommand', () => {
         });
 
         it('should show snapshots summary', async () => {
-            const snapshots = await command.snapshotManager.getSnapshots();
+            const result = await command.snapshotManager.getSnapshots();
             const status = await command.snapshotManager.getStatus();
 
             // This should not throw and should handle the summary display
-            expect(() => command._showSnapshotsSummary(snapshots, status)).not.toThrow();
+            expect(() => command._showSnapshotsSummary(result.snapshots, status)).not.toThrow();
         });
 
         it('should render snapshot list items correctly', () => {
@@ -311,7 +312,10 @@ describe('SnapshotsCommand', () => {
 
         it('should handle empty snapshots list', async () => {
             // Mock empty snapshots
-            command.snapshotManager.getSnapshots = vi.fn().mockResolvedValue([]);
+            command.snapshotManager.getSnapshots = vi.fn().mockResolvedValue({
+                success: true,
+                snapshots: [],
+            });
 
             await command._showSnapshotsList(mockContext);
             // Should not throw and should handle empty state gracefully
@@ -327,7 +331,10 @@ describe('SnapshotsCommand', () => {
                 fileCount: 1,
             }));
 
-            command.snapshotManager.getSnapshots = vi.fn().mockResolvedValue(manySnapshots);
+            command.snapshotManager.getSnapshots = vi.fn().mockResolvedValue({
+                success: true,
+                snapshots: manySnapshots,
+            });
 
             await command._showSnapshotsList(mockContext);
             // Should handle pagination correctly

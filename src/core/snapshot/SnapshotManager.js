@@ -585,12 +585,12 @@ export class SnapshotManager {
         });
 
         // Listen for error events
-        this.eventEmitter.on(SnapshotEvents.ERROR, data => {
-            this.logger.error(`Snapshot error: ${data.error}`);
+        this.eventEmitter.on(SnapshotEvents.SYSTEM_ERROR, data => {
+            this.logger.error(`Snapshot error: ${data.error || 'Unknown error'}`);
             this.systemHealth.issues.push({
                 timestamp: new Date(),
                 type: data.type || 'unknown',
-                message: data.error,
+                message: data.error || 'Unknown error',
             });
         });
     }
