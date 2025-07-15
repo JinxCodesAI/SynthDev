@@ -6,6 +6,9 @@
 // Configuration
 export { default as SnapshotConfig } from './SnapshotConfig.js';
 
+// Main Manager
+export { SnapshotManager } from './SnapshotManager.js';
+
 // Interfaces and Abstract Classes
 export { SnapshotStrategy, SnapshotStore } from './interfaces/SnapshotStrategy.js';
 
@@ -14,6 +17,7 @@ export { default as SnapshotEventEmitter, SnapshotEvents } from './events/Snapsh
 
 // Import classes for initialization
 import SnapshotConfig from './SnapshotConfig.js';
+import { SnapshotManager } from './SnapshotManager.js';
 import SnapshotEventEmitter, { SnapshotEvents } from './events/SnapshotEventEmitter.js';
 import SnapshotLogger from './utils/SnapshotLogger.js';
 import ContentChangeDetector from './utils/ContentChangeDetector.js';
@@ -58,6 +62,9 @@ export function initializeSnapshotSystem(config = null) {
     const serializer = new SnapshotSerializer(snapshotConfig);
     const memoryStore = new MemorySnapshotStore(snapshotConfig, logger);
 
+    // Create the main snapshot manager
+    const snapshotManager = new SnapshotManager(snapshotConfig, eventEmitter);
+
     logger.info('Snapshot system initialized');
     eventEmitter.emit(SnapshotEvents.SYSTEM_INITIALIZED, {
         version: VERSION,
@@ -67,6 +74,7 @@ export function initializeSnapshotSystem(config = null) {
 
     return {
         config: snapshotConfig,
+        manager: snapshotManager,
         logger,
         eventEmitter,
         changeDetector,
@@ -88,6 +96,7 @@ export function getSystemInfo() {
         version: VERSION,
         buildDate: BUILD_DATE,
         components: [
+            'SnapshotManager',
             'SnapshotConfig',
             'SnapshotStrategy',
             'SnapshotStore',
