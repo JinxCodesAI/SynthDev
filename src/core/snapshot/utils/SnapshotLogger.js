@@ -9,9 +9,9 @@ import { getLogger } from '../../managers/logger.js';
  * Snapshot-specific logger with structured logging capabilities
  */
 class SnapshotLogger {
-    constructor() {
+    constructor(component = 'snapshot') {
         this.baseLogger = getLogger();
-        this.component = 'snapshot';
+        this.component = component;
     }
 
     /**
