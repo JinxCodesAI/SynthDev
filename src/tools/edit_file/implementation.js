@@ -393,10 +393,10 @@ class EditFileTool extends FileBaseTool {
                     !startRecovered && !endRecovered
                         ? 'Both boundaries could not be made unique'
                         : !startRecovered
-                          ? 'Start boundary could not be made unique'
-                          : !endRecovered
-                            ? 'End boundary could not be made unique'
-                            : 'Start boundary appears after end boundary',
+                            ? 'Start boundary could not be made unique'
+                            : !endRecovered
+                                ? 'End boundary could not be made unique'
+                                : 'Start boundary appears after end boundary',
             };
         } catch (error) {
             return {

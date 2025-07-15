@@ -134,7 +134,7 @@ describe('SystemMessages - includedTools functionality', () => {
             expect(() => {
                 SystemMessages._validateToolConfiguration('test_mutual_exclusion');
             }).toThrow(
-                "Role 'test_mutual_exclusion' cannot have both 'includedTools' and 'excludedTools' properties. They are mutually exclusive."
+                'Role \'test_mutual_exclusion\' cannot have both \'includedTools\' and \'excludedTools\' properties. They are mutually exclusive.'
             );
         });
 
@@ -251,7 +251,7 @@ describe('SystemMessages - includedTools functionality', () => {
             expect(() => {
                 SystemMessages.isToolIncluded('test_mutual_exclusion', 'read_file');
             }).toThrow(
-                "Role 'test_mutual_exclusion' cannot have both 'includedTools' and 'excludedTools' properties. They are mutually exclusive."
+                'Role \'test_mutual_exclusion\' cannot have both \'includedTools\' and \'excludedTools\' properties. They are mutually exclusive.'
             );
         });
     });

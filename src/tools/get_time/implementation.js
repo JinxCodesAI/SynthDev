@@ -66,98 +66,98 @@ class GetTimeTool extends BaseTool {
 
             // Format time based on requested format
             switch (format) {
-                case 'iso':
-                    if (timezone === 'local') {
-                        formattedTime = now.toISOString();
-                    } else {
-                        // Convert to target timezone and format as ISO-like string
-                        const options = {
-                            timeZone: timezone,
-                            year: 'numeric',
-                            month: '2-digit',
-                            day: '2-digit',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                            second: '2-digit',
-                            hour12: false,
-                        };
-                        const parts = new Intl.DateTimeFormat('en-CA', options).formatToParts(now);
-                        const partsObj = parts.reduce((acc, part) => {
-                            acc[part.type] = part.value;
-                            return acc;
-                        }, {});
-                        formattedTime = `${partsObj.year}-${partsObj.month}-${partsObj.day}T${partsObj.hour}:${partsObj.minute}:${partsObj.second}`;
-                    }
-                    break;
+            case 'iso':
+                if (timezone === 'local') {
+                    formattedTime = now.toISOString();
+                } else {
+                    // Convert to target timezone and format as ISO-like string
+                    const options = {
+                        timeZone: timezone,
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit',
+                        hour12: false,
+                    };
+                    const parts = new Intl.DateTimeFormat('en-CA', options).formatToParts(now);
+                    const partsObj = parts.reduce((acc, part) => {
+                        acc[part.type] = part.value;
+                        return acc;
+                    }, {});
+                    formattedTime = `${partsObj.year}-${partsObj.month}-${partsObj.day}T${partsObj.hour}:${partsObj.minute}:${partsObj.second}`;
+                }
+                break;
 
-                case 'unix':
-                    formattedTime = Math.floor(now.getTime() / 1000);
-                    break;
+            case 'unix':
+                formattedTime = Math.floor(now.getTime() / 1000);
+                break;
 
-                case 'readable':
-                    if (timezone === 'local') {
-                        formattedTime = now.toLocaleString();
-                    } else {
-                        const options = {
-                            timeZone: timezone,
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                            second: '2-digit',
-                            timeZoneName: 'short',
-                        };
-                        formattedTime = new Intl.DateTimeFormat('en-US', options).format(now);
-                    }
-                    break;
+            case 'readable':
+                if (timezone === 'local') {
+                    formattedTime = now.toLocaleString();
+                } else {
+                    const options = {
+                        timeZone: timezone,
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit',
+                        timeZoneName: 'short',
+                    };
+                    formattedTime = new Intl.DateTimeFormat('en-US', options).format(now);
+                }
+                break;
 
-                case 'custom': {
-                    // Basic custom formatting support
-                    let customResult = custom_format;
-                    const timeObj =
+            case 'custom': {
+                // Basic custom formatting support
+                let customResult = custom_format;
+                const timeObj =
                         timezone === 'local'
                             ? {
-                                  year: now.getFullYear(),
-                                  month: (now.getMonth() + 1).toString().padStart(2, '0'),
-                                  day: now.getDate().toString().padStart(2, '0'),
-                                  hour: now.getHours().toString().padStart(2, '0'),
-                                  minute: now.getMinutes().toString().padStart(2, '0'),
-                                  second: now.getSeconds().toString().padStart(2, '0'),
-                              }
+                                year: now.getFullYear(),
+                                month: (now.getMonth() + 1).toString().padStart(2, '0'),
+                                day: now.getDate().toString().padStart(2, '0'),
+                                hour: now.getHours().toString().padStart(2, '0'),
+                                minute: now.getMinutes().toString().padStart(2, '0'),
+                                second: now.getSeconds().toString().padStart(2, '0'),
+                            }
                             : (() => {
-                                  const options = {
-                                      timeZone: timezone,
-                                      year: 'numeric',
-                                      month: '2-digit',
-                                      day: '2-digit',
-                                      hour: '2-digit',
-                                      minute: '2-digit',
-                                      second: '2-digit',
-                                      hour12: false,
-                                  };
-                                  const parts = new Intl.DateTimeFormat(
-                                      'en-CA',
-                                      options
-                                  ).formatToParts(now);
-                                  return parts.reduce((acc, part) => {
-                                      acc[part.type] = part.value;
-                                      return acc;
-                                  }, {});
-                              })();
+                                const options = {
+                                    timeZone: timezone,
+                                    year: 'numeric',
+                                    month: '2-digit',
+                                    day: '2-digit',
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                    second: '2-digit',
+                                    hour12: false,
+                                };
+                                const parts = new Intl.DateTimeFormat(
+                                    'en-CA',
+                                    options
+                                ).formatToParts(now);
+                                return parts.reduce((acc, part) => {
+                                    acc[part.type] = part.value;
+                                    return acc;
+                                }, {});
+                            })();
 
-                    // Replace common format tokens
-                    customResult = customResult
-                        .replace(/YYYY/g, timeObj.year)
-                        .replace(/MM/g, timeObj.month)
-                        .replace(/DD/g, timeObj.day)
-                        .replace(/HH/g, timeObj.hour)
-                        .replace(/mm/g, timeObj.minute)
-                        .replace(/ss/g, timeObj.second);
+                // Replace common format tokens
+                customResult = customResult
+                    .replace(/YYYY/g, timeObj.year)
+                    .replace(/MM/g, timeObj.month)
+                    .replace(/DD/g, timeObj.day)
+                    .replace(/HH/g, timeObj.hour)
+                    .replace(/mm/g, timeObj.minute)
+                    .replace(/ss/g, timeObj.second);
 
-                    formattedTime = customResult;
-                    break;
-                }
+                formattedTime = customResult;
+                break;
+            }
             }
 
             return this.createSuccessResponse({

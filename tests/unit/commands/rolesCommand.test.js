@@ -358,7 +358,7 @@ describe('RolesCommand', () => {
             expect(result).toBe(true);
 
             // Should display error for unknown group
-            expect(mockLogger.error).toHaveBeenCalledWith("No roles found in group 'unknown'");
+            expect(mockLogger.error).toHaveBeenCalledWith('No roles found in group \'unknown\'');
             expect(mockLogger.info).toHaveBeenCalledWith('📖 Available groups: global, testing');
         });
     });

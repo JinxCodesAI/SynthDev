@@ -265,18 +265,18 @@ export class IndexCommand extends InteractiveCommand {
         );
 
         switch (choice.trim()) {
-            case '1':
-                return 51200; // 50KB
-            case '2':
-            case '':
-                return 102400; // 100KB (default)
-            case '3':
-                return 204800; // 200KB
-            case '4':
-                return -1; // No limit
-            default:
-                this.logger.warn('Invalid choice, using default (100KB)');
-                return 102400;
+        case '1':
+            return 51200; // 50KB
+        case '2':
+        case '':
+            return 102400; // 100KB (default)
+        case '3':
+            return 204800; // 200KB
+        case '4':
+            return -1; // No limit
+        default:
+            this.logger.warn('Invalid choice, using default (100KB)');
+            return 102400;
         }
     }
 

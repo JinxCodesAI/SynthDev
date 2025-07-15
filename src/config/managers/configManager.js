@@ -187,18 +187,18 @@ class ConfigManager {
                     uiDefaults.showStartupBanner !== undefined
                         ? uiDefaults.showStartupBanner
                         : (() => {
-                              throw new Error(
-                                  'Missing required configuration: ui_settings.showStartupBanner in defaults/application.json'
-                              );
-                          })(),
+                            throw new Error(
+                                'Missing required configuration: ui_settings.showStartupBanner in defaults/application.json'
+                            );
+                        })(),
                 enableColors:
                     uiDefaults.enableColors !== undefined
                         ? uiDefaults.enableColors
                         : (() => {
-                              throw new Error(
-                                  'Missing required configuration: ui_settings.enableColors in defaults/application.json'
-                              );
-                          })(),
+                            throw new Error(
+                                'Missing required configuration: ui_settings.enableColors in defaults/application.json'
+                            );
+                        })(),
                 promptPrefix:
                     uiDefaults.promptPrefix ||
                     (() => {

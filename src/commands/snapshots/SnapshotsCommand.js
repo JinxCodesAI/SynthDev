@@ -5,11 +5,12 @@
 
 import { InteractiveCommand } from '../base/BaseCommand.js';
 import { getLogger } from '../../core/managers/logger.js';
+import { SnapshotManager } from '../../core/snapshot/SnapshotManager.js';
 
 export class SnapshotsCommand extends InteractiveCommand {
     constructor() {
         super('snapshots', 'Interactive snapshot management interface');
-        this.snapshotManager = null; // Will be injected or mocked
+        this.snapshotManager = null; // Will be initialized in implementation
     }
 
     /**
@@ -21,6 +22,39 @@ export class SnapshotsCommand extends InteractiveCommand {
     }
 
     /**
+     * Normalize status format from different snapshot manager implementations
+     * @private
+     * @param {Object} statusResult - Status result from snapshot manager
+     * @returns {Object} Normalized status object
+     */
+    _normalizeStatus(statusResult) {
+        // Handle real SnapshotManager format: {success: boolean, status: {...}}
+        if (statusResult && typeof statusResult === 'object' && statusResult.success !== undefined) {
+            const status = statusResult.status || {};
+            return {
+                mode: status.strategy || status.mode || 'file',
+                gitStatus: status.strategyDetails?.gitStatus || 'Not Available',
+                originalBranch: status.strategyDetails?.originalBranch || null,
+                featureBranch: status.strategyDetails?.featureBranch || null,
+                ready: statusResult.success && status.initialized !== false,
+                initialized: status.initialized,
+                strategy: status.strategy,
+                health: status.health,
+                metrics: status.metrics
+            };
+        }
+
+        // Handle mock format (direct status object)
+        return statusResult || {
+            mode: 'file',
+            gitStatus: 'Not Available',
+            originalBranch: null,
+            featureBranch: null,
+            ready: true
+        };
+    }
+
+    /**
      * Execute the snapshots command
      * @param {string} args - Command arguments (unused for now)
      * @param {Object} context - Execution context
@@ -29,15 +63,28 @@ export class SnapshotsCommand extends InteractiveCommand {
     async implementation(args, context) {
         const logger = getLogger();
 
-        // Initialize snapshot manager (mock for now)
-        this.snapshotManager = this._createMockSnapshotManager();
+        // Initialize real snapshot manager
+        try {
+            this.snapshotManager = new SnapshotManager();
+            const initResult = await this.snapshotManager.initialize();
+            if (!initResult.success) {
+                logger.raw(`❌ Failed to initialize snapshot system: ${initResult.error}`);
+                logger.raw('💡 Falling back to mock data for demonstration');
+                this.snapshotManager = this._createMockSnapshotManager();
+            }
+        } catch (error) {
+            logger.raw(`❌ Error initializing snapshot system: ${error.message}`);
+            logger.raw('💡 Falling back to mock data for demonstration');
+            this.snapshotManager = this._createMockSnapshotManager();
+        }
 
         // Show header
         logger.raw('\n📸 Available Snapshots:');
         logger.raw('═'.repeat(80));
 
         // Get snapshot mode and status
-        const status = await this.snapshotManager.getStatus();
+        const statusResult = await this.snapshotManager.getStatus();
+        const status = this._normalizeStatus(statusResult);
         await this._showModeHeader(status);
 
         // Main interaction loop
@@ -98,7 +145,8 @@ export class SnapshotsCommand extends InteractiveCommand {
         }
 
         // Show summary header
-        const status = await this.snapshotManager.getStatus();
+        const statusResult = await this.snapshotManager.getStatus();
+        const status = this._normalizeStatus(statusResult);
         this._showSnapshotsSummary(snapshots, status);
 
         // Determine pagination settings
@@ -433,7 +481,8 @@ export class SnapshotsCommand extends InteractiveCommand {
 
         // Delete command (file mode only)
         if (input === `d${snapshotIndex + 1}`) {
-            const status = await this.snapshotManager.getStatus();
+            const statusResult = await this.snapshotManager.getStatus();
+            const status = this._normalizeStatus(statusResult);
             if (status.mode === 'file') {
                 await this._deleteSnapshot(snapshotIndex, context);
             } else {
@@ -821,14 +870,29 @@ export class SnapshotsCommand extends InteractiveCommand {
         if (confirmed) {
             logger.raw('\n🔄 Restoring snapshot...');
 
-            // Mock restoration (replace with real implementation later)
-            await this._simulateRestore(snapshot);
-
-            logger.raw(`✅ Successfully restored snapshot ${index + 1}`);
-            if (snapshot.mode === 'git') {
-                logger.raw(`   🔗 ${snapshot.instruction}`);
+            // Use real snapshot manager if available, otherwise simulate
+            if (this.snapshotManager.restoreSnapshot && typeof this.snapshotManager.restoreSnapshot === 'function') {
+                const result = await this.snapshotManager.restoreSnapshot(snapshot.id);
+                if (result.success) {
+                    logger.raw(`✅ Successfully restored snapshot ${index + 1}`);
+                    if (snapshot.mode === 'git') {
+                        logger.raw(`   🔗 ${snapshot.instruction}`);
+                    } else {
+                        const fileCount = result.filesRestored?.length || snapshot.files?.size || 0;
+                        logger.raw(`   📄 Restored ${fileCount} files`);
+                    }
+                } else {
+                    logger.raw(`❌ Failed to restore snapshot: ${result.error}`);
+                }
             } else {
-                logger.raw(`   📄 Restored ${snapshot.files?.size || 0} files`);
+                // Fallback to mock restoration
+                await this._simulateRestore(snapshot);
+                logger.raw(`✅ Successfully restored snapshot ${index + 1} (simulated)`);
+                if (snapshot.mode === 'git') {
+                    logger.raw(`   🔗 ${snapshot.instruction}`);
+                } else {
+                    logger.raw(`   📄 Restored ${snapshot.files?.size || 0} files`);
+                }
             }
         } else {
             logger.raw('❌ Restore cancelled');
@@ -997,9 +1061,20 @@ export class SnapshotsCommand extends InteractiveCommand {
 
         if (confirmed) {
             logger.raw('🗑️ Deleting snapshot...');
-            // Mock deletion (replace with real implementation later)
-            await new Promise(resolve => setTimeout(resolve, 500));
-            logger.raw(`✅ Snapshot ${index + 1} deleted`);
+
+            // Use real snapshot manager if available, otherwise simulate
+            if (this.snapshotManager.deleteSnapshot && typeof this.snapshotManager.deleteSnapshot === 'function') {
+                const result = await this.snapshotManager.deleteSnapshot(snapshot.id);
+                if (result.success) {
+                    logger.raw(`✅ Snapshot ${index + 1} deleted`);
+                } else {
+                    logger.raw(`❌ Failed to delete snapshot: ${result.error}`);
+                }
+            } else {
+                // Fallback to mock deletion
+                await new Promise(resolve => setTimeout(resolve, 500));
+                logger.raw(`✅ Snapshot ${index + 1} deleted (simulated)`);
+            }
         } else {
             logger.raw('❌ Delete cancelled');
         }
@@ -1026,9 +1101,20 @@ export class SnapshotsCommand extends InteractiveCommand {
 
         if (confirmed) {
             logger.raw('🗑️ Clearing all snapshots...');
-            // Mock clearing (replace with real implementation later)
-            await new Promise(resolve => setTimeout(resolve, 1000));
-            logger.raw('✅ All snapshots cleared');
+
+            // Use real snapshot manager if available, otherwise simulate
+            if (this.snapshotManager.clearSnapshots && typeof this.snapshotManager.clearSnapshots === 'function') {
+                const result = await this.snapshotManager.clearSnapshots();
+                if (result.success) {
+                    logger.raw(`✅ All ${result.cleared || snapshots.length} snapshots cleared`);
+                } else {
+                    logger.raw(`❌ Failed to clear snapshots: ${result.error}`);
+                }
+            } else {
+                // Fallback to mock clearing
+                await new Promise(resolve => setTimeout(resolve, 1000));
+                logger.raw('✅ All snapshots cleared (simulated)');
+            }
         } else {
             logger.raw('❌ Clear cancelled');
         }
@@ -1041,7 +1127,8 @@ export class SnapshotsCommand extends InteractiveCommand {
      */
     async _mergeBranch(context) {
         const logger = getLogger();
-        const status = await this.snapshotManager.getStatus();
+        const statusResult = await this.snapshotManager.getStatus();
+        const status = this._normalizeStatus(statusResult);
 
         if (!status.featureBranch) {
             logger.raw('❌ No feature branch to merge');
@@ -1075,7 +1162,8 @@ export class SnapshotsCommand extends InteractiveCommand {
      */
     async _switchBranch(context) {
         const logger = getLogger();
-        const status = await this.snapshotManager.getStatus();
+        const statusResult = await this.snapshotManager.getStatus();
+        const status = this._normalizeStatus(statusResult);
 
         if (!status.featureBranch) {
             logger.raw('❌ Already on original branch');

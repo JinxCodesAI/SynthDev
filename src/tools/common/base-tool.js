@@ -226,31 +226,31 @@ export class FileBaseTool extends BaseTool {
      */
     handleFileSystemError(error, filePath) {
         switch (error.code) {
-            case 'ENOENT':
-                return this.createErrorResponse(`File not found: ${filePath}`, {
-                    file_path: filePath,
-                    error_code: 'ENOENT',
-                });
-            case 'EACCES':
-                return this.createErrorResponse(`Permission denied: cannot access ${filePath}`, {
-                    file_path: filePath,
-                    error_code: 'EACCES',
-                });
-            case 'EISDIR':
-                return this.createErrorResponse(`Path is a directory, not a file: ${filePath}`, {
-                    file_path: filePath,
-                    error_code: 'EISDIR',
-                });
-            case 'ENOSPC':
-                return this.createErrorResponse('Disk full: not enough space', {
-                    file_path: filePath,
-                    error_code: 'ENOSPC',
-                });
-            default:
-                return this.createErrorResponse(`File system error: ${error.message}`, {
-                    file_path: filePath,
-                    error_code: error.code,
-                });
+        case 'ENOENT':
+            return this.createErrorResponse(`File not found: ${filePath}`, {
+                file_path: filePath,
+                error_code: 'ENOENT',
+            });
+        case 'EACCES':
+            return this.createErrorResponse(`Permission denied: cannot access ${filePath}`, {
+                file_path: filePath,
+                error_code: 'EACCES',
+            });
+        case 'EISDIR':
+            return this.createErrorResponse(`Path is a directory, not a file: ${filePath}`, {
+                file_path: filePath,
+                error_code: 'EISDIR',
+            });
+        case 'ENOSPC':
+            return this.createErrorResponse('Disk full: not enough space', {
+                file_path: filePath,
+                error_code: 'ENOSPC',
+            });
+        default:
+            return this.createErrorResponse(`File system error: ${error.message}`, {
+                file_path: filePath,
+                error_code: error.code,
+            });
         }
     }
 }

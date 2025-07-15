@@ -6,7 +6,7 @@
 import { SnapshotStrategy } from '../interfaces/SnapshotStrategy.js';
 import { GitIntegration } from '../git/GitIntegration.js';
 import { BranchLifecycleManager } from '../git/BranchLifecycleManager.js';
-import { Snapshot } from '../models/Snapshot.js';
+import Snapshot from '../models/Snapshot.js';
 import SnapshotLogger from '../utils/SnapshotLogger.js';
 import SnapshotConfig from '../SnapshotConfig.js';
 import SnapshotEventEmitter from '../events/SnapshotEventEmitter.js';
@@ -422,11 +422,11 @@ export class GitSnapshotStrategy extends SnapshotStrategy {
                 created: branch.created,
                 metadata: includeMetadata
                     ? {
-                          branchName: branch.name,
-                          commits: branch.commits,
-                          lastActivity: branch.lastActivity,
-                          isActive: branch.isActive,
-                      }
+                        branchName: branch.name,
+                        commits: branch.commits,
+                        lastActivity: branch.lastActivity,
+                        isActive: branch.isActive,
+                    }
                     : undefined,
             }));
 
@@ -454,5 +454,27 @@ export class GitSnapshotStrategy extends SnapshotStrategy {
                 reason: error.message,
             };
         }
+    }
+
+    /**
+     * Get strategy mode
+     * @returns {string} Strategy mode
+     */
+    getMode() {
+        return 'git';
+    }
+
+    /**
+     * Get strategy status and statistics
+     * @returns {Object} Strategy status
+     */
+    getStatus() {
+        return {
+            mode: 'git',
+            available: this.isInitialized,
+            initialized: this.isInitialized,
+            gitIntegration: this.gitIntegration ? this.gitIntegration.getStatus() : null,
+            branchManager: this.branchManager ? this.branchManager.getStatus() : null,
+        };
     }
 }

@@ -119,26 +119,26 @@ export default class WorkflowCommand extends BaseCommand {
      */
     _validateInputType(input, expectedType) {
         switch (expectedType) {
-            case 'string':
-                return typeof input === 'string';
-            case 'number':
-                return !isNaN(Number(input));
-            case 'object':
-                try {
-                    JSON.parse(input);
-                    return true;
-                } catch {
-                    return false;
-                }
-            case 'array':
-                try {
-                    const parsed = JSON.parse(input);
-                    return Array.isArray(parsed);
-                } catch {
-                    return false;
-                }
-            default:
-                return true; // Allow unknown types
+        case 'string':
+            return typeof input === 'string';
+        case 'number':
+            return !isNaN(Number(input));
+        case 'object':
+            try {
+                JSON.parse(input);
+                return true;
+            } catch {
+                return false;
+            }
+        case 'array':
+            try {
+                const parsed = JSON.parse(input);
+                return Array.isArray(parsed);
+            } catch {
+                return false;
+            }
+        default:
+            return true; // Allow unknown types
         }
     }
 

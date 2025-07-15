@@ -208,20 +208,20 @@ class SnapshotLogger {
 
         // Use appropriate base logger method
         switch (level.toLowerCase()) {
-            case 'error':
-                this.baseLogger.error(message, structuredLog);
-                break;
-            case 'warn':
-                this.baseLogger.warn(message, structuredLog);
-                break;
-            case 'info':
-                this.baseLogger.info(message, structuredLog);
-                break;
-            case 'debug':
-                this.baseLogger.debug(message, structuredLog);
-                break;
-            default:
-                this.baseLogger.info(message, structuredLog);
+        case 'error':
+            this.baseLogger.error(message, structuredLog);
+            break;
+        case 'warn':
+            this.baseLogger.warn(message, structuredLog);
+            break;
+        case 'info':
+            this.baseLogger.info(message, structuredLog);
+            break;
+        case 'debug':
+            this.baseLogger.debug(message, structuredLog);
+            break;
+        default:
+            this.baseLogger.info(message, structuredLog);
         }
     }
 
