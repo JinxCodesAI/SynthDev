@@ -88,10 +88,10 @@ vi.mock('../../../src/commands/role/RolesCommand.js', () => ({
 }));
 
 vi.mock('../../../src/commands/snapshots/SnapshotsCommand.js', () => ({
-    default: vi.fn().mockImplementation(() => ({
+    SnapshotsCommand: vi.fn().mockImplementation(() => ({
         name: 'snapshots',
-        description: 'Manage snapshots',
-        aliases: ['snap'],
+        description: 'Interactive snapshot management interface',
+        aliases: [],
         execute: vi.fn(),
     })),
 }));
@@ -110,6 +110,15 @@ vi.mock('../../../src/commands/terminal/CmdCommand.js', () => ({
         name: 'cmd',
         description: 'Execute command',
         aliases: [],
+        execute: vi.fn(),
+    })),
+}));
+
+vi.mock('../../../src/commands/config/ConfigureCommand.js', () => ({
+    ConfigureCommand: vi.fn().mockImplementation(() => ({
+        name: 'configure',
+        description: 'Interactive configuration wizard',
+        aliases: ['config'],
         execute: vi.fn(),
     })),
 }));
@@ -150,9 +159,10 @@ describe('CommandRegistrySetup', () => {
             expect(result.hasCommand('cost')).toBe(true);
             expect(result.hasCommand('clear')).toBe(true);
             expect(result.hasCommand('exit')).toBe(true);
+            expect(result.hasCommand('configure')).toBe(true);
             expect(result.hasCommand('role')).toBe(true);
             expect(result.hasCommand('roles')).toBe(true);
-            // snapshots command removed
+            expect(result.hasCommand('snapshots')).toBe(true);
             expect(result.hasCommand('index')).toBe(true);
             expect(result.hasCommand('cmd')).toBe(true);
         });

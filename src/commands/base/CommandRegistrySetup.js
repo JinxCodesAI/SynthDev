@@ -21,6 +21,7 @@ import CmdCommand from '../terminal/CmdCommand.js';
 import WorkflowsCommand from '../workflow/WorkflowsCommand.js';
 import WorkflowCommand from '../workflow/WorkflowCommand.js';
 import { ConfigureCommand } from '../config/ConfigureCommand.js';
+import { SnapshotsCommand } from '../snapshots/SnapshotsCommand.js';
 
 /**
  * Create and configure a command registry with all available commands
@@ -56,6 +57,9 @@ export function createCommandRegistry() {
 
         // Terminal commands
         registry.register(new CmdCommand());
+
+        // Snapshot commands
+        registry.register(new SnapshotsCommand());
 
         // Workflow commands
         // registry.register(new WorkflowsCommand());
