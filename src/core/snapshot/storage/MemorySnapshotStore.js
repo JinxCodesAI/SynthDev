@@ -6,7 +6,6 @@
 import { SnapshotStore } from '../interfaces/SnapshotStrategy.js';
 import SnapshotMetadata from '../models/SnapshotMetadata.js';
 import SnapshotLogger from '../utils/SnapshotLogger.js';
-import Snapshot from '../models/Snapshot.js';
 
 /**
  * In-memory implementation of SnapshotStore
@@ -374,7 +373,7 @@ class MemorySnapshotStore extends SnapshotStore {
             for (const [id, snapshot] of this.snapshots) {
                 try {
                     snapshot.toObject(); // Test serialization
-                } catch (error) {
+                } catch (_error) {
                     toRemove.push(id);
                 }
             }

@@ -11,6 +11,8 @@ export const SnapshotEvents = {
     SYSTEM_INITIALIZED: 'system:initialized',
     SYSTEM_ERROR: 'system:error',
     STRATEGY_INITIALIZED: 'strategy:initialized',
+    STRATEGY_FACTORY_INITIALIZED: 'strategy:factory:initialized',
+    STRATEGY_SWITCHED: 'strategy:switched',
 
     // Git events
     GIT_INITIALIZED: 'git:initialized',
@@ -39,6 +41,7 @@ export const SnapshotEvents = {
     SNAPSHOT_RESTORED: 'snapshot:restored',
     SNAPSHOT_DELETED: 'snapshot:deleted',
     SNAPSHOT_VALIDATED: 'snapshot:validated',
+    SNAPSHOTS_CLEARED: 'snapshots:cleared',
 
     // Change detection events
     CHANGE_DETECTED: 'change:detected',

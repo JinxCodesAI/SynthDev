@@ -267,9 +267,15 @@ class SystemMessages {
         const excludedPatterns = SystemMessages.getExcludedTools(role);
 
         // Check if includedTools property exists (even if empty)
-        const hasIncludedToolsProperty = roleConfig.hasOwnProperty('includedTools');
+        const hasIncludedToolsProperty = Object.prototype.hasOwnProperty.call(
+            roleConfig,
+            'includedTools'
+        );
         // Check if excludedTools property exists (even if empty)
-        const hasExcludedToolsProperty = roleConfig.hasOwnProperty('excludedTools');
+        const hasExcludedToolsProperty = Object.prototype.hasOwnProperty.call(
+            roleConfig,
+            'excludedTools'
+        );
 
         // If includedTools property exists, use inclusion logic
         if (hasIncludedToolsProperty) {

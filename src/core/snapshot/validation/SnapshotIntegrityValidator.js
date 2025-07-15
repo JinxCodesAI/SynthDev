@@ -4,9 +4,6 @@
  */
 
 import { createHash } from 'crypto';
-import { existsSync } from 'fs';
-import { readFile } from 'fs/promises';
-import path from 'path';
 import SnapshotLogger from '../utils/SnapshotLogger.js';
 
 /**
@@ -38,13 +35,12 @@ class SnapshotIntegrityValidator {
 
             const isValid = Object.values(validationResults).every(result => result.valid);
 
-            const duration = timer(isValid);
+            timer(isValid);
             this.logger.logSnapshotOperation('validate', {
                 snapshotId: snapshot.id,
                 mode: snapshot.mode,
                 success: isValid,
                 validationResults,
-                duration: duration,
             });
 
             return {
@@ -54,7 +50,7 @@ class SnapshotIntegrityValidator {
             };
         } catch (error) {
             this.logger.error(`Error validating snapshot ${snapshot.id}: ${error.message}`);
-            const duration = timer(false, { error: error.message });
+            timer(false, { error: error.message });
             return {
                 valid: false,
                 details: { error: error.message },

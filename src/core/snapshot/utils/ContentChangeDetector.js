@@ -296,7 +296,6 @@ class ContentChangeDetector {
      * @returns {Object} Cache statistics
      */
     getCacheStats() {
-        const now = Date.now();
         const cacheEntries = Array.from(this.fileHashes.entries());
 
         return {

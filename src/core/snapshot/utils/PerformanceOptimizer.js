@@ -322,7 +322,7 @@ class PerformanceOptimizer {
      * Force garbage collection if available
      */
     forceGarbageCollection() {
-        if (global.gc) {
+        if (typeof global !== 'undefined' && global.gc) {
             global.gc();
             this.logger.debug('Forced garbage collection');
         } else {
