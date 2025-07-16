@@ -17,6 +17,9 @@ import SnapshotEventEmitter from '../../../src/core/snapshot/events/SnapshotEven
 vi.mock('../../../src/core/snapshot/strategies/GitSnapshotStrategy.js');
 vi.mock('../../../src/core/snapshot/strategies/FileSnapshotStrategy.js');
 
+// Mock process.cwd() to avoid ENOENT errors in test environment
+const originalCwd = process.cwd;
+
 describe('StrategyFactory', () => {
     let factory;
     let config;
@@ -25,6 +28,9 @@ describe('StrategyFactory', () => {
     let mockFileStrategy;
 
     beforeEach(() => {
+        // Mock process.cwd() before creating config
+        process.cwd = vi.fn(() => '/tmp');
+
         // Reset mocks
         vi.clearAllMocks();
         resetStrategyFactory();
@@ -55,6 +61,9 @@ describe('StrategyFactory', () => {
 
     afterEach(() => {
         resetStrategyFactory();
+
+        // Restore original process.cwd
+        process.cwd = originalCwd || (() => '/tmp');
     });
 
     describe('initialization', () => {
