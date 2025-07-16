@@ -14,8 +14,26 @@ const gunzipAsync = promisify(gunzip);
 
 /**
  * Snapshot serialization utilities
+ *
+ * Current Usage: This class is currently only used in unit tests for data model validation.
+ *
+ * Design Note: In the current architecture, serialization is handled directly by:
+ * - FileSnapshotStrategy: Uses internal Map storage with JSON serialization for file content
+ * - GitSnapshotStrategy: Relies on Git's native file storage and commit system
+ * - SnapshotManager: Coordinates strategies without direct serialization needs
+ *
+ * Future Use Cases:
+ * - Export/import functionality (Phase 7 roadmap)
+ * - Snapshot portability between projects
+ * - External storage backends (Phase 8 roadmap)
+ * - Backup and restore operations
+ *
+ * The class provides comprehensive serialization capabilities including:
+ * - JSON format with optional compression
+ * - Archive format for bulk operations
+ * - Human-readable format for debugging
+ * - Checksum validation for integrity
  */
-//REVIEW: >>Where this is used ?<<
 class SnapshotSerializer {
     constructor(config) {
         this.config = config;
