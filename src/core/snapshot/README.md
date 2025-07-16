@@ -257,7 +257,6 @@ File-based snapshots implement sophisticated memory management:
 - **Compression overhead** - CPU cost for compression vs. memory savings
 - **Concurrent operations** - Limited concurrency control implementation
 
-//REVIEW: >>what is location of this configuration ?<<
 ## Configuration Schema
 
 ✅ **Integration Complete**: The snapshot system now uses the centralized `src/config/` system. Configuration is loaded from `src/config/defaults/application.json` via `ConfigManager.getInstance()` like other SynthDev components.
@@ -451,6 +450,7 @@ Commands:
 ```
 
 //REVIEW: >>This is not up to date<<
+
 ## Next Steps
 
 ### Immediate (Phase 5 Completion)
