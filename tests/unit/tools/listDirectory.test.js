@@ -299,8 +299,8 @@ describe('ListDirectory Tool - Fixed Tests', () => {
     });
 
     describe('AI summaries functionality', () => {
-        // Use the actual workspace directory for the index
-        const indexDir = join(originalCwd(), '.index');
+        // Use a fixed directory for the index
+        const indexDir = join('/mnt/persist/workspace', '.index');
         const indexFile = join(indexDir, 'codebase-index.json');
 
         beforeEach(() => {
