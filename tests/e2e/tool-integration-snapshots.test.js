@@ -154,8 +154,8 @@ describe('Tool Integration Snapshots', () => {
                     file_path: testFile,
                     operation: 'replace',
                     boundary_start: 'Line 2',
-                    boundary_end: 'Line 2',
-                    new_content: 'Modified Line 2',
+                    boundary_end: 'Line 3',
+                    new_content: 'Modified Line 2\nModified Line 3',
                 }),
             },
         };
@@ -181,6 +181,7 @@ describe('Tool Integration Snapshots', () => {
         // Verify file was modified
         const modifiedContent = readFileSync(testFile, 'utf8');
         expect(modifiedContent).toContain('Modified Line 2');
+        expect(modifiedContent).toContain('Modified Line 3');
 
         // Verify snapshot was created
         const finalSnapshots = await snapshotManager.getSnapshots();
