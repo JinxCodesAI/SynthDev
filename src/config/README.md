@@ -30,10 +30,62 @@ config/
 
 ### `defaults/application.json`
 
-**Affects**: Core application behavior, model settings, UI defaults, tool limits, logging configuration
+**Affects**: Core application behavior, model settings, UI defaults, tool limits, logging configuration, snapshot system
 
-- **Used by**: ConfigManager, application startup
-- **Controls**: Model configurations, global settings, UI preferences, tool defaults, logging levels
+- **Used by**: ConfigManager, application startup, SnapshotConfig
+- **Controls**: Model configurations, global settings, UI preferences, tool defaults, logging levels, snapshot system configuration
+
+#### Snapshot Configuration Section
+
+The `snapshots` section in `application.json` controls the snapshot system behavior:
+
+```json
+{
+    "snapshots": {
+        "mode": "auto", // auto | git | file - strategy selection
+        "contentHashing": {
+            "enabled": true, // Enable MD5-based change detection
+            "algorithm": "md5", // Hashing algorithm (md5 | sha1 | sha256)
+            "trackChanges": true // Track file changes for optimization
+        },
+        "git": {
+            "branchPrefix": "synth-dev/", // Prefix for AI-generated branches
+            "autoCommit": true, // Automatically commit AI changes
+            "commitMessageTemplate": "...", // Template for commit messages
+            "maxCommitHistory": 100, // Maximum commits to track
+            "autoCleanupBranches": true, // Clean up old branches
+            "requireUncommittedChanges": true // Only use Git mode if changes exist
+        },
+        "file": {
+            "maxSnapshots": 50, // Maximum in-memory snapshots
+            "compressionEnabled": false, // Enable gzip compression
+            "memoryLimit": "100MB", // Memory limit for snapshots
+            "persistToDisk": false, // Save snapshots to disk
+            "checksumValidation": true // Validate snapshot integrity
+        },
+        "cleanup": {
+            "autoCleanup": true, // Automatic cleanup when limits reached
+            "cleanupOnExit": true, // Clean up on application exit
+            "retentionDays": 7, // Days to retain snapshots
+            "maxDiskUsage": "1GB" // Maximum disk usage
+        },
+        "performance": {
+            "lazyLoading": true, // Load snapshots on demand
+            "backgroundProcessing": true, // Process operations in background
+            "cacheSize": 10 // Number of snapshots to cache
+        }
+    }
+}
+```
+
+**Environment Variable Overrides**: Snapshot configuration supports environment variable overrides through the standard ConfigManager pattern:
+
+- `SYNTHDEV_SNAPSHOT_MODE` - Override snapshot mode
+- `SYNTHDEV_SNAPSHOT_BRANCH_PREFIX` - Override Git branch prefix
+- `SYNTHDEV_SNAPSHOT_MAX_COUNT` - Override maximum snapshot count
+- `SYNTHDEV_SNAPSHOT_AUTO_CLEANUP` - Override auto cleanup setting
+- `SYNTHDEV_SNAPSHOT_MEMORY_LIMIT` - Override memory limit
+- `SYNTHDEV_SNAPSHOT_COMPRESSION` - Override compression setting
 
 ### `roles/` directory (Multi-file support)
 

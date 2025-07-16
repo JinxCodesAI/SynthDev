@@ -111,6 +111,7 @@ class ConfigManager {
         const uiDefaults = defaults.ui_settings || {};
         const toolDefaults = defaults.tool_settings || {};
         const safetyDefaults = defaults.safety || {};
+        const snapshotDefaults = defaults.snapshots || {};
 
         const config = {
             // OpenAI/General AI Provider Configuration
@@ -234,6 +235,60 @@ class ConfigManager {
                     min: 1000,
                     max: 30000,
                     default: 10000,
+                },
+            },
+
+            // Snapshot Settings (prioritize env vars, then application.json, then hardcoded defaults)
+            snapshots: {
+                mode: process.env.SYNTHDEV_SNAPSHOT_MODE || snapshotDefaults.mode || 'auto',
+                contentHashing: {
+                    enabled: snapshotDefaults.contentHashing?.enabled !== false,
+                    algorithm: snapshotDefaults.contentHashing?.algorithm || 'md5',
+                    trackChanges: snapshotDefaults.contentHashing?.trackChanges !== false,
+                },
+                git: {
+                    branchPrefix:
+                        process.env.SYNTHDEV_SNAPSHOT_BRANCH_PREFIX ||
+                        snapshotDefaults.git?.branchPrefix ||
+                        'synth-dev/',
+                    autoCommit: snapshotDefaults.git?.autoCommit !== false,
+                    commitMessageTemplate:
+                        snapshotDefaults.git?.commitMessageTemplate ||
+                        'Synth-Dev [{timestamp}]: {summary}\n\nOriginal instruction: {instruction}',
+                    maxCommitHistory: snapshotDefaults.git?.maxCommitHistory || 100,
+                    autoCleanupBranches: snapshotDefaults.git?.autoCleanupBranches !== false,
+                    requireUncommittedChanges:
+                        snapshotDefaults.git?.requireUncommittedChanges !== false,
+                },
+                file: {
+                    maxSnapshots:
+                        parseInt(process.env.SYNTHDEV_SNAPSHOT_MAX_COUNT) ||
+                        snapshotDefaults.file?.maxSnapshots ||
+                        50,
+                    compressionEnabled:
+                        process.env.SYNTHDEV_SNAPSHOT_COMPRESSION === 'true' ||
+                        snapshotDefaults.file?.compressionEnabled ||
+                        false,
+                    memoryLimit:
+                        process.env.SYNTHDEV_SNAPSHOT_MEMORY_LIMIT ||
+                        snapshotDefaults.file?.memoryLimit ||
+                        '100MB',
+                    persistToDisk: snapshotDefaults.file?.persistToDisk || false,
+                    checksumValidation: snapshotDefaults.file?.checksumValidation !== false,
+                },
+                cleanup: {
+                    autoCleanup:
+                        process.env.SYNTHDEV_SNAPSHOT_AUTO_CLEANUP === 'true' ||
+                        snapshotDefaults.cleanup?.autoCleanup !== false,
+                    cleanupOnExit: snapshotDefaults.cleanup?.cleanupOnExit !== false,
+                    retentionDays: snapshotDefaults.cleanup?.retentionDays || 7,
+                    maxDiskUsage: snapshotDefaults.cleanup?.maxDiskUsage || '1GB',
+                },
+                performance: {
+                    lazyLoading: snapshotDefaults.performance?.lazyLoading !== false,
+                    backgroundProcessing:
+                        snapshotDefaults.performance?.backgroundProcessing !== false,
+                    cacheSize: snapshotDefaults.performance?.cacheSize || 10,
                 },
             },
 

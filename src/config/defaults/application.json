@@ -39,5 +39,39 @@
             "max": 30000,
             "default": 10000
         }
+    },
+    "snapshots": {
+        "mode": "auto",
+        "contentHashing": {
+            "enabled": true,
+            "algorithm": "md5",
+            "trackChanges": true
+        },
+        "git": {
+            "branchPrefix": "synth-dev/",
+            "autoCommit": true,
+            "commitMessageTemplate": "Synth-Dev [{timestamp}]: {summary}\n\nOriginal instruction: {instruction}",
+            "maxCommitHistory": 100,
+            "autoCleanupBranches": true,
+            "requireUncommittedChanges": true
+        },
+        "file": {
+            "maxSnapshots": 50,
+            "compressionEnabled": false,
+            "memoryLimit": "100MB",
+            "persistToDisk": false,
+            "checksumValidation": true
+        },
+        "cleanup": {
+            "autoCleanup": true,
+            "cleanupOnExit": true,
+            "retentionDays": 7,
+            "maxDiskUsage": "1GB"
+        },
+        "performance": {
+            "lazyLoading": true,
+            "backgroundProcessing": true,
+            "cacheSize": 10
+        }
     }
 }

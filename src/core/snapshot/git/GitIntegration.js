@@ -3,7 +3,7 @@
  * Provides secure Git operations with validation, error handling, and retry mechanisms
  */
 
-import GitUtils from '../../../utils/gitUtils.js';
+import GitUtils from '../../../utils/GitUtils.js';
 import SnapshotLogger from '../utils/SnapshotLogger.js';
 import SnapshotConfig from '../SnapshotConfig.js';
 import SnapshotEventEmitter from '../events/SnapshotEventEmitter.js';

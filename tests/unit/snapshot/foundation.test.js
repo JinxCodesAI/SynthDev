@@ -32,9 +32,15 @@ describe('SnapshotConfig', () => {
         expect(snapshotConfig.file.maxSnapshots).toBe(50);
     });
 
-    it('should apply environment variable overrides', () => {
+    it('should apply environment variable overrides', async () => {
         process.env.SYNTHDEV_SNAPSHOT_MODE = 'git';
         process.env.SYNTHDEV_SNAPSHOT_MAX_COUNT = '100';
+
+        // Reload ConfigManager to pick up environment changes
+        const ConfigManager = (await import('../../../src/config/managers/configManager.js'))
+            .default;
+        const configManager = ConfigManager.getInstance();
+        await configManager.reloadConfiguration();
 
         const newConfig = new SnapshotConfig();
         const snapshotConfig = newConfig.getSnapshotConfig();
