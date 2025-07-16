@@ -15,17 +15,6 @@ export { SnapshotStrategy, SnapshotStore } from './interfaces/SnapshotStrategy.j
 // Events
 export { default as SnapshotEventEmitter, SnapshotEvents } from './events/SnapshotEventEmitter.js';
 
-// Import classes for initialization
-import SnapshotConfig from './SnapshotConfig.js';
-import { SnapshotManager } from './SnapshotManager.js';
-import SnapshotEventEmitter, { SnapshotEvents } from './events/SnapshotEventEmitter.js';
-import SnapshotLogger from './utils/SnapshotLogger.js';
-import ContentChangeDetector from './utils/ContentChangeDetector.js';
-import SnapshotIntegrityValidator from './validation/SnapshotIntegrityValidator.js';
-import PerformanceOptimizer from './utils/PerformanceOptimizer.js';
-import SnapshotSerializer from './utils/SnapshotSerializer.js';
-import MemorySnapshotStore from './storage/MemorySnapshotStore.js';
-
 // Utilities
 export { default as SnapshotLogger } from './utils/SnapshotLogger.js';
 export { default as IdGenerator } from './utils/IdGenerator.js';
@@ -46,46 +35,6 @@ export { default as SnapshotIntegrityValidator } from './validation/SnapshotInte
 // Version information
 export const VERSION = '1.0.0';
 export const BUILD_DATE = new Date().toISOString();
-
-/**
- * Initialize the snapshot system with configuration
- * @param {Object} config - Configuration object (optional)
- * @returns {Object} Initialized snapshot system components
- */
-//REVIEW: >>where this function is used ?<<
-export function initializeSnapshotSystem(config = null) {
-    const snapshotConfig = config ? new SnapshotConfig(config) : new SnapshotConfig();
-    const logger = new SnapshotLogger();
-    const eventEmitter = new SnapshotEventEmitter();
-    const changeDetector = new ContentChangeDetector(snapshotConfig);
-    const integrityValidator = new SnapshotIntegrityValidator(snapshotConfig);
-    const performanceOptimizer = new PerformanceOptimizer(snapshotConfig);
-    const serializer = new SnapshotSerializer(snapshotConfig);
-    const memoryStore = new MemorySnapshotStore(snapshotConfig, logger);
-
-    // Create the main snapshot manager
-    const snapshotManager = new SnapshotManager(snapshotConfig, eventEmitter);
-
-    logger.info('Snapshot system initialized');
-    eventEmitter.emit(SnapshotEvents.SYSTEM_INITIALIZED, {
-        version: VERSION,
-        buildDate: BUILD_DATE,
-        config: snapshotConfig.getConfig(),
-    });
-
-    return {
-        config: snapshotConfig,
-        manager: snapshotManager,
-        logger,
-        eventEmitter,
-        changeDetector,
-        integrityValidator,
-        performanceOptimizer,
-        serializer,
-        memoryStore,
-        version: VERSION,
-    };
-}
 
 /**
  * Get system information
