@@ -82,11 +82,12 @@ describe('Tool Integration Snapshots', () => {
 
     it('should create snapshot before write_file tool execution', async () => {
         // Create an existing file that will be overwritten
-        const testFile = createTestFile('test.txt', 'Original content');
+        const testFileRelative = createTestFile('test.txt', 'Original content');
+        const testFileAbsolute = join(testDir, 'test.txt');
 
         // Verify file exists with original content
-        expect(existsSync(testFile)).toBe(true);
-        expect(readFileSync(testFile, 'utf8')).toBe('Original content');
+        expect(existsSync(testFileAbsolute)).toBe(true);
+        expect(readFileSync(testFileAbsolute, 'utf8')).toBe('Original content');
 
         // Get initial snapshot count
         const initialSnapshots = await snapshotManager.getSnapshots();
@@ -99,7 +100,7 @@ describe('Tool Integration Snapshots', () => {
             function: {
                 name: 'write_file',
                 arguments: JSON.stringify({
-                    file_path: testFile,
+                    file_path: testFileRelative,
                     content: 'New content',
                     overwrite: true,
                 }),
@@ -126,7 +127,7 @@ describe('Tool Integration Snapshots', () => {
         expect(resultContent.success).toBe(true);
 
         // Verify file was modified
-        expect(readFileSync(testFile, 'utf8')).toBe('New content');
+        expect(readFileSync(testFileAbsolute, 'utf8')).toBe('New content');
 
         // Verify snapshot was created
         const finalSnapshots = await snapshotManager.getSnapshots();
@@ -136,18 +137,19 @@ describe('Tool Integration Snapshots', () => {
         // Verify snapshot contains the original file content
         const latestSnapshot = finalSnapshots.snapshots[0]; // Newest first
         expect(latestSnapshot.instruction).toContain('Pre-execution snapshot before write_file');
-        expect(latestSnapshot.instruction).toContain(testFile);
+        expect(latestSnapshot.instruction).toContain(testFileRelative);
 
         // Get the full snapshot to check file content
         const snapshotDetails = await snapshotManager.getSnapshot(latestSnapshot.id);
         expect(snapshotDetails.success).toBe(true);
-        expect(snapshotDetails.snapshot.files.has(testFile)).toBe(true);
-        expect(snapshotDetails.snapshot.files.get(testFile)).toBe('Original content');
+        expect(snapshotDetails.snapshot.files.has(testFileRelative)).toBe(true);
+        expect(snapshotDetails.snapshot.files.get(testFileRelative)).toBe('Original content');
     });
 
     it('should create snapshot before edit_file tool execution', async () => {
         // Create an existing file that will be edited
-        const testFile = createTestFile('edit-test.txt', 'Line 1\nLine 2\nLine 3');
+        const testFileRelative = createTestFile('edit-test.txt', 'Line 1\nLine 2\nLine 3');
+        const testFileAbsolute = join(testDir, 'edit-test.txt');
 
         // Get initial snapshot count
         const initialSnapshots = await snapshotManager.getSnapshots();
@@ -160,7 +162,7 @@ describe('Tool Integration Snapshots', () => {
             function: {
                 name: 'edit_file',
                 arguments: JSON.stringify({
-                    file_path: testFile,
+                    file_path: testFileRelative,
                     operation: 'replace',
                     boundary_start: 'Line 2',
                     boundary_end: 'Line 3',
@@ -188,7 +190,7 @@ describe('Tool Integration Snapshots', () => {
         expect(resultContent.success).toBe(true);
 
         // Verify file was modified
-        const modifiedContent = readFileSync(testFile, 'utf8');
+        const modifiedContent = readFileSync(testFileAbsolute, 'utf8');
         expect(modifiedContent).toContain('Modified Line 2');
         expect(modifiedContent).toContain('Modified Line 3');
 
@@ -204,8 +206,8 @@ describe('Tool Integration Snapshots', () => {
         // Get the full snapshot to check file content
         const snapshotDetails = await snapshotManager.getSnapshot(latestSnapshot.id);
         expect(snapshotDetails.success).toBe(true);
-        expect(snapshotDetails.snapshot.files.has(testFile)).toBe(true);
-        expect(snapshotDetails.snapshot.files.get(testFile)).toBe('Line 1\nLine 2\nLine 3');
+        expect(snapshotDetails.snapshot.files.has(testFileRelative)).toBe(true);
+        expect(snapshotDetails.snapshot.files.get(testFileRelative)).toBe('Line 1\nLine 2\nLine 3');
     });
 
     it('should not create snapshot for read-only tools', async () => {
@@ -293,7 +295,8 @@ describe('Tool Integration Snapshots', () => {
 
     it('should handle tool execution without snapshot manager gracefully', async () => {
         // Create a test file
-        const testFile = createTestFile('no-snapshot-test.txt', 'Original content');
+        const testFileRelative = createTestFile('no-snapshot-test.txt', 'Original content');
+        const testFileAbsolute = join(testDir, 'no-snapshot-test.txt');
 
         // Create mock tool call for write_file
         const toolCall = {
@@ -301,7 +304,7 @@ describe('Tool Integration Snapshots', () => {
             function: {
                 name: 'write_file',
                 arguments: JSON.stringify({
-                    file_path: testFile,
+                    file_path: testFileRelative,
                     content: 'New content',
                     overwrite: true,
                 }),
@@ -321,6 +324,6 @@ describe('Tool Integration Snapshots', () => {
         expect(resultContent.success).toBe(true);
 
         // Verify file was modified
-        expect(readFileSync(testFile, 'utf8')).toBe('New content');
+        expect(readFileSync(testFileAbsolute, 'utf8')).toBe('New content');
     });
 });
