@@ -388,16 +388,6 @@ class ToolManager {
             return true;
         }
 
-        // Method 2: Analyze tool parameters for file modification patterns
-        if (this._hasFileModificationParameters(toolDefinition)) {
-            return true;
-        }
-
-        // Method 3: Check tool category and tags
-        if (this._hasFileModificationCategory(toolDefinition)) {
-            return true;
-        }
-
         return false;
     }
 
@@ -416,65 +406,6 @@ class ToolManager {
         // Check auto_run flag - file-modifying tools typically require confirmation
         if (toolDefinition.auto_run === false && toolDefinition.category === 'file') {
             return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * Check if tool parameters indicate file modification
-     * @private
-     * @param {Object} toolDefinition - Tool definition object
-     * @returns {boolean} True if parameters suggest file modification
-     */
-    _hasFileModificationParameters(toolDefinition) {
-        const schema = toolDefinition.schema?.function?.parameters;
-        if (!schema || !schema.properties) {
-            return false;
-        }
-
-        const properties = schema.properties;
-
-        // Pattern 1: Has file_path AND content parameters (write operations)
-        if (properties.file_path && properties.content) {
-            return true;
-        }
-
-        // Pattern 2: Has file_path AND modification-related parameters
-        const modificationParams = ['new_content', 'boundary_start', 'boundary_end', 'operation'];
-        if (properties.file_path && modificationParams.some(param => properties[param])) {
-            return true;
-        }
-
-        // Pattern 3: Has overwrite parameter (indicates potential file modification)
-        if (properties.overwrite) {
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * Check if tool category and tags suggest file modification
-     * @private
-     * @param {Object} toolDefinition - Tool definition object
-     * @returns {boolean} True if category/tags suggest file modification
-     */
-    _hasFileModificationCategory(toolDefinition) {
-        // Check category
-        if (toolDefinition.category === 'file') {
-            // Additional check: exclude read-only file tools
-            const readOnlyTools = ['read_file', 'list_directory'];
-            if (readOnlyTools.includes(toolDefinition.name)) {
-                return false;
-            }
-            return true;
-        }
-
-        // Check tags for modification indicators
-        const modificationTags = ['write', 'edit', 'modify', 'create', 'delete'];
-        if (toolDefinition.tags && Array.isArray(toolDefinition.tags)) {
-            return toolDefinition.tags.some(tag => modificationTags.includes(tag.toLowerCase()));
         }
 
         return false;
