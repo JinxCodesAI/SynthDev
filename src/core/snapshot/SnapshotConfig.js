@@ -1,94 +1,44 @@
 /**
  * Snapshot System Configuration
- * Handles configuration loading, validation, and default values
+ * Integrates with the centralized configuration system
  */
 
 import { getLogger } from '../managers/logger.js';
-
-/**
- * Default configuration for the snapshot system
- */
-const DEFAULT_CONFIG = {
-    snapshots: {
-        mode: 'auto', // auto | git | file
-        contentHashing: {
-            enabled: true,
-            algorithm: 'md5', // md5 | sha1 | sha256
-            trackChanges: true,
-        },
-        git: {
-            branchPrefix: 'synth-dev/',
-            autoCommit: true,
-            commitMessageTemplate:
-                'Synth-Dev [{timestamp}]: {summary}\n\nOriginal instruction: {instruction}',
-            maxCommitHistory: 100,
-            autoCleanupBranches: true,
-            requireUncommittedChanges: true,
-        },
-        file: {
-            maxSnapshots: 50,
-            compressionEnabled: false,
-            memoryLimit: '100MB',
-            persistToDisk: false,
-            checksumValidation: true,
-        },
-        cleanup: {
-            autoCleanup: true,
-            cleanupOnExit: true,
-            retentionDays: 7,
-            maxDiskUsage: '1GB',
-        },
-        performance: {
-            lazyLoading: true,
-            backgroundProcessing: true,
-            cacheSize: 10,
-        },
-    },
-};
-
-/**
- * Environment variable mappings
- */
-const ENV_MAPPINGS = {
-    SYNTHDEV_SNAPSHOT_MODE: 'snapshots.mode',
-    SYNTHDEV_SNAPSHOT_BRANCH_PREFIX: 'snapshots.git.branchPrefix',
-    SYNTHDEV_SNAPSHOT_MAX_COUNT: 'snapshots.file.maxSnapshots',
-    SYNTHDEV_SNAPSHOT_AUTO_CLEANUP: 'snapshots.cleanup.autoCleanup',
-    SYNTHDEV_SNAPSHOT_MEMORY_LIMIT: 'snapshots.file.memoryLimit',
-    SYNTHDEV_SNAPSHOT_COMPRESSION: 'snapshots.file.compressionEnabled',
-};
+import ConfigManager from '../../config/managers/configManager.js';
 
 /**
  * Configuration manager for the snapshot system
+ * Now integrates with the centralized ConfigManager
  */
 class SnapshotConfig {
     constructor(customConfig = {}) {
         this.logger = getLogger();
+        this.configManager = ConfigManager.getInstance();
         this.config = this._loadConfiguration(customConfig);
         this._validateConfiguration();
     }
 
     /**
-     * Load configuration from environment variables, custom config, and defaults
+     * Load configuration from centralized ConfigManager with custom overrides
      * @private
      * @param {Object} customConfig - Custom configuration to merge
      * @returns {Object} Loaded configuration
      */
     _loadConfiguration(customConfig = {}) {
-        const config = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+        // Get configuration from centralized ConfigManager
+        const centralConfig = this.configManager.getConfig();
 
-        // Apply custom configuration overrides first
-        this._mergeConfig(config, customConfig);
+        // Create a copy of the snapshot configuration
+        const config = {
+            snapshots: JSON.parse(JSON.stringify(centralConfig.snapshots)),
+        };
 
-        // Apply environment variable overrides (highest priority)
-        for (const [envVar, configPath] of Object.entries(ENV_MAPPINGS)) {
-            const envValue = process.env[envVar];
-            if (envValue !== undefined) {
-                this._setNestedValue(config, configPath, this._parseEnvValue(envValue));
-            }
+        // Apply custom configuration overrides if provided
+        if (customConfig && Object.keys(customConfig).length > 0) {
+            this._mergeConfig(config, customConfig);
         }
 
-        this.logger.debug('Snapshot configuration loaded', config);
+        this.logger.debug('Snapshot configuration loaded from ConfigManager', config);
         return config;
     }
 
@@ -115,55 +65,6 @@ class SnapshotConfig {
                 }
             }
         }
-    }
-
-    /**
-     * Set a nested value in an object using dot notation
-     * @private
-     * @param {Object} obj - Target object
-     * @param {string} path - Dot-separated path
-     * @param {any} value - Value to set
-     */
-    _setNestedValue(obj, path, value) {
-        const keys = path.split('.');
-        let current = obj;
-
-        for (let i = 0; i < keys.length - 1; i++) {
-            const key = keys[i];
-            if (!(key in current) || typeof current[key] !== 'object') {
-                current[key] = {};
-            }
-            current = current[key];
-        }
-
-        current[keys[keys.length - 1]] = value;
-    }
-
-    /**
-     * Parse environment variable value to appropriate type
-     * @private
-     * @param {string} value - Environment variable value
-     * @returns {any} Parsed value
-     */
-    _parseEnvValue(value) {
-        // Boolean values
-        if (value.toLowerCase() === 'true') {
-            return true;
-        }
-        if (value.toLowerCase() === 'false') {
-            return false;
-        }
-
-        // Numeric values
-        if (/^\d+$/.test(value)) {
-            return parseInt(value, 10);
-        }
-        if (/^\d+\.\d+$/.test(value)) {
-            return parseFloat(value);
-        }
-
-        // String values
-        return value;
     }
 
     /**
@@ -285,6 +186,28 @@ class SnapshotConfig {
     }
 
     /**
+     * Set a nested value in an object using dot notation
+     * @private
+     * @param {Object} obj - Target object
+     * @param {string} path - Dot-separated path
+     * @param {any} value - Value to set
+     */
+    _setNestedValue(obj, path, value) {
+        const keys = path.split('.');
+        let current = obj;
+
+        for (let i = 0; i < keys.length - 1; i++) {
+            const key = keys[i];
+            if (!(key in current) || typeof current[key] !== 'object') {
+                current[key] = {};
+            }
+            current = current[key];
+        }
+
+        current[keys[keys.length - 1]] = value;
+    }
+
+    /**
      * Update configuration at runtime
      * @param {string} path - Dot-separated configuration path
      * @param {any} value - New value
@@ -296,12 +219,15 @@ class SnapshotConfig {
     }
 
     /**
-     * Reset configuration to defaults
+     * Reset configuration to defaults from ConfigManager
      */
     resetToDefaults() {
-        this.config = JSON.parse(JSON.stringify(DEFAULT_CONFIG));
+        const centralConfig = this.configManager.getConfig();
+        this.config = {
+            snapshots: JSON.parse(JSON.stringify(centralConfig.snapshots)),
+        };
         this._validateConfiguration();
-        this.logger.debug('Configuration reset to defaults');
+        this.logger.debug('Configuration reset to defaults from ConfigManager');
     }
 }
 

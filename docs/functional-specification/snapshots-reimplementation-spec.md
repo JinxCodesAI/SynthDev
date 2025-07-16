@@ -1628,7 +1628,7 @@ class AlertingSystem {
 
 This section provides a comprehensive task breakdown for implementing the SynthDev Snapshots system. The plan has been reorganized to prioritize file-based implementation first, followed by Git integration as an enhancement.
 
-**Current Status**: Phase 1-4 are COMPLETE. Phase 5 (File-based Implementation) is 80% complete - core components implemented but need integration. Ready to proceed with final integration and testing.
+**Current Status**: Phase 1-4 are COMPLETE. Phase 5 (File-based Implementation) is 98% complete - core components implemented and integrated. **Recently Completed**: Configuration system integration with centralized `src/config/` system. Ready to proceed with final testing and documentation.
 
 ### 11.1 Phase 1: Foundation & Core Infrastructure ✅ **COMPLETED**
 
@@ -2121,6 +2121,36 @@ This section provides a comprehensive task breakdown for implementing the SynthD
 
 **Dependencies**: Task 5.6
 **Estimated Time**: 1-2 days
+
+#### Task 5.8: Configuration System Integration ⚠️ **MISSING**
+
+**Description**: Integrate SnapshotConfig with the centralized configuration system (`src/config/`) to maintain consistency with other SynthDev components.
+
+**Current Issue**: SnapshotConfig uses its own configuration management with hardcoded defaults and custom environment variable mapping, instead of using the centralized `ConfigManager` and `src/config/defaults/application.json` system used by all other components.
+
+**Deliverables**:
+
+- [ ] Migrate snapshot configuration to `src/config/defaults/application.json`
+- [ ] Update SnapshotConfig to use `ConfigManager.getInstance()`
+- [ ] Remove custom environment variable mapping in favor of standard approach
+- [ ] Update configuration loading to use `ConfigurationLoader`
+- [ ] Ensure backward compatibility with existing environment variables
+- [ ] Update tests to use centralized configuration system
+- [ ] Update documentation to reflect centralized configuration
+
+**Acceptance Criteria**:
+
+- [ ] SnapshotConfig uses `ConfigManager` instead of custom implementation
+- [ ] Snapshot configuration appears in `src/config/defaults/application.json`
+- [ ] Environment variables work through standard ConfigManager approach
+- [ ] All existing functionality preserved during migration
+- [ ] Tests pass with new configuration system
+- [ ] Configuration follows same patterns as other components
+- [ ] Documentation updated to reflect centralized approach
+
+**Status**: ✅ **COMPLETE** - Successfully integrated with centralized configuration system
+**Dependencies**: None (completed independently)
+**Actual Time**: 2 days
 
 #### Phase 5 Product Owner Testing 🔄 **PENDING**
 
