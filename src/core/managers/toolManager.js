@@ -370,42 +370,228 @@ class ToolManager {
     }
 
     /**
-     * Check if a tool modifies files
+     * Check if a tool modifies files using intelligent detection
      * @private
      * @param {string} toolName - Name of the tool
      * @returns {boolean} True if tool modifies files
      */
     _isFileModifyingTool(toolName) {
-        //REVIEW: >>it needs to be smarter than that<<
-        const fileModifyingTools = [
-            'write_file',
-            'edit_file',
-            // Add more file-modifying tools as needed
-        ];
+        // Get tool definition for intelligent analysis
+        const toolDefinition = this.toolDefinitions.get(toolName);
+        if (!toolDefinition) {
+            // Fallback to hardcoded list for unknown tools
+            return ['write_file', 'edit_file'].includes(toolName);
+        }
 
-        return fileModifyingTools.includes(toolName);
+        // Method 1: Check for explicit file modification indicators
+        if (this._hasFileModificationIndicators(toolDefinition)) {
+            return true;
+        }
+
+        // Method 2: Analyze tool parameters for file modification patterns
+        if (this._hasFileModificationParameters(toolDefinition)) {
+            return true;
+        }
+
+        // Method 3: Check tool category and tags
+        if (this._hasFileModificationCategory(toolDefinition)) {
+            return true;
+        }
+
+        return false;
     }
 
     /**
-     * Extract file paths from tool arguments
+     * Check if tool definition has explicit file modification indicators
+     * @private
+     * @param {Object} toolDefinition - Tool definition object
+     * @returns {boolean} True if tool has file modification indicators
+     */
+    _hasFileModificationIndicators(toolDefinition) {
+        // Check for explicit backup requirement (indicates file modification)
+        if (toolDefinition.requires_backup === true) {
+            return true;
+        }
+
+        // Check auto_run flag - file-modifying tools typically require confirmation
+        if (toolDefinition.auto_run === false && toolDefinition.category === 'file') {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Check if tool parameters indicate file modification
+     * @private
+     * @param {Object} toolDefinition - Tool definition object
+     * @returns {boolean} True if parameters suggest file modification
+     */
+    _hasFileModificationParameters(toolDefinition) {
+        const schema = toolDefinition.schema?.function?.parameters;
+        if (!schema || !schema.properties) {
+            return false;
+        }
+
+        const properties = schema.properties;
+
+        // Pattern 1: Has file_path AND content parameters (write operations)
+        if (properties.file_path && properties.content) {
+            return true;
+        }
+
+        // Pattern 2: Has file_path AND modification-related parameters
+        const modificationParams = ['new_content', 'boundary_start', 'boundary_end', 'operation'];
+        if (properties.file_path && modificationParams.some(param => properties[param])) {
+            return true;
+        }
+
+        // Pattern 3: Has overwrite parameter (indicates potential file modification)
+        if (properties.overwrite) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Check if tool category and tags suggest file modification
+     * @private
+     * @param {Object} toolDefinition - Tool definition object
+     * @returns {boolean} True if category/tags suggest file modification
+     */
+    _hasFileModificationCategory(toolDefinition) {
+        // Check category
+        if (toolDefinition.category === 'file') {
+            // Additional check: exclude read-only file tools
+            const readOnlyTools = ['read_file', 'list_directory'];
+            if (readOnlyTools.includes(toolDefinition.name)) {
+                return false;
+            }
+            return true;
+        }
+
+        // Check tags for modification indicators
+        const modificationTags = ['write', 'edit', 'modify', 'create', 'delete'];
+        if (toolDefinition.tags && Array.isArray(toolDefinition.tags)) {
+            return toolDefinition.tags.some(tag => modificationTags.includes(tag.toLowerCase()));
+        }
+
+        return false;
+    }
+
+    /**
+     * Extract file paths from tool arguments using intelligent parameter analysis
      * @private
      * @param {string} toolName - Name of the tool
      * @param {Object} toolArgs - Tool arguments
      * @returns {string[]} Array of file paths that will be modified
      */
     _extractFilePathsFromArgs(toolName, toolArgs) {
-        //REVIEW: >>it should be a tool that knows if it is modyfying somethign and what, there<<
-        //REVIEW: >>should be common interface<<
         const filePaths = [];
 
+        // Get tool definition for intelligent parameter analysis
+        const toolDefinition = this.toolDefinitions.get(toolName);
+        if (!toolDefinition) {
+            // Fallback to hardcoded extraction for unknown tools
+            return this._extractFilePathsFallback(toolName, toolArgs);
+        }
+
+        // Method 1: Use tool's backup resource path if specified
+        if (toolDefinition.backup_resource_path_property_name) {
+            const pathValue = toolArgs[toolDefinition.backup_resource_path_property_name];
+            if (pathValue) {
+                filePaths.push(pathValue);
+            }
+        }
+
+        // Method 2: Analyze tool parameters to find file path properties
+        const schema = toolDefinition.schema?.function?.parameters;
+        if (schema && schema.properties) {
+            const filePathParams = this._identifyFilePathParameters(schema.properties);
+
+            for (const paramName of filePathParams) {
+                const pathValue = toolArgs[paramName];
+                if (pathValue) {
+                    // Handle both single paths and arrays of paths
+                    if (Array.isArray(pathValue)) {
+                        filePaths.push(...pathValue);
+                    } else {
+                        filePaths.push(pathValue);
+                    }
+                }
+            }
+        }
+
+        // Remove duplicates and return
+        return [...new Set(filePaths)];
+    }
+
+    /**
+     * Identify parameters that contain file paths from tool schema
+     * @private
+     * @param {Object} properties - Tool parameter properties
+     * @returns {string[]} Array of parameter names that contain file paths
+     */
+    _identifyFilePathParameters(properties) {
+        const filePathParams = [];
+
+        for (const [paramName, paramDef] of Object.entries(properties)) {
+            // Method 1: Direct parameter name matching
+            if (paramName === 'file_path' || paramName === 'path' || paramName.endsWith('_path')) {
+                filePathParams.push(paramName);
+                continue;
+            }
+
+            // Method 2: Parameter description analysis
+            if (paramDef.description) {
+                const description = paramDef.description.toLowerCase();
+                const pathIndicators = [
+                    'file path',
+                    'path to',
+                    'relative path',
+                    'file location',
+                    'path where',
+                    'file to',
+                    'target file',
+                    'source file',
+                ];
+
+                if (pathIndicators.some(indicator => description.includes(indicator))) {
+                    filePathParams.push(paramName);
+                    continue;
+                }
+            }
+
+            // Method 3: Parameter type and format analysis
+            if (paramDef.type === 'string' && paramName.includes('file')) {
+                filePathParams.push(paramName);
+            }
+        }
+
+        return filePathParams;
+    }
+
+    /**
+     * Fallback file path extraction for tools without definitions
+     * @private
+     * @param {string} toolName - Name of the tool
+     * @param {Object} toolArgs - Tool arguments
+     * @returns {string[]} Array of file paths
+     */
+    _extractFilePathsFallback(toolName, toolArgs) {
+        const filePaths = [];
+
+        // Hardcoded extraction for known tools
         switch (toolName) {
             case 'write_file':
             case 'edit_file':
+            case 'read_file':
                 if (toolArgs.file_path) {
                     filePaths.push(toolArgs.file_path);
                 }
                 break;
-            // Add more tools and their file path extraction logic as needed
+            // Add more tools as needed
         }
 
         return filePaths;
