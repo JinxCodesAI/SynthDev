@@ -49,7 +49,7 @@ describe('WriteFile Tool - Fixed Tests', () => {
         await cleanupTestDirectory(testDir);
 
         // Restore original process.cwd
-        process.cwd = originalCwd || (() => '/test/workspace');
+        process.cwd = originalCwd || (() => '/tmp');
     });
 
     describe('successful file writing', () => {
