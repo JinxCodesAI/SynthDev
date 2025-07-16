@@ -11,8 +11,22 @@ import SnapshotLogger from './SnapshotLogger.js';
 
 /**
  * Content change detector with hash-based change detection
+ *
+ * Design Decision: Uses hash-based change detection regardless of Git availability
+ *
+ * Rationale:
+ * - Consistency: Both Git and file modes use the same change detection mechanism
+ * - Performance: Hash-based detection is faster than Git operations for individual files
+ * - Reliability: Works regardless of Git state, repository corruption, or availability
+ * - Granularity: Provides file-level change detection independent of Git commits
+ * - Caching: Maintains hash cache for performance optimization across sessions
+ *
+ * Git Integration Note:
+ * While Git could theoretically be used for change detection (via git diff, git status),
+ * the hash-based approach provides better performance and reliability for the snapshot
+ * system's needs. Git integration is handled at the strategy level for branch management
+ * and commit operations, not for individual file change detection.
  */
-//REVIEW: >>what if git is enabled ? does it leverage git then ?<<
 class ContentChangeDetector {
     constructor(config) {
         this.config = config;
