@@ -6,11 +6,16 @@
 import { getLogger } from '../managers/logger.js';
 import ConfigManager from '../../config/managers/configManager.js';
 
-//REVIEW: >>how this is used ? configuration should be in src\config folder in json format.<<
-//REVIEW: >>is src\config folder utilized here in any way ?<<
 /**
  * Configuration manager for the snapshot system
  * Now integrates with the centralized ConfigManager
+ *
+ * Configuration Integration:
+ * - Uses centralized src/config system via ConfigManager.getInstance()
+ * - Configuration stored in src/config/defaults/application.json under 'snapshots' section
+ * - Supports environment variable overrides (SYNTHDEV_SNAPSHOT_*)
+ * - Provides snapshot-specific configuration methods and validation
+ * - Merges custom configuration overrides with centralized defaults
  */
 class SnapshotConfig {
     constructor(customConfig = {}) {
