@@ -6,6 +6,8 @@
 import { getLogger } from '../managers/logger.js';
 import ConfigManager from '../../config/managers/configManager.js';
 
+//REVIEW: >>how this is used ? configuration should be in src\config folder in json format.<<
+//REVIEW: >>is src\config folder utilized here in any way ?<<
 /**
  * Configuration manager for the snapshot system
  * Now integrates with the centralized ConfigManager

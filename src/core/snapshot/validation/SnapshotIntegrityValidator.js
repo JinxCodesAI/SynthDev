@@ -9,6 +9,8 @@ import SnapshotLogger from '../utils/SnapshotLogger.js';
 /**
  * Validates snapshot integrity and consistency
  */
+//REVIEW: >>Where this is used ?<<
+//REVIEW: >>Where in documentation it's role is described?<<
 class SnapshotIntegrityValidator {
     constructor(config) {
         this.config = config;

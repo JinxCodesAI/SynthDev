@@ -376,6 +376,7 @@ class ToolManager {
      * @returns {boolean} True if tool modifies files
      */
     _isFileModifyingTool(toolName) {
+        //REVIEW: >>it needs to be smarter than that<<
         const fileModifyingTools = [
             'write_file',
             'edit_file',
@@ -393,6 +394,8 @@ class ToolManager {
      * @returns {string[]} Array of file paths that will be modified
      */
     _extractFilePathsFromArgs(toolName, toolArgs) {
+        //REVIEW: >>it should be a tool that knows if it is modyfying somethign and what, there<<
+        //REVIEW: >>should be common interface<<
         const filePaths = [];
 
         switch (toolName) {

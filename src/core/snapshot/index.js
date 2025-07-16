@@ -52,6 +52,7 @@ export const BUILD_DATE = new Date().toISOString();
  * @param {Object} config - Configuration object (optional)
  * @returns {Object} Initialized snapshot system components
  */
+//REVIEW: >>where this function is used ?<<
 export function initializeSnapshotSystem(config = null) {
     const snapshotConfig = config ? new SnapshotConfig(config) : new SnapshotConfig();
     const logger = new SnapshotLogger();

@@ -2,7 +2,6 @@
     "name": "calculate",
     "description": "Perform mathematical calculations including basic arithmetic, trigonometry, and advanced functions",
     "auto_run": true,
-
     "category": "calculation",
     "version": "2.0.0",
     "tags": ["math", "calculation", "arithmetic", "trigonometry"],
