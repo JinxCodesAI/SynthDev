@@ -867,9 +867,21 @@ export class FileSnapshotStrategy extends SnapshotStrategy {
      */
     setupCleanupHandlers() {
         const cleanup = () => {
-            if (this.config.getSnapshotConfig().cleanup.cleanupOnExit) {
-                this.logger.info('Cleaning up file snapshots on exit...');
-                this.clearSnapshots();
+            try {
+                const snapshotConfig = this.config.getSnapshotConfig();
+                if (
+                    snapshotConfig &&
+                    snapshotConfig.cleanup &&
+                    snapshotConfig.cleanup.cleanupOnExit
+                ) {
+                    this.logger.info('Cleaning up file snapshots on exit...');
+                    this.clearSnapshots();
+                }
+            } catch (error) {
+                // Ignore cleanup errors during test teardown
+                if (this.logger) {
+                    this.logger.debug('Cleanup error during exit:', error.message);
+                }
             }
         };
 

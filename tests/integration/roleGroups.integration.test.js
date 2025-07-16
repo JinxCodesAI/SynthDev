@@ -1,11 +1,22 @@
 // tests/integration/roleGroups.integration.test.js
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
 import SystemMessages from '../../src/core/ai/systemMessages.js';
+
+// Mock process.cwd() to avoid ENOENT errors in test environment
+const originalCwd = process.cwd;
 
 describe('Role Groups Integration Test', () => {
     beforeEach(() => {
+        // Mock process.cwd() before tests
+        process.cwd = vi.fn(() => '/mnt/persist/workspace');
+
         // Clear any cached instances to ensure fresh loading
         SystemMessages.reloadRoles();
+    });
+
+    afterEach(() => {
+        // Restore original process.cwd
+        process.cwd = originalCwd || (() => '/mnt/persist/workspace');
     });
 
     describe('File-based group loading', () => {
