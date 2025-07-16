@@ -32,12 +32,12 @@ vi.mock('../../../src/core/managers/logger.js', () => ({
 const originalCwd = process.cwd;
 
 describe('WriteFile Tool - Fixed Tests', () => {
-    const testDir = join('/test/workspace', 'test-temp');
+    const testDir = join('/tmp', 'test-temp');
     const testFile = join(testDir, 'test.txt');
 
     beforeEach(async () => {
         // Mock process.cwd() before tests
-        process.cwd = vi.fn(() => '/test/workspace');
+        process.cwd = vi.fn(() => '/tmp');
 
         // Clean up and create fresh test directory
         await cleanupTestDirectory(testDir);

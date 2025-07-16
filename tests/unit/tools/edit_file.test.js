@@ -31,12 +31,12 @@ vi.mock('../../../src/core/managers/logger.js', () => ({
 const originalCwd = process.cwd;
 
 describe('Edit File Tool', () => {
-    const testDir = '/test/workspace';
+    const testDir = '/tmp';
     const testFile = join(testDir, 'test_edit_file.txt');
 
     beforeEach(() => {
         // Mock process.cwd() before tests
-        process.cwd = vi.fn(() => testDir);
+        process.cwd = vi.fn(() => '/tmp');
         vi.clearAllMocks();
         // Clean up any existing test file
         if (existsSync(testFile)) {
@@ -50,7 +50,7 @@ describe('Edit File Tool', () => {
             unlinkSync(testFile);
         }
         // Restore original process.cwd
-        process.cwd = originalCwd || (() => '/test/workspace');
+        process.cwd = originalCwd || (() => '/tmp');
     });
 
     describe('Replace Operation', () => {

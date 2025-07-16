@@ -9,12 +9,12 @@ import { cleanupTestDirectory } from '../../helpers/testUtils.js';
 const originalCwd = process.cwd;
 
 describe('ReadFile Tool - Fixed Tests', () => {
-    const testDir = join('/test/workspace', 'test-temp');
+    const testDir = join('/tmp', 'test-temp');
     const testFile = join(testDir, 'test.txt');
 
     beforeEach(async () => {
         // Mock process.cwd() before tests
-        process.cwd = vi.fn(() => '/test/workspace');
+        process.cwd = vi.fn(() => '/tmp');
 
         // Clean up and create fresh test directory
         await cleanupTestDirectory(testDir);
@@ -26,7 +26,7 @@ describe('ReadFile Tool - Fixed Tests', () => {
         await cleanupTestDirectory(testDir);
 
         // Restore original process.cwd
-        process.cwd = originalCwd || (() => '/test/workspace');
+        process.cwd = originalCwd || (() => '/tmp');
     });
 
     describe('successful file reading', () => {
