@@ -11,6 +11,9 @@ import ToolManager from '../../src/core/managers/toolManager.js';
 import { SnapshotManager } from '../../src/core/snapshot/SnapshotManager.js';
 import SnapshotConfig from '../../src/core/snapshot/SnapshotConfig.js';
 
+// Mock process.cwd() to avoid ENOENT errors in test environment
+const originalCwd = process.cwd;
+
 describe('Tool Integration Snapshots', () => {
     let toolManager;
     let snapshotManager;
@@ -19,10 +22,13 @@ describe('Tool Integration Snapshots', () => {
     let mockConsoleInterface;
 
     beforeEach(async () => {
+        // Mock process.cwd() before tests
+        process.cwd = vi.fn(() => '/tmp');
+
         // Create test directory within current working directory
         const testDirName = `tool-integration-test-${Date.now()}`;
         testDirRelative = join('test-temp', testDirName);
-        testDir = join(process.cwd(), testDirRelative);
+        testDir = join('/tmp', testDirRelative);
         mkdirSync(testDir, { recursive: true });
 
         // Initialize tool manager
@@ -60,6 +66,9 @@ describe('Tool Integration Snapshots', () => {
         if (existsSync(testDir)) {
             rmSync(testDir, { recursive: true, force: true });
         }
+
+        // Restore original process.cwd
+        process.cwd = originalCwd || (() => '/tmp');
     });
 
     const createTestFile = (filename, content) => {
