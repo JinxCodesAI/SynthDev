@@ -299,7 +299,8 @@ describe('ListDirectory Tool - Fixed Tests', () => {
     });
 
     describe('AI summaries functionality', () => {
-        const indexDir = join(process.cwd(), '.index');
+        // Use the actual workspace directory for the index
+        const indexDir = join(originalCwd(), '.index');
         const indexFile = join(indexDir, 'codebase-index.json');
 
         beforeEach(() => {
@@ -351,7 +352,7 @@ describe('ListDirectory Tool - Fixed Tests', () => {
         });
 
         it('should include AI summaries when available and requested', async () => {
-            // Create mock index data
+            // Create mock index data with paths that match what the tool will generate
             const mockIndexData = {
                 metadata: {
                     generated: new Date().toISOString(),
@@ -364,8 +365,8 @@ describe('ListDirectory Tool - Fixed Tests', () => {
                         type: 'file',
                         ai_summary: 'This is a test file containing sample content.',
                     },
-                    'test-temp\\file2.js': {
-                        path: 'test-temp\\file2.js',
+                    'test-temp/file2.js': {
+                        path: 'test-temp/file2.js',
                         name: 'file2.js',
                         type: 'file',
                         ai_summary: 'This is a JavaScript file with test content.',
