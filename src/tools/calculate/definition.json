@@ -2,6 +2,8 @@
     "name": "calculate",
     "description": "Perform mathematical calculations including basic arithmetic, trigonometry, and advanced functions",
     "auto_run": true,
+    // REVIEW: >>if those are removed, how system knows if given command requires backup or<<
+    // REVIEW: >>not ? where in documentation this is described?<<
 
     "category": "calculation",
     "version": "2.0.0",

@@ -6,6 +6,7 @@
 /**
  * Event emitter interface for snapshot events
  */
+//REVIEW: >>What listens to this events? What is a purpose of this file?<<
 class SnapshotEventEmitter {
     constructor() {
         this.listeners = new Map();

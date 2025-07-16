@@ -12,6 +12,7 @@ import SnapshotLogger from './SnapshotLogger.js';
 /**
  * Content change detector with hash-based change detection
  */
+//REVIEW: >>what if git is enabled ? does it leverage git then ?<<
 class ContentChangeDetector {
     constructor(config) {
         this.config = config;

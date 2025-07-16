@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+//REVIEW: >>make sure that snapshot mechanics is used by default if available<<
+
 // import { OpenAI } from 'openai';
 // import { readFileSync, readdirSync } from 'fs';
 // import { join, dirname } from 'path';

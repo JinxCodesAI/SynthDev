@@ -1,3 +1,5 @@
+//REVIEW: >>how commands handle filesystem  change if they do not have access to snapshot<<
+//REVIEW: >>manager?<<
 import {
     createCommandRegistry,
     validateRegistry,

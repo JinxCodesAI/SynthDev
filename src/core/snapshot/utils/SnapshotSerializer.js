@@ -15,6 +15,7 @@ const gunzipAsync = promisify(gunzip);
 /**
  * Snapshot serialization utilities
  */
+//REVIEW: >>Where this is used ?<<
 class SnapshotSerializer {
     constructor(config) {
         this.config = config;
