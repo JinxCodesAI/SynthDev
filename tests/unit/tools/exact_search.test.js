@@ -10,17 +10,28 @@ vi.mock('../../../src/tools/common/fs_utils.js', () => ({
     safeReadFile: vi.fn(),
 }));
 
+// Mock process.cwd() to avoid ENOENT errors in test environment
+const originalCwd = process.cwd;
+
 describe('Exact Search Tool', () => {
     let mockScanDirectory;
     let mockSafeReadFile;
 
     beforeEach(async () => {
+        // Mock process.cwd() before tests
+        process.cwd = vi.fn(() => '/tmp');
+
         vi.clearAllMocks();
 
         // Get the mocked functions
         const fsUtils = await import('../../../src/tools/common/fs_utils.js');
         mockScanDirectory = fsUtils.scanDirectory;
         mockSafeReadFile = fsUtils.safeReadFile;
+    });
+
+    afterEach(() => {
+        // Restore original process.cwd
+        process.cwd = originalCwd || (() => '/tmp');
     });
 
     describe('Basic Search Functionality', () => {
