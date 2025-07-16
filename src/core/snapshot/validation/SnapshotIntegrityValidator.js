@@ -8,9 +8,24 @@ import SnapshotLogger from '../utils/SnapshotLogger.js';
 
 /**
  * Validates snapshot integrity and consistency
+ *
+ * Usage: This validator is used by SnapshotManager to validate snapshots during:
+ * - Snapshot creation (validateSnapshot method)
+ * - Snapshot restoration (integrity checks)
+ * - System health checks (validateSnapshot method)
+ *
+ * Documentation: Role described in:
+ * - src/core/snapshot/README.md (Validation section)
+ * - docs/functional-specification/snapshots-reimplementation-spec.md (Integrity validation)
+ * - Comprehensive unit tests in tests/unit/snapshot/content-change-detection.test.js
+ *
+ * The validator ensures snapshot data integrity through:
+ * - Structure validation (required fields, data types)
+ * - Content hash verification (file content matches stored hashes)
+ * - File existence validation (referenced files exist)
+ * - Checksum consistency (stored checksums match calculated values)
+ * - Metadata validation (instruction format, timestamp validity)
  */
-//REVIEW: >>Where this is used ?<<
-//REVIEW: >>Where in documentation it's role is described?<<
 class SnapshotIntegrityValidator {
     constructor(config) {
         this.config = config;
