@@ -8,24 +8,40 @@
  *
  * Purpose: Provides event-driven architecture for snapshot system coordination
  *
- * Event Listeners:
- * - SnapshotManager: Listens to strategy switches, snapshot creation, system errors
- * - Strategies (Git/File): Emit events for snapshot operations, initialization
- * - External integrations: Can listen to snapshot lifecycle events
- * - Performance monitoring: Tracks operation metrics via events
- * - User interface: Updates UI based on snapshot events
+ * ACTUAL EVENT LISTENERS (found in codebase):
  *
- * Key Events:
- * - snapshot:created, snapshot:restored, snapshot:deleted (lifecycle)
- * - strategy:switched, strategy:initialized (strategy management)
- * - git:branch_created, git:commit_created (Git operations)
- * - system:initialized, system:error (system status)
+ * 1. **SnapshotManager._setupEventListeners()** listens to:
+ *    - STRATEGY_SWITCHED: Logs strategy changes and triggers health check
+ *    - SNAPSHOT_CREATED: Updates metrics.totalSnapshots counter
+ *    - SYSTEM_ERROR: Logs errors and adds to systemHealth.issues
  *
- * Benefits:
- * - Decoupled communication between components
- * - Extensible event system for future integrations
- * - Centralized event coordination
- * - Performance monitoring and debugging support
+ * 2. **BranchLifecycleManager.setupEventListeners()** listens to:
+ *    - BRANCH_CREATED, BRANCH_SWITCHED, BRANCH_DELETED: Tracks branch operations
+ *
+ * ACTUAL EVENT EMITTERS (found in codebase):
+ *
+ * 1. **SnapshotManager** emits:
+ *    - SNAPSHOT_CREATED: After successful snapshot creation
+ *    - STRATEGY_SWITCHED: After strategy change
+ *
+ * 2. **GitSnapshotStrategy** emits:
+ *    - SNAPSHOT_CREATED: After Git snapshot creation
+ *
+ * 3. **FileSnapshotStrategy** emits:
+ *    - SNAPSHOT_CREATED: After file snapshot creation
+ *
+ * 4. **GitIntegration** emits:
+ *    - COMMIT_CREATED: After successful Git commit
+ *
+ * FUNCTIONAL SPECIFICATION COMPLIANCE:
+ * - ✅ Observer Pattern implemented as specified
+ * - ✅ SnapshotEvents notify components of lifecycle events
+ * - ✅ Integration hooks for snapshot operations
+ *
+ * POTENTIAL ISSUES IDENTIFIED:
+ * - Limited event listener usage compared to available events
+ * - Many defined events in SnapshotEvents.js are not emitted or listened to
+ * - Event system could be more extensively used for monitoring and debugging
  */
 class SnapshotEventEmitter {
     constructor() {
