@@ -5,8 +5,28 @@
 
 /**
  * Event emitter interface for snapshot events
+ *
+ * Purpose: Provides event-driven architecture for snapshot system coordination
+ *
+ * Event Listeners:
+ * - SnapshotManager: Listens to strategy switches, snapshot creation, system errors
+ * - Strategies (Git/File): Emit events for snapshot operations, initialization
+ * - External integrations: Can listen to snapshot lifecycle events
+ * - Performance monitoring: Tracks operation metrics via events
+ * - User interface: Updates UI based on snapshot events
+ *
+ * Key Events:
+ * - snapshot:created, snapshot:restored, snapshot:deleted (lifecycle)
+ * - strategy:switched, strategy:initialized (strategy management)
+ * - git:branch_created, git:commit_created (Git operations)
+ * - system:initialized, system:error (system status)
+ *
+ * Benefits:
+ * - Decoupled communication between components
+ * - Extensible event system for future integrations
+ * - Centralized event coordination
+ * - Performance monitoring and debugging support
  */
-//REVIEW: >>What listens to this events? What is a purpose of this file?<<
 class SnapshotEventEmitter {
     constructor() {
         this.listeners = new Map();
