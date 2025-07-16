@@ -9,17 +9,20 @@ import { GitSnapshotStrategy } from '../../../src/core/snapshot/strategies/GitSn
 import SnapshotConfig from '../../../src/core/snapshot/SnapshotConfig.js';
 import SnapshotEventEmitter from '../../../src/core/snapshot/events/SnapshotEventEmitter.js';
 
+// Create a shared mock data object that can be accessed from tests
+const mockData = {
+    available: true,
+    isRepo: true,
+    currentBranch: 'main',
+    hasChanges: false,
+    status: '',
+};
+
 // Mock GitUtils
-vi.mock('../../../src/utils/gitUtils.js', () => ({
+vi.mock('../../../src/utils/GitUtils.js', () => ({
     default: class MockGitUtils {
         constructor() {
-            this.mockData = {
-                available: true,
-                isRepo: true,
-                currentBranch: 'main',
-                hasChanges: false,
-                status: '',
-            };
+            this.mockData = mockData;
         }
 
         async checkGitAvailability() {
@@ -49,12 +52,27 @@ vi.mock('../../../src/utils/gitUtils.js', () => ({
         }
 
         async switchBranch(branchName) {
+            // Only fail if Git is not available or not a repo
+            if (!this.mockData.available || !this.mockData.isRepo) {
+                return {
+                    success: false,
+                    error: `pathspec '${branchName}' did not match any file(s) known to git`,
+                };
+            }
             this.mockData.currentBranch = branchName;
             return { success: true };
         }
 
         async addFiles(files) {
+            // Only fail if Git is not available or not a repo
+            if (!this.mockData.available || !this.mockData.isRepo) {
+                return { success: false, error: `pathspec '${files[0]}' did not match any files` };
+            }
             return { success: true, files };
+        }
+
+        async checkBranchExists(branchName) {
+            return { success: true, exists: branchName === 'main' };
         }
 
         async commit(message) {
@@ -106,6 +124,13 @@ describe('GitIntegration', () => {
         config = new SnapshotConfig();
         eventEmitter = new SnapshotEventEmitter();
         gitIntegration = new GitIntegration(config, eventEmitter);
+
+        // Reset mock data to defaults
+        mockData.available = true;
+        mockData.isRepo = true;
+        mockData.currentBranch = 'main';
+        mockData.hasChanges = false;
+        mockData.status = '';
     });
 
     afterEach(() => {
@@ -121,7 +146,7 @@ describe('GitIntegration', () => {
         });
 
         it('should fail initialization when Git is not available', async () => {
-            gitIntegration.gitUtils.mockData.available = false;
+            mockData.available = false;
 
             const result = await gitIntegration.initialize();
 
@@ -130,7 +155,7 @@ describe('GitIntegration', () => {
         });
 
         it('should fail initialization when not in Git repository', async () => {
-            gitIntegration.gitUtils.mockData.isRepo = false;
+            mockData.isRepo = false;
 
             const result = await gitIntegration.initialize();
 
@@ -201,7 +226,7 @@ describe('GitIntegration', () => {
 
         it('should commit changes with sanitized message', async () => {
             // Mock that there are changes to commit
-            gitIntegration.gitUtils.mockData.hasChanges = true;
+            mockData.hasChanges = true;
 
             const message = 'Test commit message\u0000with\u0001control\u0002chars';
             const result = await gitIntegration.commit(message);
@@ -457,7 +482,7 @@ describe('GitSnapshotStrategy', () => {
         });
 
         it('should report unavailability when Git is not available', async () => {
-            strategy.gitIntegration.gitUtils.mockData.available = false;
+            mockData.available = false;
 
             const result = await strategy.isAvailable();
 

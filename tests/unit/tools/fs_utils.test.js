@@ -41,9 +41,19 @@ vi.mock('crypto', () => ({
     })),
 }));
 
+// Mock process.cwd() to avoid ENOENT errors in test environment
+const originalCwd = process.cwd;
+
 describe('fs_utils', () => {
     beforeEach(() => {
+        // Mock process.cwd() before tests
+        process.cwd = vi.fn(() => '/test/workspace');
         vi.clearAllMocks();
+    });
+
+    afterEach(() => {
+        // Restore original process.cwd
+        process.cwd = originalCwd || (() => '/test/workspace');
     });
 
     describe('scanDirectory', () => {

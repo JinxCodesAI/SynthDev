@@ -75,8 +75,14 @@ vi.mock('../../../src/config/validation/configurationLoader.js', () => ({
     })),
 }));
 
+// Mock process.cwd() to avoid ENOENT errors in test environment
+const originalCwd = process.cwd;
+
 describe('SystemMessages - Multi-file Role Loading', () => {
     beforeEach(() => {
+        // Mock process.cwd() before tests
+        process.cwd = vi.fn(() => '/test/workspace');
+
         // Clear any cached instances
         vi.clearAllMocks();
         SystemMessages.reloadRoles();
@@ -84,6 +90,8 @@ describe('SystemMessages - Multi-file Role Loading', () => {
 
     afterEach(() => {
         vi.restoreAllMocks();
+        // Restore original process.cwd
+        process.cwd = originalCwd || (() => '/test/workspace');
     });
 
     describe('Multi-file role loading', () => {

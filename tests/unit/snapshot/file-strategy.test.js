@@ -11,6 +11,9 @@ import { existsSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 
+// Mock process.cwd() to avoid ENOENT errors in test environment
+const originalCwd = process.cwd;
+
 describe('FileSnapshotStrategy', () => {
     let strategy;
     let config;
@@ -20,6 +23,9 @@ describe('FileSnapshotStrategy', () => {
     let testFile2;
 
     beforeEach(async () => {
+        // Mock process.cwd() before creating strategy
+        process.cwd = vi.fn(() => '/test/workspace');
+
         config = new SnapshotConfig();
         eventEmitter = new SnapshotEventEmitter();
         strategy = new FileSnapshotStrategy(config, eventEmitter);
@@ -53,6 +59,9 @@ describe('FileSnapshotStrategy', () => {
         } catch (error) {
             // Ignore cleanup errors
         }
+
+        // Restore original process.cwd
+        process.cwd = originalCwd;
     });
 
     describe('initialization', () => {

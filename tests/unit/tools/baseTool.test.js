@@ -1,12 +1,22 @@
 // tests/unit/tools/baseTool.test.js
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { BaseTool } from '../../../src/tools/common/base-tool.js';
+
+// Mock process.cwd() to avoid ENOENT errors in test environment
+const originalCwd = process.cwd;
 
 describe('BaseTool', () => {
     let baseTool;
 
     beforeEach(() => {
+        // Mock process.cwd() before creating baseTool
+        process.cwd = vi.fn(() => '/test/workspace');
         baseTool = new BaseTool('test_tool', 'Test tool description');
+    });
+
+    afterEach(() => {
+        // Restore original process.cwd
+        process.cwd = originalCwd;
     });
 
     describe('constructor', () => {

@@ -1,6 +1,18 @@
 // tests/unit/core/systemMessages.test.js
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import systemMessages from '../../../src/core/ai/systemMessages.js';
+
+// Mock process.cwd() to avoid ENOENT errors in test environment
+const originalCwd = process.cwd;
+beforeEach(() => {
+    process.cwd = vi.fn(() => '/test/workspace');
+});
+
+afterEach(() => {
+    process.cwd = originalCwd;
+    // Clear cached environment info to ensure fresh generation in each test
+    systemMessages._environmentInfo = null;
+});
 
 describe('SystemMessages', () => {
     describe('getSystemMessage', () => {
