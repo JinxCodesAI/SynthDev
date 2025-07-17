@@ -1928,7 +1928,7 @@ This section provides a comprehensive task breakdown for implementing the SynthD
 
 **Success Criteria**: ✅ **COMPLETED** - All interface features work correctly with proper formatting and navigation.
 
-### 11.5 Phase 5: File-based Snapshot System (Priority Implementation) ✅ **80% COMPLETED**
+### 11.5 Phase 5: File-based Snapshot System (Priority Implementation) 🔄 **60% COMPLETED**
 
 #### Task 5.1: File-based Storage Core Implementation ✅ **COMPLETED**
 
@@ -2039,13 +2039,17 @@ This section provides a comprehensive task breakdown for implementing the SynthD
 
 **Status**: ✅ **COMPLETED** - Restoration system fully implemented and tested
 
-#### Task 5.5: File-based Command Integration 🔄 **IN PROGRESS**
+#### Task 5.5: File-based Command Integration ❌ **BLOCKED**
 
 **Description**: Connect the file-based backend to the existing snapshots command interface, replacing mock functionality.
 
+**Current Issue**: SnapshotsCommand falls back to mock data instead of using real FileSnapshotStrategy. SnapshotManager initialization fails and command interface doesn't connect to real backend.
+
 **Deliverables**:
 
+- [ ] Fix SnapshotManager initialization in SnapshotsCommand
 - [ ] Integration of FileSnapshotManager with SnapshotsCommand
+- [ ] Remove mock data fallback mechanism
 - [ ] Real file-based snapshot operations in command interface
 - [ ] Enhanced error handling for file operations
 - [ ] Progress indicators for long-running operations
@@ -2055,19 +2059,53 @@ This section provides a comprehensive task breakdown for implementing the SynthD
 
 **Acceptance Criteria**:
 
+- [ ] SnapshotManager initializes successfully in command interface
 - [ ] Command interface works with real file-based backend
 - [ ] All file operations accessible through commands
+- [ ] No fallback to mock data
 - [ ] Error messages are user-friendly and actionable
 - [ ] Progress indicators work for long operations
 - [ ] Command performance is acceptable
 - [ ] All command tests pass with real backend
 - [ ] File-specific features fully functional
 
-**Status**: 🔄 **IN PROGRESS** - Core components exist, need final integration
+**Status**: ❌ **BLOCKED** - Critical integration issues prevent real backend usage
 **Dependencies**: Task 5.4 (completed)
-**Estimated Time**: 1-2 days
+**Estimated Time**: 2-3 days
 
-#### Task 5.6: File-based Testing & Validation 🔄 **PENDING**
+#### Task 5.6: Tool Integration for Automatic Snapshots ❌ **NOT STARTED**
+
+**Description**: Integrate snapshot creation with the tool execution system to automatically create snapshots before tool execution and commit changes after.
+
+**Current Issue**: No connection between tool execution and snapshot system. Users cannot create snapshots automatically when making changes.
+
+**Deliverables**:
+
+- [ ] Add snapshot creation hooks to tool execution system
+- [ ] Implement automatic snapshot creation before tool execution
+- [ ] Add snapshot finalization after tool execution
+- [ ] Integration with ToolManager for snapshot triggers
+- [ ] Snapshot creation on user instructions (non-command input)
+- [ ] Error handling for snapshot creation failures
+- [ ] Configuration for automatic snapshot behavior
+- [ ] Tests for tool-snapshot integration
+
+**Acceptance Criteria**:
+
+- [ ] Snapshots created automatically before tool execution
+- [ ] Tool changes committed to snapshots after execution
+- [ ] User instructions trigger snapshot creation
+- [ ] Integration works with all tool types
+- [ ] Error handling prevents tool execution failures
+- [ ] Configuration allows enabling/disabling automatic snapshots
+- [ ] Performance impact is minimal
+- [ ] All integration scenarios tested
+
+**Status**: ❌ **NOT STARTED** - Critical for end-to-end workflow
+**Dependencies**: Task 5.5 (blocked)
+**Estimated Time**: 2-3 days
+
+#### Task 5.7: File-based Testing & Validation 🔄 **PENDING**
 
 **Description**: Comprehensive testing of the file-based snapshot system with edge cases and performance validation.
 
@@ -2093,10 +2131,10 @@ This section provides a comprehensive task breakdown for implementing the SynthD
 - [ ] Integration tests pass completely
 - [ ] System handles concurrent operations safely
 
-**Dependencies**: Task 5.5
-**Estimated Time**: 3-4 days
+**Dependencies**: Task 5.5, Task 5.6
+**Estimated Time**: 2-3 days
 
-#### Task 5.7: File-based Manual Testing Documentation 🔄 **PENDING**
+#### Task 5.8: File-based Manual Testing Documentation 🔄 **PENDING**
 
 **Description**: Create comprehensive manual testing procedures for product owner validation of file-based functionality.
 
@@ -2119,62 +2157,77 @@ This section provides a comprehensive task breakdown for implementing the SynthD
 - [ ] Performance benchmarks defined
 - [ ] Security tests validate access controls
 
-**Dependencies**: Task 5.6
+**Dependencies**: Task 5.7
 **Estimated Time**: 1-2 days
 
-#### Task 5.8: Configuration System Integration ⚠️ **MISSING**
+#### Task 5.9: Configuration System Integration ✅ **COMPLETED**
 
 **Description**: Integrate SnapshotConfig with the centralized configuration system (`src/config/`) to maintain consistency with other SynthDev components.
 
-**Current Issue**: SnapshotConfig uses its own configuration management with hardcoded defaults and custom environment variable mapping, instead of using the centralized `ConfigManager` and `src/config/defaults/application.json` system used by all other components.
-
 **Deliverables**:
 
-- [ ] Migrate snapshot configuration to `src/config/defaults/application.json`
-- [ ] Update SnapshotConfig to use `ConfigManager.getInstance()`
-- [ ] Remove custom environment variable mapping in favor of standard approach
-- [ ] Update configuration loading to use `ConfigurationLoader`
-- [ ] Ensure backward compatibility with existing environment variables
-- [ ] Update tests to use centralized configuration system
-- [ ] Update documentation to reflect centralized configuration
+- ✅ Migrate snapshot configuration to `src/config/defaults/application.json`
+- ✅ Update SnapshotConfig to use `ConfigManager.getInstance()`
+- ✅ Remove custom environment variable mapping in favor of standard approach
+- ✅ Update configuration loading to use `ConfigurationLoader`
+- ✅ Ensure backward compatibility with existing environment variables
+- ✅ Update tests to use centralized configuration system
+- ✅ Update documentation to reflect centralized configuration
 
 **Acceptance Criteria**:
 
-- [ ] SnapshotConfig uses `ConfigManager` instead of custom implementation
-- [ ] Snapshot configuration appears in `src/config/defaults/application.json`
-- [ ] Environment variables work through standard ConfigManager approach
-- [ ] All existing functionality preserved during migration
-- [ ] Tests pass with new configuration system
-- [ ] Configuration follows same patterns as other components
-- [ ] Documentation updated to reflect centralized approach
+- [x] SnapshotConfig uses `ConfigManager` instead of custom implementation
+- [x] Snapshot configuration appears in `src/config/defaults/application.json`
+- [x] Environment variables work through standard ConfigManager approach
+- [x] All existing functionality preserved during migration
+- [x] Tests pass with new configuration system
+- [x] Configuration follows same patterns as other components
+- [x] Documentation updated to reflect centralized approach
 
-**Status**: ✅ **COMPLETE** - Successfully integrated with centralized configuration system
+**Status**: ✅ **COMPLETED** - Successfully integrated with centralized configuration system
 **Dependencies**: None (completed independently)
 **Actual Time**: 2 days
 
-#### Phase 5 Product Owner Testing 🔄 **PENDING**
+#### Phase 5 Product Owner Testing ❌ **BLOCKED**
 
-**How to Test**: The product owner can validate the complete file-based system:
+**Current Status**: Cannot perform end-to-end testing due to backend integration issues.
 
-**File-based Operations**:
+**What Works (Unit/Integration Tests)**:
+
+- ✅ Core FileSnapshotStrategy functionality
+- ✅ SnapshotManager operations in isolation
+- ✅ Command interface with mock data
+- ✅ All individual components tested
+
+**What Doesn't Work (End-to-End)**:
+
+- ❌ Real snapshot creation through CLI
+- ❌ Real snapshot restoration through CLI
+- ❌ Automatic snapshot creation on tool execution
+- ❌ Integration between command interface and real backend
+
+**Blocked Testing Scenarios**:
+
+**File-based Operations** (❌ **BLOCKED**):
 
 - [ ] Create snapshots in file mode - verify files are backed up correctly
 - [ ] Modify files, create new snapshot, verify incremental changes
 - [ ] Test file restoration - verify files restored to exact previous state
 - [ ] Test selective file restoration capabilities
 
-**Performance & Memory**:
+**Performance & Memory** (❌ **BLOCKED**):
 
 - [ ] Test with 1000+ files - operations complete in reasonable time
 - [ ] Verify memory usage stays within configured limits
 - [ ] Test compression effectiveness for large files
 
-**Security & Edge Cases**:
+**Security & Edge Cases** (❌ **BLOCKED**):
 
 - [ ] Test with files containing special characters
 - [ ] Verify security controls prevent unauthorized access
 - [ ] Test with various file types and permissions
 
+**Dependencies**: Task 5.5 (Backend Integration) must be completed first
 **Success Criteria**: File-based system works reliably, performance is acceptable, and security is enforced.
 
 ### 11.6 Phase 6: Git Integration Enhancement (Secondary Implementation) 🔄 **FUTURE**
@@ -2270,8 +2323,8 @@ This section provides a comprehensive task breakdown for implementing the SynthD
 
 ### 🔄 **CURRENT PHASE**
 
-- **Phase 5**: File-based Snapshot System (Priority Implementation) 🔄 **IN PROGRESS**
-    - Task 5.1: File-based Storage Core Implementation 🔄 **NEXT**
+- **Phase 5**: File-based Snapshot System (Priority Implementation) 🔄 **60% COMPLETED**
+    - **CRITICAL BLOCKERS**: Backend integration and tool integration missing
 
 ### 🔄 **FUTURE PHASES**
 
@@ -2283,15 +2336,21 @@ This section provides a comprehensive task breakdown for implementing the SynthD
 
 - **Total Phases**: 8
 - **Completed**: 4 (50%)
-- **In Progress**: 1 (Phase 5)
+- **In Progress**: 1 (Phase 5 - 60% complete)
 - **Remaining**: 3
+
+### ⚠️ **Critical Issues**
+
+1. **Backend Integration Failure**: SnapshotsCommand falls back to mock data
+2. **Missing Tool Integration**: No automatic snapshot creation
+3. **End-to-End Workflow Broken**: Cannot create/restore real snapshots via CLI
 
 ### 🎯 **Next Immediate Steps**
 
-1. **Start Task 5.1**: Implement file-based storage core
-2. **Complete Phase 5**: Full file-based snapshot functionality
-3. **Validate with Product Owner**: Test file-based system thoroughly
-4. **Plan Phase 6**: Git integration enhancements (if needed)
+1. **URGENT - Task 5.5**: Fix backend integration (2-3 days)
+2. **URGENT - Task 5.6**: Implement tool integration (2-3 days)
+3. **Task 5.7**: Complete testing and validation (2-3 days)
+4. **Task 5.8**: Create manual testing documentation (1-2 days)
 
 This implementation plan provides a comprehensive roadmap with built-in product owner validation at each phase, ensuring that the SynthDev Snapshots system meets requirements and quality standards throughout development. The prioritization of file-based implementation ensures users get immediate value while Git integration serves as an enhancement.
 
