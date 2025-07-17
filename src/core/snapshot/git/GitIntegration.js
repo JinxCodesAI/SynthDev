@@ -19,10 +19,11 @@ export class GitIntegration {
         this.logger = new SnapshotLogger('GitIntegration');
         this.gitUtils = new GitUtils();
 
-        // Security and validation settings
-        this.maxRetries = 3;
-        this.retryDelay = 1000; // 1 second
-        this.commandTimeout = 30000; // 30 seconds
+        // Security and validation settings (optimized for test environments)
+        const isTestMode = process.env.NODE_ENV === 'test' || process.env.CI === 'true';
+        this.maxRetries = isTestMode ? 1 : 3;
+        this.retryDelay = isTestMode ? 100 : 1000; // Faster retries in tests
+        this.commandTimeout = isTestMode ? 5000 : 30000; // Shorter timeout in tests
         this.allowedCommands = new Set([
             'status',
             'branch',

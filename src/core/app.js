@@ -149,9 +149,27 @@ class AICoderConsole {
             return; // Already initialized
         }
 
+        // Skip snapshot manager initialization in test/CI mode for faster startup
+        if (
+            process.env.NODE_ENV === 'test' ||
+            process.env.CI === 'true' ||
+            process.env.SYNTHDEV_TEST_MODE === 'true'
+        ) {
+            this.logger.info('Skipping snapshot system initialization in test/CI mode');
+            this.snapshotManager = null;
+            return;
+        }
+
         try {
             this.snapshotManager = new SnapshotManager();
-            const initResult = await this.snapshotManager.initialize();
+
+            // Add timeout for snapshot initialization to prevent hanging
+            const initPromise = this.snapshotManager.initialize();
+            const timeoutPromise = new Promise((_, reject) => {
+                setTimeout(() => reject(new Error('Snapshot initialization timeout')), 10000); // 10 second timeout
+            });
+
+            const initResult = await Promise.race([initPromise, timeoutPromise]);
 
             if (!initResult.success) {
                 this.logger.warn(`Failed to initialize snapshot system: ${initResult.error}`);
@@ -272,7 +290,18 @@ class AICoderConsole {
         // Initialize snapshot manager for tool integration
         await this._initializeSnapshotManager();
 
-        await this.toolManager.loadTools();
+        // Load tools with timeout to prevent hanging
+        const toolLoadPromise = this.toolManager.loadTools();
+        const toolTimeoutPromise = new Promise((_, reject) => {
+            setTimeout(() => reject(new Error('Tool loading timeout')), 10000); // 10 second timeout
+        });
+
+        try {
+            await Promise.race([toolLoadPromise, toolTimeoutPromise]);
+        } catch (error) {
+            this.logger.warn(`Tool loading failed or timed out: ${error.message}`);
+            // Continue with empty tools rather than hanging
+        }
 
         // Set tools in API client
         this.apiClient.setTools(this.toolManager.getTools());

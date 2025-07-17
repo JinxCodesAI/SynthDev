@@ -106,7 +106,6 @@ SYNTHDEV_ENABLE_PROMPT_ENHANCEMENT=false
 
         // Reset output collectors
         testOutput = '';
-        testError = '';
     });
 
     afterEach(async () => {

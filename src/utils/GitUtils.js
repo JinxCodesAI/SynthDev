@@ -17,14 +17,20 @@ class GitUtils {
      */
     async checkGitAvailability() {
         try {
-            // Check if git command is available
-            const gitVersionResult = await executeTerminal({ command: 'git --version' });
+            // Check if git command is available with timeout
+            const gitVersionResult = await executeTerminal({
+                command: 'git --version',
+                timeout: 5000, // 5 second timeout
+            });
             if (!gitVersionResult.success) {
                 return { available: false, isRepo: false, error: 'Git command not found' };
             }
 
-            // Check if current directory is a git repository
-            const gitStatusResult = await executeTerminal({ command: 'git status --porcelain' });
+            // Check if current directory is a git repository with timeout
+            const gitStatusResult = await executeTerminal({
+                command: 'git status --porcelain',
+                timeout: 5000, // 5 second timeout
+            });
             if (!gitStatusResult.success) {
                 // Check if it's a "not a git repository" error
                 if (
@@ -52,7 +58,10 @@ class GitUtils {
      */
     async getCurrentBranch() {
         try {
-            const result = await executeTerminal({ command: 'git branch --show-current' });
+            const result = await executeTerminal({
+                command: 'git branch --show-current',
+                timeout: 5000, // 5 second timeout
+            });
             if (result.success) {
                 return { success: true, branch: result.stdout.trim() };
             }
