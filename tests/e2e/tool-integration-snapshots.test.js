@@ -4,7 +4,7 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { writeFileSync, readFileSync, unlinkSync, existsSync, mkdirSync, rmSync } from 'fs';
+import { writeFileSync, readFileSync, existsSync, mkdirSync, rmSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import ToolManager from '../../src/core/managers/toolManager.js';
@@ -42,7 +42,7 @@ async function getSafeTempDirectory() {
                     console.warn(`Using fallback temp directory: ${fallback}`);
                     return fallback;
                 }
-            } catch (fallbackError) {
+            } catch (_fallbackError) {
                 // Continue to next fallback
                 continue;
             }
@@ -52,7 +52,7 @@ async function getSafeTempDirectory() {
         console.warn('All temp directory fallbacks failed, using current directory');
         try {
             return process.cwd();
-        } catch (cwdError) {
+        } catch (_cwdError) {
             console.warn('Current directory also failed, using root');
             return '/';
         }
@@ -122,7 +122,7 @@ describe('Tool Integration Snapshots', () => {
                 // For synchronous fallback, use a simpler approach
                 try {
                     return tmpdir();
-                } catch (error) {
+                } catch (_error) {
                     return '/tmp';
                 }
             });

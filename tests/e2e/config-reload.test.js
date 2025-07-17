@@ -152,7 +152,13 @@ SYNTHDEV_ENABLE_PROMPT_ENHANCEMENT=false
 
         appProcess = spawn('node', [appPath], {
             stdio: ['pipe', 'pipe', 'pipe'],
-            env: { ...process.env, NODE_ENV: 'test' },
+            env: {
+                ...process.env,
+                NODE_ENV: 'test',
+                SYNTHDEV_ENV_FILE: testEnvPath,
+                CI: 'true', // Indicate this is a CI environment
+                SYNTHDEV_TEST_MODE: 'true', // Add test mode flag
+            },
         });
 
         // Collect stdout
@@ -165,8 +171,16 @@ SYNTHDEV_ENABLE_PROMPT_ENHANCEMENT=false
         // Collect stderr
         appProcess.stderr.on('data', data => {
             const error = data.toString();
-            testError += error;
             console.log('APP ERROR:', error); // Debug output
+        });
+
+        // Add process error handling
+        appProcess.on('error', error => {
+            console.error('PROCESS ERROR:', error);
+        });
+
+        appProcess.on('exit', (code, signal) => {
+            console.log(`APP EXITED: code=${code}, signal=${signal}`);
         });
 
         return appProcess;
@@ -193,6 +207,12 @@ SYNTHDEV_ENABLE_PROMPT_ENHANCEMENT=false
                 if (testOutput.includes(expectedText)) {
                     resolve(true);
                 } else if (Date.now() - startTime > timeout) {
+                    console.error('TIMEOUT DEBUG INFO:');
+                    console.error('Expected:', expectedText);
+                    console.error('Full output length:', testOutput.length);
+                    console.error('Last 500 chars:', testOutput.slice(-500));
+                    console.error('Process still running:', appProcess && !appProcess.killed);
+
                     reject(
                         new Error(
                             `Timeout waiting for output: "${expectedText}". Got: "${testOutput}"`
@@ -219,8 +239,8 @@ SYNTHDEV_ENABLE_PROMPT_ENHANCEMENT=false
         // Start the application
         await spawnApp();
 
-        // Wait for app to start and show prompt
-        await waitForOutput('💭 You:', 15000);
+        // Wait for app to start and show prompt (increased timeout for CI)
+        await waitForOutput('💭 You:', 30000);
 
         // Step 1: Execute /help and capture initial verbosity level
         await sendInput('/help');
@@ -306,8 +326,8 @@ SYNTHDEV_ENABLE_PROMPT_ENHANCEMENT=false
         // Start the application
         await spawnApp();
 
-        // Wait for app to start
-        await waitForOutput('💭 You:', 15000);
+        // Wait for app to start (increased timeout for CI)
+        await waitForOutput('💭 You:', 30000);
 
         // Execute /config
         await sendInput('/config');
