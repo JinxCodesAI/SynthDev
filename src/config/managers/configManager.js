@@ -19,8 +19,9 @@ class ConfigManager {
             return ConfigManager.instance;
         }
 
-        // Load environment variables from .env file in synth-dev installation directory
-        this.envFilePath = join(__dirname, '/../../../.env');
+        // Load environment variables from .env file
+        // Support custom env file path for testing via SYNTHDEV_ENV_FILE
+        this.envFilePath = process.env.SYNTHDEV_ENV_FILE || join(__dirname, '/../../../.env');
         this.envFileExists = existsSync(this.envFilePath);
 
         if (this.envFileExists) {

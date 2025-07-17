@@ -325,7 +325,8 @@ class ToolManager {
         }
 
         // Check if tool modifies files
-        if (!this._isFileModifyingTool(toolName)) {
+        const isFileModifying = this._isFileModifyingTool(toolName);
+        if (!isFileModifying) {
             return;
         }
 
@@ -345,8 +346,17 @@ class ToolManager {
             for (const filePath of filePaths) {
                 try {
                     const fs = await import('fs');
-                    if (fs.existsSync(filePath)) {
-                        const content = fs.readFileSync(filePath, 'utf8');
+                    const path = await import('path');
+
+                    // Resolve the file path relative to current working directory
+                    const resolvedPath = path.resolve(filePath);
+
+                    // Check both relative and absolute paths for compatibility
+                    const fileExists = fs.existsSync(filePath) || fs.existsSync(resolvedPath);
+
+                    if (fileExists) {
+                        const actualPath = fs.existsSync(filePath) ? filePath : resolvedPath;
+                        const content = fs.readFileSync(actualPath, 'utf8');
                         existingFiles.set(filePath, content);
                     }
                 } catch (error) {
@@ -357,11 +367,15 @@ class ToolManager {
 
             // Only create snapshot if we have files to backup
             if (existingFiles.size > 0) {
-                await snapshotManager.createSnapshot(instruction, existingFiles, {
+                const result = await snapshotManager.createSnapshot(instruction, existingFiles, {
                     triggerType: 'tool_execution',
                     toolName,
                     filePaths,
                 });
+
+                if (!result.success) {
+                    console.warn(`Failed to create snapshot: ${result.error}`);
+                }
             }
         } catch (error) {
             // Log error but don't fail tool execution

@@ -18,8 +18,11 @@ describe('Snapshots Command E2E Test', () => {
     let appProcess;
 
     beforeEach(() => {
-        // Mock process.cwd() before tests
-        process.cwd = vi.fn(() => '/mnt/persist/workspace');
+        // Use environment-agnostic workspace directory
+        const workspaceDir = process.env.GITHUB_WORKSPACE || process.cwd();
+
+        // Mock process.cwd() to return the detected workspace
+        process.cwd = vi.fn(() => workspaceDir);
 
         // Create temporary test directory
         testDir = join(tmpdir(), `snapshots-e2e-test-${Date.now()}`);
@@ -52,14 +55,15 @@ SYNTHDEV_ENABLE_PROMPT_ENHANCEMENT=false
         }
 
         // Restore original process.cwd
-        process.cwd = originalCwd || (() => '/mnt/persist/workspace');
+        process.cwd = originalCwd || (() => process.env.GITHUB_WORKSPACE || process.cwd());
     });
 
     const startApp = () => {
         return new Promise((resolve, reject) => {
-            const appPath = join('/mnt/persist/workspace', 'src', 'core', 'app.js');
+            const workspaceDir = process.env.GITHUB_WORKSPACE || process.cwd();
+            const appPath = join(workspaceDir, 'src', 'core', 'app.js');
             appProcess = spawn('node', [appPath], {
-                cwd: '/mnt/persist/workspace', // Use the actual project directory
+                cwd: workspaceDir, // Use the detected workspace directory
                 stdio: ['pipe', 'pipe', 'pipe'],
                 env: { ...process.env, NODE_ENV: 'test', SYNTHDEV_ENV_FILE: envFile },
             });

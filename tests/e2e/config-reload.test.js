@@ -27,13 +27,15 @@ describe('Configuration Reload E2E Test', () => {
     let testError = '';
 
     beforeEach(() => {
-        // Mock process.cwd() before tests
-        process.cwd = vi.fn(() => '/mnt/persist/workspace');
+        // Use environment-agnostic workspace directory
+        const workspaceDir = process.env.GITHUB_WORKSPACE || process.cwd();
 
-        // Setup test environment file
-        const rootDir = join('/mnt/persist/workspace');
-        testEnvPath = join(rootDir, '.env.test');
-        originalEnvPath = join(rootDir, '.env');
+        // Mock process.cwd() to return the detected workspace
+        process.cwd = vi.fn(() => workspaceDir);
+
+        // Setup test environment file using dynamic workspace
+        testEnvPath = join(workspaceDir, '.env.test');
+        originalEnvPath = join(workspaceDir, '.env');
 
         // Backup original .env if it exists
         if (existsSync(originalEnvPath)) {
@@ -87,14 +89,15 @@ SYNTHDEV_ENABLE_PROMPT_ENHANCEMENT=false
         }
 
         // Restore original process.cwd
-        process.cwd = originalCwd || (() => '/mnt/persist/workspace');
+        process.cwd = originalCwd || (() => process.env.GITHUB_WORKSPACE || process.cwd());
     });
 
     /**
      * Helper function to spawn the application process
      */
     function spawnApp() {
-        const appPath = join('/mnt/persist/workspace', 'src', 'core', 'app.js');
+        const workspaceDir = process.env.GITHUB_WORKSPACE || process.cwd();
+        const appPath = join(workspaceDir, 'src', 'core', 'app.js');
 
         appProcess = spawn('node', [appPath], {
             stdio: ['pipe', 'pipe', 'pipe'],

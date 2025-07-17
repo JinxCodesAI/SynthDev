@@ -22,13 +22,16 @@ describe('Tool Integration Snapshots', () => {
     let mockConsoleInterface;
 
     beforeEach(async () => {
-        // Mock process.cwd() before tests
-        process.cwd = vi.fn(() => '/tmp');
+        // Use system temporary directory for cross-platform compatibility
+        const tempDir = tmpdir();
 
-        // Create test directory within current working directory
+        // Mock process.cwd() to use temp directory
+        process.cwd = vi.fn(() => tempDir);
+
+        // Create test directory within temporary directory
         const testDirName = `tool-integration-test-${Date.now()}`;
         testDirRelative = join('test-temp', testDirName);
-        testDir = join('/tmp', testDirRelative);
+        testDir = join(tempDir, testDirRelative);
         mkdirSync(testDir, { recursive: true });
 
         // Initialize tool manager
@@ -68,7 +71,7 @@ describe('Tool Integration Snapshots', () => {
         }
 
         // Restore original process.cwd
-        process.cwd = originalCwd || (() => '/tmp');
+        process.cwd = originalCwd || (() => tmpdir());
     });
 
     const createTestFile = (filename, content) => {
