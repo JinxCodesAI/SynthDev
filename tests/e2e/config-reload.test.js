@@ -71,6 +71,7 @@ describe('Configuration Reload E2E Test', () => {
     let testEnvPath;
     let originalEnvPath;
     let testOutput = '';
+    let testError = '';
 
     beforeEach(async () => {
         // Use environment-agnostic workspace directory with fallback
