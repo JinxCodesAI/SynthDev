@@ -267,7 +267,7 @@ describe('WriteFile Tool - Fixed Tests', () => {
                 'test-temp/a/b/c/d',
             ]);
 
-            const nestedFile = join(testDir, 'a', 'b', 'c', 'd', 'test.txt');
+            const nestedFile = join('test-temp', 'a', 'b', 'c', 'd', 'test.txt');
             expect(existsSync(nestedFile)).toBe(true);
         });
     });

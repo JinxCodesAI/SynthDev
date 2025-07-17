@@ -102,6 +102,7 @@ describe('GitUtils', () => {
             });
             expect(mockExecuteTerminal).toHaveBeenCalledWith({
                 command: 'git branch --show-current',
+                timeout: 5000,
             });
         });
 
