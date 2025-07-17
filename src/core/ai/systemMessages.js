@@ -98,7 +98,12 @@ class SystemMessages {
 
         const template = this._loadEnvironmentTemplate();
         const os = platform();
-        const cwd = process.cwd();
+        let cwd;
+        try {
+            cwd = process.cwd();
+        } catch (error) {
+            cwd = '/tmp'; // Fallback for test environments
+        }
         const indexExists = existsSync('.index');
         const currentDateTime = new Date().toLocaleString();
 

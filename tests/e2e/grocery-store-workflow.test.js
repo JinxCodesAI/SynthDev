@@ -14,6 +14,16 @@ import { groceryStoreHttpMocks } from '../mocks/grocery-store-http.js';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
+// Mock process.cwd() to avoid ENOENT errors in test environment
+const originalCwd = process.cwd;
+const mockCwd = () => {
+    try {
+        return originalCwd();
+    } catch (error) {
+        return '/mnt/persist/workspace'; // Fallback for test environment
+    }
+};
+
 // Import actual fs functions before mocking
 const actualFs = await vi.importActual('fs');
 
@@ -196,7 +206,7 @@ describe('Grocery Store Workflow E2E Test', () => {
 
         // Load the workflow using mocked file system
         const workflowConfigPath = join(
-            process.cwd(),
+            mockCwd(),
             'src',
             'config',
             'workflows',
@@ -296,7 +306,7 @@ describe('Grocery Store Workflow E2E Test', () => {
         await setupHttpMocking();
 
         const workflowConfigPath = join(
-            process.cwd(),
+            mockCwd(),
             'src',
             'config',
             'workflows',
@@ -323,18 +333,18 @@ describe('Grocery Store Workflow E2E Test', () => {
     it('should use mocked configuration files', async () => {
         // Verify that mocked files are accessible
         expect(
-            existsSync(join(process.cwd(), 'src', 'config', 'workflows', 'grocery_store_test.json'))
+            existsSync(join(mockCwd(), 'src', 'config', 'workflows', 'grocery_store_test.json'))
         ).toBe(true);
         expect(
             existsSync(
-                join(process.cwd(), 'src', 'config', 'workflows', 'grocery_store_test', 'script.js')
+                join(mockCwd(), 'src', 'config', 'workflows', 'grocery_store_test', 'script.js')
             )
         ).toBe(true);
-        expect(existsSync(join(process.cwd(), 'src', 'config', 'roles', 'roles.json'))).toBe(true);
+        expect(existsSync(join(mockCwd(), 'src', 'config', 'roles', 'roles.json'))).toBe(true);
 
         // Load workflow using mocked file system
         const workflowConfigPath = join(
-            process.cwd(),
+            mockCwd(),
             'src',
             'config',
             'workflows',
@@ -356,7 +366,7 @@ describe('Grocery Store Workflow E2E Test', () => {
         await setupHttpMocking();
 
         const workflowConfigPath = join(
-            process.cwd(),
+            mockCwd(),
             'src',
             'config',
             'workflows',
@@ -384,7 +394,7 @@ describe('Grocery Store Workflow E2E Test', () => {
         await setupHttpMocking();
 
         const workflowConfigPath = join(
-            process.cwd(),
+            mockCwd(),
             'src',
             'config',
             'workflows',

@@ -9,6 +9,9 @@ import MemorySnapshotStore from '../../../src/core/snapshot/storage/MemorySnapsh
 import SnapshotSerializer from '../../../src/core/snapshot/utils/SnapshotSerializer.js';
 import SnapshotConfig from '../../../src/core/snapshot/SnapshotConfig.js';
 
+// Mock process.cwd() to avoid ENOENT errors in test environment
+const originalCwd = process.cwd;
+
 describe('Snapshot Model', () => {
     let snapshot;
 
@@ -130,8 +133,15 @@ describe('SnapshotMetadata', () => {
     let config;
 
     beforeEach(() => {
+        // Mock process.cwd() before creating config
+        process.cwd = vi.fn(() => '/tmp');
         config = new SnapshotConfig();
         metadata = new SnapshotMetadata(config);
+    });
+
+    afterEach(() => {
+        // Restore original process.cwd
+        process.cwd = originalCwd || (() => '/tmp');
     });
 
     it('should add and retrieve snapshot metadata', () => {
@@ -236,9 +246,16 @@ describe('MemorySnapshotStore', () => {
     let config;
 
     beforeEach(async () => {
+        // Mock process.cwd() before creating config
+        process.cwd = vi.fn(() => '/tmp');
         config = new SnapshotConfig();
         store = new MemorySnapshotStore(config);
         await store.initialize();
+    });
+
+    afterEach(() => {
+        // Restore original process.cwd
+        process.cwd = originalCwd || (() => '/tmp');
     });
 
     it('should store and retrieve snapshots', async () => {
@@ -352,8 +369,15 @@ describe('SnapshotSerializer', () => {
     let config;
 
     beforeEach(() => {
+        // Mock process.cwd() before creating config
+        process.cwd = vi.fn(() => '/tmp');
         config = new SnapshotConfig();
         serializer = new SnapshotSerializer(config);
+    });
+
+    afterEach(() => {
+        // Restore original process.cwd
+        process.cwd = originalCwd || (() => '/tmp');
     });
 
     it('should serialize and deserialize JSON', async () => {

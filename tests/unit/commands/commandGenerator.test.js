@@ -23,6 +23,9 @@ vi.mock('../../../src/core/managers/logger.js', () => ({
     getLogger: vi.fn(),
 }));
 
+// Mock process.cwd() to avoid ENOENT errors in test environment
+const originalCwd = process.cwd;
+
 describe('CommandGenerator', () => {
     let commandGenerator;
     let mockConfigManager;
@@ -33,6 +36,8 @@ describe('CommandGenerator', () => {
     let mockToolManager;
 
     beforeEach(async () => {
+        // Mock process.cwd() before tests
+        process.cwd = vi.fn(() => '/test/workspace');
         vi.clearAllMocks();
 
         // Setup ConfigManager mock
@@ -84,6 +89,8 @@ describe('CommandGenerator', () => {
 
     afterEach(() => {
         vi.restoreAllMocks();
+        // Restore original process.cwd
+        process.cwd = originalCwd || (() => '/test/workspace');
     });
 
     describe('constructor', () => {

@@ -14,15 +14,26 @@ import SnapshotEventEmitter, {
 import SnapshotLogger from '../../../src/core/snapshot/utils/SnapshotLogger.js';
 import IdGenerator from '../../../src/core/snapshot/utils/IdGenerator.js';
 
+// Mock process.cwd() to avoid ENOENT errors in test environment
+const originalCwd = process.cwd;
+
 describe('SnapshotConfig', () => {
     let config;
 
     beforeEach(() => {
+        // Mock process.cwd() before creating config
+        process.cwd = vi.fn(() => '/test/workspace');
+
         // Clear environment variables
         delete process.env.SYNTHDEV_SNAPSHOT_MODE;
         delete process.env.SYNTHDEV_SNAPSHOT_BRANCH_PREFIX;
         delete process.env.SYNTHDEV_SNAPSHOT_MAX_COUNT;
         config = new SnapshotConfig();
+    });
+
+    afterEach(() => {
+        // Restore original process.cwd
+        process.cwd = originalCwd;
     });
 
     it('should load default configuration', () => {

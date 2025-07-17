@@ -64,14 +64,21 @@ vi.mock('../../../src/config/validation/configurationLoader.js', () => ({
     })),
 }));
 
+// Mock process.cwd() to avoid ENOENT errors in test environment
+const originalCwd = process.cwd;
+
 describe('SystemMessages - Group Functionality', () => {
     beforeEach(() => {
+        // Mock process.cwd() before tests
+        process.cwd = vi.fn(() => '/test/workspace');
         vi.clearAllMocks();
         SystemMessages.reloadRoles();
     });
 
     afterEach(() => {
         vi.restoreAllMocks();
+        // Restore original process.cwd
+        process.cwd = originalCwd || (() => '/test/workspace');
     });
 
     describe('Group management', () => {

@@ -28,11 +28,17 @@ vi.mock('../../../src/core/managers/logger.js', () => ({
     initializeLogger: vi.fn(),
 }));
 
+// Mock process.cwd() to avoid ENOENT errors in test environment
+const originalCwd = process.cwd;
+
 describe('WriteFile Tool - Fixed Tests', () => {
-    const testDir = join(process.cwd(), 'test-temp');
+    const testDir = join('/tmp', 'test-temp');
     const testFile = join(testDir, 'test.txt');
 
     beforeEach(async () => {
+        // Mock process.cwd() before tests
+        process.cwd = vi.fn(() => '/tmp');
+
         // Clean up and create fresh test directory
         await cleanupTestDirectory(testDir);
         mkdirSync(testDir, { recursive: true });
@@ -41,6 +47,9 @@ describe('WriteFile Tool - Fixed Tests', () => {
     afterEach(async () => {
         // Clean up test files with retry logic
         await cleanupTestDirectory(testDir);
+
+        // Restore original process.cwd
+        process.cwd = originalCwd || (() => '/tmp');
     });
 
     describe('successful file writing', () => {

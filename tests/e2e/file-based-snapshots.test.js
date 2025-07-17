@@ -12,6 +12,9 @@ import SnapshotConfig from '../../src/core/snapshot/SnapshotConfig.js';
 import SnapshotEventEmitter from '../../src/core/snapshot/events/SnapshotEventEmitter.js';
 import { resetStrategyFactory } from '../../src/core/snapshot/strategies/StrategyFactory.js';
 
+// Mock process.cwd() to avoid ENOENT errors in test environment
+const originalCwd = process.cwd;
+
 describe('File-based Snapshots Integration Test', () => {
     let testDir;
     let snapshotManager;
@@ -20,6 +23,9 @@ describe('File-based Snapshots Integration Test', () => {
     let eventEmitter;
 
     beforeEach(async () => {
+        // Mock process.cwd() before tests
+        process.cwd = vi.fn(() => '/tmp');
+
         // Reset strategy factory to ensure clean state
         resetStrategyFactory();
 
@@ -72,6 +78,9 @@ describe('File-based Snapshots Integration Test', () => {
 
         // Note: We don't call shutdown() as it's not implemented for file strategy
         // and the test cleanup handles memory cleanup automatically
+
+        // Restore original process.cwd
+        process.cwd = originalCwd || (() => '/tmp');
     });
 
     const createTestFile = (filename, content) => {

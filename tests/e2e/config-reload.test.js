@@ -1,8 +1,11 @@
 // tests/e2e/config-reload.test.js
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { spawn } from 'child_process';
 import { join } from 'path';
 import { writeFileSync, existsSync, unlinkSync, readFileSync } from 'fs';
+
+// Mock process.cwd() to avoid ENOENT errors in test environment
+const originalCwd = process.cwd;
 
 /**
  * End-to-End Configuration Reload Test
@@ -24,8 +27,11 @@ describe('Configuration Reload E2E Test', () => {
     let testError = '';
 
     beforeEach(() => {
+        // Mock process.cwd() before tests
+        process.cwd = vi.fn(() => '/mnt/persist/workspace');
+
         // Setup test environment file
-        const rootDir = join(process.cwd());
+        const rootDir = join('/mnt/persist/workspace');
         testEnvPath = join(rootDir, '.env.test');
         originalEnvPath = join(rootDir, '.env');
 
@@ -79,13 +85,16 @@ SYNTHDEV_ENABLE_PROMPT_ENHANCEMENT=false
         } else if (existsSync(originalEnvPath)) {
             unlinkSync(originalEnvPath);
         }
+
+        // Restore original process.cwd
+        process.cwd = originalCwd || (() => '/mnt/persist/workspace');
     });
 
     /**
      * Helper function to spawn the application process
      */
     function spawnApp() {
-        const appPath = join(process.cwd(), 'src', 'core', 'app.js');
+        const appPath = join('/mnt/persist/workspace', 'src', 'core', 'app.js');
 
         appProcess = spawn('node', [appPath], {
             stdio: ['pipe', 'pipe', 'pipe'],

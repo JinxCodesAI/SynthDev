@@ -19,6 +19,9 @@ vi.mock('../../../src/tools/execute_terminal/implementation.js', () => ({
     default: vi.fn(),
 }));
 
+// Mock process.cwd() to avoid ENOENT errors in test environment
+const originalCwd = process.cwd;
+
 describe('CmdCommand', () => {
     let cmdCommand;
     let mockLogger;
@@ -27,6 +30,9 @@ describe('CmdCommand', () => {
     let mockExecuteTerminal;
 
     beforeEach(async () => {
+        // Mock process.cwd() before tests
+        process.cwd = vi.fn(() => '/tmp');
+
         vi.clearAllMocks();
 
         // Create mock logger
@@ -88,6 +94,9 @@ describe('CmdCommand', () => {
 
     afterEach(() => {
         vi.restoreAllMocks();
+
+        // Restore original process.cwd
+        process.cwd = originalCwd || (() => '/tmp');
     });
 
     describe('constructor', () => {

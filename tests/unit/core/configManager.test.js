@@ -1,6 +1,9 @@
 // tests/unit/core/configManager.test.js
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import ConfigManager from '../../../src/config/managers/configManager.js';
+
+// Mock process.cwd() to avoid ENOENT errors in test environment
+const originalCwd = process.cwd;
 import { mockEnvVars } from '../../helpers/testUtils.js';
 
 // Mock logger
@@ -17,6 +20,9 @@ describe('ConfigManager', () => {
     let restoreEnv;
 
     beforeEach(() => {
+        // Mock process.cwd() before tests
+        process.cwd = vi.fn(() => '/tmp');
+
         // Reset singleton instance
         ConfigManager.instance = null;
         vi.clearAllMocks();
@@ -33,6 +39,9 @@ describe('ConfigManager', () => {
         if (restoreEnv) {
             restoreEnv();
         }
+
+        // Restore original process.cwd
+        process.cwd = originalCwd || (() => '/tmp');
     });
 
     describe('getInstance', () => {

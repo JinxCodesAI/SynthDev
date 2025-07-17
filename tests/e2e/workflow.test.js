@@ -39,6 +39,9 @@ vi.mock('openai', () => ({
     })),
 }));
 
+// Mock process.cwd() to avoid ENOENT errors in test environment
+const originalCwd = process.cwd;
+
 describe('End-to-End Workflow Tests', () => {
     let toolManager;
     let configManager;
@@ -47,6 +50,9 @@ describe('End-to-End Workflow Tests', () => {
     let mockCostsManager;
 
     beforeEach(async () => {
+        // Mock process.cwd() before tests
+        process.cwd = vi.fn(() => '/tmp');
+
         vi.clearAllMocks();
 
         // Initialize core components
@@ -68,6 +74,9 @@ describe('End-to-End Workflow Tests', () => {
 
     afterEach(() => {
         vi.restoreAllMocks();
+
+        // Restore original process.cwd
+        process.cwd = originalCwd || (() => '/tmp');
     });
 
     describe('System Initialization', () => {

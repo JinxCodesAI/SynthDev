@@ -27,11 +27,16 @@ vi.mock('../../../src/core/managers/logger.js', () => ({
     initializeLogger: vi.fn(),
 }));
 
+// Mock process.cwd() to avoid ENOENT errors in test environment
+const originalCwd = process.cwd;
+
 describe('Edit File Tool', () => {
-    const testDir = process.cwd();
+    const testDir = '/tmp';
     const testFile = join(testDir, 'test_edit_file.txt');
 
     beforeEach(() => {
+        // Mock process.cwd() before tests
+        process.cwd = vi.fn(() => '/tmp');
         vi.clearAllMocks();
         // Clean up any existing test file
         if (existsSync(testFile)) {
@@ -44,6 +49,8 @@ describe('Edit File Tool', () => {
         if (existsSync(testFile)) {
             unlinkSync(testFile);
         }
+        // Restore original process.cwd
+        process.cwd = originalCwd || (() => '/tmp');
     });
 
     describe('Replace Operation', () => {
