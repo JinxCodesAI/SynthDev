@@ -299,8 +299,8 @@ describe('ListDirectory Tool - Fixed Tests', () => {
     });
 
     describe('AI summaries functionality', () => {
-        // Use a fixed directory for the index
-        const indexDir = join('/mnt/persist/workspace', '.index');
+        // Use a temporary directory for the index to avoid permission issues
+        const indexDir = join('/tmp', '.index');
         const indexFile = join(indexDir, 'codebase-index.json');
 
         beforeEach(() => {

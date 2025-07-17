@@ -9,12 +9,18 @@ import { writeFileSync, unlinkSync, existsSync, mkdirSync, rmSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 
+// Mock process.cwd() to avoid ENOENT errors in test environment
+const originalCwd = process.cwd;
+
 describe('Snapshots Command E2E Test', () => {
     let testDir;
     let envFile;
     let appProcess;
 
     beforeEach(() => {
+        // Mock process.cwd() before tests
+        process.cwd = vi.fn(() => '/mnt/persist/workspace');
+
         // Create temporary test directory
         testDir = join(tmpdir(), `snapshots-e2e-test-${Date.now()}`);
         mkdirSync(testDir, { recursive: true });
@@ -44,13 +50,16 @@ SYNTHDEV_ENABLE_PROMPT_ENHANCEMENT=false
         if (appProcess && !appProcess.killed) {
             appProcess.kill('SIGTERM');
         }
+
+        // Restore original process.cwd
+        process.cwd = originalCwd || (() => '/mnt/persist/workspace');
     });
 
     const startApp = () => {
         return new Promise((resolve, reject) => {
-            const appPath = join(process.cwd(), 'src', 'core', 'app.js');
+            const appPath = join('/mnt/persist/workspace', 'src', 'core', 'app.js');
             appProcess = spawn('node', [appPath], {
-                cwd: process.cwd(), // Use the actual project directory
+                cwd: '/mnt/persist/workspace', // Use the actual project directory
                 stdio: ['pipe', 'pipe', 'pipe'],
                 env: { ...process.env, NODE_ENV: 'test', SYNTHDEV_ENV_FILE: envFile },
             });
