@@ -14,6 +14,51 @@ import SnapshotConfig from '../../src/core/snapshot/SnapshotConfig.js';
 // Mock process.cwd() to avoid ENOENT errors in test environment
 const originalCwd = process.cwd;
 
+/**
+ * Get safe temporary directory with robust fallback handling
+ * @returns {string} Temporary directory path
+ */
+async function getSafeTempDirectory() {
+    try {
+        return tmpdir();
+    } catch (error) {
+        console.warn('Failed to get system temp directory:', error.message);
+
+        // Fallback to common temp locations
+        const fallbacks = [
+            '/tmp', // Unix/Linux standard
+            '/var/tmp', // Alternative Unix temp
+            process.env.TMPDIR, // Environment variable
+            process.env.TEMP, // Windows
+            process.env.TMP, // Windows alternative
+            '/home/runner/tmp', // GitHub Actions
+            './tmp', // Relative fallback
+        ].filter(Boolean); // Remove undefined values
+
+        for (const fallback of fallbacks) {
+            try {
+                const { existsSync } = await import('fs');
+                if (existsSync(fallback)) {
+                    console.warn(`Using fallback temp directory: ${fallback}`);
+                    return fallback;
+                }
+            } catch (fallbackError) {
+                // Continue to next fallback
+                continue;
+            }
+        }
+
+        // Last resort: current directory or root
+        console.warn('All temp directory fallbacks failed, using current directory');
+        try {
+            return process.cwd();
+        } catch (cwdError) {
+            console.warn('Current directory also failed, using root');
+            return '/';
+        }
+    }
+}
+
 describe('Tool Integration Snapshots', () => {
     let toolManager;
     let snapshotManager;
@@ -22,8 +67,8 @@ describe('Tool Integration Snapshots', () => {
     let mockConsoleInterface;
 
     beforeEach(async () => {
-        // Use system temporary directory for cross-platform compatibility
-        const tempDir = tmpdir();
+        // Use system temporary directory with fallback handling
+        const tempDir = await getSafeTempDirectory();
 
         // Mock process.cwd() to use temp directory
         process.cwd = vi.fn(() => tempDir);
@@ -71,7 +116,16 @@ describe('Tool Integration Snapshots', () => {
         }
 
         // Restore original process.cwd
-        process.cwd = originalCwd || (() => tmpdir());
+        process.cwd =
+            originalCwd ||
+            (() => {
+                // For synchronous fallback, use a simpler approach
+                try {
+                    return tmpdir();
+                } catch (error) {
+                    return '/tmp';
+                }
+            });
     });
 
     const createTestFile = (filename, content) => {

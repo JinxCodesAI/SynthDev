@@ -8,6 +8,53 @@ import { writeFileSync, existsSync, unlinkSync, readFileSync } from 'fs';
 const originalCwd = process.cwd;
 
 /**
+ * Get workspace directory with robust fallback handling
+ * @returns {string} Workspace directory path
+ */
+async function getWorkspaceDirectory() {
+    // Try GitHub Actions workspace first
+    if (process.env.GITHUB_WORKSPACE) {
+        return process.env.GITHUB_WORKSPACE;
+    }
+
+    // Try current working directory with error handling
+    try {
+        return process.cwd();
+    } catch (error) {
+        console.warn('Failed to get current working directory:', error.message);
+
+        // Fallback to common workspace locations
+        const fallbacks = [
+            '/home/runner/work/SynthDev/SynthDev', // GitHub Actions default
+            '/mnt/persist/workspace', // Local development
+            '/workspace', // Docker/container
+            '/app', // Alternative container path
+            process.env.HOME || '/tmp', // User home or temp
+        ];
+
+        for (const fallback of fallbacks) {
+            try {
+                // Check if directory exists and is accessible
+                const { existsSync } = await import('fs');
+                if (existsSync(fallback)) {
+                    console.warn(`Using fallback workspace directory: ${fallback}`);
+                    return fallback;
+                }
+            } catch (_fallbackError) {
+                // Continue to next fallback
+                continue;
+            }
+        }
+
+        // Last resort: use temp directory
+        const { tmpdir } = await import('os');
+        const tempDir = tmpdir();
+        console.warn(`All fallbacks failed, using temp directory: ${tempDir}`);
+        return tempDir;
+    }
+}
+
+/**
  * End-to-End Configuration Reload Test
  *
  * This test validates the complete configuration reloading workflow:
@@ -24,11 +71,10 @@ describe('Configuration Reload E2E Test', () => {
     let testEnvPath;
     let originalEnvPath;
     let testOutput = '';
-    let testError = '';
 
-    beforeEach(() => {
-        // Use environment-agnostic workspace directory
-        const workspaceDir = process.env.GITHUB_WORKSPACE || process.cwd();
+    beforeEach(async () => {
+        // Use environment-agnostic workspace directory with fallback
+        const workspaceDir = await getWorkspaceDirectory();
 
         // Mock process.cwd() to return the detected workspace
         process.cwd = vi.fn(() => workspaceDir);
@@ -89,14 +135,19 @@ SYNTHDEV_ENABLE_PROMPT_ENHANCEMENT=false
         }
 
         // Restore original process.cwd
-        process.cwd = originalCwd || (() => process.env.GITHUB_WORKSPACE || process.cwd());
+        process.cwd =
+            originalCwd ||
+            (() => {
+                // For synchronous fallback, use a simpler approach
+                return process.env.GITHUB_WORKSPACE || '/mnt/persist/workspace';
+            });
     });
 
     /**
      * Helper function to spawn the application process
      */
-    function spawnApp() {
-        const workspaceDir = process.env.GITHUB_WORKSPACE || process.cwd();
+    async function spawnApp() {
+        const workspaceDir = await getWorkspaceDirectory();
         const appPath = join(workspaceDir, 'src', 'core', 'app.js');
 
         appProcess = spawn('node', [appPath], {
@@ -166,7 +217,7 @@ SYNTHDEV_ENABLE_PROMPT_ENHANCEMENT=false
 
     it('should reload configuration and update verbosity level', async () => {
         // Start the application
-        spawnApp();
+        await spawnApp();
 
         // Wait for app to start and show prompt
         await waitForOutput('💭 You:', 15000);
@@ -253,7 +304,7 @@ SYNTHDEV_ENABLE_PROMPT_ENHANCEMENT=false
 
     it('should handle configuration wizard navigation correctly', async () => {
         // Start the application
-        spawnApp();
+        await spawnApp();
 
         // Wait for app to start
         await waitForOutput('💭 You:', 15000);
