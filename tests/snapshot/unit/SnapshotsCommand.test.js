@@ -252,6 +252,163 @@ describe('SnapshotsCommand', () => {
         });
     });
 
+    describe('handleRestore', () => {
+        beforeEach(() => {
+            mockSnapshotManager.store = {
+                retrieve: vi.fn()
+            };
+            mockSnapshotManager.fileBackup = {
+                previewRestore: vi.fn()
+            };
+        });
+
+        it('should restore snapshot with confirmation', async () => {
+            const mockSnapshots = [
+                {
+                    id: 'snap-123',
+                    description: 'Test snapshot',
+                    age: '1 hour ago',
+                    fileCount: 5,
+                    sizeFormatted: '1.0 KB'
+                }
+            ];
+
+            mockSnapshotManager.listSnapshots.mockResolvedValue(mockSnapshots);
+            mockSnapshotManager.restoreSnapshot.mockResolvedValue({
+                filesRestored: 5,
+                filesSkipped: 0,
+                errors: [],
+                description: 'Test snapshot'
+            });
+            mockContext.consoleInterface.promptForConfirmation.mockResolvedValue(true);
+
+            const parsedArgs = { args: ['snap-123'] };
+
+            const result = await command.handleRestore(parsedArgs, mockContext, mockSnapshotManager);
+
+            expect(result).toBe('success');
+            expect(mockContext.consoleInterface.promptForConfirmation).toHaveBeenCalled();
+            expect(mockSnapshotManager.restoreSnapshot).toHaveBeenCalledWith('snap-123', {
+                createBackup: true,
+                overwriteExisting: true,
+                preservePermissions: true,
+                rollbackOnFailure: true
+            });
+        });
+
+        it('should show preview for large restores', async () => {
+            const mockSnapshots = [
+                {
+                    id: 'snap-123',
+                    description: 'Large snapshot',
+                    age: '1 hour ago',
+                    fileCount: 15, // > 10, should trigger preview
+                    sizeFormatted: '10.0 KB'
+                }
+            ];
+
+            const mockPreview = {
+                impact: { riskLevel: 'medium', totalSize: 10240 },
+                changes: {
+                    toCreate: [{ path: 'new.js', size: 100 }],
+                    toModify: [{ path: 'existing.js', currentSize: 200, newSize: 250 }],
+                    conflicts: []
+                }
+            };
+
+            mockSnapshotManager.listSnapshots.mockResolvedValue(mockSnapshots);
+            mockSnapshotManager.store.retrieve.mockResolvedValue({
+                files: { 'test.js': { content: 'test' } }
+            });
+            mockSnapshotManager.fileBackup.previewRestore.mockResolvedValue(mockPreview);
+            mockSnapshotManager.restoreSnapshot.mockResolvedValue({
+                filesRestored: 15,
+                filesSkipped: 0,
+                errors: []
+            });
+            mockContext.consoleInterface.promptForConfirmation.mockResolvedValue(true);
+
+            const parsedArgs = { args: ['snap-123'] };
+
+            const result = await command.handleRestore(parsedArgs, mockContext, mockSnapshotManager);
+
+            expect(result).toBe('success');
+            expect(mockSnapshotManager.fileBackup.previewRestore).toHaveBeenCalled();
+            expect(mockContext.consoleInterface.showMessage).toHaveBeenCalledWith(
+                expect.stringContaining('Restore Preview:')
+            );
+        });
+
+        it('should handle restore with options', async () => {
+            const mockSnapshots = [
+                {
+                    id: 'snap-123',
+                    description: 'Test snapshot',
+                    age: '1 hour ago',
+                    fileCount: 5,
+                    sizeFormatted: '1.0 KB'
+                }
+            ];
+
+            mockSnapshotManager.listSnapshots.mockResolvedValue(mockSnapshots);
+            mockSnapshotManager.restoreSnapshot.mockResolvedValue({
+                filesRestored: 5,
+                filesSkipped: 0,
+                errors: []
+            });
+            mockContext.consoleInterface.promptForConfirmation.mockResolvedValue(true);
+
+            const parsedArgs = { args: ['snap-123', '--no-backup', '--preview'] };
+
+            const result = await command.handleRestore(parsedArgs, mockContext, mockSnapshotManager);
+
+            expect(result).toBe('success');
+            expect(mockSnapshotManager.restoreSnapshot).toHaveBeenCalledWith('snap-123', {
+                createBackup: false,
+                overwriteExisting: true,
+                preservePermissions: true,
+                rollbackOnFailure: true
+            });
+        });
+
+        it('should handle missing snapshot ID', async () => {
+            const parsedArgs = { args: [] };
+
+            const result = await command.handleRestore(parsedArgs, mockContext, mockSnapshotManager);
+
+            expect(result).toBe('invalid_args');
+            expect(mockContext.consoleInterface.showError).toHaveBeenCalledWith(
+                'Snapshot ID is required. Usage: /snapshot restore <id> [--preview] [--no-backup]'
+            );
+        });
+
+        it('should handle non-existent snapshot', async () => {
+            mockSnapshotManager.listSnapshots.mockResolvedValue([]);
+
+            const parsedArgs = { args: ['non-existent'] };
+
+            const result = await command.handleRestore(parsedArgs, mockContext, mockSnapshotManager);
+
+            expect(result).toBe('not_found');
+            expect(mockContext.consoleInterface.showError).toHaveBeenCalledWith(
+                "Snapshot with ID 'non-existent' not found."
+            );
+        });
+
+        it('should handle user cancellation', async () => {
+            const mockSnapshots = [{ id: 'snap-123', description: 'Test', fileCount: 5 }];
+            mockSnapshotManager.listSnapshots.mockResolvedValue(mockSnapshots);
+            mockContext.consoleInterface.promptForConfirmation.mockResolvedValue(false);
+
+            const parsedArgs = { args: ['snap-123'] };
+
+            const result = await command.handleRestore(parsedArgs, mockContext, mockSnapshotManager);
+
+            expect(result).toBe('cancelled');
+            expect(mockContext.consoleInterface.showMessage).toHaveBeenCalledWith('Restore cancelled.');
+        });
+    });
+
     describe('handleDelete', () => {
         it('should delete snapshot with confirmation', async () => {
             const mockSnapshots = [
@@ -369,6 +526,35 @@ describe('SnapshotsCommand', () => {
             expect(command._formatSize(0)).toBe('0 B');
             expect(command._formatSize(1024)).toBe('1.0 KB');
             expect(command._formatSize(1048576)).toBe('1.0 MB');
+        });
+
+        it('should parse restore options correctly', () => {
+            const options1 = command._parseRestoreOptions(['snap-123']);
+            expect(options1).toEqual({
+                snapshotId: 'snap-123',
+                preview: false,
+                noBackup: false,
+                noRollback: false,
+                preservePermissions: true
+            });
+
+            const options2 = command._parseRestoreOptions(['snap-456', '--preview', '--no-backup']);
+            expect(options2).toEqual({
+                snapshotId: 'snap-456',
+                preview: true,
+                noBackup: true,
+                noRollback: false,
+                preservePermissions: true
+            });
+
+            const options3 = command._parseRestoreOptions(['--no-permissions', 'snap-789', '--no-rollback']);
+            expect(options3).toEqual({
+                snapshotId: 'snap-789',
+                preview: false,
+                noBackup: false,
+                noRollback: true,
+                preservePermissions: false
+            });
         });
     });
 });

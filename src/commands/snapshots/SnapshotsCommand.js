@@ -245,10 +245,12 @@ export class SnapshotsCommand extends InteractiveCommand {
         try {
             const { consoleInterface } = context;
 
-            // Get snapshot ID from args
-            const snapshotId = parsedArgs.args[0];
+            // Parse restore options
+            const options = this._parseRestoreOptions(parsedArgs.args);
+            const snapshotId = options.snapshotId;
+
             if (!snapshotId) {
-                consoleInterface.showError('Snapshot ID is required. Usage: /snapshot restore <id>');
+                consoleInterface.showError('Snapshot ID is required. Usage: /snapshot restore <id> [--preview] [--no-backup]');
                 return 'invalid_args';
             }
 
@@ -261,7 +263,15 @@ export class SnapshotsCommand extends InteractiveCommand {
                 return 'not_found';
             }
 
-            // Show restore preview
+            // Show preview if requested or if it's a large restore
+            if (options.preview || snapshot.fileCount > 10) {
+                const previewResult = await this._showRestorePreview(snapshot, snapshotManager, consoleInterface);
+                if (previewResult === 'cancelled') {
+                    return 'cancelled';
+                }
+            }
+
+            // Show basic restore info
             consoleInterface.showMessage(
                 `About to restore snapshot:\n` +
                 `ID: ${snapshot.id}\n` +
@@ -271,31 +281,49 @@ export class SnapshotsCommand extends InteractiveCommand {
                 `Size: ${snapshot.sizeFormatted}\n`
             );
 
-            // Get user confirmation
-            const confirmed = await this.promptForConfirmation(
-                'This will overwrite current files. Are you sure you want to continue?',
-                context
-            );
+            // Get user confirmation with risk assessment
+            const riskLevel = snapshot.fileCount > 50 ? 'HIGH' : snapshot.fileCount > 10 ? 'MEDIUM' : 'LOW';
+            const confirmMessage = options.noBackup
+                ? `This will overwrite current files WITHOUT creating a backup. Risk level: ${riskLevel}. Are you sure?`
+                : `This will overwrite current files (backup will be created). Risk level: ${riskLevel}. Continue?`;
+
+            const confirmed = await this.promptForConfirmation(confirmMessage, context);
 
             if (!confirmed) {
                 consoleInterface.showMessage('Restore cancelled.');
                 return 'cancelled';
             }
 
+            // Show progress message
             consoleInterface.showMessage('Restoring snapshot...');
 
-            // Call snapshotManager.restoreSnapshot()
+            // Call snapshotManager.restoreSnapshot() with options
             const result = await snapshotManager.restoreSnapshot(snapshot.id, {
-                createBackup: true,
-                overwriteExisting: true
+                createBackup: !options.noBackup,
+                overwriteExisting: true,
+                preservePermissions: options.preservePermissions !== false,
+                rollbackOnFailure: !options.noRollback
             });
 
-            // Show success message
+            // Show detailed success message
             consoleInterface.showSuccess(
                 `Snapshot restored successfully!\n` +
                 `Files restored: ${result.filesRestored || 0}\n` +
+                `Files skipped: ${result.filesSkipped || 0}\n` +
+                `Errors: ${result.errors?.length || 0}\n` +
                 `Snapshot: ${result.description}`
             );
+
+            // Show errors if any
+            if (result.errors && result.errors.length > 0) {
+                consoleInterface.showMessage('\nErrors encountered:');
+                result.errors.slice(0, 5).forEach(error => {
+                    consoleInterface.showMessage(`  - ${error}`);
+                });
+                if (result.errors.length > 5) {
+                    consoleInterface.showMessage(`  ... and ${result.errors.length - 5} more errors`);
+                }
+            }
 
             return 'success';
         } catch (error) {
@@ -457,10 +485,16 @@ Snapshot Management Commands:
 
   /snapshot create "description"    Create a new snapshot with description
   /snapshot list [--limit N]        List all snapshots (optionally limit results)
-  /snapshot restore <id>            Restore a snapshot by ID
+  /snapshot restore <id> [options]  Restore a snapshot by ID
   /snapshot delete <id>             Delete a snapshot by ID
   /snapshot config [show|stats]     Show configuration or storage statistics
   /snapshot help                    Show this help message
+
+Restore Options:
+  --preview                         Show detailed restore preview before proceeding
+  --no-backup                       Skip creating backup of current files
+  --no-rollback                     Disable automatic rollback on failure
+  --no-permissions                  Don't restore file permissions
 
 Aliases: /snap, /ss
 
@@ -469,6 +503,8 @@ Examples:
   /snapshot list
   /snapshot list --limit 5
   /snapshot restore abc123
+  /snapshot restore abc123 --preview
+  /snapshot restore abc123 --no-backup
   /snapshot delete abc123
   /snapshot config show
   /snapshot config stats
@@ -479,6 +515,111 @@ Note: Snapshots are stored in memory and will be lost when the application resta
 
         consoleInterface.showMessage(helpText);
         return 'help_shown';
+    }
+
+    /**
+     * Parse restore command options
+     * @param {Array} args - Command arguments
+     * @returns {Object} Parsed options
+     */
+    _parseRestoreOptions(args) {
+        const options = {
+            snapshotId: null,
+            preview: false,
+            noBackup: false,
+            noRollback: false,
+            preservePermissions: true
+        };
+
+        for (let i = 0; i < args.length; i++) {
+            const arg = args[i];
+
+            if (arg.startsWith('--')) {
+                switch (arg) {
+                    case '--preview':
+                        options.preview = true;
+                        break;
+                    case '--no-backup':
+                        options.noBackup = true;
+                        break;
+                    case '--no-rollback':
+                        options.noRollback = true;
+                        break;
+                    case '--no-permissions':
+                        options.preservePermissions = false;
+                        break;
+                }
+            } else if (!options.snapshotId) {
+                options.snapshotId = arg;
+            }
+        }
+
+        return options;
+    }
+
+    /**
+     * Show restore preview with detailed impact analysis
+     * @param {Object} snapshot - Snapshot information
+     * @param {SnapshotManager} snapshotManager - Snapshot manager instance
+     * @param {Object} consoleInterface - Console interface
+     * @returns {Promise<string>} Result ('continue' or 'cancelled')
+     */
+    async _showRestorePreview(snapshot, snapshotManager, consoleInterface) {
+        try {
+            consoleInterface.showMessage('Analyzing restore impact...');
+
+            // Get preview from FileBackup if available
+            if (snapshotManager.fileBackup) {
+                // Get the full snapshot data for preview
+                const fullSnapshot = await snapshotManager.store.retrieve(snapshot.id);
+                if (fullSnapshot && fullSnapshot.files) {
+                    const preview = await snapshotManager.fileBackup.previewRestore(fullSnapshot);
+
+                    consoleInterface.showMessage('\nRestore Preview:');
+                    consoleInterface.showMessage(`Risk Level: ${preview.impact.riskLevel.toUpperCase()}`);
+                    consoleInterface.showMessage(`Total Impact Size: ${this._formatSize(preview.impact.totalSize)}`);
+
+                    if (preview.changes.toCreate.length > 0) {
+                        consoleInterface.showMessage(`\nFiles to CREATE (${preview.changes.toCreate.length}):`);
+                        preview.changes.toCreate.slice(0, 5).forEach(file => {
+                            consoleInterface.showMessage(`  + ${file.path} (${this._formatSize(file.size)})`);
+                        });
+                        if (preview.changes.toCreate.length > 5) {
+                            consoleInterface.showMessage(`  ... and ${preview.changes.toCreate.length - 5} more files`);
+                        }
+                    }
+
+                    if (preview.changes.toModify.length > 0) {
+                        consoleInterface.showMessage(`\nFiles to MODIFY (${preview.changes.toModify.length}):`);
+                        preview.changes.toModify.slice(0, 5).forEach(file => {
+                            consoleInterface.showMessage(`  ~ ${file.path} (${this._formatSize(file.currentSize)} → ${this._formatSize(file.newSize)})`);
+                        });
+                        if (preview.changes.toModify.length > 5) {
+                            consoleInterface.showMessage(`  ... and ${preview.changes.toModify.length - 5} more files`);
+                        }
+                    }
+
+                    if (preview.changes.conflicts.length > 0) {
+                        consoleInterface.showMessage(`\nCONFLICTS (${preview.changes.conflicts.length}):`);
+                        preview.changes.conflicts.forEach(conflict => {
+                            consoleInterface.showMessage(`  ! ${conflict.path}: ${conflict.error}`);
+                        });
+                    }
+                }
+            }
+
+            // Ask if user wants to continue after seeing preview
+            const continueRestore = await this.promptForConfirmation(
+                'Continue with restore after reviewing the preview?',
+                { consoleInterface }
+            );
+
+            return continueRestore ? 'continue' : 'cancelled';
+        } catch (error) {
+            this.logger.warn('Failed to generate restore preview', { error: error.message });
+            consoleInterface.showMessage('Could not generate detailed preview, but restore can continue.');
+            return 'continue';
+        }
     }
 
     /**
