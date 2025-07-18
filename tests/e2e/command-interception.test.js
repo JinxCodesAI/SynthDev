@@ -5,23 +5,32 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { spawn } from 'child_process';
-import { writeFileSync, unlinkSync, existsSync } from 'fs';
+import { writeFileSync, unlinkSync, existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 
-describe('Command Interception E2E Tests', () => {
+describe.sequential('Command Interception E2E Tests', () => {
     let appProcess;
     let testEnvFile;
     let testTimeout;
+    let originalEnvFile;
 
     beforeEach(() => {
-        // Create test environment file
-        testEnvFile = '.env.test';
+        // Backup original env file if it exists
+        testEnvFile = '.env';
+        if (existsSync(testEnvFile)) {
+            originalEnvFile = readFileSync(testEnvFile, 'utf8');
+        }
+
+        // Create test environment file in the expected location
         writeFileSync(
             testEnvFile,
             `SYNTHDEV_API_KEY=test-key-12345
 SYNTHDEV_BASE_MODEL=gpt-4.1-mini
 SYNTHDEV_BASE_URL=https://api.openai.com/v1
 SYNTHDEV_VERBOSITY_LEVEL=2
+SYNTHDEV_ROLE=dude
+SYNTHDEV_MAX_TOOL_CALLS=50
+SYNTHDEV_PROMPT_ENHANCEMENT=false
 `
         );
 
@@ -46,9 +55,17 @@ SYNTHDEV_VERBOSITY_LEVEL=2
             }
             appProcess = null;
         }
-        if (testEnvFile && existsSync(testEnvFile)) {
+
+        // Add a small delay to ensure processes are completely terminated
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+        // Restore original env file or clean up test file
+        if (originalEnvFile) {
+            writeFileSync(testEnvFile, originalEnvFile);
+        } else if (testEnvFile && existsSync(testEnvFile)) {
             unlinkSync(testEnvFile);
         }
+        originalEnvFile = null;
     });
 
     it('should intercept /help command without AI response', async () => {
@@ -65,7 +82,17 @@ SYNTHDEV_VERBOSITY_LEVEL=2
             }, testTimeout);
 
             appProcess = spawn('node', ['src/core/app.js'], {
-                env: { ...process.env, NODE_ENV: 'test' },
+                env: {
+                    ...process.env,
+                    NODE_ENV: 'test',
+                    SYNTHDEV_API_KEY: 'test-key-12345',
+                    SYNTHDEV_BASE_MODEL: 'gpt-4.1-mini',
+                    SYNTHDEV_BASE_URL: 'https://api.openai.com/v1',
+                    SYNTHDEV_VERBOSITY_LEVEL: '2',
+                    SYNTHDEV_ROLE: 'dude',
+                    SYNTHDEV_MAX_TOOL_CALLS: '50',
+                    SYNTHDEV_PROMPT_ENHANCEMENT: 'false',
+                },
                 stdio: ['pipe', 'pipe', 'pipe'],
                 cwd: process.cwd(),
             });
@@ -169,7 +196,17 @@ SYNTHDEV_VERBOSITY_LEVEL=2
             }, testTimeout);
 
             appProcess = spawn('node', ['src/core/app.js'], {
-                env: { ...process.env, NODE_ENV: 'test' },
+                env: {
+                    ...process.env,
+                    NODE_ENV: 'test',
+                    SYNTHDEV_API_KEY: 'test-key-12345',
+                    SYNTHDEV_BASE_MODEL: 'gpt-4.1-mini',
+                    SYNTHDEV_BASE_URL: 'https://api.openai.com/v1',
+                    SYNTHDEV_VERBOSITY_LEVEL: '2',
+                    SYNTHDEV_ROLE: 'dude',
+                    SYNTHDEV_MAX_TOOL_CALLS: '50',
+                    SYNTHDEV_PROMPT_ENHANCEMENT: 'false',
+                },
                 stdio: ['pipe', 'pipe', 'pipe'],
                 cwd: process.cwd(),
             });
@@ -259,7 +296,17 @@ SYNTHDEV_VERBOSITY_LEVEL=2
             }, testTimeout);
 
             appProcess = spawn('node', ['src/core/app.js'], {
-                env: { ...process.env, NODE_ENV: 'test' },
+                env: {
+                    ...process.env,
+                    NODE_ENV: 'test',
+                    SYNTHDEV_API_KEY: 'test-key-12345',
+                    SYNTHDEV_BASE_MODEL: 'gpt-4.1-mini',
+                    SYNTHDEV_BASE_URL: 'https://api.openai.com/v1',
+                    SYNTHDEV_VERBOSITY_LEVEL: '2',
+                    SYNTHDEV_ROLE: 'dude',
+                    SYNTHDEV_MAX_TOOL_CALLS: '50',
+                    SYNTHDEV_PROMPT_ENHANCEMENT: 'false',
+                },
                 stdio: ['pipe', 'pipe', 'pipe'],
                 cwd: process.cwd(),
             });
@@ -284,7 +331,7 @@ SYNTHDEV_VERBOSITY_LEVEL=2
                 }
 
                 // Check for snapshot response
-                if (chunk.includes('Snapshot Management Commands') && snapshotCommandSent) {
+                if (chunk.includes('📸 Snapshot Management Commands') && snapshotCommandSent) {
                     snapshotResponseReceived = true;
                 }
 
@@ -321,7 +368,7 @@ SYNTHDEV_VERBOSITY_LEVEL=2
                     expect(aiResponseReceived).toBe(false); // This is the key assertion that should pass
 
                     // Verify snapshot content
-                    expect(output).toContain('Snapshot Management Commands');
+                    expect(output).toContain('📸 Snapshot Management Commands');
                     expect(output).toContain('/snapshot create');
                     expect(output).toContain('/snapshot list');
 
@@ -352,7 +399,17 @@ SYNTHDEV_VERBOSITY_LEVEL=2
             }, testTimeout);
 
             appProcess = spawn('node', ['src/core/app.js'], {
-                env: { ...process.env, NODE_ENV: 'test' },
+                env: {
+                    ...process.env,
+                    NODE_ENV: 'test',
+                    SYNTHDEV_API_KEY: 'test-key-12345',
+                    SYNTHDEV_BASE_MODEL: 'gpt-4.1-mini',
+                    SYNTHDEV_BASE_URL: 'https://api.openai.com/v1',
+                    SYNTHDEV_VERBOSITY_LEVEL: '2',
+                    SYNTHDEV_ROLE: 'dude',
+                    SYNTHDEV_MAX_TOOL_CALLS: '50',
+                    SYNTHDEV_PROMPT_ENHANCEMENT: 'false',
+                },
                 stdio: ['pipe', 'pipe', 'pipe'],
                 cwd: process.cwd(),
             });
@@ -377,7 +434,7 @@ SYNTHDEV_VERBOSITY_LEVEL=2
                 }
 
                 // Check for snapshot help response
-                if (chunk.includes('Snapshot Management Commands') && snapshotHelpCommandSent) {
+                if (chunk.includes('📸 Snapshot Management Commands') && snapshotHelpCommandSent) {
                     snapshotHelpResponseReceived = true;
                 }
 
@@ -409,9 +466,9 @@ SYNTHDEV_VERBOSITY_LEVEL=2
                     expect(aiResponseReceived).toBe(false);
 
                     // Verify snapshot help content
-                    expect(output).toContain('Snapshot Management Commands');
-                    expect(output).toContain('Examples:');
-                    expect(output).toContain('Notes:');
+                    expect(output).toContain('📸 Snapshot Management Commands');
+                    expect(output).toContain('💡 Examples:');
+                    expect(output).toContain('📝 Notes:');
 
                     resolve();
                 } catch (error) {
