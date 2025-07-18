@@ -1,0 +1,47 @@
+{
+  "$schema": "./schemas/snapshot-defaults.schema.json",
+  "description": "Default configuration for the SynthDev snapshot system",
+  "version": "1.0.0",
+  "storage": {
+    "maxSnapshots": 50,
+    "maxMemoryMB": 100,
+    "cleanupStrategy": "oldest_first",
+    "cleanupThreshold": 0.8
+  },
+  "fileHandling": {
+    "maxFileSize": 10485760,
+    "preservePermissions": true,
+    "createBackups": true,
+    "binaryFileHandling": "exclude",
+    "encoding": "utf8"
+  },
+  "restoration": {
+    "createBackupByDefault": true,
+    "overwriteExistingByDefault": true,
+    "preservePermissionsByDefault": true,
+    "rollbackOnFailureByDefault": true,
+    "previewThreshold": 10
+  },
+  "performance": {
+    "maxConcurrentOperations": 5,
+    "chunkSize": 1024,
+    "timeoutMs": 30000
+  },
+  "logging": {
+    "level": "info",
+    "enableDebugMode": false,
+    "logFileOperations": true,
+    "logPerformanceMetrics": false
+  },
+  "ui": {
+    "showProgressIndicators": true,
+    "confirmDestructiveOperations": true,
+    "showDetailedErrors": true,
+    "colorOutput": true
+  },
+  "validation": {
+    "validateFileIntegrity": true,
+    "checksumAlgorithm": "sha256",
+    "strictModeEnabled": false
+  }
+}

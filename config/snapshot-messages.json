@@ -1,0 +1,127 @@
+{
+  "$schema": "./schemas/snapshot-messages.schema.json",
+  "description": "User interface messages for the SynthDev snapshot system",
+  "version": "1.0.0",
+  "commands": {
+    "create": {
+      "prompts": {
+        "description": "Enter snapshot description: ",
+        "confirmLargeSnapshot": "This snapshot contains {fileCount} files ({totalSize}). Continue?",
+        "confirmOverwrite": "A snapshot with this description already exists. Overwrite?"
+      },
+      "success": {
+        "created": "Snapshot created successfully!\nID: {id}\nDescription: {description}\nFiles: {fileCount}\nSize: {totalSize}\nCreated: {timestamp}",
+        "createdWithWarnings": "Snapshot created with warnings!\nID: {id}\nWarnings: {warningCount}\nFiles: {fileCount}\nSize: {totalSize}"
+      },
+      "errors": {
+        "noDescription": "Snapshot description is required",
+        "invalidDescription": "Snapshot description contains invalid characters",
+        "creationFailed": "Failed to create snapshot: {error}",
+        "insufficientSpace": "Insufficient memory space for snapshot",
+        "tooManyFiles": "Too many files to snapshot (limit: {limit})"
+      }
+    },
+    "list": {
+      "headers": {
+        "empty": "No snapshots found. Use \"/snapshot create\" to create your first snapshot.",
+        "found": "Found {count} snapshot{plural}:\n",
+        "filtered": "Found {count} of {total} snapshots matching criteria:\n"
+      },
+      "format": {
+        "item": "  {id} | {description} | {age} | {fileCount} files | {size}",
+        "detailed": "ID: {id}\nDescription: {description}\nCreated: {timestamp}\nAge: {age}\nFiles: {fileCount}\nSize: {size}\nStatus: {status}"
+      }
+    },
+    "restore": {
+      "prompts": {
+        "confirm": "This will overwrite current files. Are you sure you want to continue?",
+        "confirmNoBackup": "This will overwrite current files WITHOUT creating a backup. Risk level: {riskLevel}. Are you sure?",
+        "confirmHighRisk": "This will overwrite current files (backup will be created). Risk level: {riskLevel}. Continue?",
+        "continueAfterPreview": "Continue with restore after reviewing the preview?"
+      },
+      "preview": {
+        "header": "\nRestore Preview:",
+        "riskLevel": "Risk Level: {riskLevel}",
+        "totalSize": "Total Impact Size: {totalSize}",
+        "toCreate": "\nFiles to CREATE ({count}):",
+        "toModify": "\nFiles to MODIFY ({count}):",
+        "conflicts": "\nCONFLICTS ({count}):",
+        "moreFiles": "  ... and {count} more files"
+      },
+      "progress": {
+        "analyzing": "Analyzing restore impact...",
+        "restoring": "Restoring snapshot...",
+        "creatingBackup": "Creating backup of current files...",
+        "restoringFiles": "Restoring files ({current}/{total})..."
+      },
+      "success": {
+        "restored": "Snapshot restored successfully!\nFiles restored: {filesRestored}\nFiles skipped: {filesSkipped}\nErrors: {errorCount}\nSnapshot: {description}",
+        "restoredWithErrors": "Snapshot restored with errors!\nFiles restored: {filesRestored}\nFiles skipped: {filesSkipped}\nErrors: {errorCount}"
+      },
+      "errors": {
+        "notFound": "Snapshot with ID '{id}' not found.",
+        "invalidId": "Snapshot ID is required. Usage: /snapshot restore <id> [options]",
+        "restoreFailed": "Failed to restore snapshot: {error}",
+        "backupFailed": "Failed to create backup: {error}",
+        "rollbackFailed": "Restoration failed and rollback also failed: {error}"
+      }
+    },
+    "delete": {
+      "prompts": {
+        "confirm": "Are you sure you want to delete this snapshot? This action cannot be undone.",
+        "confirmMultiple": "Are you sure you want to delete {count} snapshots? This action cannot be undone."
+      },
+      "success": {
+        "deleted": "Snapshot '{id}' deleted successfully.",
+        "deletedMultiple": "{count} snapshots deleted successfully."
+      },
+      "errors": {
+        "notFound": "Snapshot with ID '{id}' not found.",
+        "invalidId": "Snapshot ID is required. Usage: /snapshot delete <id>",
+        "deleteFailed": "Failed to delete snapshot: {error}",
+        "inUse": "Cannot delete snapshot: currently in use"
+      }
+    },
+    "config": {
+      "headers": {
+        "current": "Current Snapshot Configuration:",
+        "statistics": "Storage Statistics:",
+        "commands": "Configuration commands:\n  /snapshot config show  - Show current configuration\n  /snapshot config stats - Show storage statistics\n"
+      },
+      "format": {
+        "setting": "  {key}: {value}",
+        "statistic": "  {key}: {value}"
+      }
+    }
+  },
+  "general": {
+    "confirmations": {
+      "yes": ["y", "yes", "true", "1"],
+      "no": ["n", "no", "false", "0"]
+    },
+    "units": {
+      "bytes": ["B", "KB", "MB", "GB"],
+      "time": {
+        "seconds": "second{plural}",
+        "minutes": "minute{plural}",
+        "hours": "hour{plural}",
+        "days": "day{plural}",
+        "justNow": "just now"
+      }
+    },
+    "errors": {
+      "generic": "An unexpected error occurred: {error}",
+      "timeout": "Operation timed out after {timeout}ms",
+      "cancelled": "Operation cancelled by user",
+      "invalidInput": "Invalid input: {input}",
+      "permissionDenied": "Permission denied: {path}"
+    }
+  },
+  "help": {
+    "commands": "Snapshot Management Commands:\n\n  /snapshot create \"description\"    Create a new snapshot with description\n  /snapshot list [--limit N]        List all snapshots (optionally limit results)\n  /snapshot restore <id> [options]  Restore a snapshot by ID\n  /snapshot delete <id>             Delete a snapshot by ID\n  /snapshot config [show|stats]     Show configuration or storage statistics\n  /snapshot help                    Show this help message",
+    "restoreOptions": "Restore Options:\n  --preview                         Show detailed restore preview before proceeding\n  --no-backup                       Skip creating backup of current files\n  --no-rollback                     Disable automatic rollback on failure\n  --no-permissions                  Don't restore file permissions",
+    "aliases": "Aliases: /snap, /ss",
+    "examples": "Examples:\n  /snapshot create \"Before refactoring\"\n  /snapshot list\n  /snapshot list --limit 5\n  /snapshot restore abc123\n  /snapshot restore abc123 --preview\n  /snapshot restore abc123 --no-backup\n  /snapshot delete abc123\n  /snapshot config show\n  /snapshot config stats",
+    "note": "Note: Snapshots are stored in memory and will be lost when the application restarts.\n      This is Phase 1 functionality - persistent storage will be added in later phases."
+  }
+}

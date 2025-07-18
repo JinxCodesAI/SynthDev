@@ -1,0 +1,201 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://synthdev.ai/schemas/snapshot-defaults.schema.json",
+  "title": "Snapshot Defaults Configuration",
+  "description": "Schema for validating snapshot system default configuration",
+  "type": "object",
+  "required": ["version", "storage", "fileHandling"],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "JSON Schema reference"
+    },
+    "description": {
+      "type": "string",
+      "description": "Human-readable description of the configuration"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$",
+      "description": "Configuration version in semver format"
+    },
+    "storage": {
+      "type": "object",
+      "required": ["maxSnapshots", "maxMemoryMB"],
+      "properties": {
+        "maxSnapshots": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000,
+          "description": "Maximum number of snapshots to store"
+        },
+        "maxMemoryMB": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 10000,
+          "description": "Maximum memory usage in megabytes"
+        },
+        "cleanupStrategy": {
+          "type": "string",
+          "enum": ["oldest_first", "largest_first", "target_size"],
+          "description": "Strategy for cleaning up old snapshots"
+        },
+        "cleanupThreshold": {
+          "type": "number",
+          "minimum": 0.1,
+          "maximum": 1.0,
+          "description": "Threshold for triggering cleanup (0.1-1.0)"
+        }
+      },
+      "additionalProperties": false
+    },
+    "fileHandling": {
+      "type": "object",
+      "required": ["maxFileSize", "preservePermissions", "createBackups"],
+      "properties": {
+        "maxFileSize": {
+          "type": "integer",
+          "minimum": 1024,
+          "maximum": 104857600,
+          "description": "Maximum file size in bytes"
+        },
+        "preservePermissions": {
+          "type": "boolean",
+          "description": "Whether to preserve file permissions"
+        },
+        "createBackups": {
+          "type": "boolean",
+          "description": "Whether to create backups during restoration"
+        },
+        "binaryFileHandling": {
+          "type": "string",
+          "enum": ["exclude", "include", "warn"],
+          "description": "How to handle binary files"
+        },
+        "encoding": {
+          "type": "string",
+          "enum": ["utf8", "ascii", "latin1"],
+          "description": "Default text file encoding"
+        }
+      },
+      "additionalProperties": false
+    },
+    "restoration": {
+      "type": "object",
+      "properties": {
+        "createBackupByDefault": {
+          "type": "boolean",
+          "description": "Create backup by default during restoration"
+        },
+        "overwriteExistingByDefault": {
+          "type": "boolean",
+          "description": "Overwrite existing files by default"
+        },
+        "preservePermissionsByDefault": {
+          "type": "boolean",
+          "description": "Preserve permissions by default during restoration"
+        },
+        "rollbackOnFailureByDefault": {
+          "type": "boolean",
+          "description": "Rollback on failure by default"
+        },
+        "previewThreshold": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 1000,
+          "description": "Number of files that triggers automatic preview"
+        }
+      },
+      "additionalProperties": false
+    },
+    "performance": {
+      "type": "object",
+      "properties": {
+        "maxConcurrentOperations": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 20,
+          "description": "Maximum concurrent file operations"
+        },
+        "chunkSize": {
+          "type": "integer",
+          "minimum": 512,
+          "maximum": 65536,
+          "description": "Chunk size for file operations"
+        },
+        "timeoutMs": {
+          "type": "integer",
+          "minimum": 1000,
+          "maximum": 300000,
+          "description": "Operation timeout in milliseconds"
+        }
+      },
+      "additionalProperties": false
+    },
+    "logging": {
+      "type": "object",
+      "properties": {
+        "level": {
+          "type": "string",
+          "enum": ["error", "warn", "info", "debug"],
+          "description": "Logging level"
+        },
+        "enableDebugMode": {
+          "type": "boolean",
+          "description": "Enable debug mode"
+        },
+        "logFileOperations": {
+          "type": "boolean",
+          "description": "Log file operations"
+        },
+        "logPerformanceMetrics": {
+          "type": "boolean",
+          "description": "Log performance metrics"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ui": {
+      "type": "object",
+      "properties": {
+        "showProgressIndicators": {
+          "type": "boolean",
+          "description": "Show progress indicators"
+        },
+        "confirmDestructiveOperations": {
+          "type": "boolean",
+          "description": "Confirm destructive operations"
+        },
+        "showDetailedErrors": {
+          "type": "boolean",
+          "description": "Show detailed error messages"
+        },
+        "colorOutput": {
+          "type": "boolean",
+          "description": "Use colored output"
+        }
+      },
+      "additionalProperties": false
+    },
+    "validation": {
+      "type": "object",
+      "properties": {
+        "validateFileIntegrity": {
+          "type": "boolean",
+          "description": "Validate file integrity"
+        },
+        "checksumAlgorithm": {
+          "type": "string",
+          "enum": ["md5", "sha1", "sha256", "sha512"],
+          "description": "Checksum algorithm for validation"
+        },
+        "strictModeEnabled": {
+          "type": "boolean",
+          "description": "Enable strict validation mode"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
