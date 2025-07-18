@@ -13,7 +13,7 @@ import { resolve } from 'path';
 export class SnapshotManager {
     constructor(config = {}) {
         this.logger = getLogger();
-        
+
         // Configuration with defaults
         this.config = {
             // Storage configuration
@@ -22,7 +22,7 @@ export class SnapshotManager {
                 maxSnapshots: 50,
                 maxMemoryMB: 100,
                 persistToDisk: false,
-                ...config.storage
+                ...config.storage,
             },
             // File filtering configuration
             fileFiltering: {
@@ -32,12 +32,12 @@ export class SnapshotManager {
                     'dist/**',
                     'build/**',
                     '*.log',
-                    '*.tmp'
+                    '*.tmp',
                 ],
                 customExclusions: [],
                 maxFileSize: 10 * 1024 * 1024, // 10MB
                 binaryFileHandling: 'exclude',
-                ...config.fileFiltering
+                ...config.fileFiltering,
             },
             // Backup configuration
             backup: {
@@ -45,7 +45,7 @@ export class SnapshotManager {
                 backupSuffix: '.backup',
                 preservePermissions: true,
                 validateChecksums: true,
-                ...config.backup
+                ...config.backup,
             },
             // Behavior configuration
             behavior: {
@@ -53,19 +53,19 @@ export class SnapshotManager {
                 cleanupThreshold: 40,
                 confirmRestore: true,
                 showPreview: true,
-                ...config.behavior
+                ...config.behavior,
             },
-            ...config
+            ...config,
         };
-        
+
         // Initialize components
         this.fileFilter = new FileFilter(this.config.fileFiltering);
         this.fileBackup = new FileBackup(this.fileFilter, this.config.backup);
         this.store = this._createStore();
-        
+
         // Track active operations
         this.activeOperations = new Set();
-        
+
         this.logger.debug('SnapshotManager initialized', { config: this.config });
     }
 
@@ -81,26 +81,26 @@ export class SnapshotManager {
     async createSnapshot(description, metadata = {}) {
         const operationId = uuidv4();
         this.activeOperations.add(operationId);
-        
+
         try {
             this.logger.debug('Creating snapshot', { description, metadata, operationId });
-            
+
             // Validate parameters
             if (!description || typeof description !== 'string') {
                 throw new Error('Snapshot description is required and must be a string');
             }
-            
+
             // Determine base path
             const basePath = metadata.basePath || process.cwd();
             const resolvedBasePath = resolve(basePath);
-            
+
             // Capture files
             const captureStartTime = Date.now();
             const fileData = await this.fileBackup.captureFiles(resolvedBasePath, {
                 specificFiles: metadata.specificFiles,
-                recursive: true
+                recursive: true,
             });
-            
+
             // Create snapshot metadata
             const snapshotMetadata = {
                 description,
@@ -110,21 +110,21 @@ export class SnapshotManager {
                 fileCount: Object.keys(fileData.files).length,
                 totalSize: fileData.stats.totalSize,
                 creator: process.env.USER || process.env.USERNAME || 'unknown',
-                ...metadata
+                ...metadata,
             };
-            
+
             // Store snapshot
             const snapshotId = await this.store.store({
                 description,
                 fileData,
-                metadata: snapshotMetadata
+                metadata: snapshotMetadata,
             });
-            
+
             // Perform auto-cleanup if enabled
             if (this.config.behavior.autoCleanup) {
                 await this._performAutoCleanup();
             }
-            
+
             const result = {
                 id: snapshotId,
                 description,
@@ -132,16 +132,16 @@ export class SnapshotManager {
                 stats: {
                     fileCount: snapshotMetadata.fileCount,
                     totalSize: snapshotMetadata.totalSize,
-                    captureTime: snapshotMetadata.captureTime
-                }
+                    captureTime: snapshotMetadata.captureTime,
+                },
             };
-            
-            this.logger.debug('Snapshot created successfully', { 
-                id: snapshotId, 
-                description, 
-                stats: result.stats 
+
+            this.logger.debug('Snapshot created successfully', {
+                id: snapshotId,
+                description,
+                stats: result.stats,
             });
-            
+
             return result;
         } catch (error) {
             this.logger.error(error, 'Failed to create snapshot', { description, metadata });
@@ -163,18 +163,18 @@ export class SnapshotManager {
     async listSnapshots(filters = {}) {
         try {
             this.logger.debug('Listing snapshots', { filters });
-            
+
             const snapshots = await this.store.list(filters);
-            
+
             // Apply additional filters
             let filteredSnapshots = snapshots;
-            
+
             if (filters.triggerType) {
-                filteredSnapshots = snapshots.filter(snapshot => 
-                    snapshot.triggerType === filters.triggerType
+                filteredSnapshots = snapshots.filter(
+                    snapshot => snapshot.triggerType === filters.triggerType
                 );
             }
-            
+
             // Transform to summary format
             const summaries = filteredSnapshots.map(snapshot => ({
                 id: snapshot.id,
@@ -184,14 +184,14 @@ export class SnapshotManager {
                 totalSize: snapshot.totalSize,
                 triggerType: snapshot.triggerType,
                 creator: snapshot.creator,
-                basePath: snapshot.basePath
+                basePath: snapshot.basePath,
             }));
-            
-            this.logger.debug('Snapshots listed successfully', { 
+
+            this.logger.debug('Snapshots listed successfully', {
                 totalSnapshots: summaries.length,
-                filters 
+                filters,
             });
-            
+
             return summaries;
         } catch (error) {
             this.logger.error(error, 'Failed to list snapshots');
@@ -201,7 +201,7 @@ export class SnapshotManager {
 
     /**
      * Restore a snapshot
-     * @param {string} snapshotId - Snapshot ID to restore
+     * @param {string} snapshotId - Snapshot ID to restore (can be partial)
      * @param {Object} options - Restoration options
      * @param {boolean} options.preview - Only preview, don't actually restore
      * @param {boolean} options.force - Skip confirmation prompts
@@ -212,59 +212,65 @@ export class SnapshotManager {
     async restoreSnapshot(snapshotId, options = {}) {
         const operationId = uuidv4();
         this.activeOperations.add(operationId);
-        
+
         try {
             this.logger.debug('Restoring snapshot', { snapshotId, options, operationId });
-            
+
+            // Resolve partial ID to full ID
+            const fullId = await this.resolveSnapshotId(snapshotId);
+
             // Validate snapshot exists
-            const snapshot = await this.store.retrieve(snapshotId);
+            const snapshot = await this.store.retrieve(fullId);
             if (!snapshot) {
                 throw new Error(`Snapshot not found: ${snapshotId}`);
             }
-            
+
             // If preview mode, generate preview
             if (options.preview) {
                 const preview = await this.fileBackup.previewRestore(snapshot.fileData, {
-                    specificFiles: options.specificFiles
+                    specificFiles: options.specificFiles,
                 });
-                
-                this.logger.debug('Snapshot preview generated', { 
-                    snapshotId, 
-                    impactedFiles: preview.stats.impactedFiles 
+
+                this.logger.debug('Snapshot preview generated', {
+                    snapshotId: fullId,
+                    impactedFiles: preview.stats.impactedFiles,
                 });
-                
+
                 return {
                     type: 'preview',
-                    snapshotId,
+                    snapshotId: fullId,
                     description: snapshot.description,
-                    preview
+                    preview,
                 };
             }
-            
+
             // Perform restoration
             const restoreOptions = {
                 createBackups: options.createBackups ?? this.config.backup.createBackups,
                 validateChecksums: this.config.backup.validateChecksums,
-                specificFiles: options.specificFiles
+                specificFiles: options.specificFiles,
             };
-            
-            const restoreResult = await this.fileBackup.restoreFiles(snapshot.fileData, restoreOptions);
-            
+
+            const restoreResult = await this.fileBackup.restoreFiles(
+                snapshot.fileData,
+                restoreOptions
+            );
+
             const result = {
                 type: 'restore',
-                snapshotId,
+                snapshotId: fullId,
                 description: snapshot.description,
                 stats: restoreResult.stats,
                 restored: restoreResult.restored,
                 errors: restoreResult.errors,
-                backups: restoreResult.backups
+                backups: restoreResult.backups,
             };
-            
-            this.logger.debug('Snapshot restored successfully', { 
-                snapshotId, 
-                stats: result.stats 
+
+            this.logger.debug('Snapshot restored successfully', {
+                snapshotId: fullId,
+                stats: result.stats,
             });
-            
+
             return result;
         } catch (error) {
             this.logger.error(error, 'Failed to restore snapshot', { snapshotId });
@@ -276,34 +282,37 @@ export class SnapshotManager {
 
     /**
      * Delete a snapshot
-     * @param {string} snapshotId - Snapshot ID to delete
+     * @param {string} snapshotId - Snapshot ID to delete (can be partial)
      * @returns {Promise<Object>} Deletion result
      */
     async deleteSnapshot(snapshotId) {
         try {
             this.logger.debug('Deleting snapshot', { snapshotId });
-            
+
+            // Resolve partial ID to full ID
+            const fullId = await this.resolveSnapshotId(snapshotId);
+
             // Validate snapshot exists
-            const snapshot = await this.store.retrieve(snapshotId);
+            const snapshot = await this.store.retrieve(fullId);
             if (!snapshot) {
                 throw new Error(`Snapshot not found: ${snapshotId}`);
             }
-            
+
             // Delete from store
-            const deleted = await this.store.delete(snapshotId);
-            
+            const deleted = await this.store.delete(fullId);
+
             if (!deleted) {
                 throw new Error(`Failed to delete snapshot: ${snapshotId}`);
             }
-            
+
             const result = {
-                id: snapshotId,
+                id: fullId,
                 description: snapshot.description,
-                deleted: true
+                deleted: true,
             };
-            
-            this.logger.debug('Snapshot deleted successfully', { snapshotId });
-            
+
+            this.logger.debug('Snapshot deleted successfully', { snapshotId: fullId });
+
             return result;
         } catch (error) {
             this.logger.error(error, 'Failed to delete snapshot', { snapshotId });
@@ -320,14 +329,14 @@ export class SnapshotManager {
     async createBackupSnapshot(toolName, files = []) {
         try {
             this.logger.debug('Creating backup snapshot', { toolName, fileCount: files.length });
-            
+
             const description = `Backup before ${toolName} execution`;
             const metadata = {
                 triggerType: 'automatic',
                 toolName,
-                specificFiles: files.length > 0 ? files : undefined
+                specificFiles: files.length > 0 ? files : undefined,
             };
-            
+
             return await this.createSnapshot(description, metadata);
         } catch (error) {
             this.logger.error(error, 'Failed to create backup snapshot', { toolName });
@@ -342,7 +351,7 @@ export class SnapshotManager {
     getSystemStats() {
         const storageStats = this.store.getStorageStats();
         const filterStats = this.fileFilter.getFilterStats();
-        
+
         return {
             storage: storageStats,
             filtering: filterStats,
@@ -351,8 +360,8 @@ export class SnapshotManager {
                 storageType: this.config.storage.type,
                 maxSnapshots: this.config.storage.maxSnapshots,
                 maxMemoryMB: this.config.storage.maxMemoryMB,
-                autoCleanup: this.config.behavior.autoCleanup
-            }
+                autoCleanup: this.config.behavior.autoCleanup,
+            },
         };
     }
 
@@ -362,38 +371,77 @@ export class SnapshotManager {
      */
     updateConfiguration(newConfig) {
         this.logger.debug('Updating configuration', { newConfig });
-        
+
         // Update main config
         this.config = { ...this.config, ...newConfig };
-        
+
         // Update component configurations
         if (newConfig.fileFiltering) {
             this.fileFilter.updateConfiguration(newConfig.fileFiltering);
         }
-        
+
         // Note: Store configuration updates would require recreating the store
         // For now, we'll log this limitation
         if (newConfig.storage) {
             this.logger.warn('Storage configuration changes require system restart');
         }
-        
+
         this.logger.debug('Configuration updated successfully');
     }
 
     /**
+     * Resolve a partial snapshot ID to full ID
+     * @param {string} partialId - Partial or full snapshot ID
+     * @returns {Promise<string>} Full snapshot ID
+     * @throws {Error} If no match found or multiple matches found
+     */
+    async resolveSnapshotId(partialId) {
+        try {
+            // First try direct lookup (full ID)
+            const directMatch = await this.store.exists(partialId);
+            if (directMatch) {
+                return partialId;
+            }
+
+            // Get all snapshots to search for prefix matches
+            const snapshots = await this.store.list();
+            const matches = snapshots.filter(snapshot => snapshot.id.startsWith(partialId));
+
+            if (matches.length === 0) {
+                throw new Error(`Snapshot not found: ${partialId}`);
+            }
+
+            if (matches.length > 1) {
+                const matchingIds = matches.map(s => s.id).join(', ');
+                throw new Error(
+                    `Ambiguous snapshot ID "${partialId}". Multiple matches found: ${matchingIds}`
+                );
+            }
+
+            return matches[0].id;
+        } catch (error) {
+            this.logger.error(error, 'Failed to resolve snapshot ID', { partialId });
+            throw error;
+        }
+    }
+
+    /**
      * Get detailed snapshot information
-     * @param {string} snapshotId - Snapshot ID
+     * @param {string} snapshotId - Snapshot ID (can be partial)
      * @returns {Promise<Object>} Detailed snapshot information
      */
     async getSnapshotDetails(snapshotId) {
         try {
-            const snapshot = await this.store.retrieve(snapshotId);
+            // Resolve partial ID to full ID
+            const fullId = await this.resolveSnapshotId(snapshotId);
+
+            const snapshot = await this.store.retrieve(fullId);
             if (!snapshot) {
                 throw new Error(`Snapshot not found: ${snapshotId}`);
             }
-            
+
             return {
-                id: snapshotId,
+                id: fullId,
                 description: snapshot.description,
                 metadata: snapshot.metadata,
                 fileCount: Object.keys(snapshot.fileData.files).length,
@@ -401,8 +449,8 @@ export class SnapshotManager {
                     path: relativePath,
                     size: snapshot.fileData.files[relativePath].size,
                     modified: snapshot.fileData.files[relativePath].modified,
-                    checksum: snapshot.fileData.files[relativePath].checksum
-                }))
+                    checksum: snapshot.fileData.files[relativePath].checksum,
+                })),
             };
         } catch (error) {
             this.logger.error(error, 'Failed to get snapshot details', { snapshotId });
@@ -431,16 +479,16 @@ export class SnapshotManager {
     async _performAutoCleanup() {
         try {
             const stats = this.store.getStorageStats();
-            
+
             // Check if cleanup is needed
             if (stats.totalSnapshots >= this.config.behavior.cleanupThreshold) {
                 const maxCount = Math.floor(this.config.storage.maxSnapshots * 0.8);
                 const cleanedCount = await this.store.cleanup({ maxCount });
-                
+
                 if (cleanedCount > 0) {
-                    this.logger.debug('Auto-cleanup performed', { 
-                        cleanedCount, 
-                        remainingSnapshots: stats.totalSnapshots - cleanedCount 
+                    this.logger.debug('Auto-cleanup performed', {
+                        cleanedCount,
+                        remainingSnapshots: stats.totalSnapshots - cleanedCount,
                     });
                 }
             }
