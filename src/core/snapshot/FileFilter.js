@@ -58,15 +58,40 @@ export class FileFilter {
      */
     shouldIncludeFile(filePath, stats) {
         try {
-            // TODO: Implement file inclusion logic
-            // 1. Check if file matches exclusion patterns
-            // 2. Check if file matches inclusion patterns (overrides exclusions)
-            // 3. Check file size limits
-            // 4. Check binary file handling
-            // 5. Return inclusion decision
-
             this.logger.debug('Checking file inclusion', { filePath });
-            throw new Error('shouldIncludeFile method not yet implemented');
+
+            // Normalize path for consistent matching
+            const normalizedPath = filePath.replace(/\\/g, '/');
+
+            // Check file size limits
+            if (stats && stats.size > this.config.maxFileSize) {
+                this.logger.debug('File excluded due to size limit', {
+                    filePath,
+                    size: stats.size,
+                    limit: this.config.maxFileSize
+                });
+                return false;
+            }
+
+            // Check if file matches inclusion patterns (overrides exclusions)
+            if (this.inclusionPatterns.length > 0) {
+                const matchesInclusion = this._matchesPatterns(normalizedPath, this.inclusionPatterns);
+                if (matchesInclusion) {
+                    this.logger.debug('File included by inclusion pattern', { filePath });
+                    return true;
+                }
+            }
+
+            // Check if file matches exclusion patterns
+            const matchesExclusion = this._matchesPatterns(normalizedPath, this.exclusionPatterns);
+            if (matchesExclusion) {
+                this.logger.debug('File excluded by exclusion pattern', { filePath });
+                return false;
+            }
+
+            // If no patterns match, include the file by default
+            this.logger.debug('File included by default', { filePath });
+            return true;
         } catch (error) {
             this.logger.error(error, 'Failed to check file inclusion');
             return false; // Default to exclude on error
@@ -81,14 +106,30 @@ export class FileFilter {
      */
     shouldIncludeDirectory(dirPath, stats) {
         try {
-            // TODO: Implement directory inclusion logic
-            // 1. Check if directory matches exclusion patterns
-            // 2. Check if directory matches inclusion patterns
-            // 3. Apply directory-specific rules
-            // 4. Return traversal decision
-
             this.logger.debug('Checking directory inclusion', { dirPath });
-            throw new Error('shouldIncludeDirectory method not yet implemented');
+
+            // Normalize path for consistent matching
+            const normalizedPath = dirPath.replace(/\\/g, '/');
+
+            // Check if directory matches inclusion patterns (overrides exclusions)
+            if (this.inclusionPatterns.length > 0) {
+                const matchesInclusion = this._matchesPatterns(normalizedPath, this.inclusionPatterns);
+                if (matchesInclusion) {
+                    this.logger.debug('Directory included by inclusion pattern', { dirPath });
+                    return true;
+                }
+            }
+
+            // Check if directory matches exclusion patterns
+            const matchesExclusion = this._matchesPatterns(normalizedPath, this.exclusionPatterns);
+            if (matchesExclusion) {
+                this.logger.debug('Directory excluded by exclusion pattern', { dirPath });
+                return false;
+            }
+
+            // If no patterns match, include the directory by default
+            this.logger.debug('Directory included by default', { dirPath });
+            return true;
         } catch (error) {
             this.logger.error(error, 'Failed to check directory inclusion');
             return false; // Default to exclude on error
@@ -147,13 +188,28 @@ export class FileFilter {
         try {
             this.logger.debug('Updating filter configuration', { filterConfig });
 
-            // TODO: Implement configuration update logic
-            // 1. Validate new configuration
-            // 2. Update internal config
-            // 3. Rebuild pattern arrays
-            // 4. Log changes
+            // Validate new configuration
+            if (!filterConfig || typeof filterConfig !== 'object') {
+                throw new Error('Filter configuration must be a valid object');
+            }
 
-            throw new Error('updateConfiguration method not yet implemented');
+            // Update internal config
+            this.config = {
+                ...this.config,
+                ...filterConfig
+            };
+
+            // Rebuild pattern arrays
+            this.exclusionPatterns = [
+                ...this.config.defaultExclusions,
+                ...(this.config.customExclusions || [])
+            ];
+            this.inclusionPatterns = this.config.customInclusions || [];
+
+            this.logger.info('Filter configuration updated successfully', {
+                exclusionCount: this.exclusionPatterns.length,
+                inclusionCount: this.inclusionPatterns.length
+            });
         } catch (error) {
             this.logger.error(error, 'Failed to update filter configuration');
             throw error;
@@ -167,12 +223,44 @@ export class FileFilter {
      */
     async _isBinaryFile(filePath) {
         try {
-            // TODO: Implement binary file detection
-            // 1. Check file extension
-            // 2. Sample file content for binary markers
-            // 3. Return binary status
+            // Check file extension first (fast check)
+            const binaryExtensions = [
+                '.exe', '.dll', '.so', '.dylib', '.bin', '.dat',
+                '.jpg', '.jpeg', '.png', '.gif', '.bmp', '.ico',
+                '.mp3', '.mp4', '.avi', '.mov', '.wav', '.flac',
+                '.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx',
+                '.zip', '.rar', '.7z', '.tar', '.gz', '.bz2',
+                '.class', '.jar', '.war', '.ear'
+            ];
 
-            throw new Error('_isBinaryFile method not yet implemented');
+            const ext = filePath.toLowerCase().substring(filePath.lastIndexOf('.'));
+            if (binaryExtensions.includes(ext)) {
+                return true;
+            }
+
+            // For unknown extensions, sample file content
+            try {
+                const fs = await import('fs');
+                const buffer = Buffer.alloc(512);
+                const fd = await fs.promises.open(filePath, 'r');
+                const { bytesRead } = await fd.read(buffer, 0, 512, 0);
+                await fd.close();
+
+                // Check for null bytes (common in binary files)
+                for (let i = 0; i < bytesRead; i++) {
+                    if (buffer[i] === 0) {
+                        return true;
+                    }
+                }
+
+                return false;
+            } catch (readError) {
+                this.logger.warn('Could not read file for binary detection', {
+                    filePath,
+                    error: readError.message
+                });
+                return false; // Default to text file if can't read
+            }
         } catch (error) {
             this.logger.error(error, 'Failed to check if file is binary');
             return false; // Default to text file on error
@@ -187,12 +275,31 @@ export class FileFilter {
      */
     _matchesPatterns(path, patterns) {
         try {
-            // TODO: Implement pattern matching logic
-            // 1. Normalize path separators
-            // 2. Test against each pattern
-            // 3. Return match result
+            if (!patterns || patterns.length === 0) {
+                return false;
+            }
 
-            throw new Error('_matchesPatterns method not yet implemented');
+            // Normalize path separators to forward slashes
+            const normalizedPath = path.replace(/\\/g, '/');
+
+            // Test against each pattern
+            for (const pattern of patterns) {
+                try {
+                    // Use minimatch for glob pattern matching
+                    if (minimatch(normalizedPath, pattern, {
+                        dot: true,  // Match dotfiles
+                        matchBase: true  // Match basename
+                    })) {
+                        this.logger.debug('Path matched pattern', { path, pattern });
+                        return true;
+                    }
+                } catch (patternError) {
+                    this.logger.warn('Invalid pattern', { pattern, error: patternError.message });
+                    continue;
+                }
+            }
+
+            return false;
         } catch (error) {
             this.logger.error(error, 'Failed to match patterns');
             return false;
