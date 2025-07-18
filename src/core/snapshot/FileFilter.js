@@ -11,35 +11,55 @@ import { join } from 'path';
 export class FileFilter {
     constructor(config = {}) {
         this.logger = getLogger();
-        
+
         // Default exclusion patterns
         this.defaultExclusions = [
             // Dependencies
+            'node_modules',
             'node_modules/**',
+            '**/node_modules',
             '**/node_modules/**',
+            '.venv',
             '.venv/**',
+            'venv',
             'venv/**',
+            'vendor',
             'vendor/**',
+            'packages',
             'packages/**',
+            'bower_components',
             'bower_components/**',
-            
+
             // Build artifacts
+            'dist',
             'dist/**',
+            'build',
             'build/**',
+            'target',
             'target/**',
+            'bin',
             'bin/**',
+            'obj',
             'obj/**',
+            'out',
             'out/**',
+            '.next',
             '.next/**',
+            '.nuxt',
             '.nuxt/**',
-            
+
             // Version control
+            '.git',
             '.git/**',
+            '**/.git',
             '**/.git/**',
+            '.svn',
             '.svn/**',
+            '.hg',
             '.hg/**',
+            '.bzr',
             '.bzr/**',
-            
+
             // IDE files
             '.vscode/**',
             '.idea/**',
@@ -48,31 +68,31 @@ export class FileFilter {
             '*~',
             '.DS_Store',
             'Thumbs.db',
-            
+
             // Temporary files
             '*.tmp',
             '*.temp',
             '*.log',
             '*.cache',
-            
+
             // OS files
             '*.pid',
             '*.seed',
             '*.pid.lock',
-            
+
             // Environment files
             '.env',
             '.env.*',
-            
+
             // Coverage reports
             'coverage/**',
             '.nyc_output/**',
-            
+
             // Documentation builds
             'docs/_build/**',
-            'site/**'
+            'site/**',
         ];
-        
+
         // Configuration with defaults
         this.config = {
             defaultExclusions: config.defaultExclusions || this.defaultExclusions,
@@ -81,31 +101,67 @@ export class FileFilter {
             binaryFileHandling: config.binaryFileHandling || 'exclude', // 'exclude' or 'include'
             followSymlinks: config.followSymlinks || false,
             caseSensitive: config.caseSensitive || false,
-            ...config
+            ...config,
         };
-        
+
         // Combined exclusion patterns
         this.exclusionPatterns = [
             ...this.config.defaultExclusions,
-            ...this.config.customExclusions
+            ...this.config.customExclusions,
         ];
-        
+
         // Binary file extensions
         this.binaryExtensions = new Set([
-            '.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.webp',
-            '.mp3', '.wav', '.flac', '.ogg', '.m4a',
-            '.mp4', '.avi', '.mkv', '.mov', '.wmv', '.flv',
-            '.exe', '.dll', '.so', '.dylib', '.app',
-            '.zip', '.rar', '.7z', '.tar', '.gz', '.bz2',
-            '.pdf', '.doc', '.docx', '.xls', '.xlsx', '.ppt', '.pptx',
-            '.ico', '.icns', '.svg',
-            '.woff', '.woff2', '.ttf', '.otf', '.eot'
+            '.jpg',
+            '.jpeg',
+            '.png',
+            '.gif',
+            '.bmp',
+            '.tiff',
+            '.webp',
+            '.mp3',
+            '.wav',
+            '.flac',
+            '.ogg',
+            '.m4a',
+            '.mp4',
+            '.avi',
+            '.mkv',
+            '.mov',
+            '.wmv',
+            '.flv',
+            '.exe',
+            '.dll',
+            '.so',
+            '.dylib',
+            '.app',
+            '.zip',
+            '.rar',
+            '.7z',
+            '.tar',
+            '.gz',
+            '.bz2',
+            '.pdf',
+            '.doc',
+            '.docx',
+            '.xls',
+            '.xlsx',
+            '.ppt',
+            '.pptx',
+            '.ico',
+            '.icns',
+            '.svg',
+            '.woff',
+            '.woff2',
+            '.ttf',
+            '.otf',
+            '.eot',
         ]);
-        
-        this.logger.debug('FileFilter initialized', { 
+
+        this.logger.debug('FileFilter initialized', {
             exclusionPatterns: this.exclusionPatterns.length,
             maxFileSize: this.config.maxFileSize,
-            binaryFileHandling: this.config.binaryFileHandling
+            binaryFileHandling: this.config.binaryFileHandling,
         });
     }
 
@@ -122,43 +178,46 @@ export class FileFilter {
                 try {
                     stats = statSync(filePath);
                 } catch (error) {
-                    this.logger.warn('Failed to get file stats', { filePath, error: error.message });
+                    this.logger.warn('Failed to get file stats', {
+                        filePath,
+                        error: error.message,
+                    });
                     return false;
                 }
             }
-            
+
             // Skip directories
             if (stats.isDirectory()) {
                 return false;
             }
-            
+
             // Skip symlinks if not following them
             if (stats.isSymbolicLink() && !this.config.followSymlinks) {
                 return false;
             }
-            
+
             // Check file size
             if (stats.size > this.config.maxFileSize) {
-                this.logger.debug('File excluded due to size', { 
-                    filePath, 
-                    size: stats.size, 
-                    maxSize: this.config.maxFileSize 
+                this.logger.debug('File excluded due to size', {
+                    filePath,
+                    size: stats.size,
+                    maxSize: this.config.maxFileSize,
                 });
                 return false;
             }
-            
+
             // Check binary file handling
             if (this.config.binaryFileHandling === 'exclude' && this.isBinaryFile(filePath)) {
                 this.logger.debug('Binary file excluded', { filePath });
                 return false;
             }
-            
+
             // Check exclusion patterns
             if (this.isExcluded(filePath)) {
                 this.logger.debug('File excluded by pattern', { filePath });
                 return false;
             }
-            
+
             return true;
         } catch (error) {
             this.logger.error(error, 'Error checking file inclusion', { filePath });
@@ -179,27 +238,30 @@ export class FileFilter {
                 try {
                     stats = statSync(dirPath);
                 } catch (error) {
-                    this.logger.warn('Failed to get directory stats', { dirPath, error: error.message });
+                    this.logger.warn('Failed to get directory stats', {
+                        dirPath,
+                        error: error.message,
+                    });
                     return false;
                 }
             }
-            
+
             // Skip non-directories
             if (!stats.isDirectory()) {
                 return false;
             }
-            
+
             // Skip symlinks if not following them
             if (stats.isSymbolicLink() && !this.config.followSymlinks) {
                 return false;
             }
-            
+
             // Check exclusion patterns
             if (this.isExcluded(dirPath)) {
                 this.logger.debug('Directory excluded by pattern', { dirPath });
                 return false;
             }
-            
+
             return true;
         } catch (error) {
             this.logger.error(error, 'Error checking directory inclusion', { dirPath });
@@ -215,14 +277,14 @@ export class FileFilter {
     isExcluded(path) {
         // Normalize path separators
         const normalizedPath = path.replace(/\\/g, '/');
-        
+
         return this.exclusionPatterns.some(pattern => {
             const options = {
                 dot: true,
                 nocase: !this.config.caseSensitive,
-                matchBase: true
+                matchBase: true,
             };
-            
+
             return minimatch(normalizedPath, pattern, options);
         });
     }
@@ -255,7 +317,10 @@ export class FileFilter {
      * @param {string} pattern - Glob pattern to exclude
      */
     addExclusionPattern(pattern) {
-        if (!this.config.customExclusions.includes(pattern) && !this.exclusionPatterns.includes(pattern)) {
+        if (
+            !this.config.customExclusions.includes(pattern) &&
+            !this.exclusionPatterns.includes(pattern)
+        ) {
             this.config.customExclusions.push(pattern);
             this.exclusionPatterns.push(pattern);
             this.logger.debug('Added exclusion pattern', { pattern });
@@ -270,13 +335,13 @@ export class FileFilter {
         const customIndex = this.config.customExclusions.indexOf(pattern);
         if (customIndex > -1) {
             this.config.customExclusions.splice(customIndex, 1);
-            
+
             // Rebuild exclusion patterns
             this.exclusionPatterns = [
                 ...this.config.defaultExclusions,
-                ...this.config.customExclusions
+                ...this.config.customExclusions,
             ];
-            
+
             this.logger.debug('Removed exclusion pattern', { pattern });
         }
     }
@@ -295,15 +360,15 @@ export class FileFilter {
      */
     updateConfiguration(newConfig) {
         this.config = { ...this.config, ...newConfig };
-        
+
         // Rebuild exclusion patterns if they changed
         if (newConfig.defaultExclusions || newConfig.customExclusions) {
             this.exclusionPatterns = [
                 ...(newConfig.defaultExclusions || this.config.defaultExclusions),
-                ...(newConfig.customExclusions || this.config.customExclusions)
+                ...(newConfig.customExclusions || this.config.customExclusions),
             ];
         }
-        
+
         this.logger.debug('FileFilter configuration updated', { newConfig });
     }
 
@@ -320,7 +385,7 @@ export class FileFilter {
             binaryFileHandling: this.config.binaryFileHandling,
             followSymlinks: this.config.followSymlinks,
             caseSensitive: this.config.caseSensitive,
-            binaryExtensions: this.binaryExtensions.size
+            binaryExtensions: this.binaryExtensions.size,
         };
     }
 
@@ -333,18 +398,18 @@ export class FileFilter {
         const results = {
             included: [],
             excluded: [],
-            errors: []
+            errors: [],
         };
-        
+
         for (const path of paths) {
             try {
                 // For testing, use a mock stats object
                 const mockStats = {
                     isDirectory: () => false,
                     isSymbolicLink: () => false,
-                    size: 1024
+                    size: 1024,
                 };
-                
+
                 if (this.shouldIncludeFile(path, mockStats)) {
                     results.included.push(path);
                 } else {
@@ -354,7 +419,7 @@ export class FileFilter {
                 results.errors.push({ path, error: error.message });
             }
         }
-        
+
         return results;
     }
 }

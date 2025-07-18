@@ -13,7 +13,7 @@ export class FileBackup {
     constructor(fileFilter, config = {}) {
         this.logger = getLogger();
         this.fileFilter = fileFilter;
-        
+
         // Configuration with defaults
         this.config = {
             createBackups: config.createBackups !== false, // Default to true
@@ -22,9 +22,9 @@ export class FileBackup {
             validateChecksums: config.validateChecksums !== false, // Default to true
             maxConcurrentFiles: config.maxConcurrentFiles || 10,
             encoding: config.encoding || 'utf8',
-            ...config
+            ...config,
         };
-        
+
         this.logger.debug('FileBackup initialized', { config: this.config });
     }
 
@@ -38,13 +38,10 @@ export class FileBackup {
      */
     async captureFiles(basePath, options = {}) {
         try {
-            const {
-                specificFiles = null,
-                recursive = true
-            } = options;
-            
+            const { specificFiles = null, recursive = true } = options;
+
             this.logger.debug('Starting file capture', { basePath, options });
-            
+
             const captureStartTime = Date.now();
             const fileData = {
                 basePath: resolve(basePath),
@@ -53,10 +50,10 @@ export class FileBackup {
                 stats: {
                     totalFiles: 0,
                     totalSize: 0,
-                    captureTime: 0
-                }
+                    captureTime: 0,
+                },
             };
-            
+
             // Get list of files to capture
             let filesToCapture;
             if (specificFiles) {
@@ -64,40 +61,43 @@ export class FileBackup {
             } else {
                 filesToCapture = await this._discoverFiles(basePath, recursive);
             }
-            
+
             // Filter files
             const filteredFiles = filesToCapture.filter(filePath => {
                 try {
                     const stats = statSync(filePath);
                     return this.fileFilter.shouldIncludeFile(filePath, stats);
                 } catch (error) {
-                    this.logger.warn('Failed to check file for inclusion', { filePath, error: error.message });
+                    this.logger.warn('Failed to check file for inclusion', {
+                        filePath,
+                        error: error.message,
+                    });
                     return false;
                 }
             });
-            
-            this.logger.debug('Files to capture after filtering', { 
+
+            this.logger.debug('Files to capture after filtering', {
                 total: filesToCapture.length,
-                filtered: filteredFiles.length 
+                filtered: filteredFiles.length,
             });
-            
+
             // Capture files in batches
             const batchSize = this.config.maxConcurrentFiles;
             for (let i = 0; i < filteredFiles.length; i += batchSize) {
                 const batch = filteredFiles.slice(i, i + batchSize);
                 await this._captureFileBatch(batch, fileData);
             }
-            
+
             // Calculate final stats
             fileData.stats.captureTime = Date.now() - captureStartTime;
             fileData.stats.totalFiles = Object.keys(fileData.files).length;
-            
-            this.logger.debug('File capture completed', { 
+
+            this.logger.debug('File capture completed', {
                 totalFiles: fileData.stats.totalFiles,
                 totalSize: fileData.stats.totalSize,
-                captureTime: fileData.stats.captureTime
+                captureTime: fileData.stats.captureTime,
             });
-            
+
             return fileData;
         } catch (error) {
             this.logger.error(error, 'File capture failed', { basePath });
@@ -119,15 +119,15 @@ export class FileBackup {
             const {
                 createBackups = this.config.createBackups,
                 validateChecksums = this.config.validateChecksums,
-                specificFiles = null
+                specificFiles = null,
             } = options;
-            
-            this.logger.debug('Starting file restoration', { 
+
+            this.logger.debug('Starting file restoration', {
                 basePath: fileData.basePath,
                 totalFiles: Object.keys(fileData.files).length,
-                options 
+                options,
             });
-            
+
             const restoreStartTime = Date.now();
             const results = {
                 restored: [],
@@ -139,41 +139,41 @@ export class FileBackup {
                     restoredFiles: 0,
                     skippedFiles: 0,
                     errorCount: 0,
-                    restoreTime: 0
-                }
+                    restoreTime: 0,
+                },
             };
-            
+
             // Validate file data
             this.validateFileData(fileData);
-            
+
             // Get files to restore
-            const filesToRestore = specificFiles 
+            const filesToRestore = specificFiles
                 ? specificFiles.filter(file => fileData.files[file])
                 : Object.keys(fileData.files);
-            
+
             // Restore files in batches
             const batchSize = this.config.maxConcurrentFiles;
             for (let i = 0; i < filesToRestore.length; i += batchSize) {
                 const batch = filesToRestore.slice(i, i + batchSize);
                 await this._restoreFileBatch(batch, fileData, options, results);
             }
-            
+
             // Validate checksums if requested
             if (validateChecksums) {
                 await this._validateRestoredFiles(filesToRestore, fileData, results);
             }
-            
+
             // Calculate final stats
             results.stats.restoreTime = Date.now() - restoreStartTime;
             results.stats.totalFiles = filesToRestore.length;
             results.stats.restoredFiles = results.restored.length;
             results.stats.skippedFiles = results.skipped.length;
             results.stats.errorCount = results.errors.length;
-            
-            this.logger.debug('File restoration completed', { 
-                results: results.stats
+
+            this.logger.debug('File restoration completed', {
+                results: results.stats,
             });
-            
+
             return results;
         } catch (error) {
             this.logger.error(error, 'File restoration failed');
@@ -191,12 +191,12 @@ export class FileBackup {
     async previewRestore(fileData, options = {}) {
         try {
             const { specificFiles = null } = options;
-            
-            this.logger.debug('Generating restoration preview', { 
+
+            this.logger.debug('Generating restoration preview', {
                 basePath: fileData.basePath,
-                totalFiles: Object.keys(fileData.files).length
+                totalFiles: Object.keys(fileData.files).length,
             });
-            
+
             const preview = {
                 basePath: fileData.basePath,
                 captureTime: fileData.captureTime,
@@ -204,42 +204,42 @@ export class FileBackup {
                     toCreate: [],
                     toModify: [],
                     toDelete: [],
-                    unchanged: []
+                    unchanged: [],
                 },
                 stats: {
                     totalFiles: 0,
                     impactedFiles: 0,
-                    totalSize: 0
-                }
+                    totalSize: 0,
+                },
             };
-            
+
             // Get files to preview
-            const filesToPreview = specificFiles 
+            const filesToPreview = specificFiles
                 ? specificFiles.filter(file => fileData.files[file])
                 : Object.keys(fileData.files);
-            
+
             for (const relativePath of filesToPreview) {
                 const fileInfo = fileData.files[relativePath];
                 const fullPath = join(fileData.basePath, relativePath);
-                
+
                 try {
                     if (existsSync(fullPath)) {
                         // Check if file would be modified
                         const currentContent = readFileSync(fullPath, this.config.encoding);
                         const currentChecksum = this._calculateChecksum(currentContent);
-                        
+
                         if (currentChecksum !== fileInfo.checksum) {
                             preview.files.toModify.push({
                                 path: relativePath,
                                 size: fileInfo.size,
                                 currentSize: currentContent.length,
-                                modified: fileInfo.modified
+                                modified: fileInfo.modified,
                             });
                         } else {
                             preview.files.unchanged.push({
                                 path: relativePath,
                                 size: fileInfo.size,
-                                modified: fileInfo.modified
+                                modified: fileInfo.modified,
                             });
                         }
                     } else {
@@ -247,26 +247,27 @@ export class FileBackup {
                         preview.files.toCreate.push({
                             path: relativePath,
                             size: fileInfo.size,
-                            modified: fileInfo.modified
+                            modified: fileInfo.modified,
                         });
                     }
-                    
+
                     preview.stats.totalSize += fileInfo.size;
                 } catch (error) {
-                    this.logger.warn('Failed to preview file', { 
-                        relativePath, 
-                        error: error.message 
+                    this.logger.warn('Failed to preview file', {
+                        relativePath,
+                        error: error.message,
                     });
                 }
             }
-            
+
             preview.stats.totalFiles = filesToPreview.length;
-            preview.stats.impactedFiles = preview.files.toCreate.length + preview.files.toModify.length;
-            
-            this.logger.debug('Restoration preview generated', { 
-                stats: preview.stats
+            preview.stats.impactedFiles =
+                preview.files.toCreate.length + preview.files.toModify.length;
+
+            this.logger.debug('Restoration preview generated', {
+                stats: preview.stats,
             });
-            
+
             return preview;
         } catch (error) {
             this.logger.error(error, 'Failed to generate restoration preview');
@@ -282,25 +283,25 @@ export class FileBackup {
         if (!fileData || typeof fileData !== 'object') {
             throw new Error('Invalid file data: must be an object');
         }
-        
+
         if (!fileData.basePath || typeof fileData.basePath !== 'string') {
             throw new Error('Invalid file data: basePath is required');
         }
-        
+
         if (!fileData.files || typeof fileData.files !== 'object') {
             throw new Error('Invalid file data: files object is required');
         }
-        
+
         if (!fileData.captureTime) {
             throw new Error('Invalid file data: captureTime is required');
         }
-        
+
         // Validate individual file entries
         for (const [relativePath, fileInfo] of Object.entries(fileData.files)) {
             if (!fileInfo.content || typeof fileInfo.content !== 'string') {
                 throw new Error(`Invalid file data: content missing for ${relativePath}`);
             }
-            
+
             if (!fileInfo.checksum || typeof fileInfo.checksum !== 'string') {
                 throw new Error(`Invalid file data: checksum missing for ${relativePath}`);
             }
@@ -317,21 +318,21 @@ export class FileBackup {
             filesAffected: 0,
             bytesAffected: 0,
             potentialDataLoss: false,
-            conflicts: []
+            conflicts: [],
         };
-        
+
         for (const [relativePath, fileInfo] of Object.entries(fileData.files)) {
             const fullPath = join(fileData.basePath, relativePath);
-            
+
             if (existsSync(fullPath)) {
                 try {
                     const currentContent = readFileSync(fullPath, this.config.encoding);
                     const currentChecksum = this._calculateChecksum(currentContent);
-                    
+
                     if (currentChecksum !== fileInfo.checksum) {
                         impact.filesAffected++;
                         impact.bytesAffected += fileInfo.size;
-                        
+
                         // Check for potential data loss
                         if (currentContent.length > fileInfo.content.length) {
                             impact.potentialDataLoss = true;
@@ -339,7 +340,7 @@ export class FileBackup {
                                 path: relativePath,
                                 reason: 'Current file is larger than snapshot version',
                                 currentSize: currentContent.length,
-                                snapshotSize: fileInfo.size
+                                snapshotSize: fileInfo.size,
                             });
                         }
                     }
@@ -347,7 +348,7 @@ export class FileBackup {
                     impact.conflicts.push({
                         path: relativePath,
                         reason: 'Cannot read current file',
-                        error: error.message
+                        error: error.message,
                     });
                 }
             } else {
@@ -355,7 +356,7 @@ export class FileBackup {
                 impact.bytesAffected += fileInfo.size;
             }
         }
-        
+
         return impact;
     }
 
@@ -368,16 +369,22 @@ export class FileBackup {
      */
     async _discoverFiles(basePath, recursive = true) {
         const files = [];
-        
-        const processDirectory = async (dirPath) => {
+
+        const processDirectory = async dirPath => {
             try {
+                // First check if this directory should be included
+                if (dirPath !== basePath && !this.fileFilter.shouldIncludeDirectory(dirPath)) {
+                    this.logger.debug('Directory excluded, skipping', { dirPath });
+                    return;
+                }
+
                 const entries = await readdir(dirPath, { withFileTypes: true });
-                
+
                 for (const entry of entries) {
                     const fullPath = join(dirPath, entry.name);
-                    
+
                     if (entry.isDirectory()) {
-                        if (recursive && this.fileFilter.shouldIncludeDirectory(fullPath)) {
+                        if (recursive) {
                             await processDirectory(fullPath);
                         }
                     } else if (entry.isFile()) {
@@ -388,7 +395,7 @@ export class FileBackup {
                 this.logger.warn('Failed to read directory', { dirPath, error: error.message });
             }
         };
-        
+
         await processDirectory(basePath);
         return files;
     }
@@ -400,36 +407,36 @@ export class FileBackup {
      * @param {Object} fileData - File data object to populate
      */
     async _captureFileBatch(filePaths, fileData) {
-        const capturePromises = filePaths.map(async (filePath) => {
+        const capturePromises = filePaths.map(async filePath => {
             try {
                 const stats = statSync(filePath);
                 const relativePath = relative(fileData.basePath, filePath);
                 const content = readFileSync(filePath, this.config.encoding);
                 const checksum = this._calculateChecksum(content);
-                
+
                 fileData.files[relativePath] = {
                     content,
                     checksum,
                     size: stats.size,
                     modified: stats.mtime.toISOString(),
-                    permissions: stats.mode
+                    permissions: stats.mode,
                 };
-                
+
                 fileData.stats.totalSize += stats.size;
-                
-                this.logger.debug('File captured', { 
-                    relativePath, 
+
+                this.logger.debug('File captured', {
+                    relativePath,
                     size: stats.size,
-                    checksum 
+                    checksum,
                 });
             } catch (error) {
-                this.logger.warn('Failed to capture file', { 
-                    filePath, 
-                    error: error.message 
+                this.logger.warn('Failed to capture file', {
+                    filePath,
+                    error: error.message,
                 });
             }
         });
-        
+
         await Promise.all(capturePromises);
     }
 
@@ -443,63 +450,63 @@ export class FileBackup {
      */
     async _restoreFileBatch(relativePaths, fileData, options, results) {
         const { createBackups } = options;
-        
-        const restorePromises = relativePaths.map(async (relativePath) => {
+
+        const restorePromises = relativePaths.map(async relativePath => {
             try {
                 const fileInfo = fileData.files[relativePath];
                 const fullPath = join(fileData.basePath, relativePath);
-                
+
                 // Create directory if it doesn't exist
                 const dir = dirname(fullPath);
                 if (!existsSync(dir)) {
                     mkdirSync(dir, { recursive: true });
                 }
-                
+
                 // Create backup if requested and file exists
                 if (createBackups && existsSync(fullPath)) {
                     const backupPath = fullPath + this.config.backupSuffix;
                     copyFileSync(fullPath, backupPath);
                     results.backups.push({
                         original: fullPath,
-                        backup: backupPath
+                        backup: backupPath,
                     });
                 }
-                
+
                 // Write file content
                 writeFileSync(fullPath, fileInfo.content, this.config.encoding);
-                
+
                 // Restore permissions if configured
                 if (this.config.preservePermissions && fileInfo.permissions) {
                     try {
                         // Note: This is a simplified permissions restoration
                         // In a real implementation, you might want more sophisticated permission handling
                     } catch (permError) {
-                        this.logger.warn('Failed to restore file permissions', { 
-                            fullPath, 
-                            error: permError.message 
+                        this.logger.warn('Failed to restore file permissions', {
+                            fullPath,
+                            error: permError.message,
                         });
                     }
                 }
-                
+
                 results.restored.push({
                     path: relativePath,
                     size: fileInfo.size,
-                    checksum: fileInfo.checksum
+                    checksum: fileInfo.checksum,
                 });
-                
-                this.logger.debug('File restored', { 
-                    relativePath, 
-                    size: fileInfo.size 
+
+                this.logger.debug('File restored', {
+                    relativePath,
+                    size: fileInfo.size,
                 });
             } catch (error) {
                 this.logger.error(error, 'Failed to restore file', { relativePath });
                 results.errors.push({
                     path: relativePath,
-                    error: error.message
+                    error: error.message,
                 });
             }
         });
-        
+
         await Promise.all(restorePromises);
     }
 
@@ -512,33 +519,33 @@ export class FileBackup {
      */
     async _validateRestoredFiles(relativePaths, fileData, results) {
         this.logger.debug('Validating restored files', { count: relativePaths.length });
-        
+
         for (const relativePath of relativePaths) {
             try {
                 const fileInfo = fileData.files[relativePath];
                 const fullPath = join(fileData.basePath, relativePath);
-                
+
                 if (existsSync(fullPath)) {
                     const content = readFileSync(fullPath, this.config.encoding);
                     const checksum = this._calculateChecksum(content);
-                    
+
                     if (checksum !== fileInfo.checksum) {
-                        this.logger.warn('Checksum validation failed', { 
-                            relativePath, 
-                            expected: fileInfo.checksum, 
-                            actual: checksum 
+                        this.logger.warn('Checksum validation failed', {
+                            relativePath,
+                            expected: fileInfo.checksum,
+                            actual: checksum,
                         });
-                        
+
                         results.errors.push({
                             path: relativePath,
-                            error: 'Checksum validation failed'
+                            error: 'Checksum validation failed',
                         });
                     }
                 }
             } catch (error) {
-                this.logger.warn('Failed to validate file', { 
-                    relativePath, 
-                    error: error.message 
+                this.logger.warn('Failed to validate file', {
+                    relativePath,
+                    error: error.message,
                 });
             }
         }

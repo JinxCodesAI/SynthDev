@@ -27,9 +27,13 @@ export class SnapshotManager {
             // File filtering configuration
             fileFiltering: {
                 defaultExclusions: [
+                    'node_modules',
                     'node_modules/**',
+                    '.git',
                     '.git/**',
+                    'dist',
                     'dist/**',
+                    'build',
                     'build/**',
                     '*.log',
                     '*.tmp',
