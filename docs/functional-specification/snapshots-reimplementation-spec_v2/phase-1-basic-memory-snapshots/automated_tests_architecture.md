@@ -3,6 +3,7 @@
 ## Overview
 
 This document defines the comprehensive testing strategy for Phase 1 of the snapshot system, covering unit tests, integration tests, and end-to-end tests to ensure reliable functionality and maintainability.
+Tests should be aligned with following ADR: docs\ADRs\004-testing-strategies.md
 
 ## Testing Philosophy
 
