@@ -294,7 +294,8 @@ class AICoderConsole {
 
         // Handle commands
         const commandResult = await this.commandHandler.handleCommand(trimmed);
-        if (commandResult === 'clear' || commandResult === true || commandResult === 'invalid') {
+        if (commandResult !== false) {
+            // Command was handled (regardless of specific return value)
             this.consoleInterface.prompt();
             return;
         }
