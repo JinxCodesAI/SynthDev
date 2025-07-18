@@ -4,6 +4,7 @@
  */
 
 import { getLogger } from '../../core/managers/logger.js';
+import { getSnapshotConfigManager } from '../../config/managers/snapshotConfigManager.js';
 import { MemorySnapshotStore } from './stores/MemorySnapshotStore.js';
 import { FileBackup } from './FileBackup.js';
 import { FileFilter } from './FileFilter.js';
@@ -13,50 +14,31 @@ import { resolve } from 'path';
 export class SnapshotManager {
     constructor(config = {}) {
         this.logger = getLogger();
+        this.snapshotConfigManager = getSnapshotConfigManager();
 
-        // Configuration with defaults
+        // Load configuration from snapshot config manager
+        const snapshotConfig = this.snapshotConfigManager.getConfig();
+
+        // Configuration with defaults (passed config takes precedence over snapshot config)
         this.config = {
             // Storage configuration
             storage: {
-                type: 'memory',
-                maxSnapshots: 50,
-                maxMemoryMB: 100,
-                persistToDisk: false,
+                ...snapshotConfig.storage,
                 ...config.storage,
             },
             // File filtering configuration
             fileFiltering: {
-                defaultExclusions: [
-                    'node_modules',
-                    'node_modules/**',
-                    '.git',
-                    '.git/**',
-                    'dist',
-                    'dist/**',
-                    'build',
-                    'build/**',
-                    '*.log',
-                    '*.tmp',
-                ],
-                customExclusions: [],
-                maxFileSize: 10 * 1024 * 1024, // 10MB
-                binaryFileHandling: 'exclude',
+                ...snapshotConfig.fileFiltering,
                 ...config.fileFiltering,
             },
             // Backup configuration
             backup: {
-                createBackups: true,
-                backupSuffix: '.backup',
-                preservePermissions: true,
-                validateChecksums: true,
+                ...snapshotConfig.backup,
                 ...config.backup,
             },
             // Behavior configuration
             behavior: {
-                autoCleanup: true,
-                cleanupThreshold: 40,
-                confirmRestore: true,
-                showPreview: true,
+                ...snapshotConfig.behavior,
                 ...config.behavior,
             },
             ...config,

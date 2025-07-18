@@ -7,16 +7,17 @@ describe('FileFilter', () => {
     beforeEach(() => {
         filter = new FileFilter({
             maxFileSize: 1024 * 1024, // 1MB
-            binaryFileHandling: 'exclude'
+            binaryFileHandling: 'exclude',
         });
     });
 
     describe('constructor', () => {
         it('should initialize with default exclusion patterns', () => {
             const defaultFilter = new FileFilter();
-            expect(defaultFilter.defaultExclusions).toContain('node_modules/**');
-            expect(defaultFilter.defaultExclusions).toContain('.git/**');
-            expect(defaultFilter.defaultExclusions).toContain('dist/**');
+            const patterns = defaultFilter.getActivePatterns();
+            expect(patterns).toContain('node_modules/**');
+            expect(patterns).toContain('.git/**');
+            expect(patterns).toContain('dist/**');
         });
 
         it('should accept custom configuration', () => {
@@ -30,7 +31,7 @@ describe('FileFilter', () => {
             const mockStats = {
                 isDirectory: () => false,
                 isSymbolicLink: () => false,
-                size: 1024
+                size: 1024,
             };
 
             const result = filter.shouldIncludeFile('/test/file.txt', mockStats);
@@ -41,7 +42,7 @@ describe('FileFilter', () => {
             const mockStats = {
                 isDirectory: () => true,
                 isSymbolicLink: () => false,
-                size: 0
+                size: 0,
             };
 
             const result = filter.shouldIncludeFile('/test/dir', mockStats);
@@ -52,7 +53,7 @@ describe('FileFilter', () => {
             const mockStats = {
                 isDirectory: () => false,
                 isSymbolicLink: () => false,
-                size: 2 * 1024 * 1024 // 2MB
+                size: 2 * 1024 * 1024, // 2MB
             };
 
             const result = filter.shouldIncludeFile('/test/large-file.txt', mockStats);
@@ -63,7 +64,7 @@ describe('FileFilter', () => {
             const mockStats = {
                 isDirectory: () => false,
                 isSymbolicLink: () => true,
-                size: 1024
+                size: 1024,
             };
 
             const result = filter.shouldIncludeFile('/test/symlink', mockStats);
@@ -75,7 +76,7 @@ describe('FileFilter', () => {
         it('should include regular directories', () => {
             const mockStats = {
                 isDirectory: () => true,
-                isSymbolicLink: () => false
+                isSymbolicLink: () => false,
             };
 
             const result = filter.shouldIncludeDirectory('/test/src', mockStats);
@@ -85,7 +86,7 @@ describe('FileFilter', () => {
         it('should exclude non-directories', () => {
             const mockStats = {
                 isDirectory: () => false,
-                isSymbolicLink: () => false
+                isSymbolicLink: () => false,
             };
 
             const result = filter.shouldIncludeDirectory('/test/file.txt', mockStats);
@@ -95,6 +96,7 @@ describe('FileFilter', () => {
 
     describe('isExcluded', () => {
         it('should exclude node_modules', () => {
+            expect(filter.isExcluded('/some/funny/path/node_modules/package/file.js')).toBe(true);
             expect(filter.isExcluded('node_modules/package/file.js')).toBe(true);
             expect(filter.isExcluded('project/node_modules/package/file.js')).toBe(true);
         });
@@ -172,7 +174,7 @@ describe('FileFilter', () => {
         it('should remove custom exclusion patterns', () => {
             filter.addExclusionPattern('custom/**');
             const countAfterAdd = filter.exclusionPatterns.length;
-            
+
             filter.removeExclusionPattern('custom/**');
             expect(filter.exclusionPatterns).toHaveLength(countAfterAdd - 1);
             expect(filter.exclusionPatterns).not.toContain('custom/**');
@@ -189,11 +191,11 @@ describe('FileFilter', () => {
         it('should update configuration at runtime', () => {
             const newConfig = {
                 maxFileSize: 2 * 1024 * 1024,
-                binaryFileHandling: 'include'
+                binaryFileHandling: 'include',
             };
 
             filter.updateConfiguration(newConfig);
-            
+
             expect(filter.config.maxFileSize).toBe(2 * 1024 * 1024);
             expect(filter.config.binaryFileHandling).toBe('include');
         });
@@ -210,7 +212,7 @@ describe('FileFilter', () => {
                 binaryFileHandling: expect.any(String),
                 followSymlinks: expect.any(Boolean),
                 caseSensitive: expect.any(Boolean),
-                binaryExtensions: expect.any(Number)
+                binaryExtensions: expect.any(Number),
             });
         });
     });
@@ -221,11 +223,11 @@ describe('FileFilter', () => {
                 'src/main.js',
                 'node_modules/package/index.js',
                 'dist/bundle.js',
-                'README.md'
+                'README.md',
             ];
 
             const results = filter.testPaths(paths);
-            
+
             expect(results.included).toContain('src/main.js');
             expect(results.included).toContain('README.md');
             expect(results.excluded).toContain('node_modules/package/index.js');

@@ -4,6 +4,7 @@
  */
 
 import { getLogger } from '../../core/managers/logger.js';
+import { getSnapshotConfigManager } from '../../config/managers/snapshotConfigManager.js';
 import minimatch from 'minimatch';
 import { statSync } from 'fs';
 import { join } from 'path';
@@ -11,96 +12,26 @@ import { join } from 'path';
 export class FileFilter {
     constructor(config = {}) {
         this.logger = getLogger();
+        this.snapshotConfigManager = getSnapshotConfigManager();
 
-        // Default exclusion patterns
-        this.defaultExclusions = [
-            // Dependencies
-            'node_modules',
-            'node_modules/**',
-            '**/node_modules',
-            '**/node_modules/**',
-            '.venv',
-            '.venv/**',
-            'venv',
-            'venv/**',
-            'vendor',
-            'vendor/**',
-            'packages',
-            'packages/**',
-            'bower_components',
-            'bower_components/**',
+        // Load configuration from snapshot config manager
+        const snapshotConfig = this.snapshotConfigManager.getFileFilteringConfig();
 
-            // Build artifacts
-            'dist',
-            'dist/**',
-            'build',
-            'build/**',
-            'target',
-            'target/**',
-            'bin',
-            'bin/**',
-            'obj',
-            'obj/**',
-            'out',
-            'out/**',
-            '.next',
-            '.next/**',
-            '.nuxt',
-            '.nuxt/**',
-
-            // Version control
-            '.git',
-            '.git/**',
-            '**/.git',
-            '**/.git/**',
-            '.svn',
-            '.svn/**',
-            '.hg',
-            '.hg/**',
-            '.bzr',
-            '.bzr/**',
-
-            // IDE files
-            '.vscode/**',
-            '.idea/**',
-            '*.swp',
-            '*.swo',
-            '*~',
-            '.DS_Store',
-            'Thumbs.db',
-
-            // Temporary files
-            '*.tmp',
-            '*.temp',
-            '*.log',
-            '*.cache',
-
-            // OS files
-            '*.pid',
-            '*.seed',
-            '*.pid.lock',
-
-            // Environment files
-            '.env',
-            '.env.*',
-
-            // Coverage reports
-            'coverage/**',
-            '.nyc_output/**',
-
-            // Documentation builds
-            'docs/_build/**',
-            'site/**',
-        ];
-
-        // Configuration with defaults
+        // Configuration with defaults (passed config takes precedence over snapshot config)
         this.config = {
-            defaultExclusions: config.defaultExclusions || this.defaultExclusions,
-            customExclusions: config.customExclusions || [],
-            maxFileSize: config.maxFileSize || 10 * 1024 * 1024, // 10MB
-            binaryFileHandling: config.binaryFileHandling || 'exclude', // 'exclude' or 'include'
-            followSymlinks: config.followSymlinks || false,
-            caseSensitive: config.caseSensitive || false,
+            defaultExclusions: config.defaultExclusions || snapshotConfig.defaultExclusions,
+            customExclusions: config.customExclusions || snapshotConfig.customExclusions || [],
+            maxFileSize: config.maxFileSize || snapshotConfig.maxFileSize || 10 * 1024 * 1024, // 10MB
+            binaryFileHandling:
+                config.binaryFileHandling || snapshotConfig.binaryFileHandling || 'exclude', // 'exclude' or 'include'
+            followSymlinks:
+                config.followSymlinks !== undefined
+                    ? config.followSymlinks
+                    : snapshotConfig.followSymlinks || false,
+            caseSensitive:
+                config.caseSensitive !== undefined
+                    ? config.caseSensitive
+                    : snapshotConfig.caseSensitive || false,
             ...config,
         };
 
@@ -284,8 +215,8 @@ export class FileFilter {
                 nocase: !this.config.caseSensitive,
                 matchBase: true,
             };
-
-            return minimatch(normalizedPath, pattern, options);
+            const result = minimatch(normalizedPath, pattern, options);
+            return result;
         });
     }
 
