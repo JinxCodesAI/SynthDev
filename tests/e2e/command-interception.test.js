@@ -25,16 +25,22 @@ SYNTHDEV_VERBOSITY_LEVEL=2
 `
         );
 
-        // Set timeout for tests
-        testTimeout = 15000;
+        // Set timeout for tests - increased for CI environments
+        testTimeout = process.env.CI ? 25000 : 15000;
     });
 
     afterEach(async () => {
         if (appProcess) {
             try {
+                // First try graceful termination
                 appProcess.kill('SIGTERM');
                 // Give the process a moment to terminate gracefully
-                await new Promise(resolve => setTimeout(resolve, 100));
+                await new Promise(resolve => setTimeout(resolve, process.env.CI ? 500 : 100));
+
+                // If still running, force kill
+                if (!appProcess.killed) {
+                    appProcess.kill('SIGKILL');
+                }
             } catch (error) {
                 // Process might already be dead, that's okay
             }
@@ -48,6 +54,13 @@ SYNTHDEV_VERBOSITY_LEVEL=2
     it('should intercept /help command without AI response', async () => {
         return new Promise((resolve, reject) => {
             const timeout = setTimeout(() => {
+                console.log('Test timeout reached. State:', {
+                    helpCommandSent,
+                    helpResponseReceived,
+                    aiResponseReceived,
+                    outputLength: output.length,
+                    lastOutput: output.slice(-200),
+                });
                 reject(new Error('Test timeout - /help command test'));
             }, testTimeout);
 
@@ -66,7 +79,11 @@ SYNTHDEV_VERBOSITY_LEVEL=2
             appProcess.stdout.on('data', data => {
                 const chunk = data.toString();
                 output += chunk;
-                console.log('STDOUT:', chunk);
+                if (process.env.CI) {
+                    console.log('STDOUT:', chunk.replace(/\n/g, '\\n'));
+                } else {
+                    console.log('STDOUT:', chunk);
+                }
 
                 // Wait for startup to complete
                 if (chunk.includes('💭 You:') && !helpCommandSent) {
@@ -141,6 +158,13 @@ SYNTHDEV_VERBOSITY_LEVEL=2
     it('should intercept /cost command without AI response', async () => {
         return new Promise((resolve, reject) => {
             const timeout = setTimeout(() => {
+                console.log('Test timeout reached. State:', {
+                    costCommandSent,
+                    costResponseReceived,
+                    aiResponseReceived,
+                    outputLength: output.length,
+                    lastOutput: output.slice(-200),
+                });
                 reject(new Error('Test timeout - /cost command test'));
             }, testTimeout);
 
@@ -224,6 +248,13 @@ SYNTHDEV_VERBOSITY_LEVEL=2
     it('should intercept /snapshot command without AI response', async () => {
         return new Promise((resolve, reject) => {
             const timeout = setTimeout(() => {
+                console.log('Test timeout reached. State:', {
+                    snapshotCommandSent,
+                    snapshotResponseReceived,
+                    aiResponseReceived,
+                    outputLength: output.length,
+                    lastOutput: output.slice(-200),
+                });
                 reject(new Error('Test timeout - /snapshot command test'));
             }, testTimeout);
 
@@ -310,6 +341,13 @@ SYNTHDEV_VERBOSITY_LEVEL=2
     it('should intercept /snapshot help subcommand without AI response', async () => {
         return new Promise((resolve, reject) => {
             const timeout = setTimeout(() => {
+                console.log('Test timeout reached. State:', {
+                    snapshotHelpCommandSent,
+                    snapshotHelpResponseReceived,
+                    aiResponseReceived,
+                    outputLength: output.length,
+                    lastOutput: output.slice(-200),
+                });
                 reject(new Error('Test timeout - /snapshot help test'));
             }, testTimeout);
 
