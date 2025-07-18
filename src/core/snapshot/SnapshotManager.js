@@ -43,21 +43,22 @@ export class SnapshotManager {
             this.logger.debug('Using base path for snapshot', { basePath });
 
             // Capture files using fileBackup and fileFilter
-            let fileData = {};
+            let captureResult = null;
             if (this.fileBackup && this.fileFilter) {
                 try {
-                    fileData = await this.fileBackup.captureFiles(basePath, {
+                    captureResult = await this.fileBackup.captureFiles(basePath, {
                         includeMetadata: true,
                         preservePermissions: this.config.preservePermissions !== false
                     });
                     this.logger.debug('Files captured successfully', {
-                        fileCount: Object.keys(fileData).length
+                        fileCount: captureResult.stats.totalFiles,
+                        totalSize: captureResult.stats.totalSize
                     });
                 } catch (captureError) {
                     this.logger.warn('File capture failed, creating snapshot without files', {
                         error: captureError.message
                     });
-                    // Continue with empty file data - this allows basic functionality
+                    // Continue with empty capture result - this allows basic functionality
                     // even when file operations fail
                 }
             } else {
@@ -68,16 +69,18 @@ export class SnapshotManager {
             const snapshot = {
                 description: description.trim(),
                 timestamp: new Date().toISOString(),
+                basePath,
+                files: captureResult?.files || {},
                 metadata: {
                     basePath,
                     createdBy: 'manual',
                     version: '1.0.0',
+                    captureStats: captureResult?.stats || null,
                     ...metadata
                 },
-                fileData,
                 stats: {
-                    fileCount: Object.keys(fileData).length,
-                    totalSize: this._calculateDataSize(fileData)
+                    fileCount: captureResult?.stats?.totalFiles || 0,
+                    totalSize: captureResult?.stats?.totalSize || 0
                 }
             };
 
@@ -164,11 +167,11 @@ export class SnapshotManager {
             this.logger.debug('Snapshot retrieved for restoration', {
                 snapshotId,
                 description: snapshot.description,
-                fileCount: Object.keys(snapshot.fileData || {}).length
+                fileCount: Object.keys(snapshot.files || {}).length
             });
 
             // Validate snapshot has file data
-            if (!snapshot.fileData || Object.keys(snapshot.fileData).length === 0) {
+            if (!snapshot.files || Object.keys(snapshot.files).length === 0) {
                 throw new Error('Snapshot contains no file data to restore');
             }
 
@@ -183,11 +186,20 @@ export class SnapshotManager {
 
             if (this.fileBackup) {
                 try {
-                    restorationResult = await this.fileBackup.restoreFiles(snapshot.fileData, {
+                    // Prepare file data in the format expected by FileBackup
+                    const fileDataForRestore = {
+                        snapshotId,
+                        description: snapshot.description,
+                        timestamp: snapshot.timestamp,
+                        basePath: snapshot.basePath,
+                        files: snapshot.files
+                    };
+
+                    restorationResult = await this.fileBackup.restoreFiles(fileDataForRestore, {
                         createBackup: options.createBackup !== false,
                         overwriteExisting: options.overwriteExisting !== false,
                         preservePermissions: options.preservePermissions !== false,
-                        dryRun: options.dryRun === true
+                        rollbackOnFailure: options.rollbackOnFailure !== false
                     });
 
                     this.logger.info('Snapshot restored successfully', {

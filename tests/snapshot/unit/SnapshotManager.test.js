@@ -79,8 +79,20 @@ describe('SnapshotManager', () => {
 
     describe('createSnapshot', () => {
         it('should create snapshot with description', async () => {
-            const mockFileData = { 'test.js': 'console.log("test");' };
-            mockFileBackup.captureFiles.mockResolvedValue(mockFileData);
+            const mockCaptureResult = {
+                basePath: process.cwd(),
+                timestamp: '2023-01-01T10:00:00Z',
+                files: {
+                    'test.js': { content: 'console.log("test");' }
+                },
+                stats: {
+                    totalFiles: 1,
+                    totalSize: 20,
+                    skippedFiles: 0,
+                    errors: []
+                }
+            };
+            mockFileBackup.captureFiles.mockResolvedValue(mockCaptureResult);
             mockStore.store.mockResolvedValue('snapshot-123');
 
             const result = await snapshotManager.createSnapshot('Test snapshot');
@@ -90,7 +102,7 @@ describe('SnapshotManager', () => {
                 description: 'Test snapshot',
                 timestamp: expect.any(String),
                 fileCount: 1,
-                totalSize: expect.any(Number)
+                totalSize: 20
             });
 
             expect(mockFileBackup.captureFiles).toHaveBeenCalledWith(
@@ -104,7 +116,7 @@ describe('SnapshotManager', () => {
             expect(mockStore.store).toHaveBeenCalledWith(
                 expect.objectContaining({
                     description: 'Test snapshot',
-                    fileData: mockFileData,
+                    files: mockCaptureResult.files,
                     metadata: expect.objectContaining({
                         basePath: process.cwd(),
                         createdBy: 'manual',
@@ -141,7 +153,7 @@ describe('SnapshotManager', () => {
             expect(result.fileCount).toBe(0);
             expect(mockStore.store).toHaveBeenCalledWith(
                 expect.objectContaining({
-                    fileData: {}
+                    files: {}
                 })
             );
         });
@@ -232,7 +244,8 @@ describe('SnapshotManager', () => {
                 id: 'snap-1',
                 description: 'Test snapshot',
                 timestamp: '2023-01-01T10:00:00.000Z',
-                fileData: { 'test.js': 'console.log("test");' }
+                basePath: '/test/path',
+                files: { 'test.js': { content: 'console.log("test");' } }
             };
 
             const mockRestoreResult = {
@@ -248,12 +261,17 @@ describe('SnapshotManager', () => {
 
             expect(mockStore.retrieve).toHaveBeenCalledWith('snap-1');
             expect(mockFileBackup.restoreFiles).toHaveBeenCalledWith(
-                mockSnapshot.fileData,
+                expect.objectContaining({
+                    snapshotId: 'snap-1',
+                    description: 'Test snapshot',
+                    basePath: '/test/path',
+                    files: mockSnapshot.files
+                }),
                 expect.objectContaining({
                     createBackup: true,
                     overwriteExisting: true,
                     preservePermissions: true,
-                    dryRun: false
+                    rollbackOnFailure: true
                 })
             );
 
