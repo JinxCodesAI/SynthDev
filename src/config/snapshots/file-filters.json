@@ -33,7 +33,8 @@
             ".next/**",
             ".nuxt",
             ".nuxt/**",
-            ".husky/**"
+            ".husky/**",
+            "**/.husky/**"
         ],
         "versionControl": [
             ".git",

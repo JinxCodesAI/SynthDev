@@ -18,6 +18,7 @@ export class SnapshotManager {
 
         // Load configuration from snapshot config manager
         const snapshotConfig = this.snapshotConfigManager.getConfig();
+        this.messages = snapshotConfig.messages;
 
         // Configuration with defaults (passed config takes precedence over snapshot config)
         this.config = {
@@ -73,7 +74,7 @@ export class SnapshotManager {
 
             // Validate parameters
             if (!description || typeof description !== 'string') {
-                throw new Error('Snapshot description is required and must be a string');
+                throw new Error(this.messages.errors.invalidDescription);
             }
 
             // Determine base path
@@ -208,7 +209,7 @@ export class SnapshotManager {
             // Validate snapshot exists
             const snapshot = await this.store.retrieve(fullId);
             if (!snapshot) {
-                throw new Error(`Snapshot not found: ${snapshotId}`);
+                throw new Error(this.messages.errors.snapshotNotFound.replace('{id}', snapshotId));
             }
 
             // If preview mode, generate preview
@@ -281,14 +282,19 @@ export class SnapshotManager {
             // Validate snapshot exists
             const snapshot = await this.store.retrieve(fullId);
             if (!snapshot) {
-                throw new Error(`Snapshot not found: ${snapshotId}`);
+                throw new Error(this.messages.errors.snapshotNotFound.replace('{id}', snapshotId));
             }
 
             // Delete from store
             const deleted = await this.store.delete(fullId);
 
             if (!deleted) {
-                throw new Error(`Failed to delete snapshot: ${snapshotId}`);
+                throw new Error(
+                    this.messages.errors.deleteFailure.replace(
+                        '{error}',
+                        `Failed to delete snapshot: ${snapshotId}`
+                    )
+                );
             }
 
             const result = {
@@ -394,7 +400,7 @@ export class SnapshotManager {
             const matches = snapshots.filter(snapshot => snapshot.id.startsWith(partialId));
 
             if (matches.length === 0) {
-                throw new Error(`Snapshot not found: ${partialId}`);
+                throw new Error(this.messages.errors.snapshotNotFound.replace('{id}', partialId));
             }
 
             if (matches.length > 1) {
@@ -423,7 +429,7 @@ export class SnapshotManager {
 
             const snapshot = await this.store.retrieve(fullId);
             if (!snapshot) {
-                throw new Error(`Snapshot not found: ${snapshotId}`);
+                throw new Error(this.messages.errors.snapshotNotFound.replace('{id}', snapshotId));
             }
 
             return {

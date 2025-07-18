@@ -5,19 +5,21 @@
 
 import { InteractiveCommand } from '../base/BaseCommand.js';
 import { SnapshotManager } from '../../core/snapshot/SnapshotManager.js';
+import { getSnapshotConfigManager } from '../../config/managers/snapshotConfigManager.js';
 import { getLogger } from '../../core/managers/logger.js';
 
 export class SnapshotsCommand extends InteractiveCommand {
     constructor() {
-        super(
-            'snapshot',
-            'Create and manage file snapshots for safe project state management',
-            ['snap', 'backup']
-        );
-        
+        super('snapshot', 'Create and manage file snapshots for safe project state management', [
+            'snap',
+            'backup',
+        ]);
+
         this.logger = getLogger();
         this.snapshotManager = null;
-        
+        this.configManager = getSnapshotConfigManager();
+        this.messages = this.configManager.getMessagesConfig();
+
         // Subcommands
         this.subcommands = {
             create: this.handleCreate.bind(this),
@@ -26,7 +28,7 @@ export class SnapshotsCommand extends InteractiveCommand {
             delete: this.handleDelete.bind(this),
             info: this.handleInfo.bind(this),
             stats: this.handleStats.bind(this),
-            help: this.handleHelp.bind(this)
+            help: this.handleHelp.bind(this),
         };
     }
 
@@ -50,15 +52,15 @@ export class SnapshotsCommand extends InteractiveCommand {
             if (!this.snapshotManager) {
                 this.snapshotManager = new SnapshotManager();
             }
-            
+
             // Parse arguments
             const { subcommand, subArgs } = this.parseArguments(args);
-            
+
             // Handle help or no subcommand
             if (!subcommand || subcommand === 'help') {
                 return await this.handleHelp(subArgs, context);
             }
-            
+
             // Route to appropriate subcommand handler
             const handler = this.subcommands[subcommand];
             if (!handler) {
@@ -67,7 +69,7 @@ export class SnapshotsCommand extends InteractiveCommand {
                 consoleInterface.showMessage('Use "/snapshot help" to see available commands.');
                 return 'error';
             }
-            
+
             return await handler(subArgs, context);
         } catch (error) {
             this.logger.error(error, 'Snapshot command execution failed');
@@ -84,36 +86,41 @@ export class SnapshotsCommand extends InteractiveCommand {
      */
     async handleCreate(args, context) {
         const { consoleInterface } = context;
-        
+
         try {
             // Parse description from args
             let description = args.trim();
-            
+
             // If no description provided, prompt for it
             if (!description) {
-                description = await this.promptForInput('Enter snapshot description: ', context);
+                description = await this.promptForInput(
+                    this.messages.prompts.snapshotDescription,
+                    context
+                );
                 if (!description) {
-                    consoleInterface.showError('Snapshot description is required.');
+                    consoleInterface.showError(this.messages.errors.invalidDescription);
                     return 'error';
                 }
             }
-            
+
             // Remove quotes if present
             description = description.replace(/^["']|["']$/g, '');
-            
+
             consoleInterface.showMessage(`Creating snapshot: "${description}"`);
-            consoleInterface.showMessage('Scanning and capturing files...');
-            
+            consoleInterface.showMessage(this.messages.info.scanningFiles);
+
             // Create snapshot
             const result = await this.snapshotManager.createSnapshot(description);
-            
+
             // Show success message
-            consoleInterface.showMessage(`✅ Snapshot created successfully!`);
+            consoleInterface.showMessage(this.messages.success.snapshotCreated);
             consoleInterface.showMessage(`📍 Snapshot ID: ${result.id}`);
             consoleInterface.showMessage(`📁 Files captured: ${result.stats.fileCount}`);
-            consoleInterface.showMessage(`💾 Total size: ${this.formatBytes(result.stats.totalSize)}`);
+            consoleInterface.showMessage(
+                `💾 Total size: ${this.formatBytes(result.stats.totalSize)}`
+            );
             consoleInterface.showMessage(`⏱️  Capture time: ${result.stats.captureTime}ms`);
-            
+
             return result;
         } catch (error) {
             this.logger.error(error, 'Failed to create snapshot');
@@ -130,39 +137,45 @@ export class SnapshotsCommand extends InteractiveCommand {
      */
     async handleList(args, context) {
         const { consoleInterface } = context;
-        
+
         try {
             // Parse list options
             const options = this.parseListOptions(args);
-            
+
             // Get snapshots
             const snapshots = await this.snapshotManager.listSnapshots(options);
-            
+
             if (snapshots.length === 0) {
                 consoleInterface.showMessage('No snapshots found.');
-                consoleInterface.showMessage('Use "/snapshot create <description>" to create your first snapshot.');
+                consoleInterface.showMessage(
+                    'Use "/snapshot create <description>" to create your first snapshot.'
+                );
                 return 'empty';
             }
-            
+
             // Display snapshots
             consoleInterface.showMessage(`\n📸 Snapshots (${snapshots.length} total):`);
             consoleInterface.showMessage('─'.repeat(80));
-            
+
             for (const snapshot of snapshots) {
                 const timestamp = new Date(snapshot.timestamp).toLocaleString();
                 const size = this.formatBytes(snapshot.totalSize);
                 const type = snapshot.triggerType === 'manual' ? '👤' : '🤖';
-                
-                consoleInterface.showMessage(`${type} ${snapshot.id.substring(0, 8)}... - ${snapshot.description}`);
-                consoleInterface.showMessage(`   📅 ${timestamp} | 📁 ${snapshot.fileCount} files | 💾 ${size}`);
-                
+
+                consoleInterface.showMessage(
+                    `${type} ${snapshot.id.substring(0, 8)}... - ${snapshot.description}`
+                );
+                consoleInterface.showMessage(
+                    `   📅 ${timestamp} | 📁 ${snapshot.fileCount} files | 💾 ${size}`
+                );
+
                 if (snapshot.triggerType !== 'manual') {
                     consoleInterface.showMessage(`   🔧 Created by: ${snapshot.triggerType}`);
                 }
-                
+
                 consoleInterface.showMessage('');
             }
-            
+
             return snapshots;
         } catch (error) {
             this.logger.error(error, 'Failed to list snapshots');
@@ -179,7 +192,7 @@ export class SnapshotsCommand extends InteractiveCommand {
      */
     async handleRestore(args, context) {
         const { consoleInterface } = context;
-        
+
         try {
             // Parse snapshot ID
             const snapshotId = args.trim();
@@ -188,52 +201,56 @@ export class SnapshotsCommand extends InteractiveCommand {
                 consoleInterface.showMessage('Use "/snapshot list" to see available snapshots.');
                 return 'error';
             }
-            
+
             // Get snapshot details
             const details = await this.snapshotManager.getSnapshotDetails(snapshotId);
-            
+
             // Show snapshot info
             consoleInterface.showMessage(`\n📸 Snapshot: ${details.description}`);
             consoleInterface.showMessage(`📍 ID: ${details.id}`);
-            consoleInterface.showMessage(`📅 Created: ${new Date(details.metadata.timestamp).toLocaleString()}`);
+            consoleInterface.showMessage(
+                `📅 Created: ${new Date(details.metadata.timestamp).toLocaleString()}`
+            );
             consoleInterface.showMessage(`📁 Files: ${details.fileCount}`);
-            
+
             // Generate preview
-            consoleInterface.showMessage('\nAnalyzing restoration impact...');
-            const preview = await this.snapshotManager.restoreSnapshot(snapshotId, { preview: true });
-            
+            consoleInterface.showMessage(`\n${this.messages.info.analyzingRestore}`);
+            const preview = await this.snapshotManager.restoreSnapshot(snapshotId, {
+                preview: true,
+            });
+
             // Show preview
             this.showRestorePreview(preview, consoleInterface);
-            
+
             // Ask for confirmation
             const confirm = await this.promptForConfirmation(
-                '\nDo you want to proceed with the restoration?',
+                `\n${this.messages.prompts.confirmRestore}`,
                 context
             );
-            
+
             if (!confirm) {
                 consoleInterface.showMessage('Restoration cancelled.');
                 return 'cancelled';
             }
-            
+
             // Perform restoration
-            consoleInterface.showMessage('Restoring files...');
+            consoleInterface.showMessage(this.messages.info.restoringFiles);
             const result = await this.snapshotManager.restoreSnapshot(snapshotId, {
-                createBackups: true
+                createBackups: true,
             });
-            
+
             // Show results
-            consoleInterface.showMessage(`✅ Restoration completed!`);
+            consoleInterface.showMessage(this.messages.success.snapshotRestored);
             consoleInterface.showMessage(`📁 Files restored: ${result.stats.restoredFiles}`);
             consoleInterface.showMessage(`💾 Backups created: ${result.backups.length}`);
-            
+
             if (result.errors.length > 0) {
                 consoleInterface.showMessage(`⚠️  Errors encountered: ${result.errors.length}`);
                 for (const error of result.errors) {
                     consoleInterface.showMessage(`   ❌ ${error.path}: ${error.error}`);
                 }
             }
-            
+
             return result;
         } catch (error) {
             this.logger.error(error, 'Failed to restore snapshot');
@@ -250,7 +267,7 @@ export class SnapshotsCommand extends InteractiveCommand {
      */
     async handleDelete(args, context) {
         const { consoleInterface } = context;
-        
+
         try {
             // Parse snapshot ID
             const snapshotId = args.trim();
@@ -259,33 +276,35 @@ export class SnapshotsCommand extends InteractiveCommand {
                 consoleInterface.showMessage('Use "/snapshot list" to see available snapshots.');
                 return 'error';
             }
-            
+
             // Get snapshot details
             const details = await this.snapshotManager.getSnapshotDetails(snapshotId);
-            
+
             // Show snapshot info
             consoleInterface.showMessage(`\n📸 Snapshot: ${details.description}`);
             consoleInterface.showMessage(`📍 ID: ${details.id}`);
-            consoleInterface.showMessage(`📅 Created: ${new Date(details.metadata.timestamp).toLocaleString()}`);
+            consoleInterface.showMessage(
+                `📅 Created: ${new Date(details.metadata.timestamp).toLocaleString()}`
+            );
             consoleInterface.showMessage(`📁 Files: ${details.fileCount}`);
-            
+
             // Ask for confirmation
             const confirm = await this.promptForConfirmation(
-                '\nAre you sure you want to delete this snapshot? This action cannot be undone.',
+                `\n${this.messages.prompts.confirmDelete}`,
                 context
             );
-            
+
             if (!confirm) {
                 consoleInterface.showMessage('Deletion cancelled.');
                 return 'cancelled';
             }
-            
+
             // Delete snapshot
             const result = await this.snapshotManager.deleteSnapshot(snapshotId);
-            
-            consoleInterface.showMessage(`✅ Snapshot deleted successfully!`);
+
+            consoleInterface.showMessage(this.messages.success.snapshotDeleted);
             consoleInterface.showMessage(`📸 Deleted: ${result.description}`);
-            
+
             return result;
         } catch (error) {
             this.logger.error(error, 'Failed to delete snapshot');
@@ -302,7 +321,7 @@ export class SnapshotsCommand extends InteractiveCommand {
      */
     async handleInfo(args, context) {
         const { consoleInterface } = context;
-        
+
         try {
             // Parse snapshot ID
             const snapshotId = args.trim();
@@ -311,39 +330,47 @@ export class SnapshotsCommand extends InteractiveCommand {
                 consoleInterface.showMessage('Use "/snapshot list" to see available snapshots.');
                 return 'error';
             }
-            
+
             // Get snapshot details
             const details = await this.snapshotManager.getSnapshotDetails(snapshotId);
-            
+
             // Display detailed information
-            consoleInterface.showMessage(`\n📸 Snapshot Details:`);
+            consoleInterface.showMessage('\n📸 Snapshot Details:');
             consoleInterface.showMessage('─'.repeat(50));
             consoleInterface.showMessage(`📍 ID: ${details.id}`);
             consoleInterface.showMessage(`📝 Description: ${details.description}`);
-            consoleInterface.showMessage(`📅 Created: ${new Date(details.metadata.timestamp).toLocaleString()}`);
+            consoleInterface.showMessage(
+                `📅 Created: ${new Date(details.metadata.timestamp).toLocaleString()}`
+            );
             consoleInterface.showMessage(`👤 Creator: ${details.metadata.creator}`);
             consoleInterface.showMessage(`🔧 Trigger: ${details.metadata.triggerType}`);
             consoleInterface.showMessage(`📁 Files: ${details.fileCount}`);
-            consoleInterface.showMessage(`💾 Total size: ${this.formatBytes(details.metadata.totalSize)}`);
+            consoleInterface.showMessage(
+                `💾 Total size: ${this.formatBytes(details.metadata.totalSize)}`
+            );
             consoleInterface.showMessage(`📂 Base path: ${details.metadata.basePath}`);
             consoleInterface.showMessage(`⏱️  Capture time: ${details.metadata.captureTime}ms`);
-            
+
             // Show file list (first 10 files)
             if (details.files.length > 0) {
-                consoleInterface.showMessage(`\n📁 Files (showing first 10 of ${details.files.length}):`);
+                consoleInterface.showMessage(
+                    `\n📁 Files (showing first 10 of ${details.files.length}):`
+                );
                 const filesToShow = details.files.slice(0, 10);
-                
+
                 for (const file of filesToShow) {
                     const size = this.formatBytes(file.size);
                     const modified = new Date(file.modified).toLocaleString();
                     consoleInterface.showMessage(`   📄 ${file.path} (${size}) - ${modified}`);
                 }
-                
+
                 if (details.files.length > 10) {
-                    consoleInterface.showMessage(`   ... and ${details.files.length - 10} more files`);
+                    consoleInterface.showMessage(
+                        `   ... and ${details.files.length - 10} more files`
+                    );
                 }
             }
-            
+
             return details;
         } catch (error) {
             this.logger.error(error, 'Failed to get snapshot info');
@@ -360,38 +387,50 @@ export class SnapshotsCommand extends InteractiveCommand {
      */
     async handleStats(args, context) {
         const { consoleInterface } = context;
-        
+
         try {
             const stats = this.snapshotManager.getSystemStats();
-            
-            consoleInterface.showMessage(`\n📊 Snapshot System Statistics:`);
+
+            consoleInterface.showMessage('\n📊 Snapshot System Statistics:');
             consoleInterface.showMessage('─'.repeat(50));
-            
+
             // Storage statistics
             consoleInterface.showMessage(`💾 Storage (${stats.configuration.storageType}):`);
             consoleInterface.showMessage(`   📸 Total snapshots: ${stats.storage.totalSnapshots}`);
             consoleInterface.showMessage(`   📊 Max snapshots: ${stats.storage.maxSnapshots}`);
-            consoleInterface.showMessage(`   💾 Memory usage: ${stats.storage.memoryUsageMB.toFixed(2)}MB (${stats.storage.memoryUsagePercent.toFixed(1)}%)`);
+            consoleInterface.showMessage(
+                `   💾 Memory usage: ${stats.storage.memoryUsageMB.toFixed(2)}MB (${stats.storage.memoryUsagePercent.toFixed(1)}%)`
+            );
             consoleInterface.showMessage(`   📈 Max memory: ${stats.storage.maxMemoryMB}MB`);
-            
+
             // Filter statistics
-            consoleInterface.showMessage(`\n🔍 File Filtering:`);
+            consoleInterface.showMessage('\n🔍 File Filtering:');
             consoleInterface.showMessage(`   📋 Total patterns: ${stats.filtering.totalPatterns}`);
-            consoleInterface.showMessage(`   🔧 Default patterns: ${stats.filtering.defaultPatterns}`);
-            consoleInterface.showMessage(`   ⚙️  Custom patterns: ${stats.filtering.customPatterns}`);
-            consoleInterface.showMessage(`   📏 Max file size: ${this.formatBytes(stats.filtering.maxFileSize)}`);
-            consoleInterface.showMessage(`   🎯 Binary handling: ${stats.filtering.binaryFileHandling}`);
-            
+            consoleInterface.showMessage(
+                `   🔧 Default patterns: ${stats.filtering.defaultPatterns}`
+            );
+            consoleInterface.showMessage(
+                `   ⚙️  Custom patterns: ${stats.filtering.customPatterns}`
+            );
+            consoleInterface.showMessage(
+                `   📏 Max file size: ${this.formatBytes(stats.filtering.maxFileSize)}`
+            );
+            consoleInterface.showMessage(
+                `   🎯 Binary handling: ${stats.filtering.binaryFileHandling}`
+            );
+
             // System status
-            consoleInterface.showMessage(`\n⚡ System Status:`);
+            consoleInterface.showMessage('\n⚡ System Status:');
             consoleInterface.showMessage(`   🔄 Active operations: ${stats.activeOperations}`);
-            consoleInterface.showMessage(`   🧹 Auto cleanup: ${stats.configuration.autoCleanup ? 'enabled' : 'disabled'}`);
-            
+            consoleInterface.showMessage(
+                `   🧹 Auto cleanup: ${stats.configuration.autoCleanup ? 'enabled' : 'disabled'}`
+            );
+
             if (stats.storage.lastCleanup) {
                 const lastCleanup = new Date(stats.storage.lastCleanup).toLocaleString();
                 consoleInterface.showMessage(`   🗑️  Last cleanup: ${lastCleanup}`);
             }
-            
+
             return stats;
         } catch (error) {
             this.logger.error(error, 'Failed to get system stats');
@@ -408,30 +447,38 @@ export class SnapshotsCommand extends InteractiveCommand {
      */
     async handleHelp(args, context) {
         const { consoleInterface } = context;
-        
-        consoleInterface.showMessage(`\n📸 Snapshot Management Commands:`);
+
+        consoleInterface.showMessage('\n📸 Snapshot Management Commands:');
         consoleInterface.showMessage('─'.repeat(60));
-        
-        consoleInterface.showMessage(`📝 /snapshot create <description>     - Create a new snapshot`);
-        consoleInterface.showMessage(`📋 /snapshot list                     - List all snapshots`);
-        consoleInterface.showMessage(`🔄 /snapshot restore <id>             - Restore a snapshot`);
-        consoleInterface.showMessage(`🗑️  /snapshot delete <id>              - Delete a snapshot`);
-        consoleInterface.showMessage(`ℹ️  /snapshot info <id>               - Show snapshot details`);
-        consoleInterface.showMessage(`📊 /snapshot stats                    - Show system statistics`);
-        consoleInterface.showMessage(`❓ /snapshot help                     - Show this help`);
-        
-        consoleInterface.showMessage(`\n💡 Examples:`);
-        consoleInterface.showMessage(`   /snapshot create "Before refactoring"`);
-        consoleInterface.showMessage(`   /snapshot list`);
-        consoleInterface.showMessage(`   /snapshot restore 12345678`);
-        consoleInterface.showMessage(`   /snapshot info 12345678`);
-        
-        consoleInterface.showMessage(`\n📝 Notes:`);
-        consoleInterface.showMessage(`   • Snapshots exclude node_modules, .git, and build artifacts`);
-        consoleInterface.showMessage(`   • Restoration creates backups of current files`);
-        consoleInterface.showMessage(`   • Snapshot IDs can be abbreviated (first 8 characters)`);
-        consoleInterface.showMessage(`   • Use quotes for descriptions with spaces`);
-        
+
+        consoleInterface.showMessage(
+            '📝 /snapshot create <description>     - Create a new snapshot'
+        );
+        consoleInterface.showMessage('📋 /snapshot list                     - List all snapshots');
+        consoleInterface.showMessage('🔄 /snapshot restore <id>             - Restore a snapshot');
+        consoleInterface.showMessage('🗑️  /snapshot delete <id>              - Delete a snapshot');
+        consoleInterface.showMessage(
+            'ℹ️  /snapshot info <id>               - Show snapshot details'
+        );
+        consoleInterface.showMessage(
+            '📊 /snapshot stats                    - Show system statistics'
+        );
+        consoleInterface.showMessage('❓ /snapshot help                     - Show this help');
+
+        consoleInterface.showMessage('\n💡 Examples:');
+        consoleInterface.showMessage('   /snapshot create "Before refactoring"');
+        consoleInterface.showMessage('   /snapshot list');
+        consoleInterface.showMessage('   /snapshot restore 12345678');
+        consoleInterface.showMessage('   /snapshot info 12345678');
+
+        consoleInterface.showMessage('\n📝 Notes:');
+        consoleInterface.showMessage(
+            '   • Snapshots exclude node_modules, .git, and build artifacts'
+        );
+        consoleInterface.showMessage('   • Restoration creates backups of current files');
+        consoleInterface.showMessage('   • Snapshot IDs can be abbreviated (first 8 characters)');
+        consoleInterface.showMessage('   • Use quotes for descriptions with spaces');
+
         return 'help';
     }
 
@@ -443,10 +490,10 @@ export class SnapshotsCommand extends InteractiveCommand {
     parseArguments(args) {
         const trimmed = args.trim();
         const parts = trimmed.split(/\s+/);
-        
+
         return {
             subcommand: parts[0] || '',
-            subArgs: parts.slice(1).join(' ')
+            subArgs: parts.slice(1).join(' '),
         };
     }
 
@@ -459,12 +506,12 @@ export class SnapshotsCommand extends InteractiveCommand {
         const options = {
             sortBy: 'timestamp',
             sortOrder: 'desc',
-            limit: 50
+            limit: 50,
         };
-        
+
         // Parse any flags or options from args
         // For now, using defaults
-        
+
         return options;
     }
 
@@ -475,36 +522,50 @@ export class SnapshotsCommand extends InteractiveCommand {
      */
     showRestorePreview(preview, consoleInterface) {
         const { preview: previewData } = preview;
-        
-        consoleInterface.showMessage(`\n🔍 Restoration Preview:`);
+
+        consoleInterface.showMessage('\n🔍 Restoration Preview:');
         consoleInterface.showMessage('─'.repeat(40));
-        
+
         if (previewData.files.toCreate.length > 0) {
-            consoleInterface.showMessage(`📄 Files to create: ${previewData.files.toCreate.length}`);
+            consoleInterface.showMessage(
+                `📄 Files to create: ${previewData.files.toCreate.length}`
+            );
             previewData.files.toCreate.slice(0, 5).forEach(file => {
                 consoleInterface.showMessage(`   + ${file.path} (${this.formatBytes(file.size)})`);
             });
             if (previewData.files.toCreate.length > 5) {
-                consoleInterface.showMessage(`   ... and ${previewData.files.toCreate.length - 5} more`);
+                consoleInterface.showMessage(
+                    `   ... and ${previewData.files.toCreate.length - 5} more`
+                );
             }
         }
-        
+
         if (previewData.files.toModify.length > 0) {
-            consoleInterface.showMessage(`📝 Files to modify: ${previewData.files.toModify.length}`);
+            consoleInterface.showMessage(
+                `📝 Files to modify: ${previewData.files.toModify.length}`
+            );
             previewData.files.toModify.slice(0, 5).forEach(file => {
                 consoleInterface.showMessage(`   ~ ${file.path} (${this.formatBytes(file.size)})`);
             });
             if (previewData.files.toModify.length > 5) {
-                consoleInterface.showMessage(`   ... and ${previewData.files.toModify.length - 5} more`);
+                consoleInterface.showMessage(
+                    `   ... and ${previewData.files.toModify.length - 5} more`
+                );
             }
         }
-        
+
         if (previewData.files.unchanged.length > 0) {
-            consoleInterface.showMessage(`✅ Files unchanged: ${previewData.files.unchanged.length}`);
+            consoleInterface.showMessage(
+                `✅ Files unchanged: ${previewData.files.unchanged.length}`
+            );
         }
-        
-        consoleInterface.showMessage(`\n📊 Impact: ${previewData.stats.impactedFiles} files affected`);
-        consoleInterface.showMessage(`💾 Total size: ${this.formatBytes(previewData.stats.totalSize)}`);
+
+        consoleInterface.showMessage(
+            `\n📊 Impact: ${previewData.stats.impactedFiles} files affected`
+        );
+        consoleInterface.showMessage(
+            `💾 Total size: ${this.formatBytes(previewData.stats.totalSize)}`
+        );
     }
 
     /**
@@ -513,13 +574,15 @@ export class SnapshotsCommand extends InteractiveCommand {
      * @returns {string} Formatted string
      */
     formatBytes(bytes) {
-        if (bytes === 0) return '0 B';
-        
+        if (bytes === 0) {
+            return '0 B';
+        }
+
         const k = 1024;
         const sizes = ['B', 'KB', 'MB', 'GB'];
         const i = Math.floor(Math.log(bytes) / Math.log(k));
-        
-        return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+
+        return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
     }
 
     /**
