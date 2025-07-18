@@ -18,7 +18,7 @@ This document outlines the detailed implementation plan for Phase 1 of the snaps
 ### Prerequisites
 
 - Review existing codebase structure
-- Understand ADR-002 command patterns
+- Understand docs\ADRs\002-adding-new-commands.md command patterns
 - Set up development environment
 
 ### Implementation Steps
