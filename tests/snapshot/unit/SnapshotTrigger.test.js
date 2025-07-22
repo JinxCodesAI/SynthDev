@@ -247,7 +247,7 @@ describe('SnapshotTrigger', () => {
             trigger.config.includeTimestamp = true;
             const description = trigger.generateSnapshotDescription('write_file', {});
             expect(description).toMatch(
-                /Before write_file: file1\.js, file2\.js \(\d{1,2}:\d{2}:\d{2}\)/
+                /Before write_file: file1\.js, file2\.js \(\d{2}:\d{2}:\d{2}\)/
             );
         });
 
