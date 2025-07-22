@@ -5,7 +5,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { InitialSnapshotManager } from '../../../src/core/snapshot/InitialSnapshotManager.js';
 import { existsSync } from 'fs';
-import { resolve } from 'path';
+import { resolve, basename } from 'path';
 
 // Mock fs operations
 vi.mock('fs', () => ({
@@ -47,8 +47,14 @@ describe('InitialSnapshotManager', () => {
             listSnapshots: vi.fn().mockResolvedValue([]),
         };
 
-        resolve.mockImplementation(path => `/resolved/${path}`);
-        require('path').basename = vi.fn().mockReturnValue('TestProject');
+        resolve.mockImplementation((...paths) => {
+            if (paths.length === 1) {
+                return `/resolved${paths[0]}`;
+            }
+            // Handle resolve(basePath, filename) case
+            return `/resolved${paths[0]}/${paths[1]}`;
+        });
+        basename.mockReturnValue('TestProject');
 
         manager = new InitialSnapshotManager(mockSnapshotManager);
     });
@@ -355,7 +361,7 @@ describe('InitialSnapshotManager', () => {
 
     describe('getInitialSnapshotDescription', () => {
         it('should generate description with project name', () => {
-            require('path').basename.mockReturnValue('MyProject');
+            basename.mockReturnValue('MyProject');
 
             const description = manager.getInitialSnapshotDescription('/path/to/MyProject');
 
