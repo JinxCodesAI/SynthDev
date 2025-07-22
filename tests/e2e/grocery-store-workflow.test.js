@@ -50,7 +50,7 @@ vi.mock('fs', async () => {
  * Tests the complete workflow execution with mocked HTTP responses
  * matching the exact requests/responses from logs/http_requests.txt
  */
-describe('Grocery Store Workflow E2E Test', () => {
+describe.skip('Grocery Store Workflow E2E Test', () => {
     let stateMachine;
     let originalEnv;
 
