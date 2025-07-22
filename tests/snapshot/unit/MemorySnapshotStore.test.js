@@ -7,7 +7,7 @@ describe('MemorySnapshotStore', () => {
     beforeEach(() => {
         store = new MemorySnapshotStore({
             maxSnapshots: 5,
-            maxMemoryMB: 1
+            maxMemoryMB: 1,
         });
     });
 
@@ -35,11 +35,11 @@ describe('MemorySnapshotStore', () => {
             const snapshot = {
                 description: 'Test snapshot',
                 fileData: { files: {} },
-                metadata: { testData: 'test' }
+                metadata: { testData: 'test' },
             };
 
             const snapshotId = await store.store(snapshot);
-            
+
             expect(snapshotId).toBeDefined();
             expect(typeof snapshotId).toBe('string');
             expect(store.stats.totalSnapshots).toBe(1);
@@ -49,13 +49,13 @@ describe('MemorySnapshotStore', () => {
             const snapshot1 = {
                 description: 'Test snapshot 1',
                 fileData: { files: {} },
-                metadata: {}
+                metadata: {},
             };
 
             const snapshot2 = {
                 description: 'Test snapshot 2',
                 fileData: { files: {} },
-                metadata: {}
+                metadata: {},
             };
 
             const id1 = await store.store(snapshot1);
@@ -70,7 +70,7 @@ describe('MemorySnapshotStore', () => {
                 id: customId,
                 description: 'Test snapshot',
                 fileData: { files: {} },
-                metadata: {}
+                metadata: {},
             };
 
             const snapshotId = await store.store(snapshot);
@@ -81,7 +81,7 @@ describe('MemorySnapshotStore', () => {
             const invalidSnapshot = {
                 description: 'Test',
                 // Missing fileData
-                metadata: {}
+                metadata: {},
             };
 
             await expect(store.store(invalidSnapshot)).rejects.toThrow('Invalid snapshot data');
@@ -93,7 +93,7 @@ describe('MemorySnapshotStore', () => {
             const snapshot = {
                 description: 'Test snapshot',
                 fileData: { files: {} },
-                metadata: { testData: 'test' }
+                metadata: { testData: 'test' },
             };
 
             const snapshotId = await store.store(snapshot);
@@ -116,14 +116,14 @@ describe('MemorySnapshotStore', () => {
             await store.store({
                 description: 'First snapshot',
                 fileData: { files: {} },
-                metadata: {}
+                metadata: {},
             });
             // Add a small delay to ensure different timestamps
             await new Promise(resolve => setTimeout(resolve, 10));
             await store.store({
                 description: 'Second snapshot',
                 fileData: { files: {} },
-                metadata: {}
+                metadata: {},
             });
         });
 
@@ -155,7 +155,7 @@ describe('MemorySnapshotStore', () => {
             snapshotId = await store.store({
                 description: 'Test snapshot',
                 fileData: { files: {} },
-                metadata: {}
+                metadata: {},
             });
         });
 
@@ -184,7 +184,7 @@ describe('MemorySnapshotStore', () => {
             snapshotId = await store.store({
                 description: 'Test snapshot',
                 fileData: { files: {} },
-                metadata: {}
+                metadata: {},
             });
         });
 
@@ -208,7 +208,7 @@ describe('MemorySnapshotStore', () => {
                 maxSnapshots: 5,
                 maxMemoryMB: 1,
                 memoryUsageMB: 0,
-                memoryUsagePercent: 0
+                memoryUsagePercent: 0,
             });
         });
     });
@@ -220,7 +220,7 @@ describe('MemorySnapshotStore', () => {
                 await store.store({
                     description: `Snapshot ${i}`,
                     fileData: { files: {} },
-                    metadata: {}
+                    metadata: {},
                 });
             }
         });

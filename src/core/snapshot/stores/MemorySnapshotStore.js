@@ -9,26 +9,26 @@ import { v4 as uuidv4 } from 'uuid';
 export class MemorySnapshotStore {
     constructor(config = {}) {
         this.logger = getLogger();
-        
+
         // Configuration with defaults
         this.config = {
             maxSnapshots: config.maxSnapshots || 50,
             maxMemoryMB: config.maxMemoryMB || 100,
             persistToDisk: config.persistToDisk || false,
-            ...config
+            ...config,
         };
-        
+
         // In-memory storage
         this.snapshots = new Map();
         this.metadata = new Map();
-        
+
         // Statistics tracking
         this.stats = {
             totalSnapshots: 0,
             memoryUsage: 0,
-            lastCleanup: null
+            lastCleanup: null,
         };
-        
+
         this.logger.debug('MemorySnapshotStore initialized', { config: this.config });
     }
 
@@ -45,16 +45,16 @@ export class MemorySnapshotStore {
         try {
             // Generate ID if not provided
             const snapshotId = snapshot.id || uuidv4();
-            
+
             // Validate snapshot data
             this._validateSnapshot(snapshot);
-            
+
             // Check memory limits before storing
             await this._checkMemoryLimits();
-            
+
             // Calculate memory usage for this snapshot
             const memorySize = this._calculateMemorySize(snapshot);
-            
+
             // Create snapshot record
             const snapshotRecord = {
                 id: snapshotId,
@@ -63,28 +63,28 @@ export class MemorySnapshotStore {
                 metadata: {
                     timestamp: new Date().toISOString(),
                     memorySize,
-                    ...snapshot.metadata
-                }
+                    ...snapshot.metadata,
+                },
             };
-            
+
             // Store snapshot and metadata
             this.snapshots.set(snapshotId, snapshotRecord);
             this.metadata.set(snapshotId, {
                 ...snapshotRecord.metadata,
-                description: snapshot.description
+                description: snapshot.description,
             });
-            
+
             // Update statistics
             this.stats.totalSnapshots++;
             this.stats.memoryUsage += memorySize;
-            
-            this.logger.debug('Snapshot stored successfully', { 
-                id: snapshotId, 
+
+            this.logger.debug('Snapshot stored successfully', {
+                id: snapshotId,
                 description: snapshot.description,
                 memorySize,
-                totalMemory: this.stats.memoryUsage
+                totalMemory: this.stats.memoryUsage,
             });
-            
+
             return snapshotId;
         } catch (error) {
             this.logger.error(error, 'Failed to store snapshot');
@@ -100,12 +100,12 @@ export class MemorySnapshotStore {
     async retrieve(snapshotId) {
         try {
             const snapshot = this.snapshots.get(snapshotId);
-            
+
             if (!snapshot) {
                 this.logger.warn('Snapshot not found', { id: snapshotId });
                 return null;
             }
-            
+
             this.logger.debug('Snapshot retrieved successfully', { id: snapshotId });
             return snapshot;
         } catch (error) {
@@ -124,33 +124,29 @@ export class MemorySnapshotStore {
      */
     async list(filters = {}) {
         try {
-            const {
-                sortBy = 'timestamp',
-                sortOrder = 'desc',
-                limit = 100
-            } = filters;
-            
+            const { sortBy = 'timestamp', sortOrder = 'desc', limit = 100 } = filters;
+
             // Get all snapshots metadata
             let snapshots = Array.from(this.metadata.entries()).map(([id, metadata]) => ({
                 id,
-                ...metadata
+                ...metadata,
             }));
-            
+
             // Apply sorting
             snapshots = this._sortSnapshots(snapshots, sortBy, sortOrder);
-            
+
             // Apply limit
             if (limit > 0) {
                 snapshots = snapshots.slice(0, limit);
             }
-            
-            this.logger.debug('Snapshots listed successfully', { 
+
+            this.logger.debug('Snapshots listed successfully', {
                 count: snapshots.length,
                 sortBy,
                 sortOrder,
-                limit
+                limit,
             });
-            
+
             return snapshots;
         } catch (error) {
             this.logger.error(error, 'Failed to list snapshots');
@@ -166,26 +162,26 @@ export class MemorySnapshotStore {
     async delete(snapshotId) {
         try {
             const snapshot = this.snapshots.get(snapshotId);
-            
+
             if (!snapshot) {
                 this.logger.warn('Snapshot not found for deletion', { id: snapshotId });
                 return false;
             }
-            
+
             // Remove from storage
             this.snapshots.delete(snapshotId);
             this.metadata.delete(snapshotId);
-            
+
             // Update statistics
             this.stats.totalSnapshots--;
             this.stats.memoryUsage -= snapshot.metadata.memorySize;
-            
-            this.logger.debug('Snapshot deleted successfully', { 
+
+            this.logger.debug('Snapshot deleted successfully', {
                 id: snapshotId,
                 remainingSnapshots: this.stats.totalSnapshots,
-                memoryFreed: snapshot.metadata.memorySize
+                memoryFreed: snapshot.metadata.memorySize,
             });
-            
+
             return true;
         } catch (error) {
             this.logger.error(error, 'Failed to delete snapshot', { id: snapshotId });
@@ -212,7 +208,8 @@ export class MemorySnapshotStore {
             maxSnapshots: this.config.maxSnapshots,
             maxMemoryMB: this.config.maxMemoryMB,
             memoryUsageMB: this.stats.memoryUsage / (1024 * 1024),
-            memoryUsagePercent: (this.stats.memoryUsage / (this.config.maxMemoryMB * 1024 * 1024)) * 100
+            memoryUsagePercent:
+                (this.stats.memoryUsage / (this.config.maxMemoryMB * 1024 * 1024)) * 100,
         };
     }
 
@@ -227,14 +224,14 @@ export class MemorySnapshotStore {
         try {
             const { maxAge, maxCount } = criteria;
             let deletedCount = 0;
-            
+
             // Get all snapshots sorted by timestamp (oldest first)
             const snapshots = await this.list({ sortBy: 'timestamp', sortOrder: 'asc' });
-            
+
             // Clean up by age
             if (maxAge) {
                 const cutoffTime = Date.now() - maxAge;
-                
+
                 for (const snapshot of snapshots) {
                     if (new Date(snapshot.timestamp).getTime() < cutoffTime) {
                         await this.delete(snapshot.id);
@@ -242,24 +239,24 @@ export class MemorySnapshotStore {
                     }
                 }
             }
-            
+
             // Clean up by count
             if (maxCount && snapshots.length > maxCount) {
                 const toDelete = snapshots.length - maxCount;
-                
+
                 for (let i = 0; i < toDelete; i++) {
                     await this.delete(snapshots[i].id);
                     deletedCount++;
                 }
             }
-            
+
             this.stats.lastCleanup = new Date().toISOString();
-            
-            this.logger.debug('Cleanup completed', { 
+
+            this.logger.debug('Cleanup completed', {
                 deletedCount,
-                remainingSnapshots: this.stats.totalSnapshots
+                remainingSnapshots: this.stats.totalSnapshots,
             });
-            
+
             return deletedCount;
         } catch (error) {
             this.logger.error(error, 'Cleanup failed');
@@ -276,11 +273,11 @@ export class MemorySnapshotStore {
         if (!snapshot || typeof snapshot !== 'object') {
             throw new Error('Invalid snapshot data: must be an object');
         }
-        
+
         if (!snapshot.description || typeof snapshot.description !== 'string') {
             throw new Error('Invalid snapshot data: description is required and must be a string');
         }
-        
+
         if (!snapshot.fileData || typeof snapshot.fileData !== 'object') {
             throw new Error('Invalid snapshot data: fileData is required and must be an object');
         }
@@ -292,12 +289,12 @@ export class MemorySnapshotStore {
      */
     async _checkMemoryLimits() {
         const maxMemoryBytes = this.config.maxMemoryMB * 1024 * 1024;
-        
+
         // Check memory limit
         if (this.stats.memoryUsage > maxMemoryBytes) {
             await this.cleanup({ maxCount: Math.floor(this.config.maxSnapshots * 0.8) });
         }
-        
+
         // Check snapshot count limit
         if (this.stats.totalSnapshots >= this.config.maxSnapshots) {
             await this.cleanup({ maxCount: Math.floor(this.config.maxSnapshots * 0.8) });
@@ -315,7 +312,9 @@ export class MemorySnapshotStore {
             const jsonString = JSON.stringify(snapshot);
             return Buffer.byteLength(jsonString, 'utf8');
         } catch (error) {
-            this.logger.warn('Failed to calculate memory size, using estimate', { error: error.message });
+            this.logger.warn('Failed to calculate memory size, using estimate', {
+                error: error.message,
+            });
             return 1024; // Default estimate
         }
     }
@@ -331,7 +330,7 @@ export class MemorySnapshotStore {
     _sortSnapshots(snapshots, sortBy, sortOrder) {
         return snapshots.sort((a, b) => {
             let aValue, bValue;
-            
+
             switch (sortBy) {
                 case 'timestamp':
                     aValue = new Date(a.timestamp).getTime();
@@ -349,7 +348,7 @@ export class MemorySnapshotStore {
                     aValue = a.timestamp;
                     bValue = b.timestamp;
             }
-            
+
             if (sortOrder === 'asc') {
                 return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
             } else {

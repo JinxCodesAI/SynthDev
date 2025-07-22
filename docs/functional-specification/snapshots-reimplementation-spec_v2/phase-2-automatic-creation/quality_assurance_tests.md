@@ -865,12 +865,12 @@ test-projects/
 
 ### Test Summary
 
-**Total Test Scenarios**: **_  
-**Scenarios Passed**: _**  
-**Scenarios Failed**: **_  
-**Critical Issues**: _**  
-**Performance Issues**: **_  
-**Usability Issues**: _**
+**Total Test Scenarios**: **\_  
+**Scenarios Passed**: \_**  
+**Scenarios Failed**: **\_  
+**Critical Issues**: \_**  
+**Performance Issues**: **\_  
+**Usability Issues**: \_**
 
 ### Detailed Results
 
@@ -966,7 +966,7 @@ test-projects/
 
 ---
 
-**Test Completion Date**: **_  
-**QA Lead**: _**  
-**Version Tested**: **_  
-**Environment**: _**
+**Test Completion Date**: **\_  
+**QA Lead**: \_**  
+**Version Tested**: **\_  
+**Environment**: \_**
