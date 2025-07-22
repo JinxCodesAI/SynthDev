@@ -64,12 +64,9 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
         if (existsSync(snapshotStateFile)) {
             try {
                 unlinkSync(snapshotStateFile);
-                console.log('Cleaned up snapshot state file:', snapshotStateFile);
             } catch (error) {
-                console.log('Failed to clean up snapshot state file:', error.message);
+                // Ignore cleanup errors
             }
-        } else {
-            console.log('No snapshot state file found to clean up');
         }
 
         // Restore original env file or clean up test file
@@ -279,7 +276,6 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
 
             appProcess.stderr.on('data', data => {
                 stderr += data.toString();
-                console.log('STDERR:', data.toString());
             });
 
             appProcess.on('close', code => {
@@ -383,7 +379,6 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
 
             appProcess.stderr.on('data', data => {
                 stderr += data.toString();
-                console.log('STDERR:', data.toString());
             });
 
             appProcess.on('close', code => {
@@ -494,7 +489,6 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
 
             appProcess.stderr.on('data', data => {
                 stderr += data.toString();
-                console.log('STDERR:', data.toString());
             });
 
             appProcess.on('close', code => {

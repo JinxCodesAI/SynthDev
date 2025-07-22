@@ -60,6 +60,11 @@ export class AutoSnapshotManager {
             await this._initializeInitialSnapshotManager();
             await this._initializeToolManagerIntegration();
 
+            // Clean up any stale state files from previous runs
+            if (this.initialSnapshotManager) {
+                await this.initialSnapshotManager.cleanupStaleState(process.cwd());
+            }
+
             // Create initial snapshot if enabled
             if (this.config.initialSnapshot.enabled) {
                 await this._createInitialSnapshot();
@@ -325,12 +330,20 @@ export class AutoSnapshotManager {
     /**
      * Clean up resources
      */
-    cleanup() {
+    async cleanup() {
         if (this.toolManagerIntegration) {
             this.toolManagerIntegration.cleanup();
         }
 
         if (this.initialSnapshotManager) {
+            // Clean up the state file from disk
+            try {
+                await this.initialSnapshotManager.cleanupInitialState(process.cwd());
+            } catch (error) {
+                this.logger.debug('Error cleaning up initial snapshot state file', error);
+            }
+
+            // Reset in-memory state
             this.initialSnapshotManager.resetInitialState();
         }
 

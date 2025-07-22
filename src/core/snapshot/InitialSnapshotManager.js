@@ -252,6 +252,28 @@ export class InitialSnapshotManager {
     }
 
     /**
+     * Clean up stale state files from previous runs
+     * This should be called during application startup to ensure clean state
+     * @param {string} basePath - Base path
+     * @returns {Promise<void>}
+     */
+    async cleanupStaleState(basePath) {
+        try {
+            const stateFilePath = resolve(basePath, this.config.stateFile);
+
+            if (existsSync(stateFilePath)) {
+                // Check if the state file is from a previous run
+                // For now, we'll always clean it up on startup to ensure fresh state
+                const { unlinkSync } = await import('fs');
+                unlinkSync(stateFilePath);
+                this.logger.debug('Cleaned up stale initial snapshot state file from previous run');
+            }
+        } catch (error) {
+            this.logger.debug('Error cleaning up stale state', error);
+        }
+    }
+
+    /**
      * Reset initial snapshot state
      */
     resetInitialState() {

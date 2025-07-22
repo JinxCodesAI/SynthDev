@@ -466,7 +466,7 @@ class AICoderConsole {
         try {
             // Cleanup auto snapshot manager
             if (this.autoSnapshotManager) {
-                this.autoSnapshotManager.cleanup();
+                await this.autoSnapshotManager.cleanup();
             }
 
             // Show goodbye message
