@@ -27,6 +27,7 @@
     "tool_settings": {
         "autoRun": true,
         "defaultEncoding": "utf8",
+        "modifiesFiles": false,
         "maxFileSize": 10485760,
         "defaultTimeout": 10000
     },

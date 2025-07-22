@@ -28,6 +28,7 @@ export class SnapshotsCommand extends InteractiveCommand {
             delete: this.handleDelete.bind(this),
             info: this.handleInfo.bind(this),
             stats: this.handleStats.bind(this),
+            auto: this.handleAuto.bind(this),
             help: this.handleHelp.bind(this),
         };
     }
@@ -470,6 +471,79 @@ export class SnapshotsCommand extends InteractiveCommand {
     }
 
     /**
+     * Handle automatic snapshot system information
+     * @param {string} args - Auto arguments
+     * @param {Object} context - Execution context
+     * @returns {Promise<any>} Auto result
+     */
+    async handleAuto(args, context) {
+        const { consoleInterface, app } = context;
+
+        try {
+            // Get auto snapshot status from app
+            const autoStatus = app.getAutoSnapshotStatus();
+
+            consoleInterface.showMessage('\n🤖 Automatic Snapshot System Status:');
+            consoleInterface.showMessage('─'.repeat(50));
+
+            if (!autoStatus.available) {
+                consoleInterface.showMessage('❌ Auto Snapshot System not available');
+                return 'unavailable';
+            }
+
+            // Show main status
+            const statusIcon = autoStatus.enabled ? '✅' : '❌';
+            consoleInterface.showMessage(`${statusIcon} Enabled: ${autoStatus.enabled}`);
+            consoleInterface.showMessage(`🔧 Initialized: ${autoStatus.initialized}`);
+
+            // Show component status
+            consoleInterface.showMessage('\n📦 Components:');
+            const components = autoStatus.components;
+            Object.entries(components).forEach(([name, available]) => {
+                const icon = available ? '✅' : '❌';
+                const displayName = name
+                    .replace(/([A-Z])/g, ' $1')
+                    .replace(/^./, str => str.toUpperCase());
+                consoleInterface.showMessage(
+                    `   ${icon} ${displayName}: ${available ? 'Ready' : 'Not available'}`
+                );
+            });
+
+            // Show integrations
+            consoleInterface.showMessage('\n🔗 Integrations:');
+            const integrations = autoStatus.integrations;
+            Object.entries(integrations).forEach(([name, available]) => {
+                const icon = available ? '✅' : '❌';
+                const displayName = name
+                    .replace(/([A-Z])/g, ' $1')
+                    .replace(/^./, str => str.toUpperCase());
+                consoleInterface.showMessage(
+                    `   ${icon} ${displayName}: ${available ? 'Connected' : 'Not connected'}`
+                );
+            });
+
+            // Show usage instructions
+            consoleInterface.showMessage('\n💡 Usage:');
+            consoleInterface.showMessage(
+                '   • Automatic snapshots are created before file-modifying tools'
+            );
+            consoleInterface.showMessage('   • No manual intervention required');
+            consoleInterface.showMessage(
+                '   • Use `/snapshot list` to see all snapshots including automatic ones'
+            );
+            consoleInterface.showMessage(
+                '   • Initial snapshots are created on first application start'
+            );
+
+            return autoStatus;
+        } catch (error) {
+            this.logger.error(error, 'Failed to get auto snapshot status');
+            consoleInterface.showError('Failed to get automatic snapshot system status');
+            return 'error';
+        }
+    }
+
+    /**
      * Handle help display
      * @param {string} args - Help arguments
      * @param {Object} context - Execution context
@@ -489,6 +563,9 @@ export class SnapshotsCommand extends InteractiveCommand {
         consoleInterface.showMessage(commands.delete);
         consoleInterface.showMessage(commands.info);
         consoleInterface.showMessage(commands.stats);
+        consoleInterface.showMessage(
+            '📝 /snapshot auto             - Show automatic snapshot system status'
+        );
         consoleInterface.showMessage(commands.help);
 
         // Show examples
@@ -496,12 +573,21 @@ export class SnapshotsCommand extends InteractiveCommand {
         this.messages.help.examples.forEach(example => {
             consoleInterface.showMessage(`   ${example}`);
         });
+        consoleInterface.showMessage(
+            '   /snapshot auto                      - Check auto snapshot status'
+        );
 
         // Show notes
         consoleInterface.showMessage(`\n${this.messages.help.notesTitle}`);
         this.messages.help.notes.forEach(note => {
             consoleInterface.showMessage(`   • ${note}`);
         });
+        consoleInterface.showMessage(
+            '   • Automatic snapshots (🤖) are created before file-modifying tools'
+        );
+        consoleInterface.showMessage(
+            '   • Manual snapshots (👤) can still be created using /snapshot create'
+        );
 
         return 'help';
     }
@@ -614,7 +700,7 @@ export class SnapshotsCommand extends InteractiveCommand {
      * @returns {string} Usage text
      */
     getUsage() {
-        return '/snapshot <create|list|restore|delete|info|stats|help> [args]';
+        return '/snapshot <create|list|restore|delete|info|stats|auto|help> [args]';
     }
 }
 

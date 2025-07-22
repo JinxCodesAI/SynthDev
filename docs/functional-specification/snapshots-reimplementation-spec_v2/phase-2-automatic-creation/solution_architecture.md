@@ -28,7 +28,7 @@ class ToolMonitor {
 
     // Tool declaration checking
     shouldCreateSnapshot(toolName, toolDefinition)
-    requiresBackup(toolName, toolDefinition)
+    modifiesFiles(toolName, toolDefinition)
     getToolDeclaration(toolName)
 
     // Tool metadata
@@ -43,7 +43,7 @@ class ToolMonitor {
 
 **Key Features**:
 
-- Simple declaration-based snapshot decisions using `requiresBackup` flag
+- Simple declaration-based snapshot decisions using `modifiesFiles` flag
 - Tool definition validation for `definition.json` files
 - File target extraction from tool arguments
 - Warning system for missing declarations
@@ -244,22 +244,18 @@ class ToolExecutionHooks {
         "warnOnUnexpectedChanges": true
     },
     "toolDeclarations": {
-        "defaultRequiresBackup": false,
+        "defaultModifiesFiles": false,
         "toolDefinitions": {
             "write_file": {
-                "requiresBackup": true,
                 "modifiesFiles": true
             },
             "edit_file": {
-                "requiresBackup": true,
                 "modifiesFiles": true
             },
             "read_file": {
-                "requiresBackup": false,
                 "modifiesFiles": false
             },
             "execute_script": {
-                "requiresBackup": true,
                 "modifiesFiles": true
             }
         }
@@ -362,7 +358,7 @@ sequenceDiagram
     participant SnapshotManager
 
     ToolManager->>ToolExecutionHooks: onToolCall(toolName, args)
-    ToolExecutionHooks->>ToolMonitor: requiresBackup(toolName, toolDefinition)
+    ToolExecutionHooks->>ToolMonitor: modifiesFiles(toolName, toolDefinition)
     ToolMonitor-->>ToolExecutionHooks: tool declaration result
 
     alt File-modifying tool
@@ -500,7 +496,6 @@ class ToolManager {
 {
     "name": "write_file",
     "description": "Write content to a file",
-    "requiresBackup": true,
     "modifiesFiles": true,
     "parameters": {
         "path": { "type": "string", "required": true },
@@ -515,8 +510,7 @@ class ToolManager {
 
 - `name` - Tool identifier
 - `description` - Human-readable description
-- `requiresBackup` - Boolean indicating if snapshot should be created
-- `modifiesFiles` - Boolean indicating if tool modifies files
+- `modifiesFiles` - Boolean indicating if tool modifies files (determines snapshot creation)
 - `parameters` - Tool parameter definitions
 
 **Optional Properties**:
@@ -532,7 +526,7 @@ class ToolManager {
 ```javascript
 function shouldCreateSnapshot(toolName, toolDefinition) {
     // Simple boolean check from tool definition
-    return toolDefinition.requiresBackup === true;
+    return toolDefinition.modifiesFiles === true;
 }
 ```
 
@@ -542,10 +536,6 @@ function shouldCreateSnapshot(toolName, toolDefinition) {
 function validateToolChanges(toolName, toolDefinition, actualChanges) {
     const expectedChanges = toolDefinition.modifiesFiles;
     const actuallyModified = actualChanges.length > 0;
-
-    if (expectedChanges && !actuallyModified) {
-        console.warn(`Tool ${toolName} declared it modifies files but no changes detected`);
-    }
 
     if (!expectedChanges && actuallyModified) {
         console.warn(`Tool ${toolName} made unexpected file changes`);
@@ -582,7 +572,7 @@ class ToolMonitor {
             return this.declarationCache.get(cacheKey);
         }
 
-        const result = toolDefinition.requiresBackup === true;
+        const result = toolDefinition.modifiesFiles === true;
         this.declarationCache.set(cacheKey, result);
 
         return result;
@@ -711,7 +701,7 @@ class SnapshotTrigger {
                 "warnOnUnexpectedChanges": true
             },
             "toolDeclarations": {
-                "defaultRequiresBackup": false,
+                "defaultModifiesFiles": false,
                 "customDeclarations": {}
             },
             "integration": {
