@@ -3,10 +3,9 @@
  * Tests that commands are properly intercepted and don't trigger AI responses
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { spawn } from 'child_process';
 import { writeFileSync, unlinkSync, existsSync, readFileSync } from 'fs';
-import { join } from 'path';
 
 describe.sequential('Command Interception E2E Tests', () => {
     let appProcess;
@@ -56,8 +55,25 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
             appProcess = null;
         }
 
-        // Add a small delay to ensure processes are completely terminated
-        await new Promise(resolve => setTimeout(resolve, 100));
+        // Add a delay to ensure processes are completely terminated and system is stable
+        await new Promise(resolve => setTimeout(resolve, process.env.CI ? 1000 : 500));
+
+        // Clean up any state files to ensure each test starts fresh
+        const stateFiles = [
+            '.synthdev-initial-snapshot',
+            '.synthdev-config-cache',
+            '.synthdev-session',
+        ];
+
+        for (const stateFile of stateFiles) {
+            if (existsSync(stateFile)) {
+                try {
+                    unlinkSync(stateFile);
+                } catch (error) {
+                    // Ignore cleanup errors
+                }
+            }
+        }
 
         // Restore original env file or clean up test file
         if (originalEnvFile) {
@@ -69,15 +85,9 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
     });
 
     it('should intercept /help command without AI response', async () => {
+        const chunks = [];
         return new Promise((resolve, reject) => {
             const timeout = setTimeout(() => {
-                console.log('Test timeout reached. State:', {
-                    helpCommandSent,
-                    helpResponseReceived,
-                    aiResponseReceived,
-                    outputLength: output.length,
-                    lastOutput: output.slice(-200),
-                });
                 reject(new Error('Test timeout - /help command test'));
             }, testTimeout);
 
@@ -106,11 +116,7 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
             appProcess.stdout.on('data', data => {
                 const chunk = data.toString();
                 output += chunk;
-                if (process.env.CI) {
-                    console.log('STDOUT:', chunk.replace(/\n/g, '\\n'));
-                } else {
-                    console.log('STDOUT:', chunk);
-                }
+                chunks.push(chunk);
 
                 // Wait for startup to complete
                 if (chunk.includes('💭 You:') && !helpCommandSent) {
@@ -147,18 +153,12 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
 
             appProcess.stderr.on('data', data => {
                 stderr += data.toString();
-                console.log('STDERR:', data.toString());
             });
 
             appProcess.on('close', code => {
                 clearTimeout(timeout);
 
                 try {
-                    console.log('Process exited with code:', code);
-                    console.log('Help command sent:', helpCommandSent);
-                    console.log('Help response received:', helpResponseReceived);
-                    console.log('AI response received:', aiResponseReceived);
-
                     // Verify help command was intercepted
                     expect(helpCommandSent).toBe(true);
                     expect(helpResponseReceived).toBe(true);
@@ -183,15 +183,9 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
     });
 
     it('should intercept /cost command without AI response', async () => {
+        const chunks = [];
         return new Promise((resolve, reject) => {
             const timeout = setTimeout(() => {
-                console.log('Test timeout reached. State:', {
-                    costCommandSent,
-                    costResponseReceived,
-                    aiResponseReceived,
-                    outputLength: output.length,
-                    lastOutput: output.slice(-200),
-                });
                 reject(new Error('Test timeout - /cost command test'));
             }, testTimeout);
 
@@ -212,6 +206,7 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
             });
 
             let output = '';
+            let stderr = '';
             let costCommandSent = false;
             let costResponseReceived = false;
             let aiResponseReceived = false;
@@ -219,6 +214,7 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
             appProcess.stdout.on('data', data => {
                 const chunk = data.toString();
                 output += chunk;
+                chunks.push(chunk);
 
                 // Wait for startup to complete
                 if (chunk.includes('💭 You:') && !costCommandSent) {
@@ -257,6 +253,10 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
                 }
             });
 
+            appProcess.stderr.on('data', data => {
+                stderr += data.toString();
+            });
+
             appProcess.on('close', code => {
                 clearTimeout(timeout);
 
@@ -285,13 +285,6 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
     it('should intercept /snapshot command without AI response', async () => {
         return new Promise((resolve, reject) => {
             const timeout = setTimeout(() => {
-                console.log('Test timeout reached. State:', {
-                    snapshotCommandSent,
-                    snapshotResponseReceived,
-                    aiResponseReceived,
-                    outputLength: output.length,
-                    lastOutput: output.slice(-200),
-                });
                 reject(new Error('Test timeout - /snapshot command test'));
             }, testTimeout);
 
@@ -312,6 +305,7 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
             });
 
             let output = '';
+            let stderr = '';
             let snapshotCommandSent = false;
             let snapshotResponseReceived = false;
             let aiResponseReceived = false;
@@ -341,7 +335,6 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
                     (chunk.includes('🤖 dude:') || chunk.includes('🧠 Synth-Dev is thinking'))
                 ) {
                     aiResponseReceived = true;
-                    console.log('AI RESPONSE DETECTED - THIS IS THE BUG!');
                 }
 
                 // Exit after snapshot response and brief wait
@@ -354,14 +347,14 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
                 }
             });
 
+            appProcess.stderr.on('data', data => {
+                stderr += data.toString();
+            });
+
             appProcess.on('close', code => {
                 clearTimeout(timeout);
 
                 try {
-                    console.log('Snapshot command sent:', snapshotCommandSent);
-                    console.log('Snapshot response received:', snapshotResponseReceived);
-                    console.log('AI response received:', aiResponseReceived);
-
                     // Verify snapshot command was intercepted
                     expect(snapshotCommandSent).toBe(true);
                     expect(snapshotResponseReceived).toBe(true);
@@ -385,16 +378,11 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
         });
     });
 
+    //something
     it('should intercept /snapshot help subcommand without AI response', async () => {
+        const chunks = [];
         return new Promise((resolve, reject) => {
             const timeout = setTimeout(() => {
-                console.log('Test timeout reached. State:', {
-                    snapshotHelpCommandSent,
-                    snapshotHelpResponseReceived,
-                    aiResponseReceived,
-                    outputLength: output.length,
-                    lastOutput: output.slice(-200),
-                });
                 reject(new Error('Test timeout - /snapshot help test'));
             }, testTimeout);
 
@@ -415,6 +403,7 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
             });
 
             let output = '';
+            let stderr = '';
             let snapshotHelpCommandSent = false;
             let snapshotHelpResponseReceived = false;
             let aiResponseReceived = false;
@@ -422,6 +411,7 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
             appProcess.stdout.on('data', data => {
                 const chunk = data.toString();
                 output += chunk;
+                chunks.push(chunk);
 
                 // Wait for startup to complete
                 if (chunk.includes('💭 You:') && !snapshotHelpCommandSent) {
@@ -454,6 +444,10 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
                         }
                     }, 1000);
                 }
+            });
+
+            appProcess.stderr.on('data', data => {
+                stderr += data.toString();
             });
 
             appProcess.on('close', code => {

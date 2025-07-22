@@ -71,6 +71,7 @@ import PromptEnhancer from './ai/promptEnhancer.js';
 import WorkflowStateMachine from '../workflow/WorkflowStateMachine.js';
 import { initializeLogger, getLogger } from './managers/logger.js';
 import GitUtils from '../utils/GitUtils.js';
+import { AutoSnapshotManager } from './snapshot/AutoSnapshotManager.js';
 
 /**
  * Main application orchestrator
@@ -90,6 +91,9 @@ class AICoderConsole {
         this.toolManager = new ToolManager();
 
         this.gitUtils = new GitUtils();
+
+        // Initialize Auto Snapshot Manager (Phase 2)
+        this.autoSnapshotManager = new AutoSnapshotManager(this.toolManager);
 
         // Defer API client initialization until after configuration check
         this.apiClient = null;
@@ -239,6 +243,14 @@ class AICoderConsole {
         this._initializeAPIComponents();
 
         await this.toolManager.loadTools();
+
+        // Initialize Auto Snapshot Manager after tools are loaded
+        try {
+            await this.autoSnapshotManager.initialize();
+            this.autoSnapshotManager.integrateWithApplication(this);
+        } catch (error) {
+            this.logger.warn('Failed to initialize Auto Snapshot Manager', error);
+        }
 
         // Set tools in API client
         this.apiClient.setTools(this.toolManager.getTools());
@@ -452,6 +464,11 @@ class AICoderConsole {
      */
     async handleExit(exitCode = 0) {
         try {
+            // Cleanup auto snapshot manager
+            if (this.autoSnapshotManager) {
+                await this.autoSnapshotManager.cleanup();
+            }
+
             // Show goodbye message
             this.consoleInterface.showGoodbye();
         } catch (error) {
@@ -460,6 +477,21 @@ class AICoderConsole {
             // Ensure we exit even if cleanup fails
             process.exit(exitCode);
         }
+    }
+
+    /**
+     * Get auto snapshot manager status (for commands and debugging)
+     * @returns {Object} Auto snapshot manager status
+     */
+    getAutoSnapshotStatus() {
+        if (!this.autoSnapshotManager) {
+            return { available: false };
+        }
+
+        return {
+            available: true,
+            ...this.autoSnapshotManager.getStatus(),
+        };
     }
 }
 

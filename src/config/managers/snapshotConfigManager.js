@@ -61,8 +61,16 @@ class SnapshotConfigManager {
                 false
             );
 
+            // Load Phase 2 configuration
+            const autoSnapshotDefaults = this.configLoader.loadConfig(
+                'snapshots/auto-snapshot-defaults.json',
+                {},
+                false
+            );
+
             // Merge and structure the configuration
             this.config = {
+                // Phase 1 configuration
                 fileFiltering: {
                     ...snapshotDefaults.fileFiltering,
                     // Build exclusion patterns from file-filters.json
@@ -74,6 +82,11 @@ class SnapshotConfigManager {
                 messages: snapshotMessages,
                 // Keep original file-filters structure for advanced configuration
                 fileFilters: fileFilters,
+
+                // Phase 2 configuration
+                phase2: {
+                    ...autoSnapshotDefaults,
+                },
             };
 
             this.logger.debug('Snapshot configuration loaded successfully', {
@@ -288,6 +301,69 @@ class SnapshotConfigManager {
             };
             return minimatch(normalizedPath, pattern, options);
         });
+    }
+
+    /**
+     * Get Phase 2 automatic snapshot configuration
+     * @returns {Object} Phase 2 configuration
+     */
+    getPhase2Config() {
+        const config = this.loadConfig();
+        return config.phase2;
+    }
+
+    /**
+     * Get automatic snapshot configuration
+     * @returns {Object} Auto snapshot configuration
+     */
+    getAutoSnapshotConfig() {
+        const phase2Config = this.getPhase2Config();
+        return phase2Config.autoSnapshot;
+    }
+
+    /**
+     * Get tool declarations configuration
+     * @returns {Object} Tool declarations configuration
+     */
+    getToolDeclarationsConfig() {
+        const phase2Config = this.getPhase2Config();
+        return phase2Config.toolDeclarations;
+    }
+
+    /**
+     * Get trigger rules configuration
+     * @returns {Object} Trigger rules configuration
+     */
+    getTriggerRulesConfig() {
+        const phase2Config = this.getPhase2Config();
+        return phase2Config.triggerRules;
+    }
+
+    /**
+     * Get file change detection configuration
+     * @returns {Object} File change detection configuration
+     */
+    getFileChangeDetectionConfig() {
+        const phase2Config = this.getPhase2Config();
+        return phase2Config.fileChangeDetection;
+    }
+
+    /**
+     * Get initial snapshot configuration
+     * @returns {Object} Initial snapshot configuration
+     */
+    getInitialSnapshotConfig() {
+        const phase2Config = this.getPhase2Config();
+        return phase2Config.initialSnapshot;
+    }
+
+    /**
+     * Get integration configuration
+     * @returns {Object} Integration configuration
+     */
+    getIntegrationConfig() {
+        const phase2Config = this.getPhase2Config();
+        return phase2Config.integration;
     }
 }
 
