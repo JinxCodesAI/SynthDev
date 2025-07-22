@@ -4,7 +4,7 @@
  */
 
 import { existsSync } from 'fs';
-import { resolve } from 'path';
+import { resolve, basename } from 'path';
 import { getLogger } from '../managers/logger.js';
 
 export class InitialSnapshotManager {
@@ -211,7 +211,7 @@ export class InitialSnapshotManager {
      * @returns {string} Snapshot description
      */
     getInitialSnapshotDescription(basePath) {
-        const projectName = require('path').basename(basePath);
+        const projectName = basename(basePath);
         return `${this.config.description} - ${projectName}`;
     }
 

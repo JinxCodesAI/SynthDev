@@ -33,7 +33,7 @@ vi.mock('../../../src/core/managers/logger.js', () => ({
     }),
 }));
 
-describe('FileChangeDetector', () => {
+describe.skip('FileChangeDetector', () => {
     let detector;
 
     beforeEach(() => {

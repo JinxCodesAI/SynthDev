@@ -59,6 +59,19 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
         // Add a small delay to ensure processes are completely terminated
         await new Promise(resolve => setTimeout(resolve, 100));
 
+        // Clean up snapshot state file to ensure each test starts fresh
+        const snapshotStateFile = '.synthdev-initial-snapshot';
+        if (existsSync(snapshotStateFile)) {
+            try {
+                unlinkSync(snapshotStateFile);
+                console.log('Cleaned up snapshot state file:', snapshotStateFile);
+            } catch (error) {
+                console.log('Failed to clean up snapshot state file:', error.message);
+            }
+        } else {
+            console.log('No snapshot state file found to clean up');
+        }
+
         // Restore original env file or clean up test file
         if (originalEnvFile) {
             writeFileSync(testEnvFile, originalEnvFile);
@@ -69,6 +82,7 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
     });
 
     it('should intercept /help command without AI response', async () => {
+        const chunks = [];
         return new Promise((resolve, reject) => {
             const timeout = setTimeout(() => {
                 console.log('Test timeout reached. State:', {
@@ -106,6 +120,7 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
             appProcess.stdout.on('data', data => {
                 const chunk = data.toString();
                 output += chunk;
+                chunks.push(chunk);
                 if (process.env.CI) {
                     console.log('STDOUT:', chunk.replace(/\n/g, '\\n'));
                 } else {
@@ -169,8 +184,10 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
                     expect(output).toContain('/help - Show this help message');
                     expect(output).toContain('/snapshot - Create and manage file snapshots');
 
+                    console.log('Chunks:', chunks);
                     resolve();
                 } catch (error) {
+                    console.log('Chunks:', chunks);
                     reject(error);
                 }
             });
@@ -183,6 +200,7 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
     });
 
     it('should intercept /cost command without AI response', async () => {
+        const chunks = [];
         return new Promise((resolve, reject) => {
             const timeout = setTimeout(() => {
                 console.log('Test timeout reached. State:', {
@@ -212,6 +230,7 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
             });
 
             let output = '';
+            let stderr = '';
             let costCommandSent = false;
             let costResponseReceived = false;
             let aiResponseReceived = false;
@@ -219,6 +238,7 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
             appProcess.stdout.on('data', data => {
                 const chunk = data.toString();
                 output += chunk;
+                chunks.push(chunk);
 
                 // Wait for startup to complete
                 if (chunk.includes('💭 You:') && !costCommandSent) {
@@ -257,6 +277,11 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
                 }
             });
 
+            appProcess.stderr.on('data', data => {
+                stderr += data.toString();
+                console.log('STDERR:', data.toString());
+            });
+
             appProcess.on('close', code => {
                 clearTimeout(timeout);
 
@@ -271,6 +296,7 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
 
                     resolve();
                 } catch (error) {
+                    console.log('Chunks:', chunks);
                     reject(error);
                 }
             });
@@ -312,6 +338,7 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
             });
 
             let output = '';
+            let stderr = '';
             let snapshotCommandSent = false;
             let snapshotResponseReceived = false;
             let aiResponseReceived = false;
@@ -354,6 +381,11 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
                 }
             });
 
+            appProcess.stderr.on('data', data => {
+                stderr += data.toString();
+                console.log('STDERR:', data.toString());
+            });
+
             appProcess.on('close', code => {
                 clearTimeout(timeout);
 
@@ -385,7 +417,9 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
         });
     });
 
+    //something
     it('should intercept /snapshot help subcommand without AI response', async () => {
+        const chunks = [];
         return new Promise((resolve, reject) => {
             const timeout = setTimeout(() => {
                 console.log('Test timeout reached. State:', {
@@ -415,6 +449,7 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
             });
 
             let output = '';
+            let stderr = '';
             let snapshotHelpCommandSent = false;
             let snapshotHelpResponseReceived = false;
             let aiResponseReceived = false;
@@ -422,6 +457,7 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
             appProcess.stdout.on('data', data => {
                 const chunk = data.toString();
                 output += chunk;
+                chunks.push(chunk);
 
                 // Wait for startup to complete
                 if (chunk.includes('💭 You:') && !snapshotHelpCommandSent) {
@@ -456,6 +492,11 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
                 }
             });
 
+            appProcess.stderr.on('data', data => {
+                stderr += data.toString();
+                console.log('STDERR:', data.toString());
+            });
+
             appProcess.on('close', code => {
                 clearTimeout(timeout);
 
@@ -472,6 +513,7 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
 
                     resolve();
                 } catch (error) {
+                    console.log('Chunks:', chunks);
                     reject(error);
                 }
             });
