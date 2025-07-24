@@ -55,7 +55,7 @@ describe('Configuration Wizard E2E Tests', () => {
             wizard.setConfigValue('SYNTHDEV_API_KEY', 'sk-test-key-123');
 
             // Save configuration
-            const success = wizard.saveConfiguration();
+            const success = await wizard.saveConfiguration();
             expect(success).toBe(true);
 
             // Verify .env file was created
@@ -158,7 +158,7 @@ describe('Configuration Wizard E2E Tests', () => {
             expect(summary.base.apiKey).toBe('***set***');
 
             // Save configuration
-            const success = wizard.saveConfiguration();
+            const success = await wizard.saveConfiguration();
             expect(success).toBe(true);
 
             // Check if .env file was created and contains all expected values
@@ -258,14 +258,14 @@ describe('Configuration Wizard E2E Tests', () => {
     });
 
     describe('Global Settings Default Values', () => {
-        it('should always save global settings with default values to prevent runtime errors', () => {
+        it('should always save global settings with default values to prevent runtime errors', async () => {
             // Set only required configuration, no global settings
             wizard.setConfigValue('SYNTHDEV_BASE_URL', 'https://api.openai.com/v1');
             wizard.setConfigValue('SYNTHDEV_BASE_MODEL', 'gpt-4.1-mini');
             wizard.setConfigValue('SYNTHDEV_API_KEY', 'sk-test-key-123');
 
             // Save configuration
-            const success = wizard.saveConfiguration();
+            const success = await wizard.saveConfiguration();
             expect(success).toBe(true);
 
             // Verify .env file contains default global settings
@@ -283,7 +283,7 @@ describe('Configuration Wizard E2E Tests', () => {
             expect(envContent).not.toContain('# SYNTHDEV_VERBOSITY_LEVEL=2');
         });
 
-        it('should use custom values for global settings when explicitly set', () => {
+        it('should use custom values for global settings when explicitly set', async () => {
             // Set required configuration and custom global settings
             wizard.setConfigValue('SYNTHDEV_BASE_URL', 'https://api.openai.com/v1');
             wizard.setConfigValue('SYNTHDEV_BASE_MODEL', 'gpt-4.1-mini');
@@ -293,7 +293,7 @@ describe('Configuration Wizard E2E Tests', () => {
             wizard.setConfigValue('SYNTHDEV_VERBOSITY_LEVEL', '4');
 
             // Save configuration
-            const success = wizard.saveConfiguration();
+            const success = await wizard.saveConfiguration();
             expect(success).toBe(true);
 
             // Verify .env file contains custom global settings

@@ -476,7 +476,7 @@ export class ConfigureCommand extends InteractiveCommand {
         logger.raw('\n💾 Saving configuration...');
 
         // Pass the app instance to saveConfiguration for component reinitialization
-        const success = this.wizard.saveConfiguration(context.app);
+        const success = await this.wizard.saveConfiguration(context.app);
 
         if (success) {
             logger.raw('✅ Configuration saved successfully to .env file!');

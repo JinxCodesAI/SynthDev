@@ -249,9 +249,9 @@ export class ConfigurationWizard {
     /**
      * Save configuration to .env file
      * @param {Object} app - App instance for reinitialization (optional)
-     * @returns {boolean} Success status
+     * @returns {Promise<boolean>} Success status
      */
-    saveConfiguration(app = null) {
+    async saveConfiguration(app = null) {
         try {
             const envLines = [];
 
@@ -321,7 +321,7 @@ export class ConfigurationWizard {
 
             // Reinitialize app components if app instance is provided
             if (app && typeof app.reinitializeAfterConfigReload === 'function') {
-                app.reinitializeAfterConfigReload();
+                await app.reinitializeAfterConfigReload();
             }
 
             return true;
