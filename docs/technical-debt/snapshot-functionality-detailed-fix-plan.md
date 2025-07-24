@@ -331,7 +331,7 @@ snapshot = {
 
 **New File**: `src/core/snapshot/FileVersionTracker.js`
 
-```javascript
+````javascript
 export class FileVersionTracker {
     constructor() {
         this.fileVersions = new Map(); // filePath -> { checksum, snapshotId, version }
@@ -340,31 +340,389 @@ export class FileVersionTracker {
 
     /**
      * Track a file version in a snapshot
-     */
-    trackFileVersion(filePath, checksum, snapshotId) {
-        const version = {
-            checksum,
-            snapshotId,
-            timestamp: Date.now(),
-            version: this.getNextVersion(filePath),
+
+#### Step 2: Enhance MemorySnapshotStore for Differential Storage
+
+**File**: `src/core/snapshot/stores/MemorySnapshotStore.js`
+**Add new methods**:
+
+```javascript
+/**
+ * Store differential snapshot with file references
+ */
+async storeDifferential(snapshot, baseSnapshotId = null) {
+    const snapshotId = snapshot.id || uuidv4();
+
+    // Process files to create differential structure
+    const processedFiles = {};
+    for (const [filePath, fileInfo] of Object.entries(snapshot.fileData.files)) {
+        const existingVersion = this.fileVersionTracker.findSnapshotForChecksum(fileInfo.checksum);
+
+        if (existingVersion && existingVersion.snapshotId !== snapshotId) {
+            // File unchanged - reference existing version
+            processedFiles[filePath] = {
+                action: 'unchanged',
+                checksum: fileInfo.checksum,
+                snapshotId: existingVersion.snapshotId,
+                size: fileInfo.size
+            };
+        } else {
+            // File changed or new - store full content
+            processedFiles[filePath] = {
+                action: baseSnapshotId ? 'modified' : 'created',
+                content: fileInfo.content,
+                checksum: fileInfo.checksum,
+                size: fileInfo.size
+            };
+        }
+    }
+
+    // Store the differential snapshot
+    const snapshotRecord = {
+        id: snapshotId,
+        type: baseSnapshotId ? 'differential' : 'full',
+        baseSnapshotId,
+        description: snapshot.description,
+        fileData: { files: processedFiles },
+        metadata: { ...snapshot.metadata, timestamp: new Date().toISOString() }
+    };
+
+    this.snapshots.set(snapshotId, snapshotRecord);
+    return snapshotId;
+}
+
+/**
+ * Reconstruct full file data from differential snapshots
+ */
+async reconstructSnapshot(snapshotId) {
+    const snapshot = this.snapshots.get(snapshotId);
+    if (!snapshot) return null;
+
+    if (snapshot.type === 'full') {
+        return snapshot; // Already complete
+    }
+
+    // Reconstruct from differential chain
+    const reconstructedFiles = {};
+    const snapshotChain = await this._buildSnapshotChain(snapshotId);
+
+    // Process files from oldest to newest
+    for (const chainSnapshot of snapshotChain.reverse()) {
+        for (const [filePath, fileInfo] of Object.entries(chainSnapshot.fileData.files)) {
+            if (fileInfo.action === 'deleted') {
+                delete reconstructedFiles[filePath];
+            } else if (fileInfo.action === 'unchanged') {
+                // Get content from referenced snapshot
+                const referencedSnapshot = this.snapshots.get(fileInfo.snapshotId);
+                if (referencedSnapshot) {
+                    const referencedFile = referencedSnapshot.fileData.files[filePath];
+                    if (referencedFile) {
+                        reconstructedFiles[filePath] = referencedFile;
+                    }
+                }
+            } else {
+                // Modified or created - use current content
+                reconstructedFiles[filePath] = fileInfo;
+            }
+        }
+    }
+
+    return {
+        ...snapshot,
+        fileData: { files: reconstructedFiles }
+    };
+}
+````
+
+#### Step 3: Update FileBackup for Differential Capture
+
+**File**: `src/core/snapshot/FileBackup.js`
+**Add new method**:
+
+```javascript
+/**
+ * Capture files differentially against a base snapshot
+ */
+async captureDifferentialFiles(basePath, baseSnapshotId = null, options = {}) {
+    const currentFiles = await this.captureFiles(basePath, options);
+
+    if (!baseSnapshotId) {
+        // First snapshot - return as full
+        return { ...currentFiles, type: 'full', baseSnapshotId: null };
+    }
+
+    // Get base snapshot for comparison
+    const baseSnapshot = await this.snapshotStore.reconstructSnapshot(baseSnapshotId);
+    if (!baseSnapshot) {
+        // Base snapshot not found - create full snapshot
+        return { ...currentFiles, type: 'full', baseSnapshotId: null };
+    }
+
+    // Compare files and create differential
+    const differentialFiles = {};
+    const baseFiles = baseSnapshot.fileData.files;
+
+    // Check for modified and new files
+    for (const [filePath, currentFile] of Object.entries(currentFiles.files)) {
+        const baseFile = baseFiles[filePath];
+
+        if (!baseFile) {
+            // New file
+            differentialFiles[filePath] = {
+                ...currentFile,
+                action: 'created'
+            };
+        } else if (baseFile.checksum !== currentFile.checksum) {
+            // Modified file
+            differentialFiles[filePath] = {
+                ...currentFile,
+                action: 'modified',
+                previousChecksum: baseFile.checksum
+            };
+        } else {
+            // Unchanged file - reference base
+            differentialFiles[filePath] = {
+                action: 'unchanged',
+                checksum: currentFile.checksum,
+                snapshotId: baseSnapshotId,
+                size: currentFile.size
+            };
+        }
+    }
+
+    // Check for deleted files
+    for (const [filePath, baseFile] of Object.entries(baseFiles)) {
+        if (!currentFiles.files[filePath]) {
+            differentialFiles[filePath] = {
+                action: 'deleted',
+                previousChecksum: baseFile.checksum
+            };
+        }
+    }
+
+    return {
+        basePath: currentFiles.basePath,
+        captureTime: currentFiles.captureTime,
+        type: 'differential',
+        baseSnapshotId,
+        files: differentialFiles,
+        stats: {
+            ...currentFiles.stats,
+            changedFiles: Object.values(differentialFiles).filter(f => f.action !== 'unchanged').length,
+            unchangedFiles: Object.values(differentialFiles).filter(f => f.action === 'unchanged').length
+        }
+    };
+}
+```
+
+#### Step 4: Update SnapshotManager for Differential Logic
+
+**File**: `src/core/snapshot/SnapshotManager.js`
+**Modify createSnapshot method around line 68**:
+
+```javascript
+async createSnapshot(description, metadata = {}) {
+    const operationId = uuidv4();
+    this.activeOperations.add(operationId);
+
+    try {
+        // Validate parameters
+        if (!description || typeof description !== 'string') {
+            throw new Error(this.messages.errors.invalidDescription);
+        }
+
+        const basePath = metadata.basePath || process.cwd();
+        const resolvedBasePath = resolve(basePath);
+
+        // Determine if this should be differential
+        const enableDifferential = this.config.storage.enableDifferential !== false;
+        let baseSnapshotId = null;
+
+        if (enableDifferential) {
+            // Get the most recent snapshot as base
+            const recentSnapshots = await this.store.list({ limit: 1 });
+            if (recentSnapshots.length > 0) {
+                baseSnapshotId = recentSnapshots[0].id;
+            }
+        }
+
+        // Capture files (differential or full)
+        const captureStartTime = Date.now();
+        const fileData = enableDifferential
+            ? await this.fileBackup.captureDifferentialFiles(resolvedBasePath, baseSnapshotId, {
+                specificFiles: metadata.specificFiles,
+                recursive: true,
+            })
+            : await this.fileBackup.captureFiles(resolvedBasePath, {
+                specificFiles: metadata.specificFiles,
+                recursive: true,
+            });
+
+        // Create snapshot metadata
+        const snapshotMetadata = {
+            description,
+            basePath: resolvedBasePath,
+            triggerType: metadata.triggerType || 'manual',
+            captureTime: Date.now() - captureStartTime,
+            fileCount: Object.keys(fileData.files).length,
+            totalSize: fileData.stats.totalSize,
+            type: fileData.type || 'full',
+            baseSnapshotId: fileData.baseSnapshotId,
+            creator: process.env.USER || process.env.USERNAME || 'unknown',
+            ...metadata,
         };
 
-        this.fileVersions.set(filePath, version);
-        this.checksumIndex.set(checksum, { snapshotId, filePath });
-    }
+        // Store snapshot (differential or full)
+        const snapshotId = enableDifferential
+            ? await this.store.storeDifferential({
+                description,
+                fileData,
+                metadata: snapshotMetadata,
+            }, baseSnapshotId)
+            : await this.store.store({
+                description,
+                fileData,
+                metadata: snapshotMetadata,
+            });
 
-    /**
-     * Find which snapshot contains a file with specific checksum
-     */
-    findSnapshotForChecksum(checksum) {
-        return this.checksumIndex.get(checksum);
-    }
+        // Update statistics and cleanup
+        if (this.config.behavior.autoCleanup) {
+            await this._performAutoCleanup();
+        }
 
-    /**
-     * Get file changes between current state and last snapshot
-     */
-    async analyzeFileChanges(basePath, lastSnapshotId) {
-        // Implementation to compare current files with tracked versions
+        this.activeOperations.delete(operationId);
+
+        const result = {
+            id: snapshotId,
+            description,
+            stats: {
+                fileCount: snapshotMetadata.fileCount,
+                totalSize: snapshotMetadata.totalSize,
+                captureTime: snapshotMetadata.captureTime,
+                type: snapshotMetadata.type,
+                changedFiles: fileData.stats?.changedFiles || snapshotMetadata.fileCount,
+                unchangedFiles: fileData.stats?.unchangedFiles || 0
+            },
+            metadata: snapshotMetadata,
+        };
+
+        this.logger.info('Snapshot created successfully', {
+            id: snapshotId,
+            type: result.stats.type,
+            changedFiles: result.stats.changedFiles,
+            unchangedFiles: result.stats.unchangedFiles
+        });
+
+        return result;
+    } catch (error) {
+        this.activeOperations.delete(operationId);
+        this.logger.error(error, 'Snapshot creation failed');
+        throw error;
     }
 }
+```
+
+## Issue 5: Configuration and Integration Fixes
+
+### Problem
+
+Configuration loading and component integration has several issues that prevent proper initialization.
+
+### Fix Implementation
+
+#### Step 1: Fix Configuration Loading
+
+**File**: `src/config/managers/snapshotConfigManager.js`
+**Ensure getConfig method exists**:
+
+```javascript
+/**
+ * Get complete snapshot configuration
+ */
+getConfig() {
+    return {
+        storage: this.getStorageConfig(),
+        fileFiltering: this.getFileFilterConfig(),
+        backup: this.getBackupConfig(),
+        behavior: this.getBehaviorConfig(),
+        messages: this.getMessagesConfig(),
+        phase2: this.getPhase2Config()
+    };
+}
+```
+
+#### Step 2: Fix App.js Integration
+
+**File**: `src/core/app.js\*\*
+**Lines**: 278-284
+**Ensure proper integration order**:
+
+```javascript
+// Initialize Auto Snapshot Manager after tools are loaded
+try {
+    await this.autoSnapshotManager.initialize();
+
+    // CRITICAL: Integrate AFTER initialization
+    this.autoSnapshotManager.integrateWithApplication(this);
+
+    this.logger.info('✅ Auto Snapshot System initialized successfully');
+} catch (error) {
+    this.logger.warn('Failed to initialize Auto Snapshot Manager', error);
+}
+```
+
+## Implementation Timeline
+
+### Phase 1: Critical Fixes (Week 1)
+
+1. **Day 1-2**: Fix empty file validation bug
+2. **Day 3-4**: Implement SnapshotManager singleton pattern
+3. **Day 5**: Fix tool execution integration
+
+### Phase 2: Differential Implementation (Week 2)
+
+1. **Day 1-2**: Create FileVersionTracker and differential storage
+2. **Day 3-4**: Update FileBackup for differential capture
+3. **Day 5**: Update SnapshotManager integration
+
+### Phase 3: Testing and Validation (Week 3)
+
+1. **Day 1-2**: Update all failing tests to pass
+2. **Day 3-4**: Add comprehensive integration tests
+3. **Day 5**: Performance testing and optimization
+
+## Testing Strategy
+
+### Unit Tests Updates
+
+- Fix empty file validation tests
+- Add differential snapshot tests
+- Update integration tests
+
+### Integration Tests
+
+- End-to-end workflow tests
+- Real tool execution with snapshot creation
+- Configuration integration tests
+
+### Performance Tests
+
+- Large project differential snapshot performance
+- Memory usage with differential storage
+- Restoration speed comparisons
+
+## Success Criteria
+
+1. **All 30 failing tests pass**
+2. **Empty files (.gitkeep) can be restored**
+3. **Initial snapshots visible in /snapshot list**
+4. **Automatic snapshots created on tool execution**
+5. **Differential snapshots reduce storage by >70%**
+6. **No regression in existing functionality**
+
+This plan provides specific code changes, file locations, and implementation details to fix all identified snapshot functionality issues.
+}
+
+```
+
 ```
