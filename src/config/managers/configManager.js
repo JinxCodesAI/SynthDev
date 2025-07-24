@@ -331,7 +331,6 @@ class ConfigManager {
                 !value ||
                 value.trim() === '' ||
                 value === 'your_base_model_api_key' ||
-                value === 'default-model' ||
                 value === 'https://api.example.com/v1'
             ) {
                 return true;
