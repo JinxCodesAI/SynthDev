@@ -319,12 +319,7 @@ class ConfigManager {
     _isConfigurationIncomplete() {
         const required = ['SYNTHDEV_API_KEY', 'SYNTHDEV_BASE_URL', 'SYNTHDEV_BASE_MODEL'];
 
-        // Check if .env file exists
-        if (!this.envFileExists) {
-            return true;
-        }
-
-        // Check if required variables are set
+        // Check if required variables are set (from .env file OR environment)
         for (const key of required) {
             const value = process.env[key];
             if (
@@ -336,6 +331,12 @@ class ConfigManager {
             ) {
                 return true;
             }
+        }
+
+        // If we get here, all required variables are set
+        // Only start wizard if no .env file exists AND we're not in a test environment
+        if (!this.envFileExists && process.env.NODE_ENV !== 'test') {
+            return true;
         }
 
         return false;

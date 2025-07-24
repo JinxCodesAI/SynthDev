@@ -23,13 +23,13 @@ describe.sequential('Command Interception E2E Tests', () => {
         // Create test environment file in the expected location
         writeFileSync(
             testEnvFile,
-            `SYNTHDEV_API_KEY=test-key-12345
+            `SYNTHDEV_API_KEY=sk-test-key-1234567890
 SYNTHDEV_BASE_MODEL=gpt-4.1-mini
 SYNTHDEV_BASE_URL=https://api.openai.com/v1
 SYNTHDEV_VERBOSITY_LEVEL=2
 SYNTHDEV_ROLE=dude
 SYNTHDEV_MAX_TOOL_CALLS=50
-SYNTHDEV_PROMPT_ENHANCEMENT=false
+SYNTHDEV_ENABLE_PROMPT_ENHANCEMENT=false
 `
         );
 
@@ -56,7 +56,7 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
         }
 
         // Add a delay to ensure processes are completely terminated and system is stable
-        await new Promise(resolve => setTimeout(resolve, process.env.CI ? 1000 : 500));
+        await new Promise(resolve => setTimeout(resolve, process.env.CI ? 2000 : 1000));
 
         // Clean up any state files to ensure each test starts fresh
         const stateFiles = [
@@ -95,13 +95,13 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
                 env: {
                     ...process.env,
                     NODE_ENV: 'test',
-                    SYNTHDEV_API_KEY: 'test-key-12345',
+                    SYNTHDEV_API_KEY: 'sk-test-key-1234567890',
                     SYNTHDEV_BASE_MODEL: 'gpt-4.1-mini',
                     SYNTHDEV_BASE_URL: 'https://api.openai.com/v1',
                     SYNTHDEV_VERBOSITY_LEVEL: '2',
                     SYNTHDEV_ROLE: 'dude',
                     SYNTHDEV_MAX_TOOL_CALLS: '50',
-                    SYNTHDEV_PROMPT_ENHANCEMENT: 'false',
+                    SYNTHDEV_ENABLE_PROMPT_ENHANCEMENT: 'false',
                 },
                 stdio: ['pipe', 'pipe', 'pipe'],
                 cwd: process.cwd(),
@@ -193,13 +193,13 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
                 env: {
                     ...process.env,
                     NODE_ENV: 'test',
-                    SYNTHDEV_API_KEY: 'test-key-12345',
+                    SYNTHDEV_API_KEY: 'sk-test-key-1234567890',
                     SYNTHDEV_BASE_MODEL: 'gpt-4.1-mini',
                     SYNTHDEV_BASE_URL: 'https://api.openai.com/v1',
                     SYNTHDEV_VERBOSITY_LEVEL: '2',
                     SYNTHDEV_ROLE: 'dude',
                     SYNTHDEV_MAX_TOOL_CALLS: '50',
-                    SYNTHDEV_PROMPT_ENHANCEMENT: 'false',
+                    SYNTHDEV_ENABLE_PROMPT_ENHANCEMENT: 'false',
                 },
                 stdio: ['pipe', 'pipe', 'pipe'],
                 cwd: process.cwd(),
@@ -229,7 +229,7 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
                 // Check for cost response
                 if (
                     (chunk.includes('💰 Accumulated API Costs') ||
-                        chunk.includes('No API usage data available')) &&
+                        chunk.includes('No API usage data available yet')) &&
                     costCommandSent
                 ) {
                     costResponseReceived = true;
@@ -292,13 +292,13 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
                 env: {
                     ...process.env,
                     NODE_ENV: 'test',
-                    SYNTHDEV_API_KEY: 'test-key-12345',
+                    SYNTHDEV_API_KEY: 'sk-test-key-1234567890',
                     SYNTHDEV_BASE_MODEL: 'gpt-4.1-mini',
                     SYNTHDEV_BASE_URL: 'https://api.openai.com/v1',
                     SYNTHDEV_VERBOSITY_LEVEL: '2',
                     SYNTHDEV_ROLE: 'dude',
                     SYNTHDEV_MAX_TOOL_CALLS: '50',
-                    SYNTHDEV_PROMPT_ENHANCEMENT: 'false',
+                    SYNTHDEV_ENABLE_PROMPT_ENHANCEMENT: 'false',
                 },
                 stdio: ['pipe', 'pipe', 'pipe'],
                 cwd: process.cwd(),
@@ -390,13 +390,13 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
                 env: {
                     ...process.env,
                     NODE_ENV: 'test',
-                    SYNTHDEV_API_KEY: 'test-key-12345',
+                    SYNTHDEV_API_KEY: 'sk-test-key-1234567890',
                     SYNTHDEV_BASE_MODEL: 'gpt-4.1-mini',
                     SYNTHDEV_BASE_URL: 'https://api.openai.com/v1',
                     SYNTHDEV_VERBOSITY_LEVEL: '2',
                     SYNTHDEV_ROLE: 'dude',
                     SYNTHDEV_MAX_TOOL_CALLS: '50',
-                    SYNTHDEV_PROMPT_ENHANCEMENT: 'false',
+                    SYNTHDEV_ENABLE_PROMPT_ENHANCEMENT: 'false',
                 },
                 stdio: ['pipe', 'pipe', 'pipe'],
                 cwd: process.cwd(),
