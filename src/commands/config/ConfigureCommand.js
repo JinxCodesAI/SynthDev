@@ -60,6 +60,9 @@ export class ConfigureCommand extends InteractiveCommand {
                 await this._configureOtherSettings(context);
             } else if (trimmed === 'r' || trimmed === 'reset') {
                 await this._resetConfiguration(context);
+            } else if (trimmed === '') {
+                // Handle empty input gracefully - just show menu again
+                continue;
             } else {
                 logger.raw('❌ Invalid option. Please try again.');
             }
@@ -128,14 +131,19 @@ export class ConfigureCommand extends InteractiveCommand {
         logger.raw('═'.repeat(40));
 
         while (true) {
+            // Fix: Use correct environment variable names for base provider
+            const baseUrlKey =
+                type === 'base' ? 'SYNTHDEV_BASE_URL' : `SYNTHDEV_${typeUpper}_BASE_URL`;
+            const modelKey =
+                type === 'base' ? 'SYNTHDEV_BASE_MODEL' : `SYNTHDEV_${typeUpper}_MODEL`;
+            const apiKeyKey =
+                type === 'base' ? 'SYNTHDEV_API_KEY' : `SYNTHDEV_${typeUpper}_API_KEY`;
+
             const currentProvider = this.wizard._getProviderFromUrl(
-                this.wizard.getCurrentValue(`SYNTHDEV_${typeUpper}_BASE_URL`)
+                this.wizard.getCurrentValue(baseUrlKey)
             );
-            const currentModel =
-                this.wizard.getCurrentValue(`SYNTHDEV_${typeUpper}_MODEL`) || 'Not set';
-            const currentApiKey = this.wizard.getCurrentValue(`SYNTHDEV_${typeUpper}_API_KEY`)
-                ? '***set***'
-                : 'Not set';
+            const currentModel = this.wizard.getCurrentValue(modelKey) || 'Not set';
+            const currentApiKey = this.wizard.getCurrentValue(apiKeyKey) ? '***set***' : 'Not set';
 
             logger.raw(`Current ${type} configuration:`);
             logger.raw(`  Provider: ${currentProvider}`);
@@ -199,12 +207,21 @@ export class ConfigureCommand extends InteractiveCommand {
         const providerIndex = parseInt(trimmed) - 1;
         if (providerIndex >= 0 && providerIndex < providers.length) {
             const selectedProvider = providers[providerIndex];
-            const typeUpper = type.toUpperCase();
 
-            this.wizard.setConfigValue(`SYNTHDEV_${typeUpper}_BASE_URL`, selectedProvider.baseUrl);
-
-            // Clear model selection when provider changes
-            this.wizard.setConfigValue(`SYNTHDEV_${typeUpper}_MODEL`, '');
+            // Fix: Use correct environment variable names for base provider
+            if (type === 'base') {
+                this.wizard.setConfigValue('SYNTHDEV_BASE_URL', selectedProvider.baseUrl);
+                // Clear model selection when provider changes
+                this.wizard.setConfigValue('SYNTHDEV_BASE_MODEL', '');
+            } else {
+                const typeUpper = type.toUpperCase();
+                this.wizard.setConfigValue(
+                    `SYNTHDEV_${typeUpper}_BASE_URL`,
+                    selectedProvider.baseUrl
+                );
+                // Clear model selection when provider changes
+                this.wizard.setConfigValue(`SYNTHDEV_${typeUpper}_MODEL`, '');
+            }
 
             logger.raw(`✅ Provider set to: ${selectedProvider.name}`);
             logger.raw("💡 Don't forget to select a model and set your API key!");
@@ -221,8 +238,14 @@ export class ConfigureCommand extends InteractiveCommand {
      */
     async _selectModel(context, type) {
         const logger = getLogger();
-        const typeUpper = type.toUpperCase();
-        const baseUrl = this.wizard.getCurrentValue(`SYNTHDEV_${typeUpper}_BASE_URL`);
+
+        // Fix: Use correct environment variable names for base provider
+        const baseUrlKey =
+            type === 'base' ? 'SYNTHDEV_BASE_URL' : `SYNTHDEV_${type.toUpperCase()}_BASE_URL`;
+        const modelKey =
+            type === 'base' ? 'SYNTHDEV_BASE_MODEL' : `SYNTHDEV_${type.toUpperCase()}_MODEL`;
+
+        const baseUrl = this.wizard.getCurrentValue(baseUrlKey);
 
         if (!baseUrl) {
             logger.raw('❌ Please select a provider first.');
@@ -253,7 +276,7 @@ export class ConfigureCommand extends InteractiveCommand {
         const modelIndex = parseInt(trimmed) - 1;
         if (modelIndex >= 0 && modelIndex < models.length) {
             const selectedModel = models[modelIndex];
-            this.wizard.setConfigValue(`SYNTHDEV_${typeUpper}_MODEL`, selectedModel);
+            this.wizard.setConfigValue(modelKey, selectedModel);
             logger.raw(`✅ Model set to: ${selectedModel}`);
         } else {
             logger.raw('❌ Invalid selection.');
@@ -268,17 +291,19 @@ export class ConfigureCommand extends InteractiveCommand {
      */
     async _setApiKey(context, type) {
         const logger = getLogger();
-        const typeUpper = type.toUpperCase();
 
         logger.raw(`\n🔑 Set API Key for ${type.charAt(0).toUpperCase() + type.slice(1)} Provider`);
         logger.raw('Enter your API key (input will be hidden):');
 
         // Note: In a real implementation, you'd want to hide the input
         // For now, we'll use the standard prompt
-        const apiKey = await this.promptForInput('API Key> ', context);
+        const apiKey = await this.promptForInput('💭 You: ', context);
 
         if (apiKey && apiKey.trim()) {
-            this.wizard.setConfigValue(`SYNTHDEV_${typeUpper}_API_KEY`, apiKey.trim());
+            // Fix: Use correct environment variable names for base provider
+            const apiKeyKey =
+                type === 'base' ? 'SYNTHDEV_API_KEY' : `SYNTHDEV_${type.toUpperCase()}_API_KEY`;
+            this.wizard.setConfigValue(apiKeyKey, apiKey.trim());
             logger.raw('✅ API key set successfully.');
         } else {
             logger.raw('❌ API key cannot be empty.');
