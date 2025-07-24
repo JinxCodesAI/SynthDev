@@ -248,9 +248,10 @@ export class ConfigurationWizard {
 
     /**
      * Save configuration to .env file
-     * @returns {boolean} Success status
+     * @param {Object} app - App instance for reinitialization (optional)
+     * @returns {Promise<boolean>} Success status
      */
-    saveConfiguration() {
+    async saveConfiguration(app = null) {
         try {
             const envLines = [];
 
@@ -296,6 +297,14 @@ export class ConfigurationWizard {
 
                     if (value) {
                         envLines.push(`${key}=${value}`);
+                    } else if (categoryName === 'Global Settings') {
+                        // For global settings, always write default values to prevent runtime errors
+                        const defaultValue = this._getDefaultValue(key);
+                        if (defaultValue !== null) {
+                            envLines.push(`${key}=${defaultValue}`);
+                        } else if (envVar) {
+                            envLines.push(`# ${key}=${envVar.defaultValue}`);
+                        }
                     } else if (envVar) {
                         envLines.push(`# ${key}=${envVar.defaultValue}`);
                     }
@@ -309,11 +318,32 @@ export class ConfigurationWizard {
             config.reloadConfiguration();
             const logger = getLogger();
             logger.setVerbosityLevel(config.getConfig().global.verbosityLevel);
+
+            // Reinitialize app components if app instance is provided
+            if (app && typeof app.reinitializeAfterConfigReload === 'function') {
+                await app.reinitializeAfterConfigReload();
+            }
+
             return true;
         } catch (error) {
             this.logger.error('Failed to save .env file:', error);
             return false;
         }
+    }
+
+    /**
+     * Get default value for global settings
+     * @private
+     * @param {string} key - Environment variable key
+     * @returns {string|null} Default value or null if no default
+     */
+    _getDefaultValue(key) {
+        const defaults = {
+            SYNTHDEV_MAX_TOOL_CALLS: '50',
+            SYNTHDEV_ENABLE_PROMPT_ENHANCEMENT: 'false',
+            SYNTHDEV_VERBOSITY_LEVEL: '2',
+        };
+        return defaults[key] || null;
     }
 
     /**

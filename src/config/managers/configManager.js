@@ -391,6 +391,10 @@ class ConfigManager {
     async reloadConfiguration() {
         config({ path: this.envFilePath, override: true });
         getLogger().raw(`Reloading configuration... ${this.envFilePath}`);
+
+        // Reload application defaults to ensure they are fresh
+        this.applicationDefaults = this._loadApplicationDefaults();
+
         this.config = this._loadConfiguration();
         this.isValidated = false;
         await this.initialize();

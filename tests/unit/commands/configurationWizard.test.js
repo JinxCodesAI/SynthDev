@@ -282,11 +282,11 @@ SYNTHDEV_VERBOSITY_LEVEL=2`;
     });
 
     describe('saveConfiguration', () => {
-        it('should save configuration to .env file', () => {
+        it('should save configuration to .env file', async () => {
             wizard.setConfigValue('SYNTHDEV_API_KEY', 'sk-test-key');
             wizard.setConfigValue('SYNTHDEV_BASE_MODEL', 'gpt-4.1');
 
-            const result = wizard.saveConfiguration();
+            const result = await wizard.saveConfiguration();
 
             expect(result).toBe(true);
             expect(writeFileSync).toHaveBeenCalled();
@@ -296,12 +296,12 @@ SYNTHDEV_VERBOSITY_LEVEL=2`;
             expect(writeCall[1]).toContain('SYNTHDEV_BASE_MODEL=gpt-4.1');
         });
 
-        it('should handle save errors gracefully', () => {
+        it('should handle save errors gracefully', async () => {
             writeFileSync.mockImplementation(() => {
                 throw new Error('Write failed');
             });
 
-            const result = wizard.saveConfiguration();
+            const result = await wizard.saveConfiguration();
 
             expect(result).toBe(false);
         });

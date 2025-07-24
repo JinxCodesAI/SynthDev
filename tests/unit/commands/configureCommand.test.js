@@ -94,7 +94,7 @@ describe('ConfigureCommand', () => {
             await configureCommand._selectProvider(mockContext, 'base');
 
             expect(configureCommand.wizard.setConfigValue).toHaveBeenCalledWith(
-                'SYNTHDEV_BASE_BASE_URL',
+                'SYNTHDEV_BASE_URL',
                 'https://api.openai.com/v1'
             );
         });

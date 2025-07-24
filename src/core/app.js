@@ -140,6 +140,37 @@ class AICoderConsole {
         this._setupAPIClientCallbacks();
     }
 
+    /**
+     * Reinitialize API components after configuration reload
+     * @public
+     */
+    async reinitializeAfterConfigReload() {
+        // Reset components to null to allow reinitialization
+        this.apiClient = null;
+        this.promptEnhancer = null;
+        this.workflowStateMachine = null;
+        this.commandHandler = null;
+
+        // Reinitialize with new configuration
+        this._initializeAPIComponents();
+
+        // Reload tools and set them in API client
+        await this.toolManager.loadTools();
+        this.apiClient.setTools(this.toolManager.getTools());
+
+        // Set default role and system message from updated configuration
+        const defaultRole = this.config.getConfig().ui.defaultRole;
+        await this.apiClient.setSystemMessage(
+            SystemMessages.getSystemMessage(defaultRole),
+            defaultRole
+        );
+
+        // Reload workflow configs if workflow command is available
+        if (this.commandHandler.commandRegistry.getCommand('workflow')) {
+            await this.workflowStateMachine.loadWorkflowConfigs();
+        }
+    }
+
     _setupAPIClientCallbacks() {
         this.apiClient.setCallbacks({
             onThinking: () => {
