@@ -248,9 +248,10 @@ export class ConfigurationWizard {
 
     /**
      * Save configuration to .env file
+     * @param {Object} app - App instance for reinitialization (optional)
      * @returns {boolean} Success status
      */
-    saveConfiguration() {
+    saveConfiguration(app = null) {
         try {
             const envLines = [];
 
@@ -317,6 +318,12 @@ export class ConfigurationWizard {
             config.reloadConfiguration();
             const logger = getLogger();
             logger.setVerbosityLevel(config.getConfig().global.verbosityLevel);
+
+            // Reinitialize app components if app instance is provided
+            if (app && typeof app.reinitializeAfterConfigReload === 'function') {
+                app.reinitializeAfterConfigReload();
+            }
+
             return true;
         } catch (error) {
             this.logger.error('Failed to save .env file:', error);

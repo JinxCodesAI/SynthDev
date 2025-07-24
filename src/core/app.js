@@ -140,6 +140,21 @@ class AICoderConsole {
         this._setupAPIClientCallbacks();
     }
 
+    /**
+     * Reinitialize API components after configuration reload
+     * @public
+     */
+    reinitializeAfterConfigReload() {
+        // Reset components to null to allow reinitialization
+        this.apiClient = null;
+        this.promptEnhancer = null;
+        this.workflowStateMachine = null;
+        this.commandHandler = null;
+
+        // Reinitialize with new configuration
+        this._initializeAPIComponents();
+    }
+
     _setupAPIClientCallbacks() {
         this.apiClient.setCallbacks({
             onThinking: () => {
