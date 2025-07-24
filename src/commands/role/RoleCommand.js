@@ -85,7 +85,10 @@ export class RoleCommand extends BaseCommand {
             const previousRole = apiClient.getCurrentRole();
             const systemMessage = SystemMessages.getSystemMessage(roleName);
 
-            await apiClient.setSystemMessage(systemMessage, roleName);
+            await apiClient.setSystemMessage(SystemMessages.getSystemMessage(roleName), roleName);
+
+            // Update the global application mode
+            context.config.setConfig('ui.currentMode', `role:${roleName}`);
 
             const groupDisplay = group !== 'global' ? ` [${group}]` : '';
             logger.user(

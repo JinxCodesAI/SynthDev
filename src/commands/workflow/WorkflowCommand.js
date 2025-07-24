@@ -17,14 +17,9 @@ export default class WorkflowCommand extends BaseCommand {
      */
     async implementation(args, context) {
         const logger = getLogger();
-        const { workflowStateMachine, consoleInterface } = context;
+        const { config, app } = context; // Added config and app to context
 
         try {
-            if (!workflowStateMachine) {
-                logger.error('Workflow system not available');
-                return true;
-            }
-
             const workflowName = args.trim();
             if (!workflowName) {
                 logger.user('❌ Usage: /workflow <workflow_name>');
@@ -32,42 +27,15 @@ export default class WorkflowCommand extends BaseCommand {
                 return true;
             }
 
-            // Check if workflow exists
-            const availableWorkflows = workflowStateMachine.getAvailableWorkflows();
-            if (!availableWorkflows.includes(workflowName)) {
-                logger.error(`❌ Workflow '${workflowName}' not found`);
-                logger.warn('💡 Use /workflows to see available workflows');
-                return true;
-            }
+            // Set the application mode
+            config.setConfig('ui.currentMode', `workflow:${workflowName}`);
 
-            // Get workflow metadata
-            const metadata = await workflowStateMachine.getWorkflowMetadata(workflowName);
-            if (!metadata) {
-                logger.error(`❌ Failed to load workflow metadata: ${workflowName}`);
-                return true;
-            }
+            // Set app state for active workflow
+            app.isWorkflowActive = true; // This property will be added to app.js later
+            app.activeWorkflow = app.workflowStateMachine; // Assign the existing workflowStateMachine instance
 
-            // Display workflow information
-            logger.user(`🔄 Workflow: ${workflowName}`);
-            logger.user(`📝 Description: ${metadata.description}`);
-            logger.raw('');
-
-            // Prompt for input parameters
-            const inputParams = await this._promptForInput(metadata.input, consoleInterface);
-            if (inputParams === null) {
-                logger.user('❌ Workflow execution cancelled');
-                return true;
-            }
-
-            logger.info(`📥 Input: ${inputParams}`);
-            logger.raw('');
-
-            // Execute the workflow
-            const result = await workflowStateMachine.executeWorkflow(workflowName, inputParams);
-
-            logger.user('✅ Workflow execution completed');
-            logger.info(`📤 Output: ${result}`);
-            logger.raw('');
+            // Start the workflow
+            await app.activeWorkflow.start(workflowName);
 
             return true;
         } catch (error) {
@@ -76,71 +44,7 @@ export default class WorkflowCommand extends BaseCommand {
         }
     }
 
-    /**
-     * Prompt user for workflow input parameters
-     * @private
-     * @param {Object} inputDef - Input parameter definition
-     * @param {Object} consoleInterface - Console interface for prompting
-     * @returns {Promise<string|null>} User input or null if cancelled
-     */
-    async _promptForInput(inputDef, consoleInterface) {
-        const logger = getLogger();
-
-        // Display parameter information
-        logger.user(`📋 Input Parameter: ${inputDef.name}`);
-        logger.user(`📄 Description: ${inputDef.description}`);
-        logger.user(`🔤 Type: ${inputDef.type}`);
-        logger.user('');
-
-        // Prompt for input using the console interface
-        const userInput = await consoleInterface.promptForInput(`💭 Enter ${inputDef.name}: `);
-
-        const trimmedAnswer = userInput.trim();
-        if (!trimmedAnswer) {
-            logger.error('❌ Input cannot be empty');
-            return null;
-        }
-
-        // Basic type validation
-        if (!this._validateInputType(trimmedAnswer, inputDef.type)) {
-            logger.error(`❌ Invalid input type. Expected: ${inputDef.type}`);
-            return null;
-        }
-
-        return trimmedAnswer;
-    }
-
-    /**
-     * Validate input type
-     * @private
-     * @param {string} input - User input
-     * @param {string} expectedType - Expected type
-     * @returns {boolean} True if valid
-     */
-    _validateInputType(input, expectedType) {
-        switch (expectedType) {
-            case 'string':
-                return typeof input === 'string';
-            case 'number':
-                return !isNaN(Number(input));
-            case 'object':
-                try {
-                    JSON.parse(input);
-                    return true;
-                } catch {
-                    return false;
-                }
-            case 'array':
-                try {
-                    const parsed = JSON.parse(input);
-                    return Array.isArray(parsed);
-                } catch {
-                    return false;
-                }
-            default:
-                return true; // Allow unknown types
-        }
-    }
+    // Removed _promptForInput and _validateInputType methods as per the plan
 
     /**
      * Validate execution context

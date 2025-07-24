@@ -304,7 +304,7 @@ class AICoderConsole {
             return;
         }
 
-        // Handle commands
+        // 1. Command Priority: All user inputs starting with '/' will be treated as commands
         const commandResult = await this.commandHandler.handleCommand(trimmed);
         if (commandResult !== false) {
             // Command was handled (regardless of specific return value)
@@ -312,9 +312,21 @@ class AICoderConsole {
             return;
         }
 
-        // For non-command inputs, potentially enhance the prompt
-        let finalPrompt = trimmed;
-        if (!trimmed.startsWith('/')) {
+        // 2. Mode-Based Routing for non-command inputs
+        const mode = this.config.getConfig().ui.currentMode;
+
+        if (mode.startsWith('workflow:')) {
+            if (this.activeWorkflow) {
+                // Route input to the active workflow
+                await this.activeWorkflow.handleUserInput(trimmed);
+            } else {
+                this.logger.warn('Workflow mode is active but no active workflow instance found.');
+                this.consoleInterface.prompt();
+            }
+            return;
+        } else if (mode.startsWith('role:')) {
+            // Existing logic for role-based AI interaction
+            let finalPrompt = trimmed;
             finalPrompt = await this._handlePromptEnhancement(trimmed);
 
             // If enhancement was cancelled, return to prompt
@@ -322,11 +334,14 @@ class AICoderConsole {
                 this.consoleInterface.prompt();
                 return;
             }
-        }
 
-        // Process user message through API client
-        await this.apiClient.sendUserMessage(finalPrompt);
-        // Note: resumeInput() is called in the API client callbacks
+            // Process user message through API client
+            await this.apiClient.sendUserMessage(finalPrompt);
+            // Note: resumeInput() is called in the API client callbacks
+        } else {
+            this.logger.error(`Unknown application mode: ${mode}`);
+            this.consoleInterface.prompt();
+        }
     }
 
     /**
