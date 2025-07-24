@@ -176,11 +176,11 @@ class ConfigManager {
 
             // UI Settings
             ui: {
-                defaultRole:
-                    uiDefaults.defaultRole ||
+                currentMode:
+                    uiDefaults.currentMode ||
                     (() => {
                         throw new Error(
-                            'Missing required configuration: ui_settings.defaultRole in defaults/application.json'
+                            'Missing required configuration: ui_settings.currentMode in defaults/application.json'
                         );
                     })(),
                 showStartupBanner:

@@ -1,4 +1,3 @@
-// tests/unit/core/configManager.test.js
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import ConfigManager from '../../../src/config/managers/configManager.js';
 import { mockEnvVars } from '../../helpers/testUtils.js';
@@ -94,6 +93,12 @@ describe('ConfigManager', () => {
             expect(config.base.baseModel).toBe('gpt-4.1-mini');
             expect(config.base.baseUrl).toBe('https://api.openai.com/v1');
         });
+
+        it('should load currentMode from application defaults', () => {
+            const instance = ConfigManager.getInstance();
+            const config = instance.getConfig();
+            expect(config.ui.currentMode).toBe('role:dude');
+        });
     });
 
     describe('getModel', () => {
@@ -134,3 +139,4 @@ describe('ConfigManager', () => {
         });
     });
 });
+('');

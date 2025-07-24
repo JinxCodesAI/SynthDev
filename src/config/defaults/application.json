@@ -19,7 +19,7 @@
         "verbosityLevel": 2
     },
     "ui_settings": {
-        "defaultRole": "dude",
+        "currentMode": "role:dude",
         "showStartupBanner": true,
         "enableColors": true,
         "promptPrefix": "💭 You: "
