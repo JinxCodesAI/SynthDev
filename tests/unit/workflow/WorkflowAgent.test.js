@@ -30,7 +30,7 @@ describe('WorkflowAgent', () => {
     let mockAIAPIClient;
     let mockConfigManager;
     let mockToolManager;
-    let mockSnapshotManager;
+    // mockSnapshotManager removed
     let mockCostsManager;
 
     // Helper function to create WorkflowAgent with all required dependencies
@@ -40,7 +40,6 @@ describe('WorkflowAgent', () => {
             mockContext,
             mockConfigManager,
             mockToolManager,
-            mockSnapshotManager,
             mockCostsManager
         );
     };
@@ -88,7 +87,7 @@ describe('WorkflowAgent', () => {
         mockToolManager = {
             getTools: vi.fn().mockReturnValue([]),
         };
-        mockSnapshotManager = {};
+        // mockSnapshotManager removed
         mockCostsManager = {};
     });
 

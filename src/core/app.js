@@ -66,11 +66,12 @@ import ToolManager from './managers/toolManager.js';
 import CommandHandler from './interface/commandHandler.js';
 import ConsoleInterface from './interface/consoleInterface.js';
 import costsManager from './managers/costsManager.js';
-import SnapshotManager from './managers/snapshotManager.js';
+
 import PromptEnhancer from './ai/promptEnhancer.js';
 import WorkflowStateMachine from '../workflow/WorkflowStateMachine.js';
 import { initializeLogger, getLogger } from './managers/logger.js';
 import GitUtils from '../utils/GitUtils.js';
+import { AutoSnapshotManager } from './snapshot/AutoSnapshotManager.js';
 
 /**
  * Main application orchestrator
@@ -88,8 +89,11 @@ class AICoderConsole {
         // Initialize basic components first
         this.consoleInterface = new ConsoleInterface();
         this.toolManager = new ToolManager();
-        this.snapshotManager = new SnapshotManager();
+
         this.gitUtils = new GitUtils();
+
+        // Initialize Auto Snapshot Manager (Phase 2)
+        this.autoSnapshotManager = new AutoSnapshotManager(this.toolManager);
 
         // Defer API client initialization until after configuration check
         this.apiClient = null;
@@ -122,7 +126,6 @@ class AICoderConsole {
         this.workflowStateMachine = new WorkflowStateMachine(
             this.config,
             this.toolManager,
-            this.snapshotManager,
             this.consoleInterface,
             this.costsManager
         );
@@ -131,7 +134,6 @@ class AICoderConsole {
             this.toolManager,
             this.consoleInterface,
             this.costsManager,
-            this.snapshotManager,
             this
         );
 
@@ -175,7 +177,7 @@ class AICoderConsole {
                 return await this.toolManager.executeToolCall(
                     toolCall,
                     this.consoleInterface,
-                    this.snapshotManager
+                    null // snapshotManager removed
                 );
             },
 
@@ -220,7 +222,6 @@ class AICoderConsole {
                 this.toolManager,
                 this.consoleInterface,
                 this.costsManager,
-                this.snapshotManager,
                 this
             );
 
@@ -243,6 +244,14 @@ class AICoderConsole {
 
         await this.toolManager.loadTools();
 
+        // Initialize Auto Snapshot Manager after tools are loaded
+        try {
+            await this.autoSnapshotManager.initialize();
+            this.autoSnapshotManager.integrateWithApplication(this);
+        } catch (error) {
+            this.logger.warn('Failed to initialize Auto Snapshot Manager', error);
+        }
+
         // Set tools in API client
         this.apiClient.setTools(this.toolManager.getTools());
 
@@ -256,8 +265,6 @@ class AICoderConsole {
         if (this.commandHandler.commandRegistry.getCommand('workflow')) {
             await this.workflowStateMachine.loadWorkflowConfigs();
         }
-
-        await this.snapshotManager.initialize();
 
         // Set up signal handlers for graceful shutdown
         this.setupSignalHandlers();
@@ -299,7 +306,8 @@ class AICoderConsole {
 
         // Handle commands
         const commandResult = await this.commandHandler.handleCommand(trimmed);
-        if (commandResult === 'clear' || commandResult === true || commandResult === 'invalid') {
+        if (commandResult !== false) {
+            // Command was handled (regardless of specific return value)
             this.consoleInterface.prompt();
             return;
         }
@@ -314,9 +322,6 @@ class AICoderConsole {
                 this.consoleInterface.prompt();
                 return;
             }
-
-            // Create snapshot for user instruction with the final prompt
-            await this.snapshotManager.createSnapshot(finalPrompt);
         }
 
         // Process user message through API client
@@ -459,25 +464,34 @@ class AICoderConsole {
      */
     async handleExit(exitCode = 0) {
         try {
+            // Cleanup auto snapshot manager
+            if (this.autoSnapshotManager) {
+                await this.autoSnapshotManager.cleanup();
+            }
+
             // Show goodbye message
             this.consoleInterface.showGoodbye();
-
-            // Perform automatic cleanup if conditions are met
-            const cleanupResult = await this.snapshotManager.performCleanup();
-            if (cleanupResult.success) {
-                this.logger.info('✅ Automatic cleanup completed successfully');
-            } else if (
-                cleanupResult.error &&
-                !cleanupResult.error.includes('Git integration not active')
-            ) {
-                this.logger.warn(`⚠️ Cleanup failed: ${cleanupResult.error}`);
-            }
         } catch (error) {
             this.logger.error('❌ Error during exit cleanup:', error.message);
         } finally {
             // Ensure we exit even if cleanup fails
             process.exit(exitCode);
         }
+    }
+
+    /**
+     * Get auto snapshot manager status (for commands and debugging)
+     * @returns {Object} Auto snapshot manager status
+     */
+    getAutoSnapshotStatus() {
+        if (!this.autoSnapshotManager) {
+            return { available: false };
+        }
+
+        return {
+            available: true,
+            ...this.autoSnapshotManager.getStatus(),
+        };
     }
 }
 

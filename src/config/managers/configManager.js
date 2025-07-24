@@ -1,5 +1,4 @@
 import { config } from 'dotenv';
-import { createInterface } from 'readline';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { existsSync } from 'fs';
@@ -212,7 +211,7 @@ class ConfigManager {
             // Tool Settings
             tool: {
                 autoRun: toolDefaults.autoRun !== false,
-                requiresBackup: toolDefaults.requiresBackup || false,
+                modifiesFiles: toolDefaults.modifiesFiles || false,
                 defaultEncoding: toolDefaults.defaultEncoding || 'utf8', //unused
                 maxFileSize: toolDefaults.maxFileSize || 10485760, //unused
                 defaultTimeout: toolDefaults.defaultTimeout || 10000, //unused

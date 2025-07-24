@@ -2,8 +2,7 @@
     "name": "get_time",
     "description": "Get current date and time in various formats and timezones",
     "auto_run": true,
-    "requires_backup": false,
-    "backup_resource_path_property_name": "",
+
     "category": "utility",
     "version": "2.0.0",
     "tags": ["time", "date", "timezone", "utility"],

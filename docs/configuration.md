@@ -127,6 +127,11 @@ src/config/
 ├── ui/                         # User interface text
 │   ├── console-messages.json   # Console interface messages
 │   └── command-help.json       # Command descriptions
+├── snapshots/                   # Snapshot system configuration
+│   ├── snapshot-defaults.json  # Core snapshot settings
+│   ├── auto-snapshot-defaults.json # Phase 2 automatic snapshot settings
+│   ├── file-filters.json      # File filtering patterns
+│   └── snapshot-messages.json # User interface messages for snapshots
 └── workflows/                   # Workflow configurations
     ├── my_workflow.json        # Workflow configuration
     └── my_workflow/            # Workflow scripts directory
@@ -326,6 +331,129 @@ Edit `src/config/tools/safety-patterns.json`:
     ]
 }
 ```
+
+### Snapshot System Configuration
+
+SynthDev includes an advanced snapshot system with both manual and automatic snapshot creation.
+
+#### Core Snapshot Configuration
+
+Edit `src/config/snapshots/snapshot-defaults.json`:
+
+```json
+{
+    "fileFiltering": {
+        "customExclusions": [],
+        "maxFileSize": 10485760,
+        "binaryFileHandling": "exclude",
+        "followSymlinks": false,
+        "caseSensitive": false
+    },
+    "storage": {
+        "type": "memory",
+        "maxSnapshots": 50,
+        "maxMemoryMB": 100,
+        "persistToDisk": false
+    },
+    "backup": {
+        "createBackups": true,
+        "backupSuffix": ".backup",
+        "preservePermissions": true,
+        "validateChecksums": true,
+        "maxConcurrentFiles": 10,
+        "encoding": "utf8"
+    },
+    "behavior": {
+        "autoCleanup": true,
+        "cleanupThreshold": 40,
+        "confirmRestore": true,
+        "showPreview": true
+    }
+}
+```
+
+#### Automatic Snapshot Configuration (Phase 2)
+
+Edit `src/config/snapshots/auto-snapshot-defaults.json`:
+
+```json
+{
+    "autoSnapshot": {
+        "enabled": true,
+        "createOnToolExecution": true
+    },
+    "toolDeclarations": {
+        "defaultModifiesFiles": false,
+        "write_file": { "modifiesFiles": true },
+        "edit_file": { "modifiesFiles": true },
+        "execute_terminal": { "modifiesFiles": "conditional" },
+        "execute_script": { "modifiesFiles": "conditional" }
+    },
+    "triggerRules": {
+        "maxSnapshotsPerSession": 20,
+        "cooldownPeriod": 5000,
+        "enableSessionLimits": true
+    },
+    "fileChangeDetection": {
+        "enableMonitoring": true,
+        "captureFileStates": true,
+        "detectChangesAfterExecution": false
+    },
+    "initialSnapshot": {
+        "enabled": true,
+        "description": "Initial project state on startup",
+        "skipIfRecentExists": true,
+        "recentThreshold": 300000
+    },
+    "integration": {
+        "nonIntrusive": true,
+        "wrapToolExecution": true,
+        "preserveOriginalBehavior": true
+    }
+}
+```
+
+#### File Filtering Configuration
+
+Edit `src/config/snapshots/file-filters.json`:
+
+```json
+{
+    "defaultPatterns": {
+        "general": [
+            "node_modules/**",
+            ".git/**",
+            "dist/**",
+            "build/**",
+            "coverage/**",
+            "*.log",
+            "*.tmp",
+            ".DS_Store",
+            "Thumbs.db"
+        ],
+        "development": [".vscode/**", ".idea/**", "*.swp", "*.swo", "*~"]
+    },
+    "languageSpecific": {
+        "javascript": [
+            "npm-debug.log*",
+            "yarn-debug.log*",
+            "yarn-error.log*",
+            ".npm",
+            ".yarn-integrity"
+        ],
+        "python": ["__pycache__/**", "*.pyc", "*.pyo", ".pytest_cache/**", ".mypy_cache/**"]
+    }
+}
+```
+
+#### Snapshot Configuration Options
+
+- **fileFiltering**: Control which files are included in snapshots
+- **storage**: Configure memory limits and cleanup behavior
+- **autoSnapshot**: Enable/disable automatic snapshot creation
+- **toolDeclarations**: Define which tools trigger snapshot creation
+- **triggerRules**: Set limits and cooldown periods for automatic snapshots
+- **initialSnapshot**: Configure startup snapshots
 
 ## ConfigManager API
 

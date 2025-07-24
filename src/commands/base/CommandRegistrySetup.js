@@ -15,12 +15,13 @@ import ClearCommand from '../conversation/ClearCommand.js';
 import ExitCommand from '../system/ExitCommand.js';
 import RoleCommand from '../role/RoleCommand.js';
 import RolesCommand from '../role/RolesCommand.js';
-import SnapshotsCommand from '../snapshots/SnapshotsCommand.js';
+
 import IndexCommand from '../indexing/IndexCommand.js';
 import CmdCommand from '../terminal/CmdCommand.js';
 import WorkflowsCommand from '../workflow/WorkflowsCommand.js';
 import WorkflowCommand from '../workflow/WorkflowCommand.js';
 import { ConfigureCommand } from '../config/ConfigureCommand.js';
+import SnapshotsCommand from '../snapshots/SnapshotsCommand.js';
 
 /**
  * Create and configure a command registry with all available commands
@@ -51,14 +52,14 @@ export function createCommandRegistry() {
         registry.register(new RoleCommand());
         registry.register(new RolesCommand());
 
-        // Snapshot management
-        registry.register(new SnapshotsCommand());
-
         // Indexing
         registry.register(new IndexCommand());
 
         // Terminal commands
         registry.register(new CmdCommand());
+
+        // Snapshot commands
+        registry.register(new SnapshotsCommand());
 
         // Workflow commands
         // registry.register(new WorkflowsCommand());

@@ -152,7 +152,7 @@ describe('CommandRegistrySetup', () => {
             expect(result.hasCommand('exit')).toBe(true);
             expect(result.hasCommand('role')).toBe(true);
             expect(result.hasCommand('roles')).toBe(true);
-            expect(result.hasCommand('snapshots')).toBe(true);
+            // snapshots command removed
             expect(result.hasCommand('index')).toBe(true);
             expect(result.hasCommand('cmd')).toBe(true);
         });

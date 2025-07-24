@@ -1,19 +1,12 @@
 // tests/integration/cleanup.test.js
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
-describe('Application Cleanup Integration', () => {
+describe('Application Exit Integration', () => {
     let app;
-    let mockSnapshotManager;
     let mockConsoleInterface;
 
     beforeEach(() => {
         vi.clearAllMocks();
-
-        // Mock SnapshotManager
-        mockSnapshotManager = {
-            initialize: vi.fn(),
-            performCleanup: vi.fn(),
-        };
 
         // Mock ConsoleInterface
         mockConsoleInterface = {
@@ -25,7 +18,6 @@ describe('Application Cleanup Integration', () => {
 
         // Create a simple app-like object with the methods we need to test
         app = {
-            snapshotManager: mockSnapshotManager,
             consoleInterface: mockConsoleInterface,
             logger: {
                 info: vi.fn(),
@@ -33,22 +25,14 @@ describe('Application Cleanup Integration', () => {
                 error: vi.fn(),
             },
 
-            // Copy the handleExit method from the actual implementation
+            // Updated handleExit method without snapshot cleanup
             async handleExit(exitCode = 0) {
                 try {
                     // Show goodbye message
                     this.consoleInterface.showGoodbye();
 
-                    // Perform automatic cleanup if conditions are met
-                    const cleanupResult = await this.snapshotManager.performCleanup();
-                    if (cleanupResult.success) {
-                        this.logger.info('✅ Automatic cleanup completed successfully');
-                    } else if (
-                        cleanupResult.error &&
-                        !cleanupResult.error.includes('Git integration not active')
-                    ) {
-                        this.logger.warn(`⚠️ Cleanup failed: ${cleanupResult.error}`);
-                    }
+                    // Snapshot cleanup functionality has been removed
+                    this.logger.info('✅ Application exit completed successfully');
                 } catch (error) {
                     this.logger.error('❌ Error during exit cleanup:', error.message);
                 } finally {
@@ -98,87 +82,40 @@ describe('Application Cleanup Integration', () => {
     });
 
     describe('handleExit', () => {
-        it('should perform cleanup and exit successfully', async () => {
-            mockSnapshotManager.performCleanup.mockResolvedValue({
-                success: true,
-            });
-
+        it('should exit successfully', async () => {
             await app.handleExit();
 
             expect(mockConsoleInterface.showGoodbye).toHaveBeenCalled();
-            expect(mockSnapshotManager.performCleanup).toHaveBeenCalled();
             expect(app.logger.info).toHaveBeenCalledWith(
-                '✅ Automatic cleanup completed successfully'
-            );
-            expect(process.exit).toHaveBeenCalledWith(0);
-        });
-
-        it('should handle cleanup failure gracefully', async () => {
-            mockSnapshotManager.performCleanup.mockResolvedValue({
-                success: false,
-                error: 'Cleanup failed',
-            });
-
-            await app.handleExit();
-
-            expect(mockConsoleInterface.showGoodbye).toHaveBeenCalled();
-            expect(mockSnapshotManager.performCleanup).toHaveBeenCalled();
-            expect(app.logger.warn).toHaveBeenCalledWith('⚠️ Cleanup failed: Cleanup failed');
-            expect(process.exit).toHaveBeenCalledWith(0);
-        });
-
-        it('should not warn when Git integration is not active', async () => {
-            mockSnapshotManager.performCleanup.mockResolvedValue({
-                success: false,
-                error: 'Git integration not active',
-            });
-
-            await app.handleExit();
-
-            expect(mockConsoleInterface.showGoodbye).toHaveBeenCalled();
-            expect(mockSnapshotManager.performCleanup).toHaveBeenCalled();
-            expect(app.logger.warn).not.toHaveBeenCalled();
-            expect(process.exit).toHaveBeenCalledWith(0);
-        });
-
-        it('should handle cleanup exceptions', async () => {
-            mockSnapshotManager.performCleanup.mockRejectedValue(new Error('Unexpected error'));
-
-            await app.handleExit();
-
-            expect(mockConsoleInterface.showGoodbye).toHaveBeenCalled();
-            expect(mockSnapshotManager.performCleanup).toHaveBeenCalled();
-            expect(app.logger.error).toHaveBeenCalledWith(
-                '❌ Error during exit cleanup:',
-                'Unexpected error'
+                '✅ Application exit completed successfully'
             );
             expect(process.exit).toHaveBeenCalledWith(0);
         });
 
         it('should exit with custom exit code', async () => {
-            mockSnapshotManager.performCleanup.mockResolvedValue({
-                success: true,
-            });
-
             await app.handleExit(1);
 
+            expect(mockConsoleInterface.showGoodbye).toHaveBeenCalled();
+            expect(app.logger.info).toHaveBeenCalledWith(
+                '✅ Application exit completed successfully'
+            );
             expect(process.exit).toHaveBeenCalledWith(1);
         });
 
-        it('should ensure exit even if cleanup hangs', async () => {
-            // Mock a cleanup that never resolves
-            mockSnapshotManager.performCleanup.mockImplementation(() => new Promise(() => {}));
+        it('should handle exit exceptions', async () => {
+            // Mock showGoodbye to throw an error
+            mockConsoleInterface.showGoodbye.mockImplementation(() => {
+                throw new Error('Unexpected error');
+            });
 
-            // Start the exit process
-            const exitPromise = app.handleExit();
+            await app.handleExit();
 
-            // Wait a short time to ensure the cleanup is called
-            await new Promise(resolve => setTimeout(resolve, 10));
-
-            expect(mockSnapshotManager.performCleanup).toHaveBeenCalled();
             expect(mockConsoleInterface.showGoodbye).toHaveBeenCalled();
-
-            // The test framework will handle the hanging promise
+            expect(app.logger.error).toHaveBeenCalledWith(
+                '❌ Error during exit cleanup:',
+                'Unexpected error'
+            );
+            expect(process.exit).toHaveBeenCalledWith(0);
         });
     });
 

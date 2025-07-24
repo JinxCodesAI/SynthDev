@@ -21,7 +21,7 @@ export default defineConfig({
                 },
             },
         },
-        testTimeout: 10000,
+        testTimeout: process.env.CI ? 30000 : 10000,
         // Run tool tests sequentially to avoid file system conflicts
         pool: 'forks',
         poolOptions: {

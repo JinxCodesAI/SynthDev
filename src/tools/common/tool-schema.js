@@ -10,8 +10,7 @@ export const TOOL_DEFINITION_SCHEMA = {
     name: { type: 'string', required: true },
     description: { type: 'string', required: true },
     auto_run: { type: 'boolean', required: true },
-    requires_backup: { type: 'boolean', required: true },
-    backup_resource_path_property_name: { type: 'string', required: true },
+
     category: {
         type: 'string',
         required: false,
@@ -173,22 +172,7 @@ function validateObject(obj, schema, path, errors, warnings) {
  * @param {Array} warnings - Array to collect warnings
  */
 function validateBusinessRules(definition, errors, warnings) {
-    // Validate backup configuration
-    if (definition.requires_backup && !definition.backup_resource_path_property_name) {
-        errors.push(
-            "'backup_resource_path_property_name' must be specified when 'requires_backup' is true"
-        );
-    }
-
-    if (
-        !definition.requires_backup &&
-        definition.backup_resource_path_property_name &&
-        definition.backup_resource_path_property_name !== ''
-    ) {
-        warnings.push(
-            "'backup_resource_path_property_name' is specified but 'requires_backup' is false"
-        );
-    }
+    // Business rule validation can be added here as needed
 
     // Validate schema function name matches definition name
     if (
@@ -235,8 +219,6 @@ export function createToolDefinitionTemplate(options = {}) {
         name,
         description,
         auto_run = true,
-        requires_backup = false,
-        backup_resource_path_property_name = '',
         category = 'utility',
         version = '1.0.0',
         author = '',

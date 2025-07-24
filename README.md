@@ -17,7 +17,7 @@ SynthDev is an AI-powered development assistant that provides:
 - **🤖 Multi-Model Support**: Configure different AI models for different tasks (base, smart, fast)
 - **🎭 AI Role System**: Specialized AI personas with role-specific behaviors and few-shot prompting
 - **🔧 Extensible Architecture**: Easy to add new tools and commands
-- **📊 Advanced Features**: Conversation snapshots, codebase indexing, prompt enhancement, and cost tracking
+- **📊 Advanced Features**: Automatic & manual snapshots, codebase indexing, prompt enhancement, and cost tracking
 - **🔄 Multi-Agent Workflows**: Complex workflows where different AI personas collaborate
 
 ## Quick Start
@@ -154,21 +154,21 @@ The wizard provides:
 
 Access powerful commands via `/` prefix:
 
-| Command          | Description                       |
-| ---------------- | --------------------------------- |
-| `/help`          | Show available commands and usage |
-| `/tools`         | List all available tools          |
-| `/cost`          | Display API usage costs           |
-| `/review`        | Show last API call details        |
-| `/clear`         | Clear conversation history        |
-| `/snapshots`     | Manage conversation snapshots     |
-| `/index`         | Index codebase for analysis       |
-| `/roles`         | Show available AI roles           |
-| `/role <name>`   | Switch to a specific role         |
-| `/cmd`           | Execute terminal commands with AI |
-| `/workflows`     | Manage and execute workflows      |
-| `/configure`     | Interactive configuration wizard  |
-| `/exit`, `/quit` | Exit the application              |
+| Command          | Description                         |
+| ---------------- | ----------------------------------- |
+| `/help`          | Show available commands and usage   |
+| `/tools`         | List all available tools            |
+| `/cost`          | Display API usage costs             |
+| `/review`        | Show last API call details          |
+| `/clear`         | Clear conversation history          |
+| `/snapshot`      | Manage automatic & manual snapshots |
+| `/index`         | Index codebase for analysis         |
+| `/roles`         | Show available AI roles             |
+| `/role <name>`   | Switch to a specific role           |
+| `/cmd`           | Execute terminal commands with AI   |
+| `/workflows`     | Manage and execute workflows        |
+| `/configure`     | Interactive configuration wizard    |
+| `/exit`, `/quit` | Exit the application                |
 
 ### AI Role System
 
@@ -236,6 +236,7 @@ Comprehensive tool categories with security and validation:
 - **AI Safety Assessment**: Dynamic code analysis for script execution
 - **Tool Filtering**: Role-based access control with pattern matching
 - **Backup System**: Automatic backups for destructive operations
+- **Snapshot System**: Automatic snapshots before file-modifying operations
 
 ### Multi-Agent Workflows
 
@@ -275,6 +276,26 @@ Index your codebase for AI-powered understanding:
 /index                    # Index with default settings
 /index --max-size 50000   # Set maximum file size
 /index --include-hidden   # Include hidden files
+```
+
+### Snapshot System
+
+SynthDev features an advanced snapshot system for project state management:
+
+```bash
+# Manual snapshots
+/snapshot create "Before refactoring"  # Create manual snapshot
+/snapshot list                         # List all snapshots
+/snapshot restore <snapshot-id>        # Restore to previous state
+/snapshot info <snapshot-id>           # Show snapshot details
+/snapshot stats                        # Show system statistics
+/snapshot auto                         # Show automatic snapshot status
+
+# Automatic snapshots (Phase 2)
+# - Created automatically before file-modifying tools
+# - Initial snapshots on application startup
+# - Smart tool classification (file-modifying vs read-only)
+# - Configurable limits and cooldown periods
 ```
 
 ## Development Setup
@@ -320,21 +341,34 @@ src/
 │   ├── interface/          # User interface components
 │   │   ├── consoleInterface.js # Console interaction
 │   │   └── commandHandler.js   # Command routing
-│   └── managers/           # Core managers
-│       ├── costsManager.js     # API cost tracking
-│       ├── snapshotManager.js  # Conversation snapshots
-│       ├── toolManager.js      # Tool loading and execution
-│       └── logger.js           # Centralized logging
+│   ├── managers/           # Core managers
+│   │   ├── costsManager.js     # API cost tracking
+│   │   ├── toolManager.js      # Tool loading and execution
+│   │   └── logger.js           # Centralized logging
+│   └── snapshot/           # Snapshot system (Phase 2)
+│       ├── AutoSnapshotManager.js      # Main automatic snapshot coordinator
+│       ├── SnapshotManager.js          # Core snapshot management
+│       ├── ToolMonitor.js              # Tool classification system
+│       ├── FileChangeDetector.js       # File system monitoring
+│       ├── SnapshotTrigger.js          # Automatic snapshot triggering
+│       ├── InitialSnapshotManager.js   # Startup snapshots
+│       ├── ToolManagerIntegration.js   # Non-intrusive tool hooks
+│       ├── FileFilter.js               # File filtering and exclusions
+│       ├── FileBackup.js               # File backup operations
+│       └── stores/                     # Storage implementations
+│           └── MemorySnapshotStore.js  # Memory-based storage
 ├── config/                 # Configuration system
 │   ├── managers/           # Configuration managers
 │   │   ├── configManager.js    # Main configuration
 │   │   ├── toolConfigManager.js # Tool configuration
-│   │   └── uiConfigManager.js   # UI configuration
+│   │   ├── uiConfigManager.js   # UI configuration
+│   │   └── snapshotConfigManager.js # Snapshot configuration
 │   ├── validation/         # Configuration validation
 │   ├── defaults/           # Default configurations
 │   ├── roles/              # AI role definitions (multi-file support)
 │   ├── tools/              # Tool configurations
 │   ├── ui/                 # UI configurations
+│   ├── snapshots/          # Snapshot system configuration
 │   └── workflows/          # Workflow configurations
 ├── commands/               # Command system
 │   ├── base/               # Base command classes

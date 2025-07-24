@@ -1,409 +1,698 @@
 /**
- * Snapshots Command
- * Manages code checkpoints and allows reverting AI changes
+ * Snapshots Command Implementation
+ * Provides user interface for snapshot management following ADR-002 patterns
  */
 
 import { InteractiveCommand } from '../base/BaseCommand.js';
+import { SnapshotManager } from '../../core/snapshot/SnapshotManager.js';
+import { getSnapshotConfigManager } from '../../config/managers/snapshotConfigManager.js';
 import { getLogger } from '../../core/managers/logger.js';
 
 export class SnapshotsCommand extends InteractiveCommand {
     constructor() {
-        super('snapshots', 'Manage code checkpoints, revert AI changes');
+        super('snapshot', 'Create and manage file snapshots for safe project state management', [
+            'snap',
+            'backup',
+        ]);
+
+        this.logger = getLogger();
+        this.snapshotManager = null;
+        this.configManager = getSnapshotConfigManager();
+        this.messages = this.configManager.getMessagesConfig();
+
+        // Subcommands
+        this.subcommands = {
+            create: this.handleCreate.bind(this),
+            list: this.handleList.bind(this),
+            restore: this.handleRestore.bind(this),
+            delete: this.handleDelete.bind(this),
+            info: this.handleInfo.bind(this),
+            stats: this.handleStats.bind(this),
+            auto: this.handleAuto.bind(this),
+            help: this.handleHelp.bind(this),
+        };
     }
 
     /**
-     * Get required dependencies
+     * Get required dependencies for the command
      * @returns {string[]} Required dependencies
      */
     getRequiredDependencies() {
-        return ['snapshotManager', ...super.getRequiredDependencies()];
+        return ['consoleInterface', 'app', ...super.getRequiredDependencies()];
     }
 
     /**
-     * Execute the snapshots command
-     * @param {string} args - Command arguments (unused)
+     * Main command execution handler
+     * @param {string} args - Command arguments
      * @param {Object} context - Execution context
-     * @returns {boolean} Always returns true
+     * @returns {Promise<any>} Command result
      */
     async implementation(args, context) {
-        const { snapshotManager } = context;
-
-        const snapshots = await snapshotManager.getSnapshotSummaries();
-        const logger = getLogger();
-
-        if (snapshots.length === 0) {
-            logger.raw('\n📸 No snapshots available');
-            logger.raw(
-                '💡 Snapshots are automatically created when you give new instructions to the AI\n'
-            );
-            return true;
-        }
-
-        while (true) {
-            logger.raw('\n📸 Available Snapshots:');
-            logger.raw('═'.repeat(80));
-
-            // Show Git status if available
-            const gitStatus = snapshotManager.getGitStatus();
-            if (gitStatus.gitAvailable && gitStatus.isGitRepo) {
-                logger.raw(`🌿 Git Status: ${gitStatus.gitMode ? 'Active' : 'Available'}`);
-                if (gitStatus.originalBranch) {
-                    logger.raw(`   Original branch: ${gitStatus.originalBranch}`);
-                }
-                if (gitStatus.featureBranch) {
-                    logger.raw(`   Feature branch: ${gitStatus.featureBranch}`);
-                }
-                logger.raw();
+        try {
+            // Initialize snapshot manager if not already done
+            if (!this.snapshotManager) {
+                this.snapshotManager = new SnapshotManager();
             }
 
-            snapshots.forEach((snapshot, _index) => {
-                const date = new Date(snapshot.timestamp).toLocaleString();
-                const instructionPreview =
-                    snapshot.instruction.length > 60
-                        ? `${snapshot.instruction.substring(0, 60)}...`
-                        : snapshot.instruction;
+            // Parse arguments
+            const { subcommand, subArgs } = this.parseArguments(args);
 
-                logger.raw(`${snapshot.id}. [${date}] ${instructionPreview}`);
+            // Handle help or no subcommand
+            if (!subcommand || subcommand === 'help') {
+                return await this.handleHelp(subArgs, context);
+            }
 
-                if (snapshot.isGitCommit) {
-                    logger.raw(`   🔗 Git: ${snapshot.shortHash} | Author: ${snapshot.author}`);
-                } else {
-                    logger.raw(
-                        `   📁 Files: ${snapshot.fileCount} | Modified: ${snapshot.modifiedFiles.join(', ')}`
-                    );
+            // Route to appropriate subcommand handler
+            const handler = this.subcommands[subcommand];
+            if (!handler) {
+                const { consoleInterface } = context;
+                consoleInterface.showError(
+                    this.messages.errors.unknownSubcommand.replace('{subcommand}', subcommand)
+                );
+                consoleInterface.showMessage(this.messages.info.useHelpCommand);
+                return 'error';
+            }
+
+            return await handler(subArgs, context);
+        } catch (error) {
+            this.logger.error(error, 'Snapshot command execution failed');
+            context.consoleInterface.showError(
+                this.messages.errors.commandFailed.replace('{error}', error.message)
+            );
+            return 'error';
+        }
+    }
+
+    /**
+     * Handle snapshot creation
+     * @param {string} args - Create arguments
+     * @param {Object} context - Execution context
+     * @returns {Promise<any>} Creation result
+     */
+    async handleCreate(args, context) {
+        const { consoleInterface } = context;
+
+        try {
+            // Parse description from args
+            let description = args.trim();
+
+            // If no description provided, prompt for it
+            if (!description) {
+                description = await this.promptForInput(
+                    this.messages.prompts.snapshotDescription,
+                    context
+                );
+                if (!description) {
+                    consoleInterface.showError(this.messages.errors.invalidDescription);
+                    return 'error';
                 }
-                logger.raw();
+            }
+
+            // Remove quotes if present
+            description = description.replace(/^["']|["']$/g, '');
+
+            consoleInterface.showMessage(
+                this.messages.info.creatingSnapshot.replace('{description}', description)
+            );
+            consoleInterface.showMessage(this.messages.info.scanningFiles);
+
+            // Create snapshot
+            const result = await this.snapshotManager.createSnapshot(description);
+
+            // Show success message
+            consoleInterface.showMessage(this.messages.success.snapshotCreated);
+            consoleInterface.showMessage(`📍 Snapshot ID: ${result.id}`);
+            consoleInterface.showMessage(`📁 Files captured: ${result.stats.fileCount}`);
+            consoleInterface.showMessage(
+                `💾 Total size: ${this.formatBytes(result.stats.totalSize)}`
+            );
+            consoleInterface.showMessage(`⏱️  Capture time: ${result.stats.captureTime}ms`);
+
+            return result;
+        } catch (error) {
+            this.logger.error(error, 'Failed to create snapshot');
+            consoleInterface.showError(
+                this.messages.errors.generalFailure
+                    .replace('{operation}', 'create snapshot')
+                    .replace('{error}', error.message)
+            );
+            return 'error';
+        }
+    }
+
+    /**
+     * Handle snapshot listing
+     * @param {string} args - List arguments
+     * @param {Object} context - Execution context
+     * @returns {Promise<any>} List result
+     */
+    async handleList(args, context) {
+        const { consoleInterface } = context;
+
+        try {
+            // Parse list options
+            const options = this.parseListOptions(args);
+
+            // Get snapshots
+            const snapshots = await this.snapshotManager.listSnapshots(options);
+
+            if (snapshots.length === 0) {
+                consoleInterface.showMessage(this.messages.errors.noSnapshots);
+                consoleInterface.showMessage(this.messages.info.noSnapshotsHelp);
+                return 'empty';
+            }
+
+            // Display snapshots
+            consoleInterface.showMessage(
+                `\n${this.messages.info.snapshotsList.replace('{count}', snapshots.length)}`
+            );
+            consoleInterface.showMessage('─'.repeat(80));
+
+            for (const snapshot of snapshots) {
+                const timestamp = new Date(snapshot.timestamp).toLocaleString();
+                const size = this.formatBytes(snapshot.totalSize);
+                const type = snapshot.triggerType === 'manual' ? '👤' : '🤖';
+
+                consoleInterface.showMessage(
+                    `${type} ${snapshot.id.substring(0, 8)}... - ${snapshot.description}`
+                );
+                consoleInterface.showMessage(
+                    `   📅 ${timestamp} | 📁 ${snapshot.fileCount} files | 💾 ${size}`
+                );
+
+                if (snapshot.triggerType !== 'manual') {
+                    consoleInterface.showMessage(`   🔧 Created by: ${snapshot.triggerType}`);
+                }
+
+                consoleInterface.showMessage('');
+            }
+
+            return snapshots;
+        } catch (error) {
+            this.logger.error(error, 'Failed to list snapshots');
+            consoleInterface.showError(
+                this.messages.errors.generalFailure
+                    .replace('{operation}', 'list snapshots')
+                    .replace('{error}', error.message)
+            );
+            return 'error';
+        }
+    }
+
+    /**
+     * Handle snapshot restoration
+     * @param {string} args - Restore arguments
+     * @param {Object} context - Execution context
+     * @returns {Promise<any>} Restore result
+     */
+    async handleRestore(args, context) {
+        const { consoleInterface } = context;
+
+        try {
+            // Parse snapshot ID
+            const snapshotId = args.trim();
+            if (!snapshotId) {
+                consoleInterface.showError(this.messages.errors.snapshotIdRequired);
+                consoleInterface.showMessage(this.messages.info.useListCommand);
+                return 'error';
+            }
+
+            // Get snapshot details
+            const details = await this.snapshotManager.getSnapshotDetails(snapshotId);
+
+            // Show snapshot info
+            consoleInterface.showMessage(`\n📸 Snapshot: ${details.description}`);
+            consoleInterface.showMessage(`📍 ID: ${details.id}`);
+            consoleInterface.showMessage(
+                `📅 Created: ${new Date(details.metadata.timestamp).toLocaleString()}`
+            );
+            consoleInterface.showMessage(`📁 Files: ${details.fileCount}`);
+
+            // Generate preview
+            consoleInterface.showMessage(`\n${this.messages.info.analyzingRestore}`);
+            const preview = await this.snapshotManager.restoreSnapshot(snapshotId, {
+                preview: true,
             });
 
-            logger.raw('Commands:');
-            logger.raw('  [number] - View detailed snapshot info');
-            logger.raw('  r[number] - Restore snapshot (e.g., r1)');
-            if (gitStatus.gitMode) {
-                logger.raw('  🔗 Git mode: Restore uses git reset to commit');
-                logger.raw('  m - Merge feature branch to original branch');
-                logger.raw('  s - Switch back to original branch (without merge)');
-            } else {
-                logger.raw('  d[number] - Delete snapshot (e.g., d1)');
-                logger.raw('  c - Clear all snapshots');
-            }
-            logger.raw('  q - Quit snapshots view');
-            logger.raw();
+            // Show preview
+            this.showRestorePreview(preview, consoleInterface);
 
-            const input = await this.promptForInput('snapshots> ', context);
-            const trimmed = input.trim().toLowerCase();
-
-            if (trimmed === 'q' || trimmed === 'quit') {
-                break;
-            } else if (trimmed === 'c' || trimmed === 'clear') {
-                const gitStatus = snapshotManager.getGitStatus();
-                if (gitStatus.gitMode) {
-                    logger.raw('❌ Clear snapshots is not supported in Git mode.');
-                    logger.raw('💡 Use Git commands to manage commit history if needed.');
-                } else {
-                    const confirmed = await this.promptForConfirmation(
-                        'Are you sure you want to clear all snapshots? This cannot be undone.',
-                        context
-                    );
-                    if (confirmed) {
-                        snapshotManager.clearAllSnapshots();
-                        logger.raw('🧹 All snapshots cleared');
-                        break;
-                    }
-                }
-            } else if (trimmed === 'm' || trimmed === 'merge') {
-                await this.mergeFeatureBranch(context);
-            } else if (trimmed === 's' || trimmed === 'switch') {
-                await this.switchToOriginalBranch(context);
-            } else if (trimmed.startsWith('r') && trimmed.length > 1) {
-                const snapshotId = parseInt(trimmed.substring(1));
-                if (!isNaN(snapshotId)) {
-                    await this.restoreSnapshot(snapshotId, context);
-                } else {
-                    logger.raw('❌ Invalid snapshot ID');
-                }
-            } else if (trimmed.startsWith('d') && trimmed.length > 1) {
-                const snapshotId = parseInt(trimmed.substring(1));
-                if (!isNaN(snapshotId)) {
-                    await this.deleteSnapshot(snapshotId, context);
-                } else {
-                    logger.raw('❌ Invalid snapshot ID');
-                }
-            } else if (!isNaN(parseInt(trimmed))) {
-                const snapshotId = parseInt(trimmed);
-                await this.showSnapshotDetail(snapshotId, context);
-            } else {
-                logger.raw('❌ Invalid command. Use q to quit, or see commands above.');
-            }
-        }
-
-        return true;
-    }
-
-    /**
-     * Show detailed information about a specific snapshot
-     * @param {number} snapshotId - Snapshot ID
-     * @param {Object} context - Execution context
-     */
-    async showSnapshotDetail(snapshotId, context) {
-        const { snapshotManager } = context;
-        const snapshot = await snapshotManager.getSnapshot(snapshotId);
-        const logger = getLogger();
-
-        if (!snapshot) {
-            logger.raw(`❌ Snapshot ${snapshotId} not found`);
-            return;
-        }
-
-        const date = new Date(snapshot.timestamp).toLocaleString();
-        logger.raw(`\n📸 Snapshot ${snapshot.id} Details:`);
-        logger.raw('─'.repeat(50));
-        logger.raw(`🕒 Created: ${date}`);
-        logger.raw(`📝 Instruction: ${snapshot.instruction}`);
-
-        if (snapshot.isGitCommit) {
-            logger.raw(`🔗 Git Hash: ${snapshot.gitHash}`);
-            logger.raw(`👤 Author: ${snapshot.author}`);
-            if (snapshot.message) {
-                logger.raw(`💬 Message: ${snapshot.message}`);
-            }
-            if (snapshot.files && snapshot.files.length > 0) {
-                logger.raw(`📁 Files changed: ${snapshot.files.length}`);
-                logger.raw('\n📂 Changed files:');
-                snapshot.files.forEach(file => logger.raw(`   - ${file}`));
-            }
-        } else {
-            logger.raw(`📁 Files backed up: ${Object.keys(snapshot.files).length}`);
-            if (Object.keys(snapshot.files).length > 0) {
-                logger.raw('\n📂 Backed up files:');
-                for (const filePath of Object.keys(snapshot.files)) {
-                    logger.raw(`   - ${filePath}`);
-                }
-            }
-        }
-        logger.raw();
-    }
-
-    /**
-     * Restore a snapshot
-     * @param {number} snapshotId - Snapshot ID
-     * @param {Object} context - Execution context
-     */
-    async restoreSnapshot(snapshotId, context) {
-        const { snapshotManager } = context;
-        const gitStatus = snapshotManager.getGitStatus();
-        const logger = getLogger();
-
-        if (gitStatus.gitMode) {
-            // Git mode - confirm git reset operation
-            const summaries = await snapshotManager.getSnapshotSummaries();
-            const snapshot = summaries.find(s => s.id === snapshotId);
-
-            if (!snapshot) {
-                logger.raw(`❌ Snapshot ${snapshotId} not found`);
-                return;
-            }
-
-            const confirmMessage =
-                `Reset to Git commit ${snapshot.shortHash}?\n` +
-                `  🔗 Commit: ${snapshot.instruction}\n` +
-                '  ⚠️  This will discard all changes after this commit!';
-
-            const confirmed = await this.promptForConfirmation(confirmMessage, context);
-
-            if (!confirmed) {
-                logger.raw('❌ Reset cancelled');
-                return;
-            }
-
-            logger.raw(`🔄 Resetting to commit ${snapshot.shortHash}...`);
-            const result = await snapshotManager.restoreSnapshot(snapshotId);
-
-            if (result.success) {
-                logger.raw(`✅ Successfully reset to commit ${result.shortHash}`);
-                logger.raw(`   🔗 ${result.instruction}`);
-                logger.raw(`   📝 ${result.message}`);
-            } else {
-                logger.raw(`❌ Reset failed: ${result.error}`);
-            }
-        } else {
-            // Legacy mode - file-based restoration
-            const snapshot = await snapshotManager.getSnapshot(snapshotId);
-
-            if (!snapshot) {
-                logger.raw(`❌ Snapshot ${snapshotId} not found`);
-                return;
-            }
-
-            // Separate files that existed vs didn't exist in the snapshot
-            const existingFiles = [];
-            const nonExistentFiles = [];
-
-            for (const [filePath, content] of Object.entries(snapshot.files)) {
-                if (content === null) {
-                    nonExistentFiles.push(filePath);
-                } else {
-                    existingFiles.push(filePath);
-                }
-            }
-
-            let confirmMessage = `Restore snapshot ${snapshotId}?`;
-            if (existingFiles.length > 0) {
-                confirmMessage += `\n  📄 Will restore: ${existingFiles.join(', ')}`;
-            }
-            if (nonExistentFiles.length > 0) {
-                confirmMessage += `\n  🗑️ Will delete: ${nonExistentFiles.join(', ')} (didn't exist in snapshot)`;
-            }
-
-            const confirmed = await this.promptForConfirmation(confirmMessage, context);
-
-            if (!confirmed) {
-                logger.raw('❌ Restore cancelled');
-                return;
-            }
-
-            logger.raw(`🔄 Restoring snapshot ${snapshotId}...`);
-            const result = await snapshotManager.restoreSnapshot(snapshotId);
-
-            if (result.success) {
-                logger.raw(`✅ Successfully restored snapshot ${snapshotId}:`);
-                if (result.restoredFiles && result.restoredFiles.length > 0) {
-                    logger.raw(`   📄 Restored ${result.restoredFiles.length} files:`);
-                    result.restoredFiles.forEach(file => logger.raw(`      ✓ ${file}`));
-                }
-                if (result.deletedFiles && result.deletedFiles.length > 0) {
-                    logger.raw(
-                        `   🗑️ Deleted ${result.deletedFiles.length} files (didn't exist in snapshot):`
-                    );
-                    result.deletedFiles.forEach(file => logger.raw(`      ✗ ${file}`));
-                }
-            } else {
-                logger.raw('❌ Restore completed with errors:');
-                if (result.restoredFiles) {
-                    logger.raw(`   ✓ Restored: ${result.restoredFiles.length} files`);
-                }
-                if (result.deletedFiles && result.deletedFiles.length > 0) {
-                    logger.raw(`   🗑️ Deleted: ${result.deletedFiles.length} files`);
-                }
-                if (result.errors) {
-                    logger.raw(`   ❌ Errors: ${result.errors.length}`);
-                    result.errors.forEach(error => logger.raw(`      - ${error}`));
-                }
-            }
-        }
-    }
-
-    /**
-     * Delete a snapshot
-     * @param {number} snapshotId - Snapshot ID
-     * @param {Object} context - Execution context
-     */
-    async deleteSnapshot(snapshotId, context) {
-        const { snapshotManager } = context;
-        const gitStatus = snapshotManager.getGitStatus();
-        const logger = getLogger();
-
-        if (gitStatus.gitMode) {
-            logger.raw('❌ Snapshot deletion is not supported in Git mode.');
-            logger.raw('💡 Use Git commands to manage commit history if needed.');
-            return;
-        }
-
-        const snapshot = await snapshotManager.getSnapshot(snapshotId);
-
-        if (!snapshot) {
-            logger.raw(`❌ Snapshot ${snapshotId} not found`);
-            return;
-        }
-
-        const confirmed = await this.promptForConfirmation(
-            `Delete snapshot ${snapshotId}? This cannot be undone.`,
-            context
-        );
-
-        if (!confirmed) {
-            logger.raw('❌ Delete cancelled');
-            return;
-        }
-
-        const result = await snapshotManager.deleteSnapshot(snapshotId);
-        if (result.success) {
-            logger.raw(`🗑️ Snapshot ${snapshotId} deleted`);
-        } else {
-            logger.raw(`❌ Failed to delete snapshot ${snapshotId}: ${result.error}`);
-        }
-    }
-
-    /**
-     * Merge feature branch to original branch
-     * @param {Object} context - Execution context
-     */
-    async mergeFeatureBranch(context) {
-        const { snapshotManager } = context;
-        const logger = getLogger();
-        const gitStatus = snapshotManager.getGitStatus();
-
-        if (!gitStatus.gitMode) {
-            logger.raw('❌ Not in Git mode. No feature branch to merge.');
-            return;
-        }
-
-        const confirmed = await this.promptForConfirmation(
-            `Merge feature branch "${gitStatus.featureBranch}" into "${gitStatus.originalBranch}"?`,
-            context
-        );
-
-        if (!confirmed) {
-            logger.raw('❌ Merge cancelled');
-            return;
-        }
-
-        logger.raw('🔄 Merging feature branch...');
-        const result = await snapshotManager.mergeFeatureBranch();
-
-        if (result.success) {
-            logger.user(
-                `✅ Successfully merged ${gitStatus.featureBranch} into ${gitStatus.originalBranch}`,
-                '🔀 Git:'
+            // Ask for confirmation
+            const confirm = await this.promptForConfirmation(
+                `\n${this.messages.prompts.confirmRestore}`,
+                context
             );
-            logger.user('🌿 Switched back to original branch', '🔀 Git:');
-        } else {
-            logger.error(`Merge failed: ${result.error}`, 'Git merge');
+
+            if (!confirm) {
+                consoleInterface.showMessage(this.messages.info.cancelled);
+                return 'cancelled';
+            }
+
+            // Perform restoration
+            consoleInterface.showMessage(this.messages.info.restoringFiles);
+            const result = await this.snapshotManager.restoreSnapshot(snapshotId, {
+                createBackups: true,
+            });
+
+            // Show results
+            consoleInterface.showMessage(this.messages.success.snapshotRestored);
+            consoleInterface.showMessage(`📁 Files restored: ${result.stats.restoredFiles}`);
+            consoleInterface.showMessage(`💾 Backups created: ${result.backups.length}`);
+
+            if (result.errors.length > 0) {
+                consoleInterface.showMessage(`⚠️  Errors encountered: ${result.errors.length}`);
+                for (const error of result.errors) {
+                    consoleInterface.showMessage(`   ❌ ${error.path}: ${error.error}`);
+                }
+            }
+
+            return result;
+        } catch (error) {
+            this.logger.error(error, 'Failed to restore snapshot');
+            consoleInterface.showError(
+                this.messages.errors.generalFailure
+                    .replace('{operation}', 'restore snapshot')
+                    .replace('{error}', error.message)
+            );
+            return 'error';
         }
     }
 
     /**
-     * Switch back to original branch without merging
+     * Handle snapshot deletion
+     * @param {string} args - Delete arguments
      * @param {Object} context - Execution context
+     * @returns {Promise<any>} Delete result
      */
-    async switchToOriginalBranch(context) {
-        const { snapshotManager } = context;
-        const logger = getLogger();
-        const gitStatus = snapshotManager.getGitStatus();
+    async handleDelete(args, context) {
+        const { consoleInterface } = context;
 
-        if (!gitStatus.gitMode) {
-            logger.raw('❌ Not in Git mode. Already on original branch.');
-            return;
+        try {
+            // Parse snapshot ID
+            const snapshotId = args.trim();
+            if (!snapshotId) {
+                consoleInterface.showError(this.messages.errors.snapshotIdRequired);
+                consoleInterface.showMessage(this.messages.info.useListCommand);
+                return 'error';
+            }
+
+            // Get snapshot details
+            const details = await this.snapshotManager.getSnapshotDetails(snapshotId);
+
+            // Show snapshot info
+            consoleInterface.showMessage(`\n📸 Snapshot: ${details.description}`);
+            consoleInterface.showMessage(`📍 ID: ${details.id}`);
+            consoleInterface.showMessage(
+                `📅 Created: ${new Date(details.metadata.timestamp).toLocaleString()}`
+            );
+            consoleInterface.showMessage(`📁 Files: ${details.fileCount}`);
+
+            // Ask for confirmation
+            const confirm = await this.promptForConfirmation(
+                `\n${this.messages.prompts.confirmDelete}`,
+                context
+            );
+
+            if (!confirm) {
+                consoleInterface.showMessage(this.messages.info.deletionCancelled);
+                return 'cancelled';
+            }
+
+            // Delete snapshot
+            const result = await this.snapshotManager.deleteSnapshot(snapshotId);
+
+            consoleInterface.showMessage(this.messages.success.snapshotDeleted);
+            consoleInterface.showMessage(`📸 Deleted: ${result.description}`);
+
+            return result;
+        } catch (error) {
+            this.logger.error(error, 'Failed to delete snapshot');
+            consoleInterface.showError(
+                this.messages.errors.generalFailure
+                    .replace('{operation}', 'delete snapshot')
+                    .replace('{error}', error.message)
+            );
+            return 'error';
         }
+    }
 
-        const confirmed = await this.promptForConfirmation(
-            `Switch back to "${gitStatus.originalBranch}" without merging? Feature branch "${gitStatus.featureBranch}" will remain.`,
-            context
+    /**
+     * Handle snapshot info display
+     * @param {string} args - Info arguments
+     * @param {Object} context - Execution context
+     * @returns {Promise<any>} Info result
+     */
+    async handleInfo(args, context) {
+        const { consoleInterface } = context;
+
+        try {
+            // Parse snapshot ID
+            const snapshotId = args.trim();
+            if (!snapshotId) {
+                consoleInterface.showError(this.messages.errors.snapshotIdRequired);
+                consoleInterface.showMessage(this.messages.info.useListCommand);
+                return 'error';
+            }
+
+            // Get snapshot details
+            const details = await this.snapshotManager.getSnapshotDetails(snapshotId);
+
+            // Display detailed information
+            consoleInterface.showMessage('\n📸 Snapshot Details:');
+            consoleInterface.showMessage('─'.repeat(50));
+            consoleInterface.showMessage(`📍 ID: ${details.id}`);
+            consoleInterface.showMessage(`📝 Description: ${details.description}`);
+            consoleInterface.showMessage(
+                `📅 Created: ${new Date(details.metadata.timestamp).toLocaleString()}`
+            );
+            consoleInterface.showMessage(`👤 Creator: ${details.metadata.creator}`);
+            consoleInterface.showMessage(`🔧 Trigger: ${details.metadata.triggerType}`);
+            consoleInterface.showMessage(`📁 Files: ${details.fileCount}`);
+            consoleInterface.showMessage(
+                `💾 Total size: ${this.formatBytes(details.metadata.totalSize)}`
+            );
+            consoleInterface.showMessage(`📂 Base path: ${details.metadata.basePath}`);
+            consoleInterface.showMessage(`⏱️  Capture time: ${details.metadata.captureTime}ms`);
+
+            // Show file list (first 10 files)
+            if (details.files.length > 0) {
+                consoleInterface.showMessage(
+                    `\n📁 Files (showing first 10 of ${details.files.length}):`
+                );
+                const filesToShow = details.files.slice(0, 10);
+
+                for (const file of filesToShow) {
+                    const size = this.formatBytes(file.size);
+                    const modified = new Date(file.modified).toLocaleString();
+                    consoleInterface.showMessage(`   📄 ${file.path} (${size}) - ${modified}`);
+                }
+
+                if (details.files.length > 10) {
+                    consoleInterface.showMessage(
+                        `   ... and ${details.files.length - 10} more files`
+                    );
+                }
+            }
+
+            return details;
+        } catch (error) {
+            this.logger.error(error, 'Failed to get snapshot info');
+            consoleInterface.showError(
+                this.messages.errors.generalFailure
+                    .replace('{operation}', 'get snapshot info')
+                    .replace('{error}', error.message)
+            );
+            return 'error';
+        }
+    }
+
+    /**
+     * Handle system statistics display
+     * @param {string} args - Stats arguments
+     * @param {Object} context - Execution context
+     * @returns {Promise<any>} Stats result
+     */
+    async handleStats(args, context) {
+        const { consoleInterface } = context;
+
+        try {
+            const stats = this.snapshotManager.getSystemStats();
+
+            consoleInterface.showMessage('\n📊 Snapshot System Statistics:');
+            consoleInterface.showMessage('─'.repeat(50));
+
+            // Storage statistics
+            consoleInterface.showMessage(`💾 Storage (${stats.configuration.storageType}):`);
+            consoleInterface.showMessage(`   📸 Total snapshots: ${stats.storage.totalSnapshots}`);
+            consoleInterface.showMessage(`   📊 Max snapshots: ${stats.storage.maxSnapshots}`);
+            consoleInterface.showMessage(
+                `   💾 Memory usage: ${stats.storage.memoryUsageMB.toFixed(2)}MB (${stats.storage.memoryUsagePercent.toFixed(1)}%)`
+            );
+            consoleInterface.showMessage(`   📈 Max memory: ${stats.storage.maxMemoryMB}MB`);
+
+            // Filter statistics
+            consoleInterface.showMessage('\n🔍 File Filtering:');
+            consoleInterface.showMessage(`   📋 Total patterns: ${stats.filtering.totalPatterns}`);
+            consoleInterface.showMessage(
+                `   🔧 Default patterns: ${stats.filtering.defaultPatterns}`
+            );
+            consoleInterface.showMessage(
+                `   ⚙️  Custom patterns: ${stats.filtering.customPatterns}`
+            );
+            consoleInterface.showMessage(
+                `   📏 Max file size: ${this.formatBytes(stats.filtering.maxFileSize)}`
+            );
+            consoleInterface.showMessage(
+                `   🎯 Binary handling: ${stats.filtering.binaryFileHandling}`
+            );
+
+            // System status
+            consoleInterface.showMessage('\n⚡ System Status:');
+            consoleInterface.showMessage(`   🔄 Active operations: ${stats.activeOperations}`);
+            consoleInterface.showMessage(
+                `   🧹 Auto cleanup: ${stats.configuration.autoCleanup ? 'enabled' : 'disabled'}`
+            );
+
+            if (stats.storage.lastCleanup) {
+                const lastCleanup = new Date(stats.storage.lastCleanup).toLocaleString();
+                consoleInterface.showMessage(`   🗑️  Last cleanup: ${lastCleanup}`);
+            }
+
+            return stats;
+        } catch (error) {
+            this.logger.error(error, 'Failed to get system stats');
+            consoleInterface.showError(
+                this.messages.errors.generalFailure
+                    .replace('{operation}', 'get system stats')
+                    .replace('{error}', error.message)
+            );
+            return 'error';
+        }
+    }
+
+    /**
+     * Handle automatic snapshot system information
+     * @param {string} args - Auto arguments
+     * @param {Object} context - Execution context
+     * @returns {Promise<any>} Auto result
+     */
+    async handleAuto(args, context) {
+        const { consoleInterface, app } = context;
+
+        try {
+            // Get auto snapshot status from app
+            const autoStatus = app.getAutoSnapshotStatus();
+
+            consoleInterface.showMessage('\n🤖 Automatic Snapshot System Status:');
+            consoleInterface.showMessage('─'.repeat(50));
+
+            if (!autoStatus.available) {
+                consoleInterface.showMessage('❌ Auto Snapshot System not available');
+                return 'unavailable';
+            }
+
+            // Show main status
+            const statusIcon = autoStatus.enabled ? '✅' : '❌';
+            consoleInterface.showMessage(`${statusIcon} Enabled: ${autoStatus.enabled}`);
+            consoleInterface.showMessage(`🔧 Initialized: ${autoStatus.initialized}`);
+
+            // Show component status
+            consoleInterface.showMessage('\n📦 Components:');
+            const components = autoStatus.components;
+            Object.entries(components).forEach(([name, available]) => {
+                const icon = available ? '✅' : '❌';
+                const displayName = name
+                    .replace(/([A-Z])/g, ' $1')
+                    .replace(/^./, str => str.toUpperCase());
+                consoleInterface.showMessage(
+                    `   ${icon} ${displayName}: ${available ? 'Ready' : 'Not available'}`
+                );
+            });
+
+            // Show integrations
+            consoleInterface.showMessage('\n🔗 Integrations:');
+            const integrations = autoStatus.integrations;
+            Object.entries(integrations).forEach(([name, available]) => {
+                const icon = available ? '✅' : '❌';
+                const displayName = name
+                    .replace(/([A-Z])/g, ' $1')
+                    .replace(/^./, str => str.toUpperCase());
+                consoleInterface.showMessage(
+                    `   ${icon} ${displayName}: ${available ? 'Connected' : 'Not connected'}`
+                );
+            });
+
+            // Show usage instructions
+            consoleInterface.showMessage('\n💡 Usage:');
+            consoleInterface.showMessage(
+                '   • Automatic snapshots are created before file-modifying tools'
+            );
+            consoleInterface.showMessage('   • No manual intervention required');
+            consoleInterface.showMessage(
+                '   • Use `/snapshot list` to see all snapshots including automatic ones'
+            );
+            consoleInterface.showMessage(
+                '   • Initial snapshots are created on first application start'
+            );
+
+            return autoStatus;
+        } catch (error) {
+            this.logger.error(error, 'Failed to get auto snapshot status');
+            consoleInterface.showError('Failed to get automatic snapshot system status');
+            return 'error';
+        }
+    }
+
+    /**
+     * Handle help display
+     * @param {string} args - Help arguments
+     * @param {Object} context - Execution context
+     * @returns {Promise<any>} Help result
+     */
+    async handleHelp(args, context) {
+        const { consoleInterface } = context;
+
+        consoleInterface.showMessage(`\n${this.messages.help.title}`);
+        consoleInterface.showMessage('─'.repeat(60));
+
+        // Show commands
+        const commands = this.messages.help.commandsList;
+        consoleInterface.showMessage(commands.create);
+        consoleInterface.showMessage(commands.list);
+        consoleInterface.showMessage(commands.restore);
+        consoleInterface.showMessage(commands.delete);
+        consoleInterface.showMessage(commands.info);
+        consoleInterface.showMessage(commands.stats);
+        consoleInterface.showMessage(
+            '📝 /snapshot auto             - Show automatic snapshot system status'
+        );
+        consoleInterface.showMessage(commands.help);
+
+        // Show examples
+        consoleInterface.showMessage(`\n${this.messages.help.examplesTitle}`);
+        this.messages.help.examples.forEach(example => {
+            consoleInterface.showMessage(`   ${example}`);
+        });
+        consoleInterface.showMessage(
+            '   /snapshot auto                      - Check auto snapshot status'
         );
 
-        if (!confirmed) {
-            logger.raw('❌ Switch cancelled');
-            return;
+        // Show notes
+        consoleInterface.showMessage(`\n${this.messages.help.notesTitle}`);
+        this.messages.help.notes.forEach(note => {
+            consoleInterface.showMessage(`   • ${note}`);
+        });
+        consoleInterface.showMessage(
+            '   • Automatic snapshots (🤖) are created before file-modifying tools'
+        );
+        consoleInterface.showMessage(
+            '   • Manual snapshots (👤) can still be created using /snapshot create'
+        );
+
+        return 'help';
+    }
+
+    /**
+     * Parse command arguments
+     * @param {string} args - Raw arguments
+     * @returns {Object} Parsed arguments
+     */
+    parseArguments(args) {
+        const trimmed = args.trim();
+        const parts = trimmed.split(/\s+/);
+
+        return {
+            subcommand: parts[0] || '',
+            subArgs: parts.slice(1).join(' '),
+        };
+    }
+
+    /**
+     * Parse list options
+     * @param {string} args - List arguments
+     * @returns {Object} List options
+     */
+    parseListOptions(args) {
+        const options = {
+            sortBy: 'timestamp',
+            sortOrder: 'desc',
+            limit: 50,
+        };
+
+        // Parse any flags or options from args
+        // For now, using defaults
+
+        return options;
+    }
+
+    /**
+     * Show restore preview
+     * @param {Object} preview - Preview data
+     * @param {Object} consoleInterface - Console interface
+     */
+    showRestorePreview(preview, consoleInterface) {
+        const { preview: previewData } = preview;
+
+        consoleInterface.showMessage('\n🔍 Restoration Preview:');
+        consoleInterface.showMessage('─'.repeat(40));
+
+        if (previewData.files.toCreate.length > 0) {
+            consoleInterface.showMessage(
+                `📄 Files to create: ${previewData.files.toCreate.length}`
+            );
+            previewData.files.toCreate.slice(0, 5).forEach(file => {
+                consoleInterface.showMessage(`   + ${file.path} (${this.formatBytes(file.size)})`);
+            });
+            if (previewData.files.toCreate.length > 5) {
+                consoleInterface.showMessage(
+                    `   ... and ${previewData.files.toCreate.length - 5} more`
+                );
+            }
         }
 
-        logger.raw('🔄 Switching to original branch...');
-        const result = await snapshotManager.switchToOriginalBranch();
-
-        if (result.success) {
-            logger.user(`✅ Switched back to ${gitStatus.originalBranch}`, '🌿 Git:');
-            logger.info(`Feature branch ${gitStatus.featureBranch} remains available`);
-        } else {
-            logger.error(`Switch failed: ${result.error}`, 'Git switch');
+        if (previewData.files.toModify.length > 0) {
+            consoleInterface.showMessage(
+                `📝 Files to modify: ${previewData.files.toModify.length}`
+            );
+            previewData.files.toModify.slice(0, 5).forEach(file => {
+                consoleInterface.showMessage(`   ~ ${file.path} (${this.formatBytes(file.size)})`);
+            });
+            if (previewData.files.toModify.length > 5) {
+                consoleInterface.showMessage(
+                    `   ... and ${previewData.files.toModify.length - 5} more`
+                );
+            }
         }
+
+        if (previewData.files.unchanged.length > 0) {
+            consoleInterface.showMessage(
+                `✅ Files unchanged: ${previewData.files.unchanged.length}`
+            );
+        }
+
+        consoleInterface.showMessage(
+            `\n📊 Impact: ${previewData.stats.impactedFiles} files affected`
+        );
+        consoleInterface.showMessage(
+            `💾 Total size: ${this.formatBytes(previewData.stats.totalSize)}`
+        );
+    }
+
+    /**
+     * Format bytes to human readable string
+     * @param {number} bytes - Bytes to format
+     * @returns {string} Formatted string
+     */
+    formatBytes(bytes) {
+        if (bytes === 0) {
+            return '0 B';
+        }
+
+        const k = 1024;
+        const sizes = ['B', 'KB', 'MB', 'GB'];
+        const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+        return `${parseFloat((bytes / Math.pow(k, i)).toFixed(2))} ${sizes[i]}`;
     }
 
     /**
@@ -411,7 +700,7 @@ export class SnapshotsCommand extends InteractiveCommand {
      * @returns {string} Usage text
      */
     getUsage() {
-        return '/snapshots';
+        return '/snapshot <create|list|restore|delete|info|stats|auto|help> [args]';
     }
 }
 

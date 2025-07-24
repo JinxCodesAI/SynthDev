@@ -2,8 +2,7 @@
     "name": "explain_codebase",
     "description": "Provides AI-generated explanations in markdown format for natural language questions about the indexed codebase summaries from '.index/codebase-index.json'.",
     "auto_run": true,
-    "requires_backup": false,
-    "backup_resource_path_property_name": "",
+
     "category": "utility",
     "version": "1.0.0",
     "tags": ["codebase", "explanation", "ai", "markdown"],
