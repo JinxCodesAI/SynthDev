@@ -1,15 +1,21 @@
 import { existsSync, readdirSync } from 'fs';
 import { join } from 'path';
+import { EventEmitter } from 'events'; // Import EventEmitter
 import { getLogger } from '../core/managers/logger.js';
 import WorkflowConfig from './WorkflowConfig.js';
 import WorkflowContext from './WorkflowContext.js';
 import WorkflowAgent from './WorkflowAgent.js';
 
+// Helper function for non-blocking delay
+const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
 /**
  * State machine engine for executing multi-agent workflows
  */
-export default class WorkflowStateMachine {
+export default class WorkflowStateMachine extends EventEmitter {
+    // Extend EventEmitter
     constructor(config, toolManager, consoleInterface, costsManager) {
+        super(); // Call parent constructor
         this.config = config;
         this.toolManager = toolManager;
         this.consoleInterface = consoleInterface;
@@ -244,12 +250,15 @@ export default class WorkflowStateMachine {
         this.logger.info('🔄 Starting state machine execution');
 
         while (currentStateName && currentStateName !== 'stop') {
+            await sleep(100); // Non-blocking delay
+
             const state = states.get(currentStateName);
             if (!state) {
                 throw new Error(`Unknown state: ${currentStateName}`);
             }
 
             this.logger.debug(`🎯 Executing state: ${currentStateName}`);
+            this.emit('stateChanged', state.name); // Emit state change event
 
             // Execute state
             const stateResult = await this._executeState(state, executionContext);
@@ -402,6 +411,7 @@ export default class WorkflowStateMachine {
 
             // STEP 2: Agent executes API call to update last_response
             this.logger.debug(`🔍 DEBUG: About to call agent.makeContextCall() for ${agentRole}`);
+            this.emit('agentThinking', agent.getRole()); // Emit agent thinking event
             const result = await agent.makeContextCall(); // Use context-based API call
             this.logger.debug(`🔍 DEBUG: agent.makeContextCall() completed for ${agentRole}`);
 
@@ -410,6 +420,10 @@ export default class WorkflowStateMachine {
             this.lastRawResponse = agent.getLastRawResponse();
             this.lastToolCalls = agent.getToolCalls();
             this.lastParsingToolCalls = agent.getParsingToolCalls();
+
+            if (result) {
+                this.emit('agentResponse', result); // Emit agent response event
+            }
 
             console.log(
                 `🔍 DEBUG: State ${state.name} - agent.getLastRawResponse():`,

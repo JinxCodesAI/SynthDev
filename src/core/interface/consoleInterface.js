@@ -441,6 +441,28 @@ ${instructions}
             process.stdout.write(prompt);
         });
     }
+
+    /**
+     * Displays a status message above the current prompt line.
+     * @param {string} message - The status message to display.
+     */
+    showWorkflowStatus(message) {
+        const prompt = this.rl.prompt();
+        const cursorPos = this.rl.cursor;
+        const line = this.rl.line;
+
+        // Clear the current line
+        process.stdout.write('\x1b[2K\r');
+
+        // Write the status message
+        process.stdout.write(`${message}\n`);
+
+        // Redraw the prompt and user's current input
+        process.stdout.write(prompt + line);
+
+        // Restore cursor position
+        process.stdout.write(`\x1b[${cursorPos + prompt.length}G`);
+    }
 }
 
 export default ConsoleInterface;

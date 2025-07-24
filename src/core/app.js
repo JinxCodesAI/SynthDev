@@ -256,7 +256,8 @@ class AICoderConsole {
         this.apiClient.setTools(this.toolManager.getTools());
 
         // Set default role and system message from configuration
-        const defaultRole = this.config.getConfig().ui.defaultRole;
+        const currentMode = this.config.getConfig().ui.currentMode;
+        const defaultRole = currentMode.startsWith('role:') ? currentMode.substring(5) : 'dude'; // Extract role from currentMode
         await this.apiClient.setSystemMessage(
             SystemMessages.getSystemMessage(defaultRole),
             defaultRole
@@ -507,6 +508,34 @@ class AICoderConsole {
             available: true,
             ...this.autoSnapshotManager.getStatus(),
         };
+    }
+
+    /**
+     * Register the active workflow and set up event listeners
+     * @param {WorkflowStateMachine} workflowInstance - The active workflow state machine instance
+     */
+    registerActiveWorkflow(workflowInstance) {
+        this.activeWorkflow = workflowInstance;
+        this.isWorkflowActive = true;
+
+        this.activeWorkflow.on('stateChanged', newState => {
+            this.consoleInterface.showWorkflowStatus(`Transitioned to state: ${newState}`);
+        });
+
+        this.activeWorkflow.on('agentThinking', agentRole => {
+            this.consoleInterface.showWorkflowStatus(`Agent [${agentRole}] is thinking...`);
+        });
+
+        this.activeWorkflow.on('agentResponse', responseContent => {
+            // Display agent response, potentially truncated for brevity
+            const displayContent =
+                responseContent.length > 100
+                    ? `${responseContent.substring(0, 100)}...`
+                    : responseContent;
+            this.consoleInterface.showWorkflowStatus(`Agent responded: "${displayContent}"`);
+        });
+
+        // Add more event listeners as needed for other events (e.g., workflow_output, error)
     }
 }
 

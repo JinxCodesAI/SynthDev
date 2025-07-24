@@ -31,8 +31,9 @@ export default class WorkflowCommand extends BaseCommand {
             config.setConfig('ui.currentMode', `workflow:${workflowName}`);
 
             // Set app state for active workflow
-            app.isWorkflowActive = true; // This property will be added to app.js later
-            app.activeWorkflow = app.workflowStateMachine; // Assign the existing workflowStateMachine instance
+            app.isWorkflowActive = true;
+            app.activeWorkflow = app.workflowStateMachine;
+            app.registerActiveWorkflow(app.activeWorkflow); // Register the active workflow
 
             // Start the workflow
             await app.activeWorkflow.start(workflowName);

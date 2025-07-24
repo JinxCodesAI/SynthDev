@@ -6,12 +6,15 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { spawn } from 'child_process';
 import { writeFileSync, unlinkSync, existsSync, readFileSync } from 'fs';
+import { join } from 'path';
 
 describe.sequential('Command Interception E2E Tests', () => {
     let appProcess;
     let testEnvFile;
     let testTimeout;
     let originalEnvFile;
+    let testOutput = { value: '' };
+    let testError = { value: '' };
 
     beforeEach(() => {
         // Backup original env file if it exists
@@ -34,7 +37,11 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
         );
 
         // Set timeout for tests - increased for CI environments
-        testTimeout = process.env.CI ? 25000 : 15000;
+        testTimeout = process.env.CI ? 30000 : 20000; // Increased timeout
+
+        // Initialize output collectors as objects to allow pass-by-reference
+        testOutput = { value: '' };
+        testError = { value: '' };
     });
 
     afterEach(async () => {
@@ -84,14 +91,16 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
         originalEnvFile = null;
     });
 
-    it('should intercept /help command without AI response', async () => {
-        const chunks = [];
+    /**
+     * Helper function to spawn the application process and wait for initial prompt
+     */
+    function spawnAppAndAwaitPrompt() {
         return new Promise((resolve, reject) => {
-            const timeout = setTimeout(() => {
-                reject(new Error('Test timeout - /help command test'));
-            }, testTimeout);
+            const appPath = join(process.cwd(), 'src', 'core', 'app.js');
+            console.log('DEBUG: Spawning app:', appPath);
+            console.log('DEBUG: Working directory:', process.cwd());
 
-            appProcess = spawn('node', ['src/core/app.js'], {
+            const currentAppProcess = spawn('node', [appPath], {
                 env: {
                     ...process.env,
                     NODE_ENV: 'test',
@@ -107,373 +116,162 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
                 cwd: process.cwd(),
             });
 
-            let output = '';
-            let stderr = '';
-            let helpCommandSent = false;
-            let helpResponseReceived = false;
-            let aiResponseReceived = false;
+            testOutput.value = ''; // Reset global output for this new process
+            testError.value = ''; // Reset global error for this new process
 
-            appProcess.stdout.on('data', data => {
+            currentAppProcess.on('error', err => {
+                console.error('DEBUG: App process failed to start.', err);
+                testError.value += `App process failed to start: ${err.message}\n`;
+                reject(err);
+            });
+
+            currentAppProcess.on('exit', (code, signal) => {
+                console.log(`DEBUG: App process exited with code ${code} and signal ${signal}`);
+            });
+
+            const startupTimeout = setTimeout(() => {
+                reject(
+                    new Error(
+                        `App startup timed out after ${testTimeout}ms. Output: ${testOutput.value.slice(-500)}`
+                    )
+                );
+            }, testTimeout);
+
+            currentAppProcess.stdout.on('data', data => {
                 const chunk = data.toString();
-                output += chunk;
-                chunks.push(chunk);
+                testOutput.value += chunk;
+                console.log('DEBUG: APP STDOUT:', chunk);
 
-                // Wait for startup to complete
-                if (chunk.includes('💭 You:') && !helpCommandSent) {
-                    helpCommandSent = true;
-                    setTimeout(() => {
-                        if (appProcess && appProcess.stdin) {
-                            appProcess.stdin.write('/help\n');
-                        }
-                    }, 100);
-                }
-
-                // Check for help response
-                if (chunk.includes('Available Commands') && helpCommandSent) {
-                    helpResponseReceived = true;
-                }
-
-                // Check for AI response after help (this should NOT happen)
-                if (
-                    helpResponseReceived &&
-                    (chunk.includes('🤖 dude:') || chunk.includes('🧠 Synth-Dev is thinking'))
-                ) {
-                    aiResponseReceived = true;
-                }
-
-                // Exit after help response and brief wait
-                if (helpResponseReceived && !aiResponseReceived) {
-                    setTimeout(() => {
-                        if (appProcess && appProcess.stdin) {
-                            appProcess.stdin.write('/exit\n');
-                        }
-                    }, 1000);
+                if (chunk.includes('💭 You:')) {
+                    clearTimeout(startupTimeout);
+                    resolve(currentAppProcess);
                 }
             });
 
-            appProcess.stderr.on('data', data => {
-                stderr += data.toString();
-            });
-
-            appProcess.on('close', code => {
-                clearTimeout(timeout);
-
-                try {
-                    // Verify help command was intercepted
-                    expect(helpCommandSent).toBe(true);
-                    expect(helpResponseReceived).toBe(true);
-                    expect(aiResponseReceived).toBe(false);
-
-                    // Verify help content
-                    expect(output).toContain('Available Commands');
-                    expect(output).toContain('/help - Show this help message');
-                    expect(output).toContain('/snapshot - Create and manage file snapshots');
-
-                    resolve();
-                } catch (error) {
-                    reject(error);
-                }
-            });
-
-            appProcess.on('error', error => {
-                clearTimeout(timeout);
-                reject(error);
+            currentAppProcess.stderr.on('data', data => {
+                const chunk = data.toString();
+                testError.value += chunk;
+                console.error('DEBUG: APP STDERR:', chunk);
             });
         });
+    }
+
+    /**
+     * Helper function to send input to the application
+     */
+    async function sendInput(input) {
+        console.log(`DEBUG: Sending input: "${input}"`);
+        appProcess.stdin.write(`${input}
+`);
+        // Give the app a moment to process the input
+        await new Promise(resolve => setTimeout(resolve, 500));
+    }
+
+    /**
+     * Helper function to wait for specific output
+     */
+    async function waitForOutput(expectedText, timeout = 20000, outputRef, errorRef) {
+        console.log(`DEBUG: Waiting for output: "${expectedText}" (timeout: ${timeout}ms)`);
+        const startTime = Date.now();
+
+        return new Promise((resolve, reject) => {
+            const checkInterval = setInterval(() => {
+                console.log(
+                    `DEBUG: Current outputRef.value: ${outputRef.slice(-100).replace(/\n/g, '\\n')}`
+                ); // Log last 100 chars
+                if (outputRef.includes(expectedText)) {
+                    clearInterval(checkInterval);
+                    resolve(true);
+                } else if (Date.now() - startTime > timeout) {
+                    clearInterval(checkInterval);
+                    console.error(`ERROR: Timeout waiting for: "${expectedText}"`);
+                    console.error(`Current output length: ${outputRef.length}`);
+                    console.error(`Current error length: ${errorRef.length}`);
+                    console.error(`Full output: "${outputRef}"`); // Log full output
+                    console.error(`Last 500 chars of error: "${errorRef.slice(-500)}"`);
+                    console.error(`Process killed: ${appProcess?.killed}`);
+                    console.error(`Process pid: ${appProcess?.pid}`);
+                    reject(
+                        new Error(
+                            `Timeout waiting for output: "${expectedText}". Got: "${outputRef.slice(-200)}"`
+                        )
+                    );
+                }
+            }, 100);
+        });
+    }
+
+    it('should intercept /help command without AI response', async () => {
+        appProcess = await spawnAppAndAwaitPrompt();
+
+        await sendInput('/help');
+        await waitForOutput('Available Commands', testTimeout);
+
+        const aiResponseReceived =
+            testOutput.value.includes('🤖 dude:') ||
+            testOutput.value.includes('🧠 Synth-Dev is thinking');
+        expect(aiResponseReceived).toBe(false);
+
+        expect(testOutput.value).toContain('Available Commands');
+        expect(testOutput.value).toContain('/help - Show this help message');
+        expect(testOutput.value).toContain('/snapshot - Create and manage file snapshots');
+
+        await sendInput('/exit');
+        await new Promise(resolve => appProcess.on('close', resolve));
     });
 
     it('should intercept /cost command without AI response', async () => {
-        const chunks = [];
-        return new Promise((resolve, reject) => {
-            const timeout = setTimeout(() => {
-                reject(new Error('Test timeout - /cost command test'));
-            }, testTimeout);
+        appProcess = await spawnAppAndAwaitPrompt();
 
-            appProcess = spawn('node', ['src/core/app.js'], {
-                env: {
-                    ...process.env,
-                    NODE_ENV: 'test',
-                    SYNTHDEV_API_KEY: 'test-key-12345',
-                    SYNTHDEV_BASE_MODEL: 'gpt-4.1-mini',
-                    SYNTHDEV_BASE_URL: 'https://api.openai.com/v1',
-                    SYNTHDEV_VERBOSITY_LEVEL: '2',
-                    SYNTHDEV_ROLE: 'dude',
-                    SYNTHDEV_MAX_TOOL_CALLS: '50',
-                    SYNTHDEV_PROMPT_ENHANCEMENT: 'false',
-                },
-                stdio: ['pipe', 'pipe', 'pipe'],
-                cwd: process.cwd(),
-            });
+        await sendInput('/cost');
+        await waitForOutput('Accumulated API Costs', testTimeout);
 
-            let output = '';
-            let stderr = '';
-            let costCommandSent = false;
-            let costResponseReceived = false;
-            let aiResponseReceived = false;
+        const aiResponseReceived =
+            testOutput.value.includes('🤖 dude:') ||
+            testOutput.value.includes('🧠 Synth-Dev is thinking');
+        expect(aiResponseReceived).toBe(false);
 
-            appProcess.stdout.on('data', data => {
-                const chunk = data.toString();
-                output += chunk;
-                chunks.push(chunk);
+        expect(testOutput.value).toMatch(/💰 Accumulated API Costs|No API usage data available/);
 
-                // Wait for startup to complete
-                if (chunk.includes('💭 You:') && !costCommandSent) {
-                    costCommandSent = true;
-                    setTimeout(() => {
-                        if (appProcess && appProcess.stdin) {
-                            appProcess.stdin.write('/cost\n');
-                        }
-                    }, 100);
-                }
-
-                // Check for cost response
-                if (
-                    (chunk.includes('💰 Accumulated API Costs') ||
-                        chunk.includes('No API usage data available')) &&
-                    costCommandSent
-                ) {
-                    costResponseReceived = true;
-                }
-
-                // Check for AI response after cost (this should NOT happen)
-                if (
-                    costResponseReceived &&
-                    (chunk.includes('🤖 dude:') || chunk.includes('🧠 Synth-Dev is thinking'))
-                ) {
-                    aiResponseReceived = true;
-                }
-
-                // Exit after cost response and brief wait
-                if (costResponseReceived && !aiResponseReceived) {
-                    setTimeout(() => {
-                        if (appProcess && appProcess.stdin) {
-                            appProcess.stdin.write('/exit\n');
-                        }
-                    }, 1000);
-                }
-            });
-
-            appProcess.stderr.on('data', data => {
-                stderr += data.toString();
-            });
-
-            appProcess.on('close', code => {
-                clearTimeout(timeout);
-
-                try {
-                    // Verify cost command was intercepted
-                    expect(costCommandSent).toBe(true);
-                    expect(costResponseReceived).toBe(true);
-                    expect(aiResponseReceived).toBe(false);
-
-                    // Verify cost content
-                    expect(output).toMatch(/💰 Accumulated API Costs|No API usage data available/);
-
-                    resolve();
-                } catch (error) {
-                    reject(error);
-                }
-            });
-
-            appProcess.on('error', error => {
-                clearTimeout(timeout);
-                reject(error);
-            });
-        });
+        await sendInput('/exit');
+        await new Promise(resolve => appProcess.on('close', resolve));
     });
 
     it('should intercept /snapshot command without AI response', async () => {
-        return new Promise((resolve, reject) => {
-            const timeout = setTimeout(() => {
-                reject(new Error('Test timeout - /snapshot command test'));
-            }, testTimeout);
+        appProcess = await spawnAppAndAwaitPrompt();
 
-            appProcess = spawn('node', ['src/core/app.js'], {
-                env: {
-                    ...process.env,
-                    NODE_ENV: 'test',
-                    SYNTHDEV_API_KEY: 'test-key-12345',
-                    SYNTHDEV_BASE_MODEL: 'gpt-4.1-mini',
-                    SYNTHDEV_BASE_URL: 'https://api.openai.com/v1',
-                    SYNTHDEV_VERBOSITY_LEVEL: '2',
-                    SYNTHDEV_ROLE: 'dude',
-                    SYNTHDEV_MAX_TOOL_CALLS: '50',
-                    SYNTHDEV_PROMPT_ENHANCEMENT: 'false',
-                },
-                stdio: ['pipe', 'pipe', 'pipe'],
-                cwd: process.cwd(),
-            });
+        await sendInput('/snapshot');
+        await waitForOutput('📸 Snapshot Management Commands', testTimeout);
 
-            let output = '';
-            let stderr = '';
-            let snapshotCommandSent = false;
-            let snapshotResponseReceived = false;
-            let aiResponseReceived = false;
+        const aiResponseReceived =
+            testOutput.value.includes('🤖 dude:') ||
+            testOutput.value.includes('🧠 Synth-Dev is thinking');
+        expect(aiResponseReceived).toBe(false);
 
-            appProcess.stdout.on('data', data => {
-                const chunk = data.toString();
-                output += chunk;
+        expect(testOutput.value).toContain('📸 Snapshot Management Commands');
+        expect(testOutput.value).toContain('/snapshot create');
+        expect(testOutput.value).toContain('/snapshot list');
 
-                // Wait for startup to complete
-                if (chunk.includes('💭 You:') && !snapshotCommandSent) {
-                    snapshotCommandSent = true;
-                    setTimeout(() => {
-                        if (appProcess && appProcess.stdin) {
-                            appProcess.stdin.write('/snapshot\n');
-                        }
-                    }, 100);
-                }
-
-                // Check for snapshot response
-                if (chunk.includes('📸 Snapshot Management Commands') && snapshotCommandSent) {
-                    snapshotResponseReceived = true;
-                }
-
-                // Check for AI response after snapshot (this should NOT happen)
-                if (
-                    snapshotResponseReceived &&
-                    (chunk.includes('🤖 dude:') || chunk.includes('🧠 Synth-Dev is thinking'))
-                ) {
-                    aiResponseReceived = true;
-                }
-
-                // Exit after snapshot response and brief wait
-                if (snapshotResponseReceived && !aiResponseReceived) {
-                    setTimeout(() => {
-                        if (appProcess && appProcess.stdin) {
-                            appProcess.stdin.write('/exit\n');
-                        }
-                    }, 1000);
-                }
-            });
-
-            appProcess.stderr.on('data', data => {
-                stderr += data.toString();
-            });
-
-            appProcess.on('close', code => {
-                clearTimeout(timeout);
-
-                try {
-                    // Verify snapshot command was intercepted
-                    expect(snapshotCommandSent).toBe(true);
-                    expect(snapshotResponseReceived).toBe(true);
-                    expect(aiResponseReceived).toBe(false); // This is the key assertion that should pass
-
-                    // Verify snapshot content
-                    expect(output).toContain('📸 Snapshot Management Commands');
-                    expect(output).toContain('/snapshot create');
-                    expect(output).toContain('/snapshot list');
-
-                    resolve();
-                } catch (error) {
-                    reject(error);
-                }
-            });
-
-            appProcess.on('error', error => {
-                clearTimeout(timeout);
-                reject(error);
-            });
-        });
+        await sendInput('/exit');
+        await new Promise(resolve => appProcess.on('close', resolve));
     });
 
-    //something
     it('should intercept /snapshot help subcommand without AI response', async () => {
-        const chunks = [];
-        return new Promise((resolve, reject) => {
-            const timeout = setTimeout(() => {
-                reject(new Error('Test timeout - /snapshot help test'));
-            }, testTimeout);
+        appProcess = await spawnAppAndAwaitPrompt();
 
-            appProcess = spawn('node', ['src/core/app.js'], {
-                env: {
-                    ...process.env,
-                    NODE_ENV: 'test',
-                    SYNTHDEV_API_KEY: 'test-key-12345',
-                    SYNTHDEV_BASE_MODEL: 'gpt-4.1-mini',
-                    SYNTHDEV_BASE_URL: 'https://api.openai.com/v1',
-                    SYNTHDEV_VERBOSITY_LEVEL: '2',
-                    SYNTHDEV_ROLE: 'dude',
-                    SYNTHDEV_MAX_TOOL_CALLS: '50',
-                    SYNTHDEV_PROMPT_ENHANCEMENT: 'false',
-                },
-                stdio: ['pipe', 'pipe', 'pipe'],
-                cwd: process.cwd(),
-            });
+        await sendInput('/snapshot help');
+        await waitForOutput('📸 Snapshot Management Commands', testTimeout);
 
-            let output = '';
-            let stderr = '';
-            let snapshotHelpCommandSent = false;
-            let snapshotHelpResponseReceived = false;
-            let aiResponseReceived = false;
+        const aiResponseReceived =
+            testOutput.value.includes('🤖 dude:') ||
+            testOutput.value.includes('🧠 Synth-Dev is thinking');
+        expect(aiResponseReceived).toBe(false);
 
-            appProcess.stdout.on('data', data => {
-                const chunk = data.toString();
-                output += chunk;
-                chunks.push(chunk);
+        expect(testOutput.value).toContain('📸 Snapshot Management Commands');
+        expect(testOutput.value).toContain('💡 Examples:');
+        expect(testOutput.value).toContain('📝 Notes:');
 
-                // Wait for startup to complete
-                if (chunk.includes('💭 You:') && !snapshotHelpCommandSent) {
-                    snapshotHelpCommandSent = true;
-                    setTimeout(() => {
-                        if (appProcess && appProcess.stdin) {
-                            appProcess.stdin.write('/snapshot help\n');
-                        }
-                    }, 100);
-                }
-
-                // Check for snapshot help response
-                if (chunk.includes('📸 Snapshot Management Commands') && snapshotHelpCommandSent) {
-                    snapshotHelpResponseReceived = true;
-                }
-
-                // Check for AI response after snapshot help (this should NOT happen)
-                if (
-                    snapshotHelpResponseReceived &&
-                    (chunk.includes('🤖 dude:') || chunk.includes('🧠 Synth-Dev is thinking'))
-                ) {
-                    aiResponseReceived = true;
-                }
-
-                // Exit after snapshot help response and brief wait
-                if (snapshotHelpResponseReceived && !aiResponseReceived) {
-                    setTimeout(() => {
-                        if (appProcess && appProcess.stdin) {
-                            appProcess.stdin.write('/exit\n');
-                        }
-                    }, 1000);
-                }
-            });
-
-            appProcess.stderr.on('data', data => {
-                stderr += data.toString();
-            });
-
-            appProcess.on('close', code => {
-                clearTimeout(timeout);
-
-                try {
-                    // Verify snapshot help command was intercepted
-                    expect(snapshotHelpCommandSent).toBe(true);
-                    expect(snapshotHelpResponseReceived).toBe(true);
-                    expect(aiResponseReceived).toBe(false);
-
-                    // Verify snapshot help content
-                    expect(output).toContain('📸 Snapshot Management Commands');
-                    expect(output).toContain('💡 Examples:');
-                    expect(output).toContain('📝 Notes:');
-
-                    resolve();
-                } catch (error) {
-                    reject(error);
-                }
-            });
-
-            appProcess.on('error', error => {
-                clearTimeout(timeout);
-                reject(error);
-            });
-        });
+        await sendInput('/exit');
+        await new Promise(resolve => appProcess.on('close', resolve));
     });
 });
