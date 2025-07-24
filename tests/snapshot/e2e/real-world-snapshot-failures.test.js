@@ -182,14 +182,27 @@ describe('Real-World Snapshot Failures', () => {
             // Create second snapshot
             const snapshot2 = await snapshotManager.createSnapshot('After README change');
 
-            // Get snapshot details
-            const details1 = await snapshotManager.getSnapshotDetails(snapshot1.id);
-            const details2 = await snapshotManager.getSnapshotDetails(snapshot2.id);
+            // Get raw snapshots from store to check differential behavior
+            const rawSnapshot1 = await snapshotManager.store.retrieve(snapshot1.id);
+            const rawSnapshot2 = await snapshotManager.store.retrieve(snapshot2.id);
 
-            // Second snapshot should only contain changed files (differential)
-            // This currently FAILS because all snapshots store all files
-            expect(details2.files.length).toBeLessThan(details1.files.length);
-            expect(details2.stats.totalSize).toBeLessThan(details1.stats.totalSize);
+            // First snapshot should be full type
+            expect(rawSnapshot1.type).toBe('full');
+
+            // Second snapshot should be differential type
+            expect(rawSnapshot2.type).toBe('differential');
+
+            // Count files with actual content vs references in differential snapshot
+            const filesWithContent2 = Object.values(rawSnapshot2.fileData.files).filter(
+                file => file.action !== 'unchanged'
+            ).length;
+            const referencedFiles2 = Object.values(rawSnapshot2.fileData.files).filter(
+                file => file.action === 'unchanged'
+            ).length;
+
+            // Second snapshot should have fewer files with actual content stored
+            expect(filesWithContent2).toBeLessThan(Object.keys(rawSnapshot1.fileData.files).length);
+            expect(referencedFiles2).toBeGreaterThan(0);
         });
     });
 

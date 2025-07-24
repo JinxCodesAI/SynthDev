@@ -81,6 +81,18 @@ export class SnapshotManager {
             const basePath = metadata.basePath || process.cwd();
             const resolvedBasePath = resolve(basePath);
 
+            // Determine if this should be differential
+            const enableDifferential = this.config.storage.enableDifferential !== false;
+            let baseSnapshotId = null;
+
+            if (enableDifferential) {
+                // Get the most recent snapshot as base
+                const recentSnapshots = await this.store.list({ limit: 1 });
+                if (recentSnapshots.length > 0) {
+                    baseSnapshotId = recentSnapshots[0].id;
+                }
+            }
+
             // Capture files
             const captureStartTime = Date.now();
             const fileData = await this.fileBackup.captureFiles(resolvedBasePath, {
@@ -96,21 +108,37 @@ export class SnapshotManager {
                 captureTime: Date.now() - captureStartTime,
                 fileCount: Object.keys(fileData.files).length,
                 totalSize: fileData.stats.totalSize,
+                type: baseSnapshotId ? 'differential' : 'full',
+                baseSnapshotId: baseSnapshotId,
                 creator: process.env.USER || process.env.USERNAME || 'unknown',
                 ...metadata,
             };
 
-            // Store snapshot
-            const snapshotId = await this.store.store({
-                description,
-                fileData,
-                metadata: snapshotMetadata,
-            });
+            // Store snapshot (differential or full)
+            const snapshotId =
+                enableDifferential && typeof this.store.storeDifferential === 'function'
+                    ? await this.store.storeDifferential(
+                          {
+                              description,
+                              fileData,
+                              metadata: snapshotMetadata,
+                          },
+                          baseSnapshotId
+                      )
+                    : await this.store.store({
+                          description,
+                          fileData,
+                          metadata: snapshotMetadata,
+                      });
 
             // Perform auto-cleanup if enabled
             if (this.config.behavior.autoCleanup) {
                 await this._performAutoCleanup();
             }
+
+            // Get the stored snapshot to access differential stats if available
+            const storedSnapshot = await this.store.retrieve(snapshotId);
+            const differentialStats = storedSnapshot?.metadata?.differentialStats;
 
             const result = {
                 id: snapshotId,
@@ -120,6 +148,11 @@ export class SnapshotManager {
                     fileCount: snapshotMetadata.fileCount,
                     totalSize: snapshotMetadata.totalSize,
                     captureTime: snapshotMetadata.captureTime,
+                    type: snapshotMetadata.type,
+                    ...(differentialStats && {
+                        changedFiles: differentialStats.changedFiles,
+                        unchangedFiles: differentialStats.unchangedFiles,
+                    }),
                 },
             };
 
@@ -207,9 +240,20 @@ export class SnapshotManager {
             const fullId = await this.resolveSnapshotId(snapshotId);
 
             // Validate snapshot exists
-            const snapshot = await this.store.retrieve(fullId);
+            let snapshot = await this.store.retrieve(fullId);
             if (!snapshot) {
                 throw new Error(this.messages.errors.snapshotNotFound.replace('{id}', snapshotId));
+            }
+
+            // If it's a differential snapshot, reconstruct it first
+            if (
+                snapshot.type === 'differential' &&
+                typeof this.store.reconstructSnapshot === 'function'
+            ) {
+                snapshot = await this.store.reconstructSnapshot(fullId);
+                if (!snapshot) {
+                    throw new Error(`Failed to reconstruct differential snapshot: ${snapshotId}`);
+                }
             }
 
             // If preview mode, generate preview
