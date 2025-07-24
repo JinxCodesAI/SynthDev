@@ -24,14 +24,21 @@ vi.mock('../../../src/core/managers/logger.js', () => ({
 
 describe('Real-World Snapshot Failures', () => {
     let testDir;
+    let originalCwd;
     let autoSnapshotManager;
     let snapshotManager;
     let snapshotsCommand;
 
     beforeEach(async () => {
         // Create a real temporary directory for testing
-        testDir = join(tmpdir(), `snapshot-test-${Date.now()}`);
+        testDir = join(
+            tmpdir(),
+            `snapshot-test-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+        );
         mkdirSync(testDir, { recursive: true });
+
+        // Store original directory to restore later
+        originalCwd = process.cwd();
 
         // Change to test directory
         process.chdir(testDir);
@@ -53,6 +60,12 @@ describe('Real-World Snapshot Failures', () => {
     });
 
     afterEach(() => {
+        // Restore original working directory
+        if (originalCwd) {
+            process.chdir(originalCwd);
+        }
+
+        // Clean up test directory
         if (existsSync(testDir)) {
             rmSync(testDir, { recursive: true, force: true });
         }

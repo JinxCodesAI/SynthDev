@@ -24,6 +24,22 @@ vi.mock('../../../src/core/managers/logger.js', () => ({
 // Mock config managers
 vi.mock('../../../src/config/managers/snapshotConfigManager.js', () => ({
     getSnapshotConfigManager: () => ({
+        getConfig: () => ({
+            storage: { type: 'memory', maxSnapshots: 50 },
+            fileFiltering: { excludePatterns: ['node_modules', '.git'] },
+            backup: { createBackups: true },
+            behavior: { autoCleanup: false },
+            messages: { success: {}, errors: {}, info: {} },
+            phase2: {
+                autoSnapshot: { enabled: true, createOnToolExecution: true },
+                toolDeclarations: { defaultModifiesFiles: false },
+                triggerRules: { maxSnapshotsPerSession: 20, cooldownPeriod: 1000 },
+                descriptionGeneration: { maxLength: 100, includeToolName: true },
+                fileChangeDetection: { enabled: true, useChecksums: false },
+                initialSnapshot: { enabled: true, createOnStartup: true },
+                integration: { enabled: true, trackFileChanges: true },
+            },
+        }),
         getPhase2Config: () => ({
             autoSnapshot: { enabled: true, createOnToolExecution: true },
             toolDeclarations: { defaultModifiesFiles: false },
@@ -43,12 +59,17 @@ vi.mock('../../../src/config/managers/snapshotConfigManager.js', () => ({
 
 describe('Automatic Snapshot Integration', () => {
     let testDir;
+    let originalCwd;
     let autoSnapshotManager;
     let toolManager;
 
     beforeEach(async () => {
-        testDir = join(tmpdir(), `auto-snapshot-test-${Date.now()}`);
+        testDir = join(
+            tmpdir(),
+            `auto-snapshot-test-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+        );
         mkdirSync(testDir, { recursive: true });
+        originalCwd = process.cwd();
         process.chdir(testDir);
 
         // Create test files
@@ -63,6 +84,9 @@ describe('Automatic Snapshot Integration', () => {
     });
 
     afterEach(() => {
+        if (originalCwd) {
+            process.chdir(originalCwd);
+        }
         if (existsSync(testDir)) {
             rmSync(testDir, { recursive: true, force: true });
         }

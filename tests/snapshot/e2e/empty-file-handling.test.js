@@ -23,13 +23,18 @@ vi.mock('../../../src/core/managers/logger.js', () => ({
 
 describe('Empty File Handling in Snapshots', () => {
     let testDir;
+    let originalCwd;
     let snapshotManager;
     let fileBackup;
     let fileFilter;
 
     beforeEach(() => {
-        testDir = join(tmpdir(), `empty-file-test-${Date.now()}`);
+        testDir = join(
+            tmpdir(),
+            `empty-file-test-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+        );
         mkdirSync(testDir, { recursive: true });
+        originalCwd = process.cwd();
         process.chdir(testDir);
 
         // Initialize components
@@ -39,6 +44,9 @@ describe('Empty File Handling in Snapshots', () => {
     });
 
     afterEach(() => {
+        if (originalCwd) {
+            process.chdir(originalCwd);
+        }
         if (existsSync(testDir)) {
             rmSync(testDir, { recursive: true, force: true });
         }
