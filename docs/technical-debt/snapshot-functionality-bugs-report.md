@@ -158,6 +158,38 @@ The following test scenarios are missing and should be added:
 - **Development Impact**: Medium - Requires architectural fixes but no major rewrites
 - **Timeline**: Should be fixed before any production release
 
+## Test Results Summary
+
+I've created comprehensive failing tests that demonstrate all the identified issues:
+
+### Test Files Created:
+
+1. **`tests/snapshot/e2e/real-world-snapshot-failures.test.js`** - 8 failing tests covering all major issues
+2. **`tests/snapshot/e2e/empty-file-handling.test.js`** - 11 tests (9 failing) specifically for empty file issues
+3. **`tests/snapshot/e2e/automatic-snapshot-integration.test.js`** - 13 failing tests for integration issues
+
+### Test Results:
+
+- **Total Tests**: 32 tests created
+- **Failing Tests**: 30 tests failing as expected
+- **Passing Tests**: 2 tests (basic file capture works)
+
+### Key Failing Scenarios Confirmed:
+
+- ✗ Initial snapshots not visible in `/snapshot list`
+- ✗ No automatic snapshots created on tool execution
+- ✗ All snapshots store complete file copies (non-differential)
+- ✗ Restoration fails with empty files (`.gitkeep` error)
+- ✗ Integration between AutoSnapshotManager and SnapshotsCommand broken
+
+## Next Steps
+
+1. **Fix empty file validation** in `FileBackup.validateFileData()` (Priority 1)
+2. **Fix initial snapshot storage** to ensure it's visible in commands (Priority 1)
+3. **Implement proper AutoSnapshotManager integration** with tool execution (Priority 1)
+4. **Consider differential vs full snapshot strategy** (Priority 2)
+5. **Add comprehensive integration tests** to prevent regression (Priority 2)
+
 ## Conclusion
 
-The snapshot system has fundamental integration and validation issues that prevent it from working as designed. While individual components are well-tested, the system-level integration is broken. The issues are fixable but require careful attention to the integration points and real-world usage scenarios.
+The snapshot system has fundamental integration and validation issues that prevent it from working as designed. While individual components are well-tested, the system-level integration is broken. The failing tests now provide a clear roadmap for fixes and will ensure the issues are properly resolved before considering the functionality complete.
