@@ -2,8 +2,7 @@
     "name": "execute_script",
     "description": "Execute a JavaScript script as a child process for calculations, text transformations, and data aggregation. Use Stdout for returning results.",
     "auto_run": false,
-    "requires_backup": false,
-    "backup_resource_path_property_name": "",
+
     "category": "command",
     "version": "1.0.0",
     "tags": ["javascript", "script", "calculation", "transformation", "aggregation"],

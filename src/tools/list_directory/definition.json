@@ -2,8 +2,7 @@
     "name": "list_directory",
     "description": "List the contents of a directory and provide detailed information about files and subdirectories",
     "auto_run": true,
-    "requires_backup": false,
-    "backup_resource_path_property_name": "",
+
     "category": "file",
     "version": "2.0.0",
     "tags": ["directory", "file", "list", "filesystem"],

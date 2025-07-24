@@ -6,13 +6,12 @@ import { getLogger } from '../core/managers/logger.js';
  * Represents an agent instance in a workflow with its own API client and context role
  */
 export default class WorkflowAgent {
-    constructor(agentConfig, context, config, toolManager, snapshotManager, costsManager) {
+    constructor(agentConfig, context, config, toolManager, costsManager) {
         this.agentRole = agentConfig.agent_role;
         this.contextRole = agentConfig.role; // 'user' or 'assistant'
         this.context = context;
         this.config = config;
         this.toolManager = toolManager;
-        this.snapshotManager = snapshotManager;
         this.costsManager = costsManager;
         this.logger = getLogger();
 

@@ -57,13 +57,40 @@ SYNTHDEV_ENABLE_PROMPT_ENHANCEMENT=false
     afterEach(async () => {
         // Kill the process if it's still running
         if (appProcess && !appProcess.killed) {
-            appProcess.kill('SIGTERM');
+            try {
+                // First try graceful termination
+                appProcess.kill('SIGTERM');
+                // Give the process a moment to terminate gracefully
+                await new Promise(resolve => setTimeout(resolve, 500));
 
-            // Wait for process to exit
-            await new Promise(resolve => {
-                appProcess.on('exit', resolve);
-                setTimeout(resolve, 2000); // Timeout after 2 seconds
-            });
+                // If still running, force kill
+                if (!appProcess.killed) {
+                    appProcess.kill('SIGKILL');
+                }
+            } catch (error) {
+                // Process might already be dead, that's okay
+            }
+            appProcess = null;
+        }
+
+        // Add a delay to ensure processes are completely terminated
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        // Clean up any state files to ensure each test starts fresh
+        const stateFiles = [
+            '.synthdev-initial-snapshot',
+            '.synthdev-config-cache',
+            '.synthdev-session',
+        ];
+
+        for (const stateFile of stateFiles) {
+            if (existsSync(stateFile)) {
+                try {
+                    unlinkSync(stateFile);
+                } catch (error) {
+                    // Ignore cleanup errors
+                }
+            }
         }
 
         // Cleanup test files
@@ -87,9 +114,23 @@ SYNTHDEV_ENABLE_PROMPT_ENHANCEMENT=false
     function spawnApp() {
         const appPath = join(process.cwd(), 'src', 'core', 'app.js');
 
+        console.log('Spawning app:', appPath);
+        console.log('Working directory:', process.cwd());
+
         appProcess = spawn('node', [appPath], {
             stdio: ['pipe', 'pipe', 'pipe'],
             env: { ...process.env, NODE_ENV: 'test' },
+            cwd: process.cwd(),
+        });
+
+        // Handle process errors
+        appProcess.on('error', error => {
+            console.error('Process spawn error:', error);
+            testError += `Process spawn error: ${error.message}\n`;
+        });
+
+        appProcess.on('exit', (code, signal) => {
+            console.log(`Process exited with code ${code} and signal ${signal}`);
         });
 
         // Collect stdout
@@ -128,11 +169,20 @@ SYNTHDEV_ENABLE_PROMPT_ENHANCEMENT=false
 
             const checkOutput = () => {
                 if (testOutput.includes(expectedText)) {
+                    console.log(`✓ Found expected output: "${expectedText}"`);
                     resolve(true);
                 } else if (Date.now() - startTime > timeout) {
+                    console.error(`✗ Timeout waiting for: "${expectedText}"`);
+                    console.error(`Current output length: ${testOutput.length}`);
+                    console.error(`Current error length: ${testError.length}`);
+                    console.error(`Last 500 chars of output: "${testOutput.slice(-500)}"`);
+                    console.error(`Last 500 chars of error: "${testError.slice(-500)}"`);
+                    console.error(`Process killed: ${appProcess?.killed}`);
+                    console.error(`Process pid: ${appProcess?.pid}`);
+
                     reject(
                         new Error(
-                            `Timeout waiting for output: "${expectedText}". Got: "${testOutput}"`
+                            `Timeout waiting for output: "${expectedText}". Got: "${testOutput.slice(-200)}"`
                         )
                     );
                 } else {

@@ -2,8 +2,7 @@
     "name": "write_file",
     "description": "Write content to a file in the file system using a relative path",
     "auto_run": false,
-    "requires_backup": true,
-    "backup_resource_path_property_name": "file_path",
+
     "category": "file",
     "version": "2.0.0",
     "tags": ["file", "write", "filesystem", "io"],
