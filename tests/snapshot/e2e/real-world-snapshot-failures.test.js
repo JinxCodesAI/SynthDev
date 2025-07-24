@@ -28,6 +28,7 @@ describe('Real-World Snapshot Failures', () => {
     let autoSnapshotManager;
     let snapshotManager;
     let snapshotsCommand;
+    let mockToolManager;
 
     beforeEach(async () => {
         // Create a real temporary directory for testing
@@ -53,13 +54,38 @@ describe('Real-World Snapshot Failures', () => {
         mkdirSync(join(testDir, 'docs'), { recursive: true });
         writeFileSync(join(testDir, 'docs', '.gitkeep'), '');
 
-        // Initialize managers
-        autoSnapshotManager = new AutoSnapshotManager();
-        snapshotManager = new SnapshotManager();
+        // Create mock toolManager first
+        mockToolManager = {
+            executeToolCall: vi.fn().mockResolvedValue({
+                success: true,
+                result: 'File modified',
+            }),
+            getToolDefinition: vi.fn(toolName => {
+                if (toolName === 'write_file') {
+                    return {
+                        name: 'write_file',
+                        description: 'Write content to a file',
+                        modifiesFiles: true,
+                        fileTargets: ['file_path'],
+                    };
+                }
+                return null;
+            }),
+            hasToolDefinition: vi.fn(toolName => toolName === 'write_file'),
+        };
+
+        // Initialize managers with toolManager
+        autoSnapshotManager = new AutoSnapshotManager(mockToolManager);
+
+        // Use singleton to ensure consistency
+        const { getSnapshotManager } = await import(
+            '../../../src/core/snapshot/SnapshotManagerSingleton.js'
+        );
+        snapshotManager = getSnapshotManager();
         snapshotsCommand = new SnapshotsCommand();
     });
 
-    afterEach(() => {
+    afterEach(async () => {
         // Restore original working directory
         if (originalCwd) {
             process.chdir(originalCwd);
@@ -69,6 +95,12 @@ describe('Real-World Snapshot Failures', () => {
         if (existsSync(testDir)) {
             rmSync(testDir, { recursive: true, force: true });
         }
+
+        // Reset singleton
+        const { resetSnapshotManager } = await import(
+            '../../../src/core/snapshot/SnapshotManagerSingleton.js'
+        );
+        resetSnapshotManager();
     });
 
     describe('Issue 1: Initial Snapshot Not Visible', () => {
@@ -81,7 +113,7 @@ describe('Real-World Snapshot Failures', () => {
 
             // This should pass but currently FAILS
             expect(snapshots.length).toBeGreaterThan(0);
-            expect(snapshots.some(s => s.metadata?.triggerType === 'initial')).toBe(true);
+            expect(snapshots.some(s => s.triggerType === 'initial')).toBe(true);
         });
 
         it('should show initial snapshot via SnapshotsCommand', async () => {
@@ -116,22 +148,18 @@ describe('Real-World Snapshot Failures', () => {
             const initialSnapshots = await snapshotManager.listSnapshots();
             const initialCount = initialSnapshots.length;
 
-            // Simulate tool execution that modifies files
-            // This should trigger automatic snapshot creation
-            const mockToolManager = {
-                executeToolCall: vi.fn().mockResolvedValue({
-                    success: true,
-                    result: 'File modified',
-                }),
-            };
+            // The mockToolManager is already integrated during initialization
 
-            // Integrate with tool manager
-            autoSnapshotManager.integrateWithApplication({ toolManager: mockToolManager });
-
-            // Execute a file-modifying tool
-            await mockToolManager.executeToolCall('write_file', {
-                file_path: 'test.txt',
-                content: 'new content',
+            // Execute a file-modifying tool with proper toolCall format
+            await mockToolManager.executeToolCall({
+                id: 'test-tool-call-id',
+                function: {
+                    name: 'write_file',
+                    arguments: JSON.stringify({
+                        file_path: 'test.txt',
+                        content: 'new content',
+                    }),
+                },
             });
 
             // Check if automatic snapshot was created
@@ -139,7 +167,7 @@ describe('Real-World Snapshot Failures', () => {
 
             // This should pass but currently FAILS
             expect(finalSnapshots.length).toBe(initialCount + 1);
-            expect(finalSnapshots.some(s => s.metadata?.triggerType === 'automatic')).toBe(true);
+            expect(finalSnapshots.some(s => s.triggerType === 'automatic')).toBe(true);
         });
     });
 

@@ -26,7 +26,14 @@ vi.mock('../../../src/config/managers/snapshotConfigManager.js', () => ({
     getSnapshotConfigManager: () => ({
         getConfig: () => ({
             storage: { type: 'memory', maxSnapshots: 50 },
-            fileFiltering: { excludePatterns: ['node_modules', '.git'] },
+            fileFiltering: {
+                defaultExclusions: ['node_modules/**', '.git/**'],
+                customExclusions: [],
+                maxFileSize: 10 * 1024 * 1024,
+                binaryFileHandling: 'exclude',
+                followSymlinks: false,
+                caseSensitive: false,
+            },
             backup: { createBackups: true },
             behavior: { autoCleanup: false },
             messages: { success: {}, errors: {}, info: {} },
@@ -50,7 +57,14 @@ vi.mock('../../../src/config/managers/snapshotConfigManager.js', () => ({
             integration: { enabled: true, trackFileChanges: true },
         }),
         getStorageConfig: () => ({ type: 'memory', maxSnapshots: 50 }),
-        getFileFilterConfig: () => ({ excludePatterns: ['node_modules', '.git'] }),
+        getFileFilteringConfig: () => ({
+            defaultExclusions: ['node_modules/**', '.git/**'],
+            customExclusions: [],
+            maxFileSize: 10 * 1024 * 1024,
+            binaryFileHandling: 'exclude',
+            followSymlinks: false,
+            caseSensitive: false,
+        }),
         getBackupConfig: () => ({ createBackups: true }),
         getBehaviorConfig: () => ({ autoCleanup: false }),
         getMessagesConfig: () => ({ success: {}, errors: {}, info: {} }),

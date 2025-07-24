@@ -5,7 +5,7 @@
 
 import { getLogger } from '../managers/logger.js';
 import { getSnapshotConfigManager } from '../../config/managers/snapshotConfigManager.js';
-import { SnapshotManager } from './SnapshotManager.js';
+import { getSnapshotManager } from './SnapshotManagerSingleton.js';
 import { ToolMonitor } from './ToolMonitor.js';
 import { FileChangeDetector } from './FileChangeDetector.js';
 import { SnapshotTrigger } from './SnapshotTrigger.js';
@@ -21,8 +21,8 @@ export class AutoSnapshotManager {
         this.config = this.configManager.getPhase2Config();
         this.enabled = this.config.autoSnapshot.enabled;
 
-        // Core Phase 1 component
-        this.snapshotManager = new SnapshotManager();
+        // Core Phase 1 component - use singleton
+        this.snapshotManager = getSnapshotManager();
 
         // Phase 2 components
         this.toolMonitor = null;
@@ -33,6 +33,9 @@ export class AutoSnapshotManager {
 
         // Tool manager reference
         this.toolManager = toolManager;
+
+        // Integration state
+        this.toolManagerIntegrated = false;
 
         this.logger.debug('AutoSnapshotManager created', {
             enabled: this.enabled,
@@ -143,6 +146,7 @@ export class AutoSnapshotManager {
         // Integrate with ToolManager if available
         if (this.toolManager) {
             this.toolManagerIntegration.integrateWithToolManager(this.toolManager);
+            this.toolManagerIntegrated = true;
         }
 
         this.logger.debug('ToolManagerIntegration initialized');
@@ -185,6 +189,13 @@ export class AutoSnapshotManager {
      */
     integrateWithApplication(app) {
         if (this.toolManagerIntegration && app) {
+            // Ensure ToolManager integration is set up if not already done
+            if (app.toolManager && !this.toolManagerIntegrated) {
+                this.toolManagerIntegration.integrateWithToolManager(app.toolManager);
+                this.toolManagerIntegrated = true;
+                this.logger.debug('Integrated with ToolManager via Application');
+            }
+
             this.toolManagerIntegration.setupApplicationStartupHooks(app);
             this.logger.debug('Integrated with Application');
         }

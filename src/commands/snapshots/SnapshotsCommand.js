@@ -4,7 +4,7 @@
  */
 
 import { InteractiveCommand } from '../base/BaseCommand.js';
-import { SnapshotManager } from '../../core/snapshot/SnapshotManager.js';
+import { getSnapshotManager } from '../../core/snapshot/SnapshotManagerSingleton.js';
 import { getSnapshotConfigManager } from '../../config/managers/snapshotConfigManager.js';
 import { getLogger } from '../../core/managers/logger.js';
 
@@ -49,9 +49,9 @@ export class SnapshotsCommand extends InteractiveCommand {
      */
     async implementation(args, context) {
         try {
-            // Initialize snapshot manager if not already done
+            // Initialize snapshot manager if not already done - use singleton
             if (!this.snapshotManager) {
-                this.snapshotManager = new SnapshotManager();
+                this.snapshotManager = getSnapshotManager();
             }
 
             // Parse arguments
