@@ -31,6 +31,9 @@ describe('Configuration Wizard E2E Tests', () => {
         // Mock the env file path to use our test file
         wizard.envFilePath = testEnvPath;
 
+        // Reload current config to use the test file path
+        wizard.currentConfig = wizard._loadCurrentConfig();
+
         // Create mock context
         mockContext = {
             consoleInterface: {
