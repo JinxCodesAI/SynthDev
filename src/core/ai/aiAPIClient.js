@@ -482,6 +482,9 @@ class AIAPIClient {
         this.lastAPICall.timestamp = new Date().toISOString();
 
         // Call OpenAI Compatible API
+        console.log(`🔍 DEBUG - AIAPIClient _makeAPICall called for role ${this.role}`);
+        console.log('🔍 DEBUG - Request data:', JSON.stringify(requestData, null, 2));
+
         const response = await this.client.chat.completions.create(requestData).catch(error => {
             this.logger.error(error, 'API call failed');
             this.logger.httpRequest(
@@ -492,6 +495,8 @@ class AIAPIClient {
             );
             throw error;
         });
+
+        console.log('🔍 DEBUG - AIAPIClient received response:', JSON.stringify(response, null, 2));
 
         // Store response data for review
         this.lastAPICall.response = JSON.parse(JSON.stringify(response));

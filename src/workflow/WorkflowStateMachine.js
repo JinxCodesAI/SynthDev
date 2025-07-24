@@ -411,6 +411,19 @@ export default class WorkflowStateMachine {
             this.lastToolCalls = agent.getToolCalls();
             this.lastParsingToolCalls = agent.getParsingToolCalls();
 
+            console.log(
+                `🔍 DEBUG: State ${state.name} - agent.getLastRawResponse():`,
+                JSON.stringify(this.lastRawResponse, null, 2)
+            );
+            console.log(
+                `🔍 DEBUG: State ${state.name} - agent.getToolCalls():`,
+                JSON.stringify(this.lastToolCalls, null, 2)
+            );
+            console.log(
+                `🔍 DEBUG: State ${state.name} - agent.getParsingToolCalls():`,
+                JSON.stringify(this.lastParsingToolCalls, null, 2)
+            );
+
             this.logger.debug(
                 `🔍 DEBUG: agent.getLastRawResponse() returned: ${this.lastRawResponse ? 'OBJECT' : 'NULL'}`
             );

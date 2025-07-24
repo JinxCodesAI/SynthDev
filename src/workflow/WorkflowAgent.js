@@ -334,6 +334,9 @@ export default class WorkflowAgent {
      */
     _onResponse(response, _role) {
         try {
+            console.log(`🔍 DEBUG - Agent ${this.agentRole} _onResponse called`);
+            console.log('🔍 DEBUG - Response:', JSON.stringify(response, null, 2));
+
             // Store the raw response for workflow script access
             this.lastRawResponse = response;
 
@@ -345,6 +348,11 @@ export default class WorkflowAgent {
                     `📝 Agent ${this.agentRole} captured response content: "${message.content}"`
                 );
             }
+
+            console.log(
+                `🔍 DEBUG - Agent ${this.agentRole} lastRawResponse set:`,
+                !!this.lastRawResponse
+            );
         } catch (error) {
             this.logger.error(error, `Agent ${this.agentRole} failed to capture response content`);
         }

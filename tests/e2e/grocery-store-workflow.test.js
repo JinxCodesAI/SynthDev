@@ -50,7 +50,7 @@ vi.mock('fs', async () => {
  * Tests the complete workflow execution with mocked HTTP responses
  * matching the exact requests/responses from logs/http_requests.txt
  */
-describe.skip('Grocery Store Workflow E2E Test', () => {
+describe('Grocery Store Workflow E2E Test', () => {
     let stateMachine;
     let originalEnv;
 
@@ -190,7 +190,7 @@ describe.skip('Grocery Store Workflow E2E Test', () => {
      * Main e2e test that executes the grocery store workflow
      * with exact HTTP response mocking from logs/http_requests.txt
      */
-    it.skip('should execute grocery store workflow with exact HTTP responses', async () => {
+    it('should execute grocery store workflow with exact HTTP responses', async () => {
         // Setup HTTP mocking to return exact responses from logs
         await setupHttpMocking();
 
@@ -214,6 +214,16 @@ describe.skip('Grocery Store Workflow E2E Test', () => {
         );
 
         // Debug: Log the actual result to understand what's happening
+        console.log('🔍 DEBUG - Workflow result:', JSON.stringify(result, null, 2));
+        console.log('🔍 DEBUG - Mock call count:', global.mockOpenAICreate.mock.calls.length);
+        console.log(
+            '🔍 DEBUG - Mock calls:',
+            global.mockOpenAICreate.mock.calls.map((call, i) => ({
+                index: i,
+                hasTools: !!call[0].tools,
+                toolsLength: call[0].tools?.length || 0,
+            }))
+        );
 
         // Verify the workflow executed successfully
         expect(result.success).toBe(true);
@@ -379,7 +389,7 @@ describe.skip('Grocery Store Workflow E2E Test', () => {
     /**
      * Test that verifies all HTTP requests match the logged sequence
      */
-    it.skip('should make HTTP requests in exact sequence from logs', async () => {
+    it('should make HTTP requests in exact sequence from logs', async () => {
         await setupHttpMocking();
 
         const workflowConfigPath = join(
