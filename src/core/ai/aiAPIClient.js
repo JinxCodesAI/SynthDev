@@ -324,7 +324,6 @@ class AIAPIClient {
      * @returns {Promise<string>} Response content
      */
     async sendMessage() {
-        this.logger.debug('🔍 DEBUG: sendMessage called for role', this.role);
         try {
             // Execute the common message processing logic without adding a new message
             return await this._processMessage();
@@ -342,7 +341,6 @@ class AIAPIClient {
      * @returns {Promise<string>} Response content
      */
     async _processMessage() {
-        this.logger.debug('🔍 DEBUG: _processMessage called for role', this.role);
         // Reset tool call counter for new interaction
         this.toolCallCount = 0;
 
@@ -434,10 +432,10 @@ class AIAPIClient {
 
             // Always call onResponse to capture raw response data, regardless of parsing tools
             if (this.onResponse) {
-                this.logger.debug('🔍 DEBUG: Calling onResponse callback for parsing tools');
+                this.logger.debug('Calling onResponse callback for parsing tools');
                 this.onResponse(response, this.role);
             } else {
-                this.logger.debug('🔍 DEBUG: No onResponse callback defined for parsing tools');
+                this.logger.debug('No onResponse callback defined for parsing tools');
             }
             return content || '';
         }
@@ -482,9 +480,6 @@ class AIAPIClient {
         this.lastAPICall.timestamp = new Date().toISOString();
 
         // Call OpenAI Compatible API
-        console.log(`🔍 DEBUG - AIAPIClient _makeAPICall called for role ${this.role}`);
-        console.log('🔍 DEBUG - Request data:', JSON.stringify(requestData, null, 2));
-
         const response = await this.client.chat.completions.create(requestData).catch(error => {
             this.logger.error(error, 'API call failed');
             this.logger.httpRequest(
@@ -495,8 +490,6 @@ class AIAPIClient {
             );
             throw error;
         });
-
-        console.log('🔍 DEBUG - AIAPIClient received response:', JSON.stringify(response, null, 2));
 
         // Store response data for review
         this.lastAPICall.response = JSON.parse(JSON.stringify(response));
@@ -510,10 +503,13 @@ class AIAPIClient {
         );
 
         if (response && response.usage) {
-            this.costsManager.addUsage(this.model, response.usage);
-            this.logger.debug(
-                `🤖 ${this.model} usage: ${response.usage.total_tokens} tokens, ${response.usage.prompt_tokens} prompt tokens, ${response.usage.completion_tokens} completion tokens`
-            );
+            // Add usage tracking if the method is available (may not be in test environments)
+            if (this.costsManager && typeof this.costsManager.addUsage === 'function') {
+                this.costsManager.addUsage(this.model, response.usage);
+                this.logger.debug(
+                    `🤖 ${this.model} usage: ${response.usage.total_tokens} tokens, ${response.usage.prompt_tokens} prompt tokens, ${response.usage.completion_tokens} completion tokens`
+                );
+            }
         }
 
         return response;
