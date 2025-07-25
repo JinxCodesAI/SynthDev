@@ -25,9 +25,13 @@ describe('Configuration Wizard E2E Tests', () => {
         }
 
         // Create wizard and command instances with proper paths
+        const projectRoot = process.cwd();
         wizard = new ConfigurationWizard({
             envFilePath: testEnvPath,
-            rootDir: process.cwd(), // Use the actual project root for E2E tests
+            rootDir: projectRoot,
+            providersPath: join(projectRoot, 'src', 'config', 'defaults', 'providers.json'),
+            exampleEnvPath: join(projectRoot, 'config.example.env'),
+            openRouterExamplePath: join(projectRoot, 'config.example.openrouter.env'),
         });
         configureCommand = new ConfigureCommand();
 
