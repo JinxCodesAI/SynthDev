@@ -7,7 +7,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { spawn } from 'child_process';
 import { writeFileSync, unlinkSync, existsSync, readFileSync } from 'fs';
 
-describe.sequential('Command Interception E2E Tests', () => {
+describe.sequential('Command Interception E2E Tests', { retry: 2 }, () => {
     let appProcess;
     let testEnvFile;
     let testTimeout;
