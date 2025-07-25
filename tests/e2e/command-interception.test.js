@@ -216,14 +216,8 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
                 output += chunk;
                 chunks.push(chunk);
 
-                // Debug: Log chunks to understand what's happening
-                if (chunk.includes('💭') || chunk.includes('You:')) {
-                    console.log('DEBUG: Found prompt-related chunk:', JSON.stringify(chunk));
-                }
-
                 // Wait for startup to complete
                 if (chunk.includes('💭 You:') && !costCommandSent) {
-                    console.log('DEBUG: Sending /cost command');
                     costCommandSent = true;
                     setTimeout(() => {
                         if (appProcess && appProcess.stdin) {
@@ -274,7 +268,6 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
                         'costResponseReceived:',
                         costResponseReceived
                     );
-                    console.log('DEBUG: Last few chunks:', chunks.slice(-5));
 
                     // Verify cost command was intercepted
                     expect(costCommandSent).toBe(true);
