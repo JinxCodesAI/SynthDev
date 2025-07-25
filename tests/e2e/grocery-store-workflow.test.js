@@ -190,7 +190,7 @@ describe.skip('Grocery Store Workflow E2E Test', () => {
      * Main e2e test that executes the grocery store workflow
      * with exact HTTP response mocking from logs/http_requests.txt
      */
-    it.skip('should execute grocery store workflow with exact HTTP responses', async () => {
+    it('should execute grocery store workflow with exact HTTP responses', async () => {
         // Setup HTTP mocking to return exact responses from logs
         await setupHttpMocking();
 
@@ -379,7 +379,7 @@ describe.skip('Grocery Store Workflow E2E Test', () => {
     /**
      * Test that verifies all HTTP requests match the logged sequence
      */
-    it.skip('should make HTTP requests in exact sequence from logs', async () => {
+    it('should make HTTP requests in exact sequence from logs', async () => {
         await setupHttpMocking();
 
         const workflowConfigPath = join(
