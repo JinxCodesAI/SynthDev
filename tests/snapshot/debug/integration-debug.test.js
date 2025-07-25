@@ -24,7 +24,7 @@ vi.mock('../../../src/core/managers/logger.js', () => ({
     initializeLogger: vi.fn(),
 }));
 
-describe('Integration Debug Tests', () => {
+describe.sequential('Integration Debug Tests', () => {
     let testDir;
     let originalCwd;
 

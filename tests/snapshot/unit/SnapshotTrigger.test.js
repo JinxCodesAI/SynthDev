@@ -15,7 +15,7 @@ vi.mock('../../../src/core/managers/logger.js', () => ({
     }),
 }));
 
-describe('SnapshotTrigger', () => {
+describe.sequential('SnapshotTrigger', () => {
     let trigger;
     let mockSnapshotManager;
     let mockToolMonitor;

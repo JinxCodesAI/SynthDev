@@ -683,6 +683,120 @@ SYNTHDEV_VERBOSITY_LEVEL=5 npm test
 - Test edge cases and boundary conditions
 - Ensure proper cleanup after errors
 
+### Cross-Platform Testing
+
+**CRITICAL**: All tests must work consistently across Windows, macOS, and Linux.
+
+#### File Path Handling
+
+**❌ NEVER use hardcoded path separators:**
+
+```javascript
+// BAD - Will fail on Windows
+expect(fileData.files['docs/.gitkeep'].content).toBe('');
+expect(fileData.files['src/components/.gitkeep'].content).toBe('');
+```
+
+**✅ ALWAYS use path.join() for dynamic paths:**
+
+```javascript
+// GOOD - Works on all platforms
+import { join } from 'path';
+
+const docsGitkeepPath = join('docs', '.gitkeep');
+const srcComponentsGitkeepPath = join('src', 'components', '.gitkeep');
+
+expect(fileData.files[docsGitkeepPath].content).toBe('');
+expect(fileData.files[srcComponentsGitkeepPath].content).toBe('');
+```
+
+#### File System Operations
+
+**✅ ALWAYS use Node.js path utilities:**
+
+```javascript
+import { join, resolve, relative, dirname, basename } from 'path';
+import { mkdirSync, writeFileSync } from 'fs';
+
+// Create cross-platform directory structure
+mkdirSync(join(testDir, 'docs', 'api'), { recursive: true });
+writeFileSync(join(testDir, 'docs', '.gitkeep'), '');
+
+// Generate cross-platform paths for assertions
+const expectedPath = join('docs', '.gitkeep');
+expect(fileData.files[expectedPath]).toBeDefined();
+```
+
+#### Production Code Path Handling
+
+**❌ NEVER use hardcoded relative paths in production code:**
+
+```javascript
+// BAD - Will fail on Windows
+const configPath = join(__dirname, '../../config/file.json');
+const envPath = join(__dirname, '/../../../.env');
+```
+
+**✅ ALWAYS break down path components:**
+
+```javascript
+// GOOD - Works on all platforms
+const configPath = join(__dirname, '..', '..', 'config', 'file.json');
+const envPath = join(__dirname, '..', '..', '..', '.env');
+```
+
+#### Path Normalization in Tests
+
+**✅ For file system tests, normalize paths before comparison:**
+
+```javascript
+import { normalize } from 'path';
+
+// When comparing paths from different sources
+const actualPath = normalize(result.filePath);
+const expectedPath = normalize(join('expected', 'path.txt'));
+expect(actualPath).toBe(expectedPath);
+```
+
+#### Test Data Paths
+
+**✅ Use relative paths in test data, not absolute:**
+
+```javascript
+// Test configuration data - these are just strings for pattern matching
+const testCases = [
+    { path: 'src/main.js', expected: false, reason: 'Source files' },
+    { path: 'docs/guide.md', expected: false, reason: 'Documentation' },
+    // These are fine as they're just test patterns, not file operations
+];
+```
+
+#### Environment-Specific Considerations
+
+- **Line endings**: Use `\n` in tests, let Git handle conversion
+- **Case sensitivity**: Assume case-sensitive file systems in tests
+- **Path length**: Keep test paths reasonably short for Windows compatibility
+- **Special characters**: Avoid special characters in test file names
+
+#### Validation Checklist
+
+Before committing code that involves file operations:
+
+**For Tests:**
+
+- [ ] All file paths use `path.join()` or similar utilities
+- [ ] No hardcoded `/` or `\` path separators in file operations
+- [ ] Test runs successfully on both Windows and Unix-like systems
+- [ ] File assertions use dynamically generated paths
+- [ ] Temporary directories are properly cleaned up
+
+**For Production Code:**
+
+- [ ] All relative paths use separate path components in `join()`
+- [ ] No hardcoded paths like `'../../config/file.json'`
+- [ ] Configuration loading uses proper path utilities
+- [ ] File system operations are cross-platform compatible
+
 ## Consequences
 
 ### Positive

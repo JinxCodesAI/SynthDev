@@ -20,7 +20,7 @@ class ConfigManager {
         }
 
         // Load environment variables from .env file in synth-dev installation directory
-        this.envFilePath = join(__dirname, '/../../../.env');
+        this.envFilePath = join(__dirname, '..', '..', '..', '.env');
         this.envFileExists = existsSync(this.envFilePath);
 
         if (this.envFileExists) {

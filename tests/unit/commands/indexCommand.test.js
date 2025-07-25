@@ -59,7 +59,7 @@ vi.mock('path', () => ({
     basename: vi.fn(),
 }));
 
-describe('IndexCommand', () => {
+describe.sequential('IndexCommand', () => {
     let indexCommand;
     let mockLogger;
     let mockContext;
