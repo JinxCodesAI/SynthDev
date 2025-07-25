@@ -72,7 +72,7 @@ vi.mock('../../../src/config/managers/snapshotConfigManager.js', () => ({
     }),
 }));
 
-describe('Automatic Snapshot Integration', () => {
+describe.sequential('Automatic Snapshot Integration', () => {
     let testDir;
     let originalCwd;
     let autoSnapshotManager;

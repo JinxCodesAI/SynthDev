@@ -22,7 +22,7 @@ vi.mock('../../../src/core/managers/logger.js', () => ({
     initializeLogger: vi.fn(),
 }));
 
-describe('Real-World Snapshot Failures', () => {
+describe.sequential('Real-World Snapshot Failures', () => {
     let testDir;
     let originalCwd;
     let autoSnapshotManager;

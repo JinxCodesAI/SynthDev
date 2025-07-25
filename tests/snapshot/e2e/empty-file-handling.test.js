@@ -21,7 +21,7 @@ vi.mock('../../../src/core/managers/logger.js', () => ({
     }),
 }));
 
-describe('Empty File Handling in Snapshots', () => {
+describe.sequential('Empty File Handling in Snapshots', () => {
     let testDir;
     let originalCwd;
     let snapshotManager;
