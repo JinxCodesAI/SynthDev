@@ -727,6 +727,24 @@ const expectedPath = join('docs', '.gitkeep');
 expect(fileData.files[expectedPath]).toBeDefined();
 ```
 
+#### Production Code Path Handling
+
+**❌ NEVER use hardcoded relative paths in production code:**
+
+```javascript
+// BAD - Will fail on Windows
+const configPath = join(__dirname, '../../config/file.json');
+const envPath = join(__dirname, '/../../../.env');
+```
+
+**✅ ALWAYS break down path components:**
+
+```javascript
+// GOOD - Works on all platforms
+const configPath = join(__dirname, '..', '..', 'config', 'file.json');
+const envPath = join(__dirname, '..', '..', '..', '.env');
+```
+
 #### Path Normalization in Tests
 
 **✅ For file system tests, normalize paths before comparison:**
@@ -762,13 +780,22 @@ const testCases = [
 
 #### Validation Checklist
 
-Before committing tests that involve file operations:
+Before committing code that involves file operations:
+
+**For Tests:**
 
 - [ ] All file paths use `path.join()` or similar utilities
 - [ ] No hardcoded `/` or `\` path separators in file operations
 - [ ] Test runs successfully on both Windows and Unix-like systems
 - [ ] File assertions use dynamically generated paths
 - [ ] Temporary directories are properly cleaned up
+
+**For Production Code:**
+
+- [ ] All relative paths use separate path components in `join()`
+- [ ] No hardcoded paths like `'../../config/file.json'`
+- [ ] Configuration loading uses proper path utilities
+- [ ] File system operations are cross-platform compatible
 
 ## Consequences
 

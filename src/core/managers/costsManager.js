@@ -19,7 +19,14 @@ class CostsManager {
      */
     _loadPricingData() {
         try {
-            const providersPath = join(__dirname, '../../config/defaults/providers.json');
+            const providersPath = join(
+                __dirname,
+                '..',
+                '..',
+                'config',
+                'defaults',
+                'providers.json'
+            );
             const providersData = readFileSync(providersPath, 'utf8');
             const providers = JSON.parse(providersData);
 
