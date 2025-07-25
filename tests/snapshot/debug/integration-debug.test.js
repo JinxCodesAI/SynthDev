@@ -46,12 +46,22 @@ describe('Integration Debug Tests', () => {
     });
 
     afterEach(() => {
-        if (originalCwd) {
-            process.chdir(originalCwd);
+        try {
+            if (originalCwd && existsSync(originalCwd)) {
+                process.chdir(originalCwd);
+            }
+        } catch (error) {
+            // Ignore chdir errors during cleanup
         }
-        if (existsSync(testDir)) {
-            rmSync(testDir, { recursive: true, force: true });
+
+        try {
+            if (testDir && existsSync(testDir)) {
+                rmSync(testDir, { recursive: true, force: true });
+            }
+        } catch (error) {
+            // Ignore cleanup errors
         }
+
         resetSnapshotManager();
     });
 
