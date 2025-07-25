@@ -5,6 +5,7 @@
 
 import { getLogger } from '../../../core/managers/logger.js';
 import { v4 as uuidv4 } from 'uuid';
+import { FileVersionTracker } from '../FileVersionTracker.js';
 
 export class MemorySnapshotStore {
     constructor(config = {}) {
@@ -21,6 +22,9 @@ export class MemorySnapshotStore {
         // In-memory storage
         this.snapshots = new Map();
         this.metadata = new Map();
+
+        // File version tracking for differential snapshots
+        this.fileVersionTracker = new FileVersionTracker();
 
         // Statistics tracking
         this.stats = {
@@ -355,6 +359,192 @@ export class MemorySnapshotStore {
                 return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
             }
         });
+    }
+
+    /**
+     * Store differential snapshot with file references
+     * @param {Object} snapshot - Snapshot data to store
+     * @param {string} baseSnapshotId - Base snapshot ID for differential comparison
+     * @returns {Promise<string>} Generated snapshot ID
+     */
+    async storeDifferential(snapshot, baseSnapshotId = null) {
+        const snapshotId = snapshot.id || uuidv4();
+
+        // Process files to create differential structure
+        const processedFiles = {};
+        for (const [filePath, fileInfo] of Object.entries(snapshot.fileData.files)) {
+            const existingVersion = this.fileVersionTracker.findSnapshotForChecksum(
+                fileInfo.checksum
+            );
+
+            if (existingVersion && existingVersion.snapshotId !== snapshotId) {
+                // File unchanged - reference existing version
+                processedFiles[filePath] = {
+                    action: 'unchanged',
+                    checksum: fileInfo.checksum,
+                    snapshotId: existingVersion.snapshotId,
+                    size: fileInfo.size || 0,
+                };
+            } else {
+                // File changed or new - store full content
+                processedFiles[filePath] = {
+                    action: baseSnapshotId ? 'modified' : 'created',
+                    content: fileInfo.content,
+                    checksum: fileInfo.checksum,
+                    size: fileInfo.size || 0,
+                };
+
+                // Track this file version
+                this.fileVersionTracker.trackFileVersion(
+                    filePath,
+                    fileInfo.checksum,
+                    snapshotId,
+                    fileInfo.size || 0
+                );
+            }
+        }
+
+        // Store the differential snapshot
+        const snapshotRecord = {
+            id: snapshotId,
+            type: baseSnapshotId ? 'differential' : 'full',
+            baseSnapshotId,
+            description: snapshot.description,
+            fileData: {
+                files: processedFiles,
+                basePath: snapshot.fileData.basePath,
+                captureTime: snapshot.fileData.captureTime,
+                stats: snapshot.fileData.stats,
+            },
+            metadata: {
+                ...snapshot.metadata,
+                timestamp: new Date().toISOString(),
+                differentialStats: {
+                    totalFiles: Object.keys(processedFiles).length,
+                    changedFiles: Object.values(processedFiles).filter(
+                        f => f.action !== 'unchanged'
+                    ).length,
+                    unchangedFiles: Object.values(processedFiles).filter(
+                        f => f.action === 'unchanged'
+                    ).length,
+                },
+            },
+        };
+
+        this.snapshots.set(snapshotId, snapshotRecord);
+        this.metadata.set(snapshotId, {
+            id: snapshotId,
+            description: snapshot.description,
+            timestamp: snapshotRecord.metadata.timestamp,
+            type: snapshotRecord.type,
+            fileCount: Object.keys(processedFiles).length,
+            totalSize: this._calculateMemorySize(snapshotRecord),
+            // Include all metadata fields from the original snapshot
+            ...snapshotRecord.metadata,
+        });
+
+        // Update statistics
+        this.stats.totalSnapshots++;
+        this.stats.memoryUsage += this._calculateMemorySize(snapshotRecord);
+
+        // Check memory limits
+        await this._checkMemoryLimits();
+
+        this.logger.debug('Differential snapshot stored successfully', {
+            id: snapshotId,
+            type: snapshotRecord.type,
+            changedFiles: snapshotRecord.metadata.differentialStats.changedFiles,
+            unchangedFiles: snapshotRecord.metadata.differentialStats.unchangedFiles,
+        });
+
+        return snapshotId;
+    }
+
+    /**
+     * Reconstruct full file data from differential snapshots
+     * @param {string} snapshotId - ID of the snapshot to reconstruct
+     * @returns {Promise<Object|null>} Reconstructed snapshot or null if not found
+     */
+    async reconstructSnapshot(snapshotId) {
+        const snapshot = this.snapshots.get(snapshotId);
+        if (!snapshot) {
+            return null;
+        }
+
+        if (snapshot.type === 'full') {
+            return snapshot; // Already complete
+        }
+
+        // Reconstruct from differential chain
+        const reconstructedFiles = {};
+        const snapshotChain = await this._buildSnapshotChain(snapshotId);
+
+        // Process files from oldest to newest
+        for (const chainSnapshot of snapshotChain.reverse()) {
+            for (const [filePath, fileInfo] of Object.entries(chainSnapshot.fileData.files)) {
+                if (fileInfo.action === 'deleted') {
+                    delete reconstructedFiles[filePath];
+                } else if (fileInfo.action === 'unchanged') {
+                    // Get content from referenced snapshot
+                    const referencedSnapshot = this.snapshots.get(fileInfo.snapshotId);
+                    if (referencedSnapshot) {
+                        const referencedFile = referencedSnapshot.fileData.files[filePath];
+                        if (referencedFile && referencedFile.content !== undefined) {
+                            reconstructedFiles[filePath] = {
+                                content: referencedFile.content,
+                                checksum: referencedFile.checksum,
+                                size: referencedFile.size,
+                            };
+                        }
+                    }
+                } else {
+                    // Modified or created - use current content
+                    reconstructedFiles[filePath] = {
+                        content: fileInfo.content,
+                        checksum: fileInfo.checksum,
+                        size: fileInfo.size,
+                    };
+                }
+            }
+        }
+
+        return {
+            ...snapshot,
+            fileData: {
+                files: reconstructedFiles,
+                basePath: snapshot.fileData.basePath,
+                captureTime: snapshot.fileData.captureTime,
+                stats: snapshot.fileData.stats,
+            },
+        };
+    }
+
+    /**
+     * Build the chain of snapshots needed to reconstruct a differential snapshot
+     * @private
+     * @param {string} snapshotId - Starting snapshot ID
+     * @returns {Promise<Array>} Array of snapshots in chain order
+     */
+    async _buildSnapshotChain(snapshotId) {
+        const chain = [];
+        let currentId = snapshotId;
+
+        while (currentId) {
+            const snapshot = this.snapshots.get(currentId);
+            if (!snapshot) {
+                break;
+            }
+
+            chain.push(snapshot);
+
+            if (snapshot.type === 'full') {
+                break; // Reached base snapshot
+            }
+
+            currentId = snapshot.baseSnapshotId;
+        }
+
+        return chain;
     }
 }
 

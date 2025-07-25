@@ -298,7 +298,11 @@ export class FileBackup {
 
         // Validate individual file entries
         for (const [relativePath, fileInfo] of Object.entries(fileData.files)) {
-            if (!fileInfo.content || typeof fileInfo.content !== 'string') {
+            if (
+                fileInfo.content === undefined ||
+                fileInfo.content === null ||
+                typeof fileInfo.content !== 'string'
+            ) {
                 throw new Error(`Invalid file data: content missing for ${relativePath}`);
             }
 

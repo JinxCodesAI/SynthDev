@@ -44,8 +44,12 @@ export class ToolManagerIntegration {
         // Store original executeToolCall method
         const originalExecuteToolCall = toolManager.executeToolCall.bind(toolManager);
 
-        // Replace with our enhanced version
-        toolManager.executeToolCall = async (toolCall, consoleInterface, snapshotManager) => {
+        // Replace with our enhanced version - FIXED SIGNATURE
+        toolManager.executeToolCall = async (
+            toolCall,
+            consoleInterface,
+            snapshotManager = null
+        ) => {
             return await this.enhancedExecuteToolCall(
                 originalExecuteToolCall,
                 toolCall,
@@ -65,7 +69,7 @@ export class ToolManagerIntegration {
         originalExecuteToolCall,
         toolCall,
         consoleInterface,
-        snapshotManager
+        snapshotManager = null
     ) {
         const toolName = toolCall.function.name;
         const toolArgs = JSON.parse(toolCall.function.arguments);
