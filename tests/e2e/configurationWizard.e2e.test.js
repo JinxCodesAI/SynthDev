@@ -24,12 +24,12 @@ describe('Configuration Wizard E2E Tests', () => {
             unlinkSync(testEnvPath);
         }
 
-        // Create wizard and command instances
-        wizard = new ConfigurationWizard();
+        // Create wizard and command instances with proper paths
+        wizard = new ConfigurationWizard({
+            envFilePath: testEnvPath,
+            rootDir: process.cwd(), // Use the actual project root for E2E tests
+        });
         configureCommand = new ConfigureCommand();
-
-        // Mock the env file path to use our test file
-        wizard.envFilePath = testEnvPath;
 
         // Reload current config to use the test file path
         wizard.currentConfig = wizard._loadCurrentConfig();

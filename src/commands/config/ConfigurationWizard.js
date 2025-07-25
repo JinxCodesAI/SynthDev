@@ -13,14 +13,16 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 export class ConfigurationWizard {
-    constructor() {
+    constructor(options = {}) {
         this.logger = getLogger();
         // Get the root directory (where .env should be)
-        const rootDir = join(__dirname, '..', '..', '..');
-        this.envFilePath = join(rootDir, '.env');
-        this.providersPath = join(rootDir, 'src', 'config', 'defaults', 'providers.json');
-        this.exampleEnvPath = join(rootDir, 'config.example.env');
-        this.openRouterExamplePath = join(rootDir, 'config.example.openrouter.env');
+        const rootDir = options.rootDir || join(__dirname, '..', '..', '..');
+        this.envFilePath = options.envFilePath || join(rootDir, '.env');
+        this.providersPath =
+            options.providersPath || join(rootDir, 'src', 'config', 'defaults', 'providers.json');
+        this.exampleEnvPath = options.exampleEnvPath || join(rootDir, 'config.example.env');
+        this.openRouterExamplePath =
+            options.openRouterExamplePath || join(rootDir, 'config.example.openrouter.env');
 
         this.providers = this._loadProviders();
         this.currentConfig = this._loadCurrentConfig();
