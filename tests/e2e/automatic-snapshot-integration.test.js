@@ -7,9 +7,9 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { mkdirSync, rmSync, writeFileSync, existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
-import { AutoSnapshotManager } from '../../../src/core/snapshot/AutoSnapshotManager.js';
-import { resetSnapshotManager } from '../../../src/core/snapshot/SnapshotManagerSingleton.js';
-import ToolManager from '../../../src/core/managers/toolManager.js';
+import { AutoSnapshotManager } from '../../src/core/snapshot/AutoSnapshotManager.js';
+import { resetSnapshotManager } from '../../src/core/snapshot/SnapshotManagerSingleton.js';
+import ToolManager from '../../src/core/managers/toolManager.js';
 
 // Mock logger and config
 vi.mock('../../../src/core/managers/logger.js', () => ({

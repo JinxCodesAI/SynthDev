@@ -7,9 +7,9 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { mkdirSync, rmSync, writeFileSync, existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
-import { AutoSnapshotManager } from '../../../src/core/snapshot/AutoSnapshotManager.js';
-import { SnapshotManager } from '../../../src/core/snapshot/SnapshotManager.js';
-import { SnapshotsCommand } from '../../../src/commands/snapshots/SnapshotsCommand.js';
+import { AutoSnapshotManager } from '../../src/core/snapshot/AutoSnapshotManager.js';
+import { SnapshotManager } from '../../src/core/snapshot/SnapshotManager.js';
+import { SnapshotsCommand } from '../../src/commands/snapshots/SnapshotsCommand.js';
 
 // Mock logger to avoid initialization issues
 vi.mock('../../../src/core/managers/logger.js', () => ({
@@ -79,7 +79,7 @@ describe.sequential('Real-World Snapshot Failures', () => {
 
         // Use singleton to ensure consistency
         const { getSnapshotManager } = await import(
-            '../../../src/core/snapshot/SnapshotManagerSingleton.js'
+            '../../src/core/snapshot/SnapshotManagerSingleton.js'
         );
         snapshotManager = getSnapshotManager();
         snapshotsCommand = new SnapshotsCommand();
@@ -98,7 +98,7 @@ describe.sequential('Real-World Snapshot Failures', () => {
 
         // Reset singleton
         const { resetSnapshotManager } = await import(
-            '../../../src/core/snapshot/SnapshotManagerSingleton.js'
+            '../../src/core/snapshot/SnapshotManagerSingleton.js'
         );
         resetSnapshotManager();
     });
