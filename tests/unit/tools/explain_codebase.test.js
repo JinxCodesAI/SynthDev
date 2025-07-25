@@ -48,7 +48,7 @@ vi.mock('path', async importOriginal => {
     };
 });
 
-describe('Explain Codebase Tool', () => {
+describe.sequential('Explain Codebase Tool', () => {
     let mockReadFileSync;
     let mockOpenAI;
     let mockConfigManager;

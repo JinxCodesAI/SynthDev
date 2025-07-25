@@ -31,7 +31,7 @@ vi.mock('../../../src/core/managers/logger.js', () => ({
     }),
 }));
 
-describe('InitialSnapshotManager', () => {
+describe.sequential('InitialSnapshotManager', () => {
     let manager;
     let mockSnapshotManager;
 

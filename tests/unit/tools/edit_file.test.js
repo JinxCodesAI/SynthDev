@@ -27,7 +27,7 @@ vi.mock('../../../src/core/managers/logger.js', () => ({
     initializeLogger: vi.fn(),
 }));
 
-describe('Edit File Tool', () => {
+describe.sequential('Edit File Tool', () => {
     const testDir = process.cwd();
     const testFile = join(testDir, 'test_edit_file.txt');
 

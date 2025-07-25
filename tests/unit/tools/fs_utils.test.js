@@ -41,7 +41,7 @@ vi.mock('crypto', () => ({
     })),
 }));
 
-describe('fs_utils', () => {
+describe.sequential('fs_utils', () => {
     beforeEach(() => {
         vi.clearAllMocks();
     });

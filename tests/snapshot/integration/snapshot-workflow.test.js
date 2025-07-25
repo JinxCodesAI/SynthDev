@@ -4,7 +4,7 @@ import { mkdirSync, writeFileSync, rmSync, existsSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 
-describe('Snapshot Workflow Integration', () => {
+describe.sequential('Snapshot Workflow Integration', () => {
     let snapshotManager;
     let testDir;
 

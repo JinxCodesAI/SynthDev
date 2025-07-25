@@ -10,7 +10,7 @@ vi.mock('../../../src/tools/common/fs_utils.js', () => ({
     safeReadFile: vi.fn(),
 }));
 
-describe('Exact Search Tool', () => {
+describe.sequential('Exact Search Tool', () => {
     let mockScanDirectory;
     let mockSafeReadFile;
 

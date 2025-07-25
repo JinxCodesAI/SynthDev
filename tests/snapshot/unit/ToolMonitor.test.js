@@ -15,7 +15,7 @@ vi.mock('../../../src/core/managers/logger.js', () => ({
     }),
 }));
 
-describe('ToolMonitor', () => {
+describe.sequential('ToolMonitor', () => {
     let toolMonitor;
     let mockToolManager;
 

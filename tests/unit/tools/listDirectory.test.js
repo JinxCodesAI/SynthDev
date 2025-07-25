@@ -5,7 +5,7 @@ import { join } from 'path';
 import listDirectory from '../../../src/tools/list_directory/implementation.js';
 import { cleanupTestDirectory } from '../../helpers/testUtils.js';
 
-describe('ListDirectory Tool - Fixed Tests', () => {
+describe.sequential('ListDirectory Tool - Fixed Tests', () => {
     const testDir = join(process.cwd(), 'test-temp');
 
     beforeEach(async () => {

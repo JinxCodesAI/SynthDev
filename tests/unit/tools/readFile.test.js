@@ -5,7 +5,7 @@ import { join } from 'path';
 import readFile from '../../../src/tools/read_file/implementation.js';
 import { cleanupTestDirectory } from '../../helpers/testUtils.js';
 
-describe('ReadFile Tool - Fixed Tests', () => {
+describe.sequential('ReadFile Tool - Fixed Tests', () => {
     const testDir = join(process.cwd(), 'test-temp');
     const testFile = join(testDir, 'test.txt');
 
