@@ -439,6 +439,8 @@ export class MemorySnapshotStore {
             type: snapshotRecord.type,
             fileCount: Object.keys(processedFiles).length,
             totalSize: this._calculateMemorySize(snapshotRecord),
+            // Include all metadata fields from the original snapshot
+            ...snapshotRecord.metadata,
         });
 
         // Update statistics

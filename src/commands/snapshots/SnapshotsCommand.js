@@ -93,6 +93,11 @@ export class SnapshotsCommand extends InteractiveCommand {
         const { consoleInterface } = context;
 
         try {
+            // Initialize snapshot manager if not already done - use singleton
+            if (!this.snapshotManager) {
+                this.snapshotManager = getSnapshotManager();
+            }
+
             // Parse description from args
             let description = args.trim();
 
@@ -150,6 +155,11 @@ export class SnapshotsCommand extends InteractiveCommand {
         const { consoleInterface } = context;
 
         try {
+            // Initialize snapshot manager if not already done - use singleton
+            if (!this.snapshotManager) {
+                this.snapshotManager = getSnapshotManager();
+            }
+
             // Parse list options
             const options = this.parseListOptions(args);
 
@@ -209,6 +219,11 @@ export class SnapshotsCommand extends InteractiveCommand {
         const { consoleInterface } = context;
 
         try {
+            // Initialize snapshot manager if not already done - use singleton
+            if (!this.snapshotManager) {
+                this.snapshotManager = getSnapshotManager();
+            }
+
             // Parse snapshot ID
             const snapshotId = args.trim();
             if (!snapshotId) {
@@ -288,6 +303,11 @@ export class SnapshotsCommand extends InteractiveCommand {
         const { consoleInterface } = context;
 
         try {
+            // Initialize snapshot manager if not already done - use singleton
+            if (!this.snapshotManager) {
+                this.snapshotManager = getSnapshotManager();
+            }
+
             // Parse snapshot ID
             const snapshotId = args.trim();
             if (!snapshotId) {
@@ -346,6 +366,11 @@ export class SnapshotsCommand extends InteractiveCommand {
         const { consoleInterface } = context;
 
         try {
+            // Initialize snapshot manager if not already done - use singleton
+            if (!this.snapshotManager) {
+                this.snapshotManager = getSnapshotManager();
+            }
+
             // Parse snapshot ID
             const snapshotId = args.trim();
             if (!snapshotId) {
@@ -416,6 +441,11 @@ export class SnapshotsCommand extends InteractiveCommand {
         const { consoleInterface } = context;
 
         try {
+            // Initialize snapshot manager if not already done - use singleton
+            if (!this.snapshotManager) {
+                this.snapshotManager = getSnapshotManager();
+            }
+
             const stats = this.snapshotManager.getSystemStats();
 
             consoleInterface.showMessage('\n📊 Snapshot System Statistics:');
