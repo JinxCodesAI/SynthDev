@@ -35,7 +35,7 @@ vi.mock('../../../src/core/managers/logger.js', () => ({
     })),
 }));
 
-describe('ConfigurationWizard', () => {
+describe.sequential('ConfigurationWizard', () => {
     let wizard;
 
     beforeEach(() => {

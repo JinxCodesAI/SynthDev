@@ -96,7 +96,7 @@ vi.mock('../../../costsManager.js', () => ({
     },
 }));
 
-describe('Execute Script Tool', () => {
+describe.sequential('Execute Script Tool', () => {
     let mockSpawn;
     let mockOpenAI;
     let mockConfigManager;

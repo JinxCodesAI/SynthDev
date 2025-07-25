@@ -22,7 +22,7 @@ class ToolManager {
 
     async loadTools() {
         try {
-            const toolsDir = join(__dirname, '../../tools');
+            const toolsDir = join(__dirname, '..', '..', 'tools');
             const toolDirs = readdirSync(toolsDir, { withFileTypes: true })
                 .filter(
                     dirent =>

@@ -9,7 +9,7 @@ import { ConfigureCommand } from '../../src/commands/config/ConfigureCommand.js'
 import { existsSync, readFileSync, unlinkSync } from 'fs';
 import { join } from 'path';
 
-describe('Configuration Wizard E2E Tests', () => {
+describe.sequential('Configuration Wizard E2E Tests', () => {
     let testEnvPath;
     let wizard;
     let configureCommand;
@@ -30,9 +30,6 @@ describe('Configuration Wizard E2E Tests', () => {
 
         // Mock the env file path to use our test file
         wizard.envFilePath = testEnvPath;
-
-        // Reload current config to use the test file path
-        wizard.currentConfig = wizard._loadCurrentConfig();
 
         // Create mock context
         mockContext = {

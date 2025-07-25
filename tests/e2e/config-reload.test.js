@@ -16,7 +16,7 @@ import { writeFileSync, existsSync, unlinkSync, readFileSync } from 'fs';
  * This is a true end-to-end test that spawns the actual application process
  * and simulates keyboard input without any mocks.
  */
-describe('Configuration Reload E2E Test', () => {
+describe.sequential('Configuration Reload E2E Test', () => {
     let appProcess;
     let testEnvPath;
     let originalEnvPath;

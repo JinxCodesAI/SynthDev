@@ -21,7 +21,7 @@ vi.mock('../../../src/core/managers/logger.js', () => ({
     }),
 }));
 
-describe('Empty File Handling in Snapshots', () => {
+describe.sequential('Empty File Handling in Snapshots', () => {
     let testDir;
     let originalCwd;
     let snapshotManager;
@@ -106,10 +106,14 @@ describe('Empty File Handling in Snapshots', () => {
 
             const fileData = await fileBackup.captureFiles(testDir);
 
-            // All nested empty files should be captured
-            expect(fileData.files['docs/.gitkeep'].content).toBe('');
-            expect(fileData.files['docs/api/.gitkeep'].content).toBe('');
-            expect(fileData.files['src/components/.gitkeep'].content).toBe('');
+            // All nested empty files should be captured - use cross-platform paths
+            const docsGitkeepPath = join('docs', '.gitkeep');
+            const docsApiGitkeepPath = join('docs', 'api', '.gitkeep');
+            const srcComponentsGitkeepPath = join('src', 'components', '.gitkeep');
+
+            expect(fileData.files[docsGitkeepPath].content).toBe('');
+            expect(fileData.files[docsApiGitkeepPath].content).toBe('');
+            expect(fileData.files[srcComponentsGitkeepPath].content).toBe('');
         });
     });
 

@@ -28,7 +28,7 @@ vi.mock('../../../src/core/managers/logger.js', () => ({
     initializeLogger: vi.fn(),
 }));
 
-describe('WriteFile Tool - Fixed Tests', () => {
+describe.sequential('WriteFile Tool - Fixed Tests', () => {
     const testDir = join(process.cwd(), 'test-temp');
     const testFile = join(testDir, 'test.txt');
 
