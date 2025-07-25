@@ -24,19 +24,12 @@ describe('Configuration Wizard E2E Tests', () => {
             unlinkSync(testEnvPath);
         }
 
-        // Create wizard and command instances with proper paths
-        const projectRoot = process.cwd();
-        wizard = new ConfigurationWizard({
-            envFilePath: testEnvPath,
-            rootDir: projectRoot,
-            providersPath: join(projectRoot, 'src', 'config', 'defaults', 'providers.json'),
-            exampleEnvPath: join(projectRoot, 'config.example.env'),
-            openRouterExamplePath: join(projectRoot, 'config.example.openrouter.env'),
-        });
+        // Create wizard and command instances
+        wizard = new ConfigurationWizard();
         configureCommand = new ConfigureCommand();
 
-        // Reload current config to use the test file path
-        wizard.currentConfig = wizard._loadCurrentConfig();
+        // Mock the env file path to use our test file
+        wizard.envFilePath = testEnvPath;
 
         // Create mock context
         mockContext = {

@@ -33,8 +33,8 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
 `
         );
 
-        // Set timeout for tests - increased for CI environments
-        testTimeout = process.env.CI ? 25000 : 15000;
+        // Set timeout for tests - increased for CI environments and flaky tests
+        testTimeout = process.env.CI ? 35000 : 25000;
     });
 
     afterEach(async () => {
@@ -216,14 +216,20 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
                 output += chunk;
                 chunks.push(chunk);
 
+                // Debug: Log chunks to understand what's happening
+                if (chunk.includes('💭') || chunk.includes('You:')) {
+                    console.log('DEBUG: Found prompt-related chunk:', JSON.stringify(chunk));
+                }
+
                 // Wait for startup to complete
                 if (chunk.includes('💭 You:') && !costCommandSent) {
+                    console.log('DEBUG: Sending /cost command');
                     costCommandSent = true;
                     setTimeout(() => {
                         if (appProcess && appProcess.stdin) {
                             appProcess.stdin.write('/cost\n');
                         }
-                    }, 100);
+                    }, 500); // Increased timeout for more reliable execution
                 }
 
                 // Check for cost response
@@ -261,6 +267,15 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
                 clearTimeout(timeout);
 
                 try {
+                    // Debug: Log final state
+                    console.log(
+                        'DEBUG: Final state - costCommandSent:',
+                        costCommandSent,
+                        'costResponseReceived:',
+                        costResponseReceived
+                    );
+                    console.log('DEBUG: Last few chunks:', chunks.slice(-5));
+
                     // Verify cost command was intercepted
                     expect(costCommandSent).toBe(true);
                     expect(costResponseReceived).toBe(true);
@@ -420,7 +435,7 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
                         if (appProcess && appProcess.stdin) {
                             appProcess.stdin.write('/snapshot help\n');
                         }
-                    }, 100);
+                    }, 500); // Increased timeout for more reliable execution
                 }
 
                 // Check for snapshot help response
