@@ -9,7 +9,7 @@ import { ConfigureCommand } from '../../src/commands/config/ConfigureCommand.js'
 import { existsSync, readFileSync, unlinkSync } from 'fs';
 import { join } from 'path';
 
-describe('Configuration Wizard E2E Tests', () => {
+describe.sequential('Configuration Wizard E2E Tests', () => {
     let testEnvPath;
     let wizard;
     let configureCommand;
