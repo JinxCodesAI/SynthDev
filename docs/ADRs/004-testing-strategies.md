@@ -22,7 +22,8 @@ tests/
 ├── helpers/                    # Test helper utilities
 │   ├── mockHelpers.js          # Common mocking utilities
 │   ├── testFixtures.js         # Test data and fixtures
-│   └── assertionHelpers.js     # Custom assertion helpers
+│   ├── assertionHelpers.js     # Custom assertion helpers
+│   └── envTestHelper.js        # Environment management for tests
 ├── mocks/                      # Mock implementations
 │   ├── mockAPIClient.js        # AI API client mocks
 │   ├── mockFileSystem.js       # File system mocks
@@ -364,39 +365,42 @@ describe('Workflow Integration', () => {
 ```javascript
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { spawn } from 'child_process';
-import { writeFileSync, unlinkSync } from 'fs';
+import { createTestProcessEnv } from '../helpers/envTestHelper.js';
 
 describe('End-to-End Application Tests', () => {
     let appProcess;
-    let testEnvFile;
 
     beforeEach(() => {
-        // Create test environment file
-        testEnvFile = '.env.test';
-        writeFileSync(
-            testEnvFile,
-            `
-SYNTHDEV_API_KEY=test-key-12345
-SYNTHDEV_BASE_MODEL=gpt-4.1-mini
-SYNTHDEV_BASE_URL=https://api.openai.com/v1
-SYNTHDEV_VERBOSITY_LEVEL=2
-        `
-        );
+        // No file manipulation needed - use process environment
     });
 
-    afterEach(() => {
-        if (appProcess) {
-            appProcess.kill();
-        }
-        if (testEnvFile) {
-            unlinkSync(testEnvFile);
+    afterEach(async () => {
+        if (appProcess && !appProcess.killed) {
+            try {
+                // Graceful termination
+                appProcess.kill('SIGTERM');
+                await new Promise(resolve => setTimeout(resolve, 500));
+
+                // Force kill if still running
+                if (!appProcess.killed) {
+                    appProcess.kill('SIGKILL');
+                }
+            } catch (error) {
+                // Process might already be dead
+            }
+            appProcess = null;
         }
     });
 
     it('should start application and respond to commands', async () => {
         return new Promise((resolve, reject) => {
             appProcess = spawn('node', ['src/core/app.js'], {
-                env: { ...process.env, NODE_ENV: 'test' },
+                env: createTestProcessEnv({
+                    SYNTHDEV_API_KEY: 'test-key-12345',
+                    SYNTHDEV_BASE_MODEL: 'gpt-4.1-mini',
+                    SYNTHDEV_BASE_URL: 'https://api.openai.com/v1',
+                    SYNTHDEV_VERBOSITY_LEVEL: '2',
+                }),
                 stdio: ['pipe', 'pipe', 'pipe'],
             });
 
@@ -570,6 +574,96 @@ export function createMockConfig() {
 }
 ```
 
+## Environment Management for Tests
+
+### Environment Test Helper
+
+To prevent `.env` file corruption during testing, use the `EnvTestHelper` class for safe environment management:
+
+```javascript
+import { setupTestEnv, createTestProcessEnv } from '../helpers/envTestHelper.js';
+
+describe('Component requiring environment variables', () => {
+    let cleanupTestEnv;
+
+    beforeEach(() => {
+        // Option 1: File-based override (creates backup, restores after)
+        cleanupTestEnv = setupTestEnv({
+            SYNTHDEV_API_KEY: 'test-key-12345',
+            SYNTHDEV_BASE_MODEL: 'gpt-4.1-mini',
+            SYNTHDEV_VERBOSITY_LEVEL: '2',
+        });
+    });
+
+    afterEach(() => {
+        // Always cleanup to restore original .env
+        if (cleanupTestEnv) {
+            cleanupTestEnv();
+            cleanupTestEnv = null;
+        }
+    });
+
+    it('should use test environment', () => {
+        // Test runs with overridden environment
+        expect(process.env.SYNTHDEV_API_KEY).toBe('test-key-12345');
+    });
+});
+```
+
+### Process Environment Approach (Preferred)
+
+For tests that spawn processes, use the safer environment variable approach:
+
+```javascript
+import { createTestProcessEnv } from '../helpers/envTestHelper.js';
+import { spawn } from 'child_process';
+
+describe('E2E Application Tests', () => {
+    it('should run with test environment', async () => {
+        const appProcess = spawn('node', ['src/core/app.js'], {
+            env: createTestProcessEnv({
+                SYNTHDEV_API_KEY: 'test-key-12345',
+                SYNTHDEV_VERBOSITY_LEVEL: '2',
+            }),
+            stdio: ['pipe', 'pipe', 'pipe'],
+        });
+
+        // Test process runs with test environment without touching .env file
+    });
+});
+```
+
+### Environment Testing Best Practices
+
+**✅ DO:**
+
+- Use `createTestProcessEnv()` for spawned processes (safer)
+- Use `setupTestEnv()` only when file-based override is required
+- Always call cleanup functions in `afterEach`
+- Register cleanup handlers for process exit scenarios
+
+**❌ DON'T:**
+
+- Directly overwrite `.env` files in tests
+- Forget to restore original environment after tests
+- Use hardcoded environment values in production code
+- Skip cleanup in test teardown
+
+### Emergency Cleanup
+
+The `EnvTestHelper` includes automatic cleanup handlers for process exit scenarios:
+
+```javascript
+// Automatic cleanup is registered for:
+process.on('exit', cleanup);
+process.on('SIGINT', cleanup);
+process.on('SIGTERM', cleanup);
+process.on('uncaughtException', cleanup);
+process.on('unhandledRejection', cleanup);
+```
+
+This ensures `.env` files are restored even if tests crash or are interrupted.
+
 ## Test Data Management
 
 ### Fixtures Organization
@@ -682,6 +776,40 @@ SYNTHDEV_VERBOSITY_LEVEL=5 npm test
 - Verify error messages and types
 - Test edge cases and boundary conditions
 - Ensure proper cleanup after errors
+
+### Environment Safety
+
+**CRITICAL**: Never permanently modify the `.env` file during testing.
+
+**❌ NEVER do this:**
+
+```javascript
+// BAD - Can permanently corrupt .env file
+beforeEach(() => {
+    writeFileSync('.env', 'SYNTHDEV_API_KEY=test-key-12345\n');
+});
+
+afterEach(() => {
+    // If this fails, .env is corrupted!
+    unlinkSync('.env');
+});
+```
+
+**✅ ALWAYS use the environment helper:**
+
+```javascript
+// GOOD - Safe with automatic cleanup
+import { createTestProcessEnv } from '../helpers/envTestHelper.js';
+
+beforeEach(() => {
+    // No file manipulation
+});
+
+// Use process environment for spawned processes
+const appProcess = spawn('node', ['app.js'], {
+    env: createTestProcessEnv({ SYNTHDEV_API_KEY: 'test-key' }),
+});
+```
 
 ### Cross-Platform Testing
 
