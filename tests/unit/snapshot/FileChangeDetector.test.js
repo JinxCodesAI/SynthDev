@@ -6,7 +6,6 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { FileChangeDetector } from '../../../src/core/snapshot/FileChangeDetector.js';
 import { statSync, readdirSync, readFileSync } from 'fs';
 import { createHash } from 'crypto';
-import { resolve, join } from 'path';
 
 // Mock fs operations
 vi.mock('fs', () => ({

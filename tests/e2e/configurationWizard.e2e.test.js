@@ -25,7 +25,7 @@ describe.sequential('Configuration Wizard E2E Tests', () => {
         }
 
         // Create wizard and command instances
-        wizard = new ConfigurationWizard();
+        wizard = new ConfigurationWizard({ envFilePath: testEnvPath });
         configureCommand = new ConfigureCommand();
 
         // Mock the env file path to use our test file
@@ -234,6 +234,8 @@ describe.sequential('Configuration Wizard E2E Tests', () => {
 
     describe('Configuration Completeness Detection', () => {
         it('should detect incomplete configuration correctly', () => {
+            console.log(wizard.getConfigSummary());
+            console.log(wizard.currentConfig);
             // Empty configuration should be incomplete
             const completeness1 = wizard.checkCompleteness();
             expect(completeness1.isComplete).toBe(false);

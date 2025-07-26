@@ -7,9 +7,9 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { mkdirSync, rmSync, writeFileSync, existsSync, readFileSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
-import { SnapshotManager } from '../../../src/core/snapshot/SnapshotManager.js';
-import { FileBackup } from '../../../src/core/snapshot/FileBackup.js';
-import { FileFilter } from '../../../src/core/snapshot/FileFilter.js';
+import { SnapshotManager } from '../../src/core/snapshot/SnapshotManager.js';
+import { FileBackup } from '../../src/core/snapshot/FileBackup.js';
+import { FileFilter } from '../../src/core/snapshot/FileFilter.js';
 
 // Mock logger
 vi.mock('../../../src/core/managers/logger.js', () => ({
