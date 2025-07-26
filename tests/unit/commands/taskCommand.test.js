@@ -14,7 +14,23 @@ vi.mock('../../../src/core/managers/logger.js', () => ({
     }),
 }));
 
+// Mock the tool implementations
+vi.mock('../../../src/tools/edit_tasks/implementation.js', () => ({
+    default: vi.fn(),
+}));
+
+vi.mock('../../../src/tools/list_tasks/implementation.js', () => ({
+    default: vi.fn(),
+}));
+
+vi.mock('../../../src/tools/get_task/implementation.js', () => ({
+    default: vi.fn(),
+}));
+
 import { TaskCommand } from '../../../src/commands/task/TaskCommand.js';
+import editTasks from '../../../src/tools/edit_tasks/implementation.js';
+import listTasks from '../../../src/tools/list_tasks/implementation.js';
+import getTask from '../../../src/tools/get_task/implementation.js';
 
 describe('TaskCommand', () => {
     let command;
@@ -27,10 +43,10 @@ describe('TaskCommand', () => {
                 showMessage: vi.fn(),
                 showError: vi.fn(),
             },
-            toolManager: {
-                executeTool: vi.fn(),
-            },
         };
+
+        // Clear all mocks
+        vi.clearAllMocks();
     });
 
     describe('constructor', () => {
@@ -53,7 +69,6 @@ describe('TaskCommand', () => {
         it('should return required dependencies', () => {
             const deps = command.getRequiredDependencies();
             expect(deps).toContain('consoleInterface');
-            expect(deps).toContain('toolManager');
         });
     });
 
@@ -141,7 +156,7 @@ describe('TaskCommand', () => {
         });
 
         it('should handle task ID lookup', async () => {
-            mockContext.toolManager.executeTool.mockResolvedValue({
+            getTask.mockResolvedValue({
                 success: true,
                 task: {
                     id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
@@ -154,7 +169,7 @@ describe('TaskCommand', () => {
 
             const result = await command.implementation('a1b2c3d4', mockContext);
 
-            expect(mockContext.toolManager.executeTool).toHaveBeenCalledWith('get_task', {
+            expect(getTask).toHaveBeenCalledWith({
                 task_id: 'a1b2c3d4',
                 include_children: true,
                 include_parent_chain: true,
@@ -174,7 +189,7 @@ describe('TaskCommand', () => {
         });
 
         it('should handle errors gracefully', async () => {
-            mockContext.toolManager.executeTool.mockRejectedValue(new Error('Tool error'));
+            listTasks.mockRejectedValue(new Error('Tool error'));
 
             const result = await command.implementation('list', mockContext);
 
@@ -187,7 +202,7 @@ describe('TaskCommand', () => {
 
     describe('handleList', () => {
         it('should list tasks successfully', async () => {
-            mockContext.toolManager.executeTool.mockResolvedValue({
+            listTasks.mockResolvedValue({
                 success: true,
                 task_count: 2,
                 total_tasks: 2,
@@ -200,7 +215,7 @@ describe('TaskCommand', () => {
 
             const result = await command.handleList('', mockContext);
 
-            expect(mockContext.toolManager.executeTool).toHaveBeenCalledWith('list_tasks', {
+            expect(listTasks).toHaveBeenCalledWith({
                 format: 'short',
             });
             expect(mockContext.consoleInterface.showMessage).toHaveBeenCalledWith(
@@ -210,7 +225,7 @@ describe('TaskCommand', () => {
         });
 
         it('should handle empty task list', async () => {
-            mockContext.toolManager.executeTool.mockResolvedValue({
+            listTasks.mockResolvedValue({
                 success: true,
                 task_count: 0,
                 total_tasks: 0,
@@ -226,7 +241,7 @@ describe('TaskCommand', () => {
         });
 
         it('should handle tool errors', async () => {
-            mockContext.toolManager.executeTool.mockResolvedValue({
+            listTasks.mockResolvedValue({
                 success: false,
                 error: 'Tool failed',
             });
@@ -240,7 +255,7 @@ describe('TaskCommand', () => {
         });
 
         it('should pass options to tool', async () => {
-            mockContext.toolManager.executeTool.mockResolvedValue({
+            listTasks.mockResolvedValue({
                 success: true,
                 task_count: 1,
                 tasks: [],
@@ -248,7 +263,7 @@ describe('TaskCommand', () => {
 
             await command.handleList('--format=detailed --status=completed', mockContext);
 
-            expect(mockContext.toolManager.executeTool).toHaveBeenCalledWith('list_tasks', {
+            expect(listTasks).toHaveBeenCalledWith({
                 format: 'detailed',
                 status_filter: 'completed',
             });
@@ -268,14 +283,14 @@ describe('TaskCommand', () => {
                 children: [],
             };
 
-            mockContext.toolManager.executeTool.mockResolvedValue({
+            getTask.mockResolvedValue({
                 success: true,
                 task: mockTask,
             });
 
             const result = await command.handleGetTask('a1b2c3d4', mockContext);
 
-            expect(mockContext.toolManager.executeTool).toHaveBeenCalledWith('get_task', {
+            expect(getTask).toHaveBeenCalledWith({
                 task_id: 'a1b2c3d4',
                 include_children: true,
                 include_parent_chain: true,
@@ -287,15 +302,15 @@ describe('TaskCommand', () => {
         });
 
         it('should handle task not found', async () => {
-            mockContext.toolManager.executeTool.mockResolvedValue({
+            getTask.mockResolvedValue({
                 success: false,
-                error: 'Task not found',
+                error: 'Task with ID nonexistent not found',
             });
 
             const result = await command.handleGetTask('nonexistent', mockContext);
 
             expect(mockContext.consoleInterface.showError).toHaveBeenCalledWith(
-                'Task not found: Task not found'
+                'Task not found: Task with ID nonexistent not found'
             );
             expect(result).toBe('error');
         });
@@ -313,7 +328,7 @@ describe('TaskCommand', () => {
                 has_children: false,
             };
 
-            mockContext.toolManager.executeTool.mockResolvedValue({
+            getTask.mockResolvedValue({
                 success: true,
                 task: mockTask,
             });
@@ -338,7 +353,7 @@ describe('TaskCommand', () => {
                 has_children: true,
             };
 
-            mockContext.toolManager.executeTool.mockResolvedValue({
+            getTask.mockResolvedValue({
                 success: true,
                 task: mockTask,
             });

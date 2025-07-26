@@ -39,8 +39,7 @@
                                     "description": "Task status. Valid values: 'not_started', 'in_progress', 'completed', 'cancelled'. Defaults to 'not_started' for new tasks.",
                                     "enum": ["not_started", "in_progress", "completed", "cancelled"]
                                 }
-                            },
-                            "additionalProperties": false
+                            }
                         },
                         "minItems": 1
                     }

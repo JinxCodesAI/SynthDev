@@ -27,8 +27,7 @@
                         "default": false
                     }
                 },
-                "required": ["task_id"],
-                "additionalProperties": false
+                "required": ["task_id"]
             },
             "response_format": {
                 "description": "Returns a JSON object with 'success' (boolean), 'timestamp' (ISO string), 'tool_name' (string), and 'task' (detailed task object). The task object includes id, title, description, parent, status, and optional children/parent_chain arrays based on parameters. Error responses include 'error' field with detailed error message for non-existent tasks."

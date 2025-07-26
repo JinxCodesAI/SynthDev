@@ -5,6 +5,9 @@
 
 import { BaseCommand } from '../base/BaseCommand.js';
 import { getLogger } from '../../core/managers/logger.js';
+import editTasks from '../../tools/edit_tasks/implementation.js';
+import listTasks from '../../tools/list_tasks/implementation.js';
+import getTask from '../../tools/get_task/implementation.js';
 
 export class TaskCommand extends BaseCommand {
     constructor() {
@@ -30,7 +33,7 @@ export class TaskCommand extends BaseCommand {
      * @returns {string[]} Required dependencies
      */
     getRequiredDependencies() {
-        return ['consoleInterface', 'toolManager', ...super.getRequiredDependencies()];
+        return ['consoleInterface', ...super.getRequiredDependencies()];
     }
 
     /**
@@ -78,14 +81,14 @@ export class TaskCommand extends BaseCommand {
      * @returns {Promise<any>} List result
      */
     async handleList(args, context) {
-        const { consoleInterface, toolManager } = context;
+        const { consoleInterface } = context;
 
         try {
             // Parse list options
             const options = this.parseListOptions(args);
 
-            // Call list_tasks tool
-            const result = await toolManager.executeTool('list_tasks', options);
+            // Call list_tasks tool directly
+            const result = await listTasks(options);
 
             if (!result.success) {
                 consoleInterface.showError(`Failed to list tasks: ${result.error}`);
@@ -129,11 +132,11 @@ export class TaskCommand extends BaseCommand {
      * @returns {Promise<any>} Get task result
      */
     async handleGetTask(taskId, context) {
-        const { consoleInterface, toolManager } = context;
+        const { consoleInterface } = context;
 
         try {
             // First try exact match
-            let result = await toolManager.executeTool('get_task', {
+            let result = await getTask({
                 task_id: taskId,
                 include_children: true,
                 include_parent_chain: true,
@@ -141,12 +144,12 @@ export class TaskCommand extends BaseCommand {
 
             // If not found and it's a short ID, try to find matching task
             if (!result.success && taskId.length >= 8) {
-                const listResult = await toolManager.executeTool('list_tasks', {});
+                const listResult = await listTasks({});
                 if (listResult.success) {
                     const matchingTask = listResult.tasks.find(task => task.id.startsWith(taskId));
 
                     if (matchingTask) {
-                        result = await toolManager.executeTool('get_task', {
+                        result = await getTask({
                             task_id: matchingTask.id,
                             include_children: true,
                             include_parent_chain: true,
