@@ -433,7 +433,7 @@ export class FileBackup {
                                 modified: originalCaptureTime,
                                 permissions: stats.mode,
                                 action: 'unchanged',
-                                referencedSnapshotId: baseSnapshot.id, // Reference to base snapshot
+                                snapshotId: baseSnapshot.id, // Reference to base snapshot
                             };
                             fileData.stats.unchangedFiles++;
                             fileData.stats.linkedFiles++;

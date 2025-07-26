@@ -497,10 +497,10 @@ export class SnapshotManager {
             };
 
             // Handle linked files (unchanged files referencing other snapshots)
-            if (fileInfo.referencedSnapshotId && fileInfo.action === 'unchanged') {
+            if (fileInfo.snapshotId && fileInfo.action === 'unchanged') {
                 try {
                     // Get the referenced snapshot to get the original file details
-                    const referencedSnapshot = await this.store.retrieve(fileInfo.referencedSnapshotId);
+                    const referencedSnapshot = await this.store.retrieve(fileInfo.snapshotId);
                     if (referencedSnapshot && referencedSnapshot.fileData.files[relativePath]) {
                         const originalFile = referencedSnapshot.fileData.files[relativePath];
                         resolvedFileInfo.modified = originalFile.modified || fileInfo.modified;
@@ -512,7 +512,7 @@ export class SnapshotManager {
                     // Fallback to current file info if error retrieving referenced snapshot
                     this.logger.warn('Failed to resolve referenced snapshot for file', {
                         relativePath,
-                        referencedSnapshotId: fileInfo.referencedSnapshotId,
+                        snapshotId: fileInfo.snapshotId,
                         error: error.message,
                     });
                     resolvedFileInfo.modified = fileInfo.modified;
