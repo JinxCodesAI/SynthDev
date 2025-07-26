@@ -1,10 +1,12 @@
 /**
  * Execute Terminal tool implementation
  * Executes terminal commands and returns their output with comprehensive error handling
+ * Uses ShellDetector to properly handle PowerShell and CMD commands on Windows
  */
 
-import { exec } from 'child_process';
+import { spawn } from 'child_process';
 import { CommandBaseTool } from '../common/base-tool.js';
+import { shellDetector } from './shellDetector.js';
 
 class ExecuteTerminalTool extends CommandBaseTool {
     constructor() {
@@ -28,12 +30,46 @@ class ExecuteTerminalTool extends CommandBaseTool {
 
         return new Promise(resolve => {
             this.logger.debug(`Executing terminal command: ${command}`);
-            exec(command, (error, stdout, stderr) => {
-                if (error) {
-                    resolve(this.createCommandResponse(false, stdout, stderr, error.message));
-                } else {
+
+            // Detect appropriate shell for the command
+            const shellConfig = shellDetector.detectShell(command);
+            const executionParams = shellDetector.formatCommand(command, shellConfig);
+
+            this.logger.debug(`Using shell: ${shellConfig.type} (${shellConfig.executable})`);
+
+            // Execute using spawn with proper shell
+            const child = spawn(
+                executionParams.executable,
+                executionParams.args,
+                executionParams.options
+            );
+
+            let stdout = '';
+            let stderr = '';
+
+            // Collect stdout
+            child.stdout.on('data', data => {
+                stdout += data.toString();
+            });
+
+            // Collect stderr
+            child.stderr.on('data', data => {
+                stderr += data.toString();
+            });
+
+            // Handle process completion
+            child.on('close', code => {
+                if (code === 0) {
                     resolve(this.createCommandResponse(true, stdout, stderr));
+                } else {
+                    const errorMessage = `Command exited with code ${code}`;
+                    resolve(this.createCommandResponse(false, stdout, stderr, errorMessage));
                 }
+            });
+
+            // Handle process errors
+            child.on('error', error => {
+                resolve(this.createCommandResponse(false, stdout, stderr, error.message));
             });
         });
     }
