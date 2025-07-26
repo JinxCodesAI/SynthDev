@@ -3,6 +3,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { spawn } from 'child_process';
 import { join } from 'path';
 import { writeFileSync, existsSync, unlinkSync, readFileSync } from 'fs';
+import { setupTestEnv } from '../helpers/envTestHelper.js';
 
 /**
  * End-to-End Configuration Reload Test
@@ -18,36 +19,22 @@ import { writeFileSync, existsSync, unlinkSync, readFileSync } from 'fs';
  */
 describe.sequential('Configuration Reload E2E Test', () => {
     let appProcess;
-    let testEnvPath;
-    let originalEnvPath;
     let testOutput = '';
     let testError = '';
+    let cleanupTestEnv;
 
     beforeEach(() => {
-        // Setup test environment file
-        const rootDir = join(process.cwd());
-        testEnvPath = join(rootDir, '.env.test');
-        originalEnvPath = join(rootDir, '.env');
+        // Setup test environment with initial verbosity level 2
+        const testEnvConfig = {
+            SYNTHDEV_API_KEY: 'test-api-key-12345',
+            SYNTHDEV_BASE_MODEL: 'gpt-4.1-mini',
+            SYNTHDEV_BASE_URL: 'https://api.openai.com/v1',
+            SYNTHDEV_VERBOSITY_LEVEL: '2',
+            SYNTHDEV_MAX_TOOL_CALLS: '50',
+            SYNTHDEV_ENABLE_PROMPT_ENHANCEMENT: 'false',
+        };
 
-        // Backup original .env if it exists
-        if (existsSync(originalEnvPath)) {
-            const originalContent = readFileSync(originalEnvPath, 'utf8');
-            writeFileSync(`${originalEnvPath}.backup`, originalContent);
-        }
-
-        // Create test .env file with initial verbosity level 2
-        const testEnvContent = `# Test Configuration
-SYNTHDEV_API_KEY=test-api-key-12345
-SYNTHDEV_BASE_MODEL=gpt-4.1-mini
-SYNTHDEV_BASE_URL=https://api.openai.com/v1
-SYNTHDEV_VERBOSITY_LEVEL=2
-SYNTHDEV_MAX_TOOL_CALLS=50
-SYNTHDEV_ENABLE_PROMPT_ENHANCEMENT=false
-`;
-        writeFileSync(testEnvPath, testEnvContent);
-
-        // Copy test env to main .env location for the app to use
-        writeFileSync(originalEnvPath, testEnvContent);
+        cleanupTestEnv = setupTestEnv(testEnvConfig);
 
         // Reset output collectors
         testOutput = '';
@@ -93,18 +80,10 @@ SYNTHDEV_ENABLE_PROMPT_ENHANCEMENT=false
             }
         }
 
-        // Cleanup test files
-        if (existsSync(testEnvPath)) {
-            unlinkSync(testEnvPath);
-        }
-
-        // Restore original .env if it existed
-        if (existsSync(`${originalEnvPath}.backup`)) {
-            const backupContent = readFileSync(`${originalEnvPath}.backup`, 'utf8');
-            writeFileSync(originalEnvPath, backupContent);
-            unlinkSync(`${originalEnvPath}.backup`);
-        } else if (existsSync(originalEnvPath)) {
-            unlinkSync(originalEnvPath);
+        // Cleanup test environment
+        if (cleanupTestEnv) {
+            cleanupTestEnv();
+            cleanupTestEnv = null;
         }
     });
 
@@ -266,7 +245,8 @@ SYNTHDEV_ENABLE_PROMPT_ENHANCEMENT=false
         const updatedVerbosity = extractVerbosityLevel(secondHelpOutput);
 
         // Debug: Check what's in the .env file
-        const envContent = readFileSync(originalEnvPath, 'utf8');
+        const envPath = join(process.cwd(), '.env');
+        const envContent = readFileSync(envPath, 'utf8');
         console.log('Final .env file content:', envContent);
         console.log('Expected verbosity level:', newVerbosityLevel);
         console.log('Actual verbosity level from help:', updatedVerbosity);

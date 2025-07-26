@@ -5,34 +5,14 @@
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { spawn } from 'child_process';
-import { writeFileSync, unlinkSync, existsSync, readFileSync } from 'fs';
+import { unlinkSync, existsSync } from 'fs';
+import { createTestProcessEnv } from '../helpers/envTestHelper.js';
 
 describe.sequential('Command Interception E2E Tests', { retry: 2 }, () => {
     let appProcess;
-    let testEnvFile;
     let testTimeout;
-    let originalEnvFile;
 
     beforeEach(() => {
-        // Backup original env file if it exists
-        testEnvFile = '.env';
-        if (existsSync(testEnvFile)) {
-            originalEnvFile = readFileSync(testEnvFile, 'utf8');
-        }
-
-        // Create test environment file in the expected location
-        writeFileSync(
-            testEnvFile,
-            `SYNTHDEV_API_KEY=test-key-12345
-SYNTHDEV_BASE_MODEL=gpt-4.1-mini
-SYNTHDEV_BASE_URL=https://api.openai.com/v1
-SYNTHDEV_VERBOSITY_LEVEL=2
-SYNTHDEV_ROLE=dude
-SYNTHDEV_MAX_TOOL_CALLS=50
-SYNTHDEV_PROMPT_ENHANCEMENT=false
-`
-        );
-
         // Set timeout for tests - increased for CI environments and flaky tests
         testTimeout = process.env.CI ? 35000 : 25000;
     });
@@ -74,14 +54,6 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
                 }
             }
         }
-
-        // Restore original env file or clean up test file
-        if (originalEnvFile) {
-            writeFileSync(testEnvFile, originalEnvFile);
-        } else if (testEnvFile && existsSync(testEnvFile)) {
-            unlinkSync(testEnvFile);
-        }
-        originalEnvFile = null;
     });
 
     it('should intercept /help command without AI response', async () => {
@@ -92,17 +64,7 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
             }, testTimeout);
 
             appProcess = spawn('node', ['src/core/app.js'], {
-                env: {
-                    ...process.env,
-                    NODE_ENV: 'test',
-                    SYNTHDEV_API_KEY: 'test-key-12345',
-                    SYNTHDEV_BASE_MODEL: 'gpt-4.1-mini',
-                    SYNTHDEV_BASE_URL: 'https://api.openai.com/v1',
-                    SYNTHDEV_VERBOSITY_LEVEL: '2',
-                    SYNTHDEV_ROLE: 'dude',
-                    SYNTHDEV_MAX_TOOL_CALLS: '50',
-                    SYNTHDEV_PROMPT_ENHANCEMENT: 'false',
-                },
+                env: createTestProcessEnv(),
                 stdio: ['pipe', 'pipe', 'pipe'],
                 cwd: process.cwd(),
             });
@@ -190,17 +152,7 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
             }, testTimeout);
 
             appProcess = spawn('node', ['src/core/app.js'], {
-                env: {
-                    ...process.env,
-                    NODE_ENV: 'test',
-                    SYNTHDEV_API_KEY: 'test-key-12345',
-                    SYNTHDEV_BASE_MODEL: 'gpt-4.1-mini',
-                    SYNTHDEV_BASE_URL: 'https://api.openai.com/v1',
-                    SYNTHDEV_VERBOSITY_LEVEL: '2',
-                    SYNTHDEV_ROLE: 'dude',
-                    SYNTHDEV_MAX_TOOL_CALLS: '50',
-                    SYNTHDEV_PROMPT_ENHANCEMENT: 'false',
-                },
+                env: createTestProcessEnv(),
                 stdio: ['pipe', 'pipe', 'pipe'],
                 cwd: process.cwd(),
             });
@@ -297,17 +249,7 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
             }, testTimeout);
 
             appProcess = spawn('node', ['src/core/app.js'], {
-                env: {
-                    ...process.env,
-                    NODE_ENV: 'test',
-                    SYNTHDEV_API_KEY: 'test-key-12345',
-                    SYNTHDEV_BASE_MODEL: 'gpt-4.1-mini',
-                    SYNTHDEV_BASE_URL: 'https://api.openai.com/v1',
-                    SYNTHDEV_VERBOSITY_LEVEL: '2',
-                    SYNTHDEV_ROLE: 'dude',
-                    SYNTHDEV_MAX_TOOL_CALLS: '50',
-                    SYNTHDEV_PROMPT_ENHANCEMENT: 'false',
-                },
+                env: createTestProcessEnv(),
                 stdio: ['pipe', 'pipe', 'pipe'],
                 cwd: process.cwd(),
             });
@@ -395,17 +337,7 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
             }, testTimeout);
 
             appProcess = spawn('node', ['src/core/app.js'], {
-                env: {
-                    ...process.env,
-                    NODE_ENV: 'test',
-                    SYNTHDEV_API_KEY: 'test-key-12345',
-                    SYNTHDEV_BASE_MODEL: 'gpt-4.1-mini',
-                    SYNTHDEV_BASE_URL: 'https://api.openai.com/v1',
-                    SYNTHDEV_VERBOSITY_LEVEL: '2',
-                    SYNTHDEV_ROLE: 'dude',
-                    SYNTHDEV_MAX_TOOL_CALLS: '50',
-                    SYNTHDEV_PROMPT_ENHANCEMENT: 'false',
-                },
+                env: createTestProcessEnv(),
                 stdio: ['pipe', 'pipe', 'pipe'],
                 cwd: process.cwd(),
             });
