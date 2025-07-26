@@ -4,7 +4,7 @@
  */
 
 import { getLogger } from '../../core/managers/logger.js';
-import { readFileSync, writeFileSync, existsSync, mkdirSync, statSync, copyFileSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, statSync } from 'fs';
 import { readdir } from 'fs/promises';
 import { join, dirname, relative, resolve } from 'path';
 import { createHash } from 'crypto';
@@ -16,8 +16,6 @@ export class FileBackup {
 
         // Configuration with defaults
         this.config = {
-            createBackups: config.createBackups !== false, // Default to true
-            backupSuffix: config.backupSuffix || '.backup',
             preservePermissions: config.preservePermissions !== false, // Default to true
             validateChecksums: config.validateChecksums !== false, // Default to true
             maxConcurrentFiles: config.maxConcurrentFiles || 10,
@@ -109,18 +107,14 @@ export class FileBackup {
      * Restore files from captured data
      * @param {Object} fileData - Captured file data
      * @param {Object} options - Restoration options
-     * @param {boolean} options.createBackups - Create backups before restoration
      * @param {boolean} options.validateChecksums - Validate checksums after restoration
      * @param {Array} options.specificFiles - Specific files to restore (optional)
      * @returns {Promise<Object>} Restoration results
      */
     async restoreFiles(fileData, options = {}) {
         try {
-            const {
-                createBackups = this.config.createBackups,
-                validateChecksums = this.config.validateChecksums,
-                specificFiles = null,
-            } = options;
+            const { validateChecksums = this.config.validateChecksums, specificFiles = null } =
+                options;
 
             this.logger.debug('Starting file restoration', {
                 basePath: fileData.basePath,
@@ -133,7 +127,6 @@ export class FileBackup {
                 restored: [],
                 skipped: [],
                 errors: [],
-                backups: [],
                 stats: {
                     totalFiles: 0,
                     restoredFiles: 0,
@@ -155,7 +148,7 @@ export class FileBackup {
             const batchSize = this.config.maxConcurrentFiles;
             for (let i = 0; i < filesToRestore.length; i += batchSize) {
                 const batch = filesToRestore.slice(i, i + batchSize);
-                await this._restoreFileBatch(batch, fileData, options, results);
+                await this._restoreFileBatch(batch, fileData, results);
             }
 
             // Validate checksums if requested
@@ -449,12 +442,9 @@ export class FileBackup {
      * @private
      * @param {Array} relativePaths - Array of relative file paths to restore
      * @param {Object} fileData - File data containing content to restore
-     * @param {Object} options - Restoration options
      * @param {Object} results - Results object to populate
      */
-    async _restoreFileBatch(relativePaths, fileData, options, results) {
-        const { createBackups } = options;
-
+    async _restoreFileBatch(relativePaths, fileData, results) {
         const restorePromises = relativePaths.map(async relativePath => {
             try {
                 const fileInfo = fileData.files[relativePath];
@@ -464,16 +454,6 @@ export class FileBackup {
                 const dir = dirname(fullPath);
                 if (!existsSync(dir)) {
                     mkdirSync(dir, { recursive: true });
-                }
-
-                // Create backup if requested and file exists
-                if (createBackups && existsSync(fullPath)) {
-                    const backupPath = fullPath + this.config.backupSuffix;
-                    copyFileSync(fullPath, backupPath);
-                    results.backups.push({
-                        original: fullPath,
-                        backup: backupPath,
-                    });
                 }
 
                 // Write file content

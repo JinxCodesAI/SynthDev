@@ -226,7 +226,6 @@ export class SnapshotManager {
      * @param {boolean} options.preview - Only preview, don't actually restore
      * @param {boolean} options.force - Skip confirmation prompts
      * @param {Array} options.specificFiles - Specific files to restore
-     * @param {boolean} options.createBackups - Create backups before restoration
      * @returns {Promise<Object>} Restoration result
      */
     async restoreSnapshot(snapshotId, options = {}) {
@@ -277,7 +276,6 @@ export class SnapshotManager {
 
             // Perform restoration
             const restoreOptions = {
-                createBackups: options.createBackups ?? this.config.backup.createBackups,
                 validateChecksums: this.config.backup.validateChecksums,
                 specificFiles: options.specificFiles,
             };
@@ -294,7 +292,6 @@ export class SnapshotManager {
                 stats: restoreResult.stats,
                 restored: restoreResult.restored,
                 errors: restoreResult.errors,
-                backups: restoreResult.backups,
             };
 
             this.logger.debug('Snapshot restored successfully', {
