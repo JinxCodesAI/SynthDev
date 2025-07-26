@@ -5,12 +5,24 @@
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { spawn } from 'child_process';
-import { unlinkSync, existsSync } from 'fs';
+import { unlinkSync, existsSync, writeFileSync } from 'fs';
+import { join } from 'path';
 import { createTestProcessEnv } from '../helpers/envTestHelper.js';
+
+/**
+ * Get the Node.js executable path for cross-platform compatibility
+ * @returns {string} Node.js executable path
+ */
+function getNodeExecutable() {
+    // On Windows, we might need to use 'node.exe' or the full path
+    // process.execPath gives us the current Node.js executable path
+    return process.execPath;
+}
 
 describe.sequential('Command Interception E2E Tests', { retry: 3 }, () => {
     let appProcess;
     let testTimeout;
+    let tempEnvFile;
 
     beforeEach(() => {
         // Set timeout for tests - significantly increased for CI environments and flaky tests
@@ -18,6 +30,24 @@ describe.sequential('Command Interception E2E Tests', { retry: 3 }, () => {
 
         // Reset appProcess to ensure clean state
         appProcess = undefined;
+
+        // Create temporary .env file to prevent configuration wizard from starting
+        tempEnvFile = join(process.cwd(), '.env.test-temp');
+        const envContent = `# Temporary test environment file
+SYNTHDEV_API_KEY=sk-test-key-12345-valid-format
+SYNTHDEV_BASE_MODEL=gpt-4.1-mini
+SYNTHDEV_BASE_URL=https://api.openai.com/v1
+SYNTHDEV_VERBOSITY_LEVEL=2
+SYNTHDEV_MAX_TOOL_CALLS=50
+SYNTHDEV_ENABLE_PROMPT_ENHANCEMENT=false
+`;
+        writeFileSync(tempEnvFile, envContent);
+
+        // Also create a temporary .env file in the main directory if it doesn't exist
+        const mainEnvFile = join(process.cwd(), '.env');
+        if (!existsSync(mainEnvFile)) {
+            writeFileSync(mainEnvFile, envContent);
+        }
     });
 
     afterEach(async () => {
@@ -61,6 +91,28 @@ describe.sequential('Command Interception E2E Tests', { retry: 3 }, () => {
                 }
             }
         }
+
+        // Clean up temporary .env files
+        if (tempEnvFile && existsSync(tempEnvFile)) {
+            try {
+                unlinkSync(tempEnvFile);
+            } catch (error) {
+                console.warn('Temp env file cleanup warning:', error.message);
+            }
+        }
+
+        // Clean up main .env file if it was created by test
+        const mainEnvFile = join(process.cwd(), '.env');
+        if (existsSync(mainEnvFile)) {
+            try {
+                const content = require('fs').readFileSync(mainEnvFile, 'utf8');
+                if (content.includes('# Temporary test environment file')) {
+                    unlinkSync(mainEnvFile);
+                }
+            } catch (error) {
+                console.warn('Main env file cleanup warning:', error.message);
+            }
+        }
     });
 
     it('should intercept /help command without AI response', async () => {
@@ -71,8 +123,9 @@ describe.sequential('Command Interception E2E Tests', { retry: 3 }, () => {
             }, testTimeout);
 
             // Use the actual project directory for spawning the app
-            const projectRoot = '/mnt/persist/workspace';
-            appProcess = spawn('node', ['src/core/app.js'], {
+            const projectRoot = process.cwd();
+
+            appProcess = spawn(getNodeExecutable(), ['src/core/app.js'], {
                 env: createTestProcessEnv(),
                 stdio: ['pipe', 'pipe', 'pipe'],
                 cwd: projectRoot,
@@ -161,8 +214,8 @@ describe.sequential('Command Interception E2E Tests', { retry: 3 }, () => {
             }, testTimeout);
 
             // Use the actual project directory for spawning the app
-            const projectRoot = '/mnt/persist/workspace';
-            appProcess = spawn('node', ['src/core/app.js'], {
+            const projectRoot = process.cwd();
+            appProcess = spawn(getNodeExecutable(), ['src/core/app.js'], {
                 env: createTestProcessEnv(),
                 stdio: ['pipe', 'pipe', 'pipe'],
                 cwd: projectRoot,
@@ -260,8 +313,8 @@ describe.sequential('Command Interception E2E Tests', { retry: 3 }, () => {
             }, testTimeout);
 
             // Use the actual project directory for spawning the app
-            const projectRoot = '/mnt/persist/workspace';
-            appProcess = spawn('node', ['src/core/app.js'], {
+            const projectRoot = process.cwd();
+            appProcess = spawn(getNodeExecutable(), ['src/core/app.js'], {
                 env: createTestProcessEnv(),
                 stdio: ['pipe', 'pipe', 'pipe'],
                 cwd: projectRoot,
@@ -349,8 +402,8 @@ describe.sequential('Command Interception E2E Tests', { retry: 3 }, () => {
             }, testTimeout);
 
             // Use the actual project directory for spawning the app
-            const projectRoot = '/mnt/persist/workspace';
-            appProcess = spawn('node', ['src/core/app.js'], {
+            const projectRoot = process.cwd();
+            appProcess = spawn(getNodeExecutable(), ['src/core/app.js'], {
                 env: createTestProcessEnv(),
                 stdio: ['pipe', 'pipe', 'pipe'],
                 cwd: projectRoot,

@@ -180,13 +180,23 @@ class EnvTestHelper {
     createTestProcessEnv(envConfig) {
         const defaultConfig = {
             NODE_ENV: 'test',
-            SYNTHDEV_API_KEY: 'test-key-12345',
+            // Required configuration to prevent wizard from starting
+            SYNTHDEV_API_KEY: 'sk-test-key-12345-valid-format',
             SYNTHDEV_BASE_MODEL: 'gpt-4.1-mini',
             SYNTHDEV_BASE_URL: 'https://api.openai.com/v1',
             SYNTHDEV_VERBOSITY_LEVEL: '2',
-            SYNTHDEV_ROLE: 'dude',
             SYNTHDEV_MAX_TOOL_CALLS: '50',
-            SYNTHDEV_PROMPT_ENHANCEMENT: 'false',
+            SYNTHDEV_ENABLE_PROMPT_ENHANCEMENT: 'false',
+            // Additional configuration to ensure complete setup
+            SYNTHDEV_ROLE: 'dude',
+            // Smart model configuration (optional but helps avoid issues)
+            SYNTHDEV_SMART_API_KEY: 'sk-test-key-12345-valid-format',
+            SYNTHDEV_SMART_MODEL: 'gpt-4.1-mini',
+            SYNTHDEV_SMART_BASE_URL: 'https://api.openai.com/v1',
+            // Fast model configuration (optional but helps avoid issues)
+            SYNTHDEV_FAST_API_KEY: 'sk-test-key-12345-valid-format',
+            SYNTHDEV_FAST_MODEL: 'gpt-4.1-mini',
+            SYNTHDEV_FAST_BASE_URL: 'https://api.openai.com/v1',
         };
 
         return {

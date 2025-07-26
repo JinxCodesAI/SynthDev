@@ -87,14 +87,14 @@ describe('List Tasks Tool', () => {
             });
         });
 
-        it('should use short format by default', async () => {
+        it('should use detailed format by default', async () => {
             const result = await listTasks({});
 
             expect(result.success).toBe(true);
-            expect(result.format).toBe('short');
+            expect(result.format).toBe('detailed');
             expect(result.tasks[0].display).toContain('[/] Test Task');
             expect(result.tasks[0].display).toContain('...');
-            expect(result.tasks[0]).not.toHaveProperty('description');
+            expect(result.tasks[0]).toHaveProperty('description');
         });
 
         it('should use short format when explicitly specified', async () => {

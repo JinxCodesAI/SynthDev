@@ -151,7 +151,7 @@ SYNTHDEV_VERBOSITY_LEVEL=1
         it('should include default test values', () => {
             const processEnv = helper.createTestProcessEnv();
 
-            expect(processEnv.SYNTHDEV_API_KEY).toBe('test-key-12345');
+            expect(processEnv.SYNTHDEV_API_KEY).toBe('sk-test-key-12345-valid-format');
             expect(processEnv.SYNTHDEV_BASE_MODEL).toBe('gpt-4.1-mini');
             expect(processEnv.SYNTHDEV_BASE_URL).toBe('https://api.openai.com/v1');
         });

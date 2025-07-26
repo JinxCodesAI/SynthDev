@@ -6,6 +6,16 @@ import { writeFileSync, existsSync, unlinkSync, readFileSync } from 'fs';
 import { createTestProcessEnv } from '../helpers/envTestHelper.js';
 
 /**
+ * Get the Node.js executable path for cross-platform compatibility
+ * @returns {string} Node.js executable path
+ */
+function getNodeExecutable() {
+    // On Windows, we might need to use 'node.exe' or the full path
+    // process.execPath gives us the current Node.js executable path
+    return process.execPath;
+}
+
+/**
  * End-to-End Configuration Reload Test
  *
  * This test validates the complete configuration reloading workflow:
@@ -21,6 +31,7 @@ describe.sequential('Configuration Reload E2E Test', () => {
     let appProcess;
     let testOutput = '';
     let testError = '';
+    let tempEnvFile;
 
     beforeEach(() => {
         // Reset appProcess to ensure clean state
@@ -29,21 +40,54 @@ describe.sequential('Configuration Reload E2E Test', () => {
         // Reset output collectors
         testOutput = '';
         testError = '';
+
+        // Create temporary .env file to prevent configuration wizard from starting
+        tempEnvFile = join(process.cwd(), '.env.test-temp');
+        const envContent = `# Temporary test environment file
+SYNTHDEV_API_KEY=sk-test-key-12345-valid-format
+SYNTHDEV_BASE_MODEL=gpt-4.1-mini
+SYNTHDEV_BASE_URL=https://api.openai.com/v1
+SYNTHDEV_VERBOSITY_LEVEL=2
+SYNTHDEV_MAX_TOOL_CALLS=50
+SYNTHDEV_ENABLE_PROMPT_ENHANCEMENT=false
+`;
+        writeFileSync(tempEnvFile, envContent);
+
+        // Also create a temporary .env file in the main directory if it doesn't exist
+        const mainEnvFile = join(process.cwd(), '.env');
+        if (!existsSync(mainEnvFile)) {
+            writeFileSync(mainEnvFile, envContent);
+        }
     });
 
     afterEach(async () => {
         // Kill the process if it's still running
-        if (appProcess && !appProcess.killed) {
+        if (appProcess && !appProcess.killed && appProcess.exitCode === null) {
             try {
+                console.log('Cleaning up process with PID:', appProcess.pid);
+
                 // First try graceful termination
                 appProcess.kill('SIGTERM');
-                // Give the process more time to terminate gracefully
-                await new Promise(resolve => setTimeout(resolve, 1000));
+
+                // Wait for graceful termination
+                await new Promise(resolve => {
+                    const timeout = setTimeout(() => {
+                        console.log('Graceful termination timeout, forcing kill');
+                        resolve();
+                    }, 2000);
+
+                    appProcess.on('exit', () => {
+                        clearTimeout(timeout);
+                        console.log('Process terminated gracefully');
+                        resolve();
+                    });
+                });
 
                 // If still running, force kill
-                if (!appProcess.killed) {
+                if (!appProcess.killed && appProcess.exitCode === null) {
+                    console.log('Force killing process');
                     appProcess.kill('SIGKILL');
-                    await new Promise(resolve => setTimeout(resolve, 200));
+                    await new Promise(resolve => setTimeout(resolve, 500));
                 }
             } catch (error) {
                 // Process might already be dead, that's okay
@@ -52,8 +96,8 @@ describe.sequential('Configuration Reload E2E Test', () => {
             appProcess = null;
         }
 
-        // Add a longer delay to ensure processes are completely terminated
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        // Add a delay to ensure processes are completely terminated
+        await new Promise(resolve => setTimeout(resolve, 1000));
 
         // Clean up any state files to ensure each test starts fresh
         const stateFiles = [
@@ -72,14 +116,36 @@ describe.sequential('Configuration Reload E2E Test', () => {
                 }
             }
         }
+
+        // Clean up temporary .env files
+        if (tempEnvFile && existsSync(tempEnvFile)) {
+            try {
+                unlinkSync(tempEnvFile);
+            } catch (error) {
+                console.warn('Temp env file cleanup warning:', error.message);
+            }
+        }
+
+        // Clean up main .env file if it was created by test
+        const mainEnvFile = join(process.cwd(), '.env');
+        if (existsSync(mainEnvFile)) {
+            try {
+                const content = readFileSync(mainEnvFile, 'utf8');
+                if (content.includes('# Temporary test environment file')) {
+                    unlinkSync(mainEnvFile);
+                }
+            } catch (error) {
+                console.warn('Main env file cleanup warning:', error.message);
+            }
+        }
     });
 
     /**
      * Helper function to spawn the application process
      */
     function spawnApp() {
-        // Use the actual project directory, not the test's temporary directory
-        const projectRoot = '/mnt/persist/workspace';
+        // Use the actual project directory - get it from process.cwd() for cross-platform compatibility
+        const projectRoot = process.cwd();
         const appPath = join(projectRoot, 'src', 'core', 'app.js');
 
         console.log('Spawning app:', appPath);
@@ -96,7 +162,7 @@ describe.sequential('Configuration Reload E2E Test', () => {
             NODE_ENV: 'test',
         });
 
-        appProcess = spawn('node', [appPath], {
+        appProcess = spawn(getNodeExecutable(), [appPath], {
             stdio: ['pipe', 'pipe', 'pipe'],
             env: testEnv,
             cwd: projectRoot, // Use the actual project directory
@@ -110,6 +176,24 @@ describe.sequential('Configuration Reload E2E Test', () => {
 
         appProcess.on('exit', (code, signal) => {
             console.log(`Process exited with code ${code} and signal ${signal}`);
+            if (code !== 0 && code !== null) {
+                console.error(`Process exited with non-zero code: ${code}`);
+            }
+        });
+
+        // Add a timeout to detect if the process fails to start
+        const startupTimeout = setTimeout(() => {
+            if (!testOutput.includes('💭 You:') && !appProcess.killed) {
+                console.error('Process startup timeout - killing process');
+                appProcess.kill('SIGKILL');
+            }
+        }, 30000); // 30 second startup timeout
+
+        // Clear the timeout when we get the expected output
+        appProcess.stdout.on('data', () => {
+            if (testOutput.includes('💭 You:')) {
+                clearTimeout(startupTimeout);
+            }
         });
 
         // Collect stdout
@@ -140,13 +224,23 @@ describe.sequential('Configuration Reload E2E Test', () => {
     }
 
     /**
-     * Helper function to wait for specific output
+     * Helper function to wait for specific output with improved error handling
      */
     function waitForOutput(expectedText, timeout = 10000) {
         return new Promise((resolve, reject) => {
             const startTime = Date.now();
 
             const checkOutput = () => {
+                // Check if process has exited unexpectedly
+                if (appProcess && appProcess.exitCode !== null) {
+                    reject(
+                        new Error(
+                            `Process exited unexpectedly with code ${appProcess.exitCode} while waiting for: "${expectedText}"`
+                        )
+                    );
+                    return;
+                }
+
                 if (testOutput.includes(expectedText)) {
                     console.log(`✓ Found expected output: "${expectedText}"`);
                     resolve(true);
@@ -158,6 +252,7 @@ describe.sequential('Configuration Reload E2E Test', () => {
                     console.error(`Last 500 chars of error: "${testError.slice(-500)}"`);
                     console.error(`Process killed: ${appProcess?.killed}`);
                     console.error(`Process pid: ${appProcess?.pid}`);
+                    console.error(`Process exit code: ${appProcess?.exitCode}`);
 
                     reject(
                         new Error(
