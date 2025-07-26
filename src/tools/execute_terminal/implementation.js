@@ -1,12 +1,12 @@
 /**
  * Execute Terminal tool implementation
  * Executes terminal commands and returns their output with comprehensive error handling
- * Uses ShellDetector to properly handle PowerShell and CMD commands on Windows
+ * Supports cross-platform shell detection and PowerShell execution on Windows
  */
 
-import { spawn } from 'child_process';
+import { exec, spawn } from 'child_process';
 import { CommandBaseTool } from '../common/base-tool.js';
-import { shellDetector } from './shellDetector.js';
+import { getShellForCommand } from '../../utils/shellDetection.js';
 
 class ExecuteTerminalTool extends CommandBaseTool {
     constructor() {
@@ -28,48 +28,92 @@ class ExecuteTerminalTool extends CommandBaseTool {
             return commandValidation;
         }
 
+        try {
+            // Detect the appropriate shell for this command
+            const shellConfig = await getShellForCommand(command);
+            this.logger.debug(`Executing command with ${shellConfig.type}: ${command}`);
+
+            return await this._executeWithShell(command, shellConfig);
+        } catch (error) {
+            this.logger.error(`Shell detection failed: ${error.message}`);
+            // Fallback to default exec behavior
+            return await this._executeWithDefaultShell(command);
+        }
+    }
+
+    /**
+     * Execute command with the detected shell configuration
+     * @private
+     * @param {string} command - Command to execute
+     * @param {Object} shellConfig - Shell configuration object
+     * @returns {Promise<Object>} Command execution result
+     */
+    async _executeWithShell(command, shellConfig) {
         return new Promise(resolve => {
-            this.logger.debug(`Executing terminal command: ${command}`);
+            const args = [...shellConfig.flags, command];
 
-            // Detect appropriate shell for the command
-            const shellConfig = shellDetector.detectShell(command);
-            const executionParams = shellDetector.formatCommand(command, shellConfig);
+            this.logger.debug(`Spawning: ${shellConfig.executable} ${args.join(' ')}`);
 
-            this.logger.debug(`Using shell: ${shellConfig.type} (${shellConfig.executable})`);
-
-            // Execute using spawn with proper shell
-            const child = spawn(
-                executionParams.executable,
-                executionParams.args,
-                executionParams.options
-            );
+            const childProcess = spawn(shellConfig.executable, args, {
+                stdio: ['pipe', 'pipe', 'pipe'],
+                shell: false, // We're explicitly specifying the shell
+            });
 
             let stdout = '';
             let stderr = '';
 
-            // Collect stdout
-            child.stdout.on('data', data => {
+            childProcess.stdout.on('data', data => {
                 stdout += data.toString();
             });
 
-            // Collect stderr
-            child.stderr.on('data', data => {
+            childProcess.stderr.on('data', data => {
                 stderr += data.toString();
             });
 
-            // Handle process completion
-            child.on('close', code => {
-                if (code === 0) {
-                    resolve(this.createCommandResponse(true, stdout, stderr));
-                } else {
-                    const errorMessage = `Command exited with code ${code}`;
-                    resolve(this.createCommandResponse(false, stdout, stderr, errorMessage));
-                }
+            childProcess.on('close', code => {
+                const success = code === 0;
+                const errorMessage = success ? null : `Command exited with code ${code}`;
+                resolve(this.createCommandResponse(success, stdout, stderr, errorMessage));
             });
 
-            // Handle process errors
-            child.on('error', error => {
+            childProcess.on('error', error => {
                 resolve(this.createCommandResponse(false, stdout, stderr, error.message));
+            });
+
+            // Set a timeout to prevent hanging commands
+            const timeout = setTimeout(() => {
+                childProcess.kill('SIGTERM');
+                resolve(
+                    this.createCommandResponse(
+                        false,
+                        stdout,
+                        stderr,
+                        'Command timed out after 30 seconds'
+                    )
+                );
+            }, 30000);
+
+            childProcess.on('close', () => {
+                clearTimeout(timeout);
+            });
+        });
+    }
+
+    /**
+     * Fallback method using the default exec behavior
+     * @private
+     * @param {string} command - Command to execute
+     * @returns {Promise<Object>} Command execution result
+     */
+    async _executeWithDefaultShell(command) {
+        return new Promise(resolve => {
+            this.logger.debug(`Executing with default shell: ${command}`);
+            exec(command, (error, stdout, stderr) => {
+                if (error) {
+                    resolve(this.createCommandResponse(false, stdout, stderr, error.message));
+                } else {
+                    resolve(this.createCommandResponse(true, stdout, stderr));
+                }
             });
         });
     }

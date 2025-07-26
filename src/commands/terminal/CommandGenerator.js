@@ -2,6 +2,7 @@ import ConfigManager from '../../../src/config/managers/configManager.js';
 import AIAPIClient from '../../core/ai/aiAPIClient.js';
 import SystemMessages from '../../core/ai/systemMessages.js';
 import { getLogger } from '../../core/managers/logger.js';
+import { detectOS, detectShell, OS_TYPES, SHELL_TYPES } from '../../utils/shellDetection.js';
 
 /**
  * Handles AI-powered terminal command generation
@@ -42,7 +43,7 @@ class CommandGenerator {
             await aiClient.setSystemMessage(systemMessage, 'command_generator');
 
             // Create generation prompt
-            const generationPrompt = this._createGenerationPrompt(description);
+            const generationPrompt = await this._createGenerationPrompt(description);
 
             // Set up response capture
             let responseContent = null;
@@ -106,11 +107,48 @@ class CommandGenerator {
      * Create the generation prompt to send to the AI
      * @private
      * @param {string} description - The natural language description
-     * @returns {string} The prompt to send to the AI for command generation
+     * @returns {Promise<string>} The prompt to send to the AI for command generation
      */
-    _createGenerationPrompt(description) {
-        const os = process.platform;
+    async _createGenerationPrompt(description) {
+        const os = detectOS();
         const cwd = process.cwd();
+
+        let shellInfo = '';
+        let osSpecificGuidance = '';
+
+        try {
+            const shellConfig = await detectShell();
+            shellInfo = `- Shell: ${shellConfig.type} (${shellConfig.executable})`;
+
+            // Add OS-specific guidance
+            if (os === OS_TYPES.WINDOWS) {
+                if (shellConfig.type === SHELL_TYPES.POWERSHELL) {
+                    osSpecificGuidance = `
+OS-Specific Guidelines for Windows PowerShell:
+- Use PowerShell cmdlets (Get-ChildItem, Get-Content, etc.) when appropriate
+- Use PowerShell parameters with dash syntax (-Path, -Recurse, -Filter, etc.)
+- Use PowerShell operators (-eq, -like, -match, etc.) for comparisons
+- Use PowerShell variables with $ prefix when needed
+- Prefer PowerShell native commands over cmd.exe equivalents`;
+                } else {
+                    osSpecificGuidance = `
+OS-Specific Guidelines for Windows Command Prompt:
+- Use cmd.exe commands (dir, type, copy, etc.)
+- Use Windows-style paths with backslashes
+- Use cmd.exe syntax for parameters (/s, /q, etc.)`;
+                }
+            } else if (os === OS_TYPES.MACOS || os === OS_TYPES.LINUX) {
+                osSpecificGuidance = `
+OS-Specific Guidelines for Unix-like systems:
+- Use standard Unix commands (ls, cat, grep, find, etc.)
+- Use Unix-style paths with forward slashes
+- Use standard Unix command options with dash syntax (-l, -a, -r, etc.)
+- Consider using pipes and standard Unix text processing tools`;
+            }
+        } catch (error) {
+            this.logger.debug(`Shell detection failed during prompt generation: ${error.message}`);
+            shellInfo = '- Shell: Default system shell';
+        }
 
         return `Generate a terminal command for the following request:
 
@@ -119,6 +157,10 @@ Request: "${description}"
 Environment:
 - Operating System: ${os}
 - Current Directory: ${cwd}
+${shellInfo}
+${osSpecificGuidance}
+
+Important: Generate a command that is appropriate for the detected operating system and shell. The command should be syntactically correct and use the proper command syntax for the target environment.
 
 Command:`;
     }
@@ -189,14 +231,12 @@ Command:`;
 
         const cmd = command.toLowerCase().trim();
 
-        // List of potentially dangerous commands/patterns
-        const dangerousPatterns = [
+        // List of potentially dangerous commands/patterns (Unix/Linux)
+        const dangerousUnixPatterns = [
             /rm\s+-rf\s+\//, // rm -rf /
             /rm\s+-rf\s+\*/, // rm -rf *
             /:\(\)\{.*\}/, // Fork bomb pattern
             /sudo\s+rm/, // sudo rm commands
-            /format\s+c:/, // Windows format command
-            /del\s+\/s/, // Windows recursive delete
             /shutdown/, // System shutdown
             /reboot/, // System reboot
             /halt/, // System halt
@@ -205,18 +245,126 @@ Command:`;
             /dd\s+if=.*of=\/dev/, // Direct disk write
         ];
 
-        for (const pattern of dangerousPatterns) {
+        // List of potentially dangerous Windows commands/patterns
+        const dangerousWindowsPatterns = [
+            /format\s+c:/, // Windows format command
+            /del\s+\/s\s+\/q\s+\*/, // Windows recursive delete all
+            /rmdir\s+\/s\s+\/q\s+c:\\/, // Remove system directory
+            /shutdown\s+\/s/, // Windows shutdown
+            /shutdown\s+\/r/, // Windows restart
+            /diskpart/, // Disk partitioning tool
+            /cipher\s+\/w/, // Secure delete
+        ];
+
+        // List of potentially dangerous PowerShell commands/patterns
+        const dangerousPowerShellPatterns = [
+            /remove-item\s+.*-recurse\s+.*-force\s+.*c:\\/i, // Remove-Item with force on system drive
+            /format-volume\s+.*c:/i, // Format system volume
+            /clear-disk/i, // Clear entire disk
+            /stop-computer/i, // Shutdown computer
+            /restart-computer/i, // Restart computer
+            /invoke-expression\s+.*\$\(/i, // Potentially dangerous code execution
+            /iex\s+.*\$\(/i, // Short form of Invoke-Expression
+            /start-process\s+.*-verb\s+runas/i, // Elevation attempts
+        ];
+
+        // Check Unix/Linux patterns
+        for (const pattern of dangerousUnixPatterns) {
             if (pattern.test(cmd)) {
                 return {
                     safe: false,
-                    reason: 'Command contains potentially destructive operations',
+                    reason: 'Command contains potentially destructive Unix/Linux operations',
+                };
+            }
+        }
+
+        // Check Windows patterns
+        for (const pattern of dangerousWindowsPatterns) {
+            if (pattern.test(cmd)) {
+                return {
+                    safe: false,
+                    reason: 'Command contains potentially destructive Windows operations',
+                };
+            }
+        }
+
+        // Check PowerShell patterns
+        for (const pattern of dangerousPowerShellPatterns) {
+            if (pattern.test(cmd)) {
+                return {
+                    safe: false,
+                    reason: 'Command contains potentially destructive PowerShell operations',
                 };
             }
         }
 
         // Check for command length (prevent extremely long commands)
-        if (command.length > 500) {
+        if (command.length > 1000) {
             return { safe: false, reason: 'Command is too long' };
+        }
+
+        // Additional PowerShell-specific validation
+        if (this._isPowerShellSyntax(command)) {
+            return this._validatePowerShellSyntax(command);
+        }
+
+        return { safe: true };
+    }
+
+    /**
+     * Check if command uses PowerShell syntax
+     * @private
+     * @param {string} command - The command to check
+     * @returns {boolean} True if command appears to use PowerShell syntax
+     */
+    _isPowerShellSyntax(command) {
+        const powerShellIndicators = [
+            /Get-\w+/i, // Get-* cmdlets
+            /Set-\w+/i, // Set-* cmdlets
+            /New-\w+/i, // New-* cmdlets
+            /Remove-\w+/i, // Remove-* cmdlets
+            /-\w+\s+\w+/, // Parameters like -Path value
+            /\$\w+/, // Variables
+            /\|\s*Where-Object/i, // Pipeline operations
+            /\|\s*ForEach-Object/i,
+            /\|\s*Select-Object/i,
+        ];
+
+        return powerShellIndicators.some(pattern => pattern.test(command));
+    }
+
+    /**
+     * Validate PowerShell-specific syntax
+     * @private
+     * @param {string} command - The PowerShell command to validate
+     * @returns {{safe: boolean, reason?: string}} Validation result
+     */
+    _validatePowerShellSyntax(command) {
+        // Check for balanced quotes
+        const singleQuotes = (command.match(/'/g) || []).length;
+        const doubleQuotes = (command.match(/"/g) || []).length;
+
+        if (singleQuotes % 2 !== 0 || doubleQuotes % 2 !== 0) {
+            return { safe: false, reason: 'PowerShell command has unbalanced quotes' };
+        }
+
+        // Check for balanced parentheses and brackets
+        const openParens = (command.match(/\(/g) || []).length;
+        const closeParens = (command.match(/\)/g) || []).length;
+        const openBrackets = (command.match(/\[/g) || []).length;
+        const closeBrackets = (command.match(/\]/g) || []).length;
+        const openBraces = (command.match(/\{/g) || []).length;
+        const closeBraces = (command.match(/\}/g) || []).length;
+
+        if (
+            openParens !== closeParens ||
+            openBrackets !== closeBrackets ||
+            openBraces !== closeBraces
+        ) {
+            return {
+                safe: false,
+                reason: 'PowerShell command has unbalanced brackets or parentheses',
+            };
         }
 
         return { safe: true };

@@ -139,8 +139,8 @@ describe('CommandGenerator', () => {
     });
 
     describe('_createGenerationPrompt', () => {
-        it('should create proper generation prompt', () => {
-            const prompt = commandGenerator._createGenerationPrompt('list all files');
+        it('should create proper generation prompt', async () => {
+            const prompt = await commandGenerator._createGenerationPrompt('list all files');
 
             expect(prompt).toContain('Generate a terminal command for the following request:');
             expect(prompt).toContain('Request: "list all files"');
@@ -191,7 +191,9 @@ describe('CommandGenerator', () => {
         it('should reject dangerous rm commands', () => {
             const result = commandGenerator._validateCommand('rm -rf /');
             expect(result.safe).toBe(false);
-            expect(result.reason).toBe('Command contains potentially destructive operations');
+            expect(result.reason).toBe(
+                'Command contains potentially destructive Unix/Linux operations'
+            );
         });
 
         it('should reject sudo rm commands', () => {
@@ -205,7 +207,7 @@ describe('CommandGenerator', () => {
         });
 
         it('should reject extremely long commands', () => {
-            const longCommand = 'a'.repeat(501);
+            const longCommand = 'a'.repeat(1001);
             const result = commandGenerator._validateCommand(longCommand);
             expect(result.safe).toBe(false);
             expect(result.reason).toBe('Command is too long');
