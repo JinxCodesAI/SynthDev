@@ -8,7 +8,7 @@ import { writeFileSync, readFileSync, existsSync, unlinkSync } from 'fs';
 import { join } from 'path';
 import { EnvTestHelper, setupTestEnv, createTestProcessEnv } from '../../helpers/envTestHelper.js';
 
-describe('EnvTestHelper', () => {
+describe.sequential('EnvTestHelper', () => {
     let helper;
     let originalEnvPath;
     let backupEnvPath;
@@ -193,7 +193,7 @@ SYNTHDEV_VERBOSITY_LEVEL=1
     });
 });
 
-describe('Convenience functions', () => {
+describe.sequential('Convenience functions', () => {
     let originalEnvPath;
 
     beforeEach(() => {
@@ -243,7 +243,7 @@ describe('Convenience functions', () => {
     });
 });
 
-describe('Error handling', () => {
+describe.sequential('Error handling', () => {
     let helper;
 
     beforeEach(() => {
