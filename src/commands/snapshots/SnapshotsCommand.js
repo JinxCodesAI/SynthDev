@@ -130,16 +130,14 @@ export class SnapshotsCommand extends InteractiveCommand {
             consoleInterface.showMessage(`📁 Files captured: ${result.stats.fileCount}`);
 
             // Show differential size for differential snapshots, total size for full snapshots
-            const sizeToShow = result.metadata.type === 'differential'
-                ? result.metadata.differentialSize
-                : result.stats.totalSize;
-            const sizeLabel = result.metadata.type === 'differential'
-                ? 'Differential size'
-                : 'Total size';
+            const sizeToShow =
+                result.metadata.type === 'differential'
+                    ? result.metadata.differentialSize
+                    : result.stats.totalSize;
+            const sizeLabel =
+                result.metadata.type === 'differential' ? 'Differential size' : 'Total size';
 
-            consoleInterface.showMessage(
-                `💾 ${sizeLabel}: ${this.formatBytes(sizeToShow)}`
-            );
+            consoleInterface.showMessage(`💾 ${sizeLabel}: ${this.formatBytes(sizeToShow)}`);
 
             // Show breakdown for differential snapshots
             if (result.metadata.type === 'differential') {
@@ -207,8 +205,15 @@ export class SnapshotsCommand extends InteractiveCommand {
                 consoleInterface.showMessage(
                     `${type} ${snapshot.id.substring(0, 8)}... - ${snapshot.description}`
                 );
+                // For differential snapshots, show only changed files count
+                const fileCountToShow =
+                    snapshot.type === 'differential' && snapshot.changedFiles !== undefined
+                        ? snapshot.changedFiles
+                        : snapshot.fileCount;
+                const fileLabel = snapshot.type === 'differential' ? 'changed' : 'files';
+
                 consoleInterface.showMessage(
-                    `   📅 ${timestamp} | 📁 ${snapshot.fileCount} files | 💾 ${size}`
+                    `   📅 ${timestamp} | 📁 ${fileCountToShow} ${fileLabel} | 💾 ${size}`
                 );
 
                 if (snapshot.triggerType !== 'manual') {
@@ -416,16 +421,14 @@ export class SnapshotsCommand extends InteractiveCommand {
             consoleInterface.showMessage(`📁 Files: ${details.fileCount}`);
 
             // Show differential size for differential snapshots, total size for full snapshots
-            const sizeToShow = details.metadata.type === 'differential'
-                ? details.metadata.differentialSize
-                : details.metadata.totalSize;
-            const sizeLabel = details.metadata.type === 'differential'
-                ? 'Differential size'
-                : 'Total size';
+            const sizeToShow =
+                details.metadata.type === 'differential'
+                    ? details.metadata.differentialSize
+                    : details.metadata.totalSize;
+            const sizeLabel =
+                details.metadata.type === 'differential' ? 'Differential size' : 'Total size';
 
-            consoleInterface.showMessage(
-                `💾 ${sizeLabel}: ${this.formatBytes(sizeToShow)}`
-            );
+            consoleInterface.showMessage(`💾 ${sizeLabel}: ${this.formatBytes(sizeToShow)}`);
 
             // Show breakdown for differential snapshots
             if (details.metadata.type === 'differential') {

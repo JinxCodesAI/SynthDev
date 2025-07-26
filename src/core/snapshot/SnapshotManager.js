@@ -136,7 +136,14 @@ export class SnapshotManager {
             const result = {
                 id: snapshotId,
                 description,
-                metadata: snapshotMetadata,
+                metadata: {
+                    ...snapshotMetadata,
+                    // Include differential stats in metadata for display
+                    ...(differentialStats && {
+                        changedFiles: differentialStats.changedFiles,
+                        unchangedFiles: differentialStats.unchangedFiles,
+                    }),
+                },
                 stats: {
                     fileCount: snapshotMetadata.fileCount,
                     totalSize: snapshotMetadata.totalSize,
@@ -198,6 +205,12 @@ export class SnapshotManager {
                 triggerType: snapshot.triggerType,
                 creator: snapshot.creator,
                 basePath: snapshot.basePath,
+                type: snapshot.type,
+                // Include differential stats if available
+                ...(snapshot.differentialStats && {
+                    changedFiles: snapshot.differentialStats.changedFiles,
+                    unchangedFiles: snapshot.differentialStats.unchangedFiles,
+                }),
             }));
 
             this.logger.debug('Snapshots listed successfully', {
@@ -489,7 +502,7 @@ export class SnapshotManager {
         const resolvedFiles = [];
 
         for (const [relativePath, fileInfo] of Object.entries(files)) {
-            let resolvedFileInfo = {
+            const resolvedFileInfo = {
                 path: relativePath,
                 size: fileInfo.size,
                 checksum: fileInfo.checksum,

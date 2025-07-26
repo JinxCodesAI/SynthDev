@@ -49,6 +49,12 @@ export class FileBackup {
                     totalFiles: 0,
                     totalSize: 0,
                     captureTime: 0,
+                    // Differential statistics
+                    newFiles: 0,
+                    modifiedFiles: 0,
+                    unchangedFiles: 0,
+                    linkedFiles: 0,
+                    differentialSize: 0,
                 },
             };
 
@@ -425,7 +431,10 @@ export class FileBackup {
                             isNewOrModified = false;
                             action = 'unchanged';
                             // Use the original capture time from the base snapshot
-                            originalCaptureTime = baseFile.modified || baseFile.captureTime || stats.mtime.toISOString();
+                            originalCaptureTime =
+                                baseFile.modified ||
+                                baseFile.captureTime ||
+                                stats.mtime.toISOString();
 
                             fileData.files[relativePath] = {
                                 checksum,
@@ -478,7 +487,6 @@ export class FileBackup {
                 }
 
                 fileData.stats.totalSize += stats.size;
-
             } catch (error) {
                 this.logger.warn('Failed to capture file', {
                     filePath,
