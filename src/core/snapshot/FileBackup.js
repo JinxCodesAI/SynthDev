@@ -402,8 +402,9 @@ export class FileBackup {
      * @private
      * @param {Array} filePaths - Array of file paths to capture
      * @param {Object} fileData - File data object to populate
+     * @param {Object} baseSnapshot - Base snapshot for differential comparison (optional)
      */
-    async _captureFileBatch(filePaths, fileData) {
+    async _captureFileBatch(filePaths, fileData, baseSnapshot = null) {
         const capturePromises = filePaths.map(async filePath => {
             try {
                 const stats = statSync(filePath);
@@ -411,21 +412,73 @@ export class FileBackup {
                 const content = readFileSync(filePath, this.config.encoding);
                 const checksum = this._calculateChecksum(content);
 
-                fileData.files[relativePath] = {
-                    content,
-                    checksum,
-                    size: stats.size,
-                    modified: stats.mtime.toISOString(),
-                    permissions: stats.mode,
-                };
+                // Check if this file exists in base snapshot and has same checksum
+                let isNewOrModified = true;
+                let action = 'created';
+                let originalCaptureTime = stats.mtime.toISOString();
+
+                if (baseSnapshot && baseSnapshot.fileData && baseSnapshot.fileData.files) {
+                    const baseFile = baseSnapshot.fileData.files[relativePath];
+                    if (baseFile) {
+                        if (baseFile.checksum === checksum) {
+                            // File unchanged - create reference to existing snapshot
+                            isNewOrModified = false;
+                            action = 'unchanged';
+                            // Use the original capture time from the base snapshot
+                            originalCaptureTime = baseFile.modified || baseFile.captureTime || stats.mtime.toISOString();
+
+                            fileData.files[relativePath] = {
+                                checksum,
+                                size: stats.size,
+                                modified: originalCaptureTime,
+                                permissions: stats.mode,
+                                action: 'unchanged',
+                                referencedSnapshotId: baseSnapshot.id, // Reference to base snapshot
+                            };
+                            fileData.stats.unchangedFiles++;
+                            fileData.stats.linkedFiles++;
+
+                            this.logger.debug('File linked (unchanged)', {
+                                relativePath,
+                                checksum,
+                                referencedSnapshot: baseSnapshot.id,
+                                originalCaptureTime,
+                            });
+                        } else {
+                            action = 'modified';
+                        }
+                    }
+                }
+
+                if (isNewOrModified) {
+                    // File is new or modified - store full content
+                    fileData.files[relativePath] = {
+                        content,
+                        checksum,
+                        size: stats.size,
+                        modified: originalCaptureTime,
+                        permissions: stats.mode,
+                        action,
+                    };
+
+                    fileData.stats.differentialSize += stats.size;
+
+                    if (action === 'created') {
+                        fileData.stats.newFiles++;
+                    } else {
+                        fileData.stats.modifiedFiles++;
+                    }
+
+                    this.logger.debug('File captured', {
+                        relativePath,
+                        size: stats.size,
+                        checksum,
+                        action,
+                    });
+                }
 
                 fileData.stats.totalSize += stats.size;
 
-                this.logger.debug('File captured', {
-                    relativePath,
-                    size: stats.size,
-                    checksum,
-                });
             } catch (error) {
                 this.logger.warn('Failed to capture file', {
                     filePath,

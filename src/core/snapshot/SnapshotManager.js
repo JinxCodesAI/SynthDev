@@ -103,6 +103,11 @@ export class SnapshotManager {
                 captureTime: Date.now() - captureStartTime,
                 fileCount: Object.keys(fileData.files).length,
                 totalSize: fileData.stats.totalSize,
+                differentialSize: fileData.stats.differentialSize || fileData.stats.totalSize,
+                newFiles: fileData.stats.newFiles || 0,
+                modifiedFiles: fileData.stats.modifiedFiles || 0,
+                unchangedFiles: fileData.stats.unchangedFiles || 0,
+                linkedFiles: fileData.stats.linkedFiles || 0,
                 type: baseSnapshotId ? 'differential' : 'full',
                 baseSnapshotId: baseSnapshotId,
                 creator: process.env.USER || process.env.USERNAME || 'unknown',
@@ -466,17 +471,61 @@ export class SnapshotManager {
                 description: snapshot.description,
                 metadata: snapshot.metadata,
                 fileCount: Object.keys(snapshot.fileData.files).length,
-                files: Object.keys(snapshot.fileData.files).map(relativePath => ({
-                    path: relativePath,
-                    size: snapshot.fileData.files[relativePath].size,
-                    modified: snapshot.fileData.files[relativePath].modified,
-                    checksum: snapshot.fileData.files[relativePath].checksum,
-                })),
+                files: await this._resolveFileDetails(snapshot.fileData.files),
             };
         } catch (error) {
             this.logger.error(error, 'Failed to get snapshot details', { snapshotId });
             throw error;
         }
+    }
+
+    /**
+     * Resolve file details, handling linked files by fetching from referenced snapshots
+     * @private
+     * @param {Object} files - Files object from snapshot
+     * @returns {Promise<Array>} Array of resolved file details
+     */
+    async _resolveFileDetails(files) {
+        const resolvedFiles = [];
+
+        for (const [relativePath, fileInfo] of Object.entries(files)) {
+            let resolvedFileInfo = {
+                path: relativePath,
+                size: fileInfo.size,
+                checksum: fileInfo.checksum,
+                action: fileInfo.action || 'created',
+            };
+
+            // Handle linked files (unchanged files referencing other snapshots)
+            if (fileInfo.referencedSnapshotId && fileInfo.action === 'unchanged') {
+                try {
+                    // Get the referenced snapshot to get the original file details
+                    const referencedSnapshot = await this.store.retrieve(fileInfo.referencedSnapshotId);
+                    if (referencedSnapshot && referencedSnapshot.fileData.files[relativePath]) {
+                        const originalFile = referencedSnapshot.fileData.files[relativePath];
+                        resolvedFileInfo.modified = originalFile.modified || fileInfo.modified;
+                    } else {
+                        // Fallback to current file info if referenced snapshot not found
+                        resolvedFileInfo.modified = fileInfo.modified;
+                    }
+                } catch (error) {
+                    // Fallback to current file info if error retrieving referenced snapshot
+                    this.logger.warn('Failed to resolve referenced snapshot for file', {
+                        relativePath,
+                        referencedSnapshotId: fileInfo.referencedSnapshotId,
+                        error: error.message,
+                    });
+                    resolvedFileInfo.modified = fileInfo.modified;
+                }
+            } else {
+                // For new/modified files, use the current file info
+                resolvedFileInfo.modified = fileInfo.modified;
+            }
+
+            resolvedFiles.push(resolvedFileInfo);
+        }
+
+        return resolvedFiles;
     }
 
     /**
