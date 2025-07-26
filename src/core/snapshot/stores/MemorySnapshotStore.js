@@ -172,9 +172,15 @@ export class MemorySnapshotStore {
                 return false;
             }
 
+            // Before deleting, update any references to this snapshot in later snapshots
+            await this._updateReferencesBeforeDeletion(snapshotId);
+
             // Remove from storage
             this.snapshots.delete(snapshotId);
             this.metadata.delete(snapshotId);
+
+            // Update file version tracker to remove references to this snapshot
+            this._cleanupFileVersionTracker(snapshotId);
 
             // Update statistics
             this.stats.totalSnapshots--;
@@ -545,6 +551,127 @@ export class MemorySnapshotStore {
         }
 
         return chain;
+    }
+
+    /**
+     * Update references to a snapshot before deleting it
+     * @private
+     * @param {string} snapshotIdToDelete - ID of snapshot being deleted
+     */
+    async _updateReferencesBeforeDeletion(snapshotIdToDelete) {
+        const snapshotsToUpdate = [];
+
+        // Find all snapshots that reference the snapshot being deleted
+        for (const [snapshotId, snapshot] of this.snapshots.entries()) {
+            if (snapshotId === snapshotIdToDelete) continue;
+
+            let hasReferences = false;
+            const updatedFiles = {};
+
+            for (const [filePath, fileInfo] of Object.entries(snapshot.fileData.files)) {
+                if (fileInfo.action === 'unchanged' && fileInfo.snapshotId === snapshotIdToDelete) {
+                    // This file references the snapshot being deleted
+                    hasReferences = true;
+
+                    // Find an earlier snapshot that contains this file with the same checksum
+                    const earlierSnapshot = this._findEarlierSnapshotForFile(
+                        fileInfo.checksum,
+                        snapshotIdToDelete
+                    );
+
+                    if (earlierSnapshot) {
+                        // Update reference to point to earlier snapshot
+                        updatedFiles[filePath] = {
+                            ...fileInfo,
+                            snapshotId: earlierSnapshot.snapshotId,
+                        };
+
+                        this.logger.debug('Updated file reference', {
+                            filePath,
+                            fromSnapshot: snapshotIdToDelete,
+                            toSnapshot: earlierSnapshot.snapshotId,
+                            checksum: fileInfo.checksum,
+                        });
+                    } else {
+                        // No earlier snapshot found, this shouldn't happen in a well-formed system
+                        // but we'll handle it by marking the file as missing
+                        this.logger.warn('No earlier snapshot found for referenced file', {
+                            filePath,
+                            checksum: fileInfo.checksum,
+                            deletedSnapshot: snapshotIdToDelete,
+                        });
+
+                        // Remove the file reference entirely
+                        // (alternatively, we could mark it as deleted)
+                        continue;
+                    }
+                } else {
+                    // Keep the file as-is
+                    updatedFiles[filePath] = fileInfo;
+                }
+            }
+
+            if (hasReferences) {
+                // Update the snapshot with new file references
+                snapshot.fileData.files = updatedFiles;
+                snapshotsToUpdate.push(snapshotId);
+            }
+        }
+
+        this.logger.debug('Updated references before deletion', {
+            deletedSnapshot: snapshotIdToDelete,
+            updatedSnapshots: snapshotsToUpdate.length,
+        });
+    }
+
+    /**
+     * Find an earlier snapshot that contains a file with the given checksum
+     * @private
+     * @param {string} checksum - File checksum to find
+     * @param {string} excludeSnapshotId - Snapshot ID to exclude from search
+     * @returns {Object|null} Earlier snapshot info or null if not found
+     */
+    _findEarlierSnapshotForFile(checksum, excludeSnapshotId) {
+        // Get all snapshots sorted by timestamp (oldest first)
+        const sortedSnapshots = Array.from(this.snapshots.entries())
+            .map(([id, snapshot]) => ({ id, snapshot }))
+            .filter(({ id }) => id !== excludeSnapshotId)
+            .sort((a, b) => new Date(a.snapshot.metadata.timestamp) - new Date(b.snapshot.metadata.timestamp));
+
+        // Find the most recent snapshot (before the one being deleted) that contains this file
+        for (let i = sortedSnapshots.length - 1; i >= 0; i--) {
+            const { id, snapshot } = sortedSnapshots[i];
+
+            for (const [filePath, fileInfo] of Object.entries(snapshot.fileData.files)) {
+                if (fileInfo.checksum === checksum) {
+                    // Found a file with matching checksum
+                    if (fileInfo.action === 'unchanged') {
+                        // This is a reference, continue looking for the actual content
+                        continue;
+                    } else {
+                        // This snapshot contains the actual content
+                        return { snapshotId: id, filePath };
+                    }
+                }
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Clean up file version tracker after snapshot deletion
+     * @private
+     * @param {string} snapshotId - ID of deleted snapshot
+     */
+    _cleanupFileVersionTracker(snapshotId) {
+        // Remove any file version entries that point to the deleted snapshot
+        // This is handled by the FileVersionTracker if it has such functionality
+        // For now, we'll just log it
+        this.logger.debug('Cleaning up file version tracker', { deletedSnapshot: snapshotId });
+
+        // Note: The FileVersionTracker would need a method to clean up references
+        // to deleted snapshots. This could be implemented later if needed.
     }
 }
 

@@ -450,38 +450,69 @@ export class FileBackup {
                 const fileInfo = fileData.files[relativePath];
                 const fullPath = join(fileData.basePath, relativePath);
 
-                // Create directory if it doesn't exist
-                const dir = dirname(fullPath);
-                if (!existsSync(dir)) {
-                    mkdirSync(dir, { recursive: true });
-                }
-
-                // Write file content
-                writeFileSync(fullPath, fileInfo.content, this.config.encoding);
-
-                // Restore permissions if configured
-                if (this.config.preservePermissions && fileInfo.permissions) {
+                // Check if file needs to be restored by comparing checksums
+                let needsRestore = true;
+                if (existsSync(fullPath)) {
                     try {
-                        // Note: This is a simplified permissions restoration
-                        // In a real implementation, you might want more sophisticated permission handling
-                    } catch (permError) {
-                        this.logger.warn('Failed to restore file permissions', {
-                            fullPath,
-                            error: permError.message,
+                        const currentContent = readFileSync(fullPath, this.config.encoding);
+                        const currentChecksum = this._calculateChecksum(currentContent);
+
+                        if (currentChecksum === fileInfo.checksum) {
+                            needsRestore = false;
+                            results.skipped.push({
+                                path: relativePath,
+                                reason: 'File unchanged (checksum match)',
+                                checksum: fileInfo.checksum,
+                            });
+
+                            this.logger.debug('File skipped (unchanged)', {
+                                relativePath,
+                                checksum: fileInfo.checksum,
+                            });
+                        }
+                    } catch (readError) {
+                        // If we can't read the current file, we should restore it
+                        this.logger.debug('Cannot read current file, will restore', {
+                            relativePath,
+                            error: readError.message,
                         });
                     }
                 }
 
-                results.restored.push({
-                    path: relativePath,
-                    size: fileInfo.size,
-                    checksum: fileInfo.checksum,
-                });
+                if (needsRestore) {
+                    // Create directory if it doesn't exist
+                    const dir = dirname(fullPath);
+                    if (!existsSync(dir)) {
+                        mkdirSync(dir, { recursive: true });
+                    }
 
-                this.logger.debug('File restored', {
-                    relativePath,
-                    size: fileInfo.size,
-                });
+                    // Write file content
+                    writeFileSync(fullPath, fileInfo.content, this.config.encoding);
+
+                    // Restore permissions if configured
+                    if (this.config.preservePermissions && fileInfo.permissions) {
+                        try {
+                            // Note: This is a simplified permissions restoration
+                            // In a real implementation, you might want more sophisticated permission handling
+                        } catch (permError) {
+                            this.logger.warn('Failed to restore file permissions', {
+                                fullPath,
+                                error: permError.message,
+                            });
+                        }
+                    }
+
+                    results.restored.push({
+                        path: relativePath,
+                        size: fileInfo.size,
+                        checksum: fileInfo.checksum,
+                    });
+
+                    this.logger.debug('File restored', {
+                        relativePath,
+                        size: fileInfo.size,
+                    });
+                }
             } catch (error) {
                 this.logger.error(error, 'Failed to restore file', { relativePath });
                 results.errors.push({
