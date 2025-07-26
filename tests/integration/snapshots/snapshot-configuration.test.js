@@ -95,8 +95,6 @@ describe('Snapshot Configuration Integration', () => {
             expect(snapshotManager.config.storage.maxSnapshots).toBe(storageConfig.maxSnapshots);
             expect(snapshotManager.config.storage.maxMemoryMB).toBe(storageConfig.maxMemoryMB);
 
-            expect(snapshotManager.config.backup.createBackups).toBe(backupConfig.createBackups);
-            expect(snapshotManager.config.backup.backupSuffix).toBe(backupConfig.backupSuffix);
             expect(snapshotManager.config.backup.preservePermissions).toBe(
                 backupConfig.preservePermissions
             );
@@ -198,11 +196,8 @@ describe('Snapshot Configuration Integration', () => {
                 configManagerSettings.storage.maxMemoryMB
             );
 
-            expect(snapshotManagerSettings.backup.createBackups).toBe(
-                configManagerSettings.backup.createBackups
-            );
-            expect(snapshotManagerSettings.backup.backupSuffix).toBe(
-                configManagerSettings.backup.backupSuffix
+            expect(snapshotManagerSettings.backup.preservePermissions).toBe(
+                configManagerSettings.backup.preservePermissions
             );
             expect(snapshotManagerSettings.backup.preservePermissions).toBe(
                 configManagerSettings.backup.preservePermissions

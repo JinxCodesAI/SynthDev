@@ -68,8 +68,6 @@ Contains default settings for snapshot behavior, storage, and file filtering.
     "caseSensitive": false
   },
   "backup": {
-    "createBackups": true,
-    "backupSuffix": ".backup",
     "preservePermissions": true,
     "validateChecksums": true,
     "maxConcurrentFiles": 10,
@@ -200,8 +198,6 @@ The system uses [minimatch](https://github.com/isaacs/minimatch) for pattern mat
 ```json
 {
     "backup": {
-        "createBackups": true,
-        "backupSuffix": ".backup",
         "preservePermissions": true,
         "validateChecksums": true,
         "maxConcurrentFiles": 10,
@@ -212,10 +208,8 @@ The system uses [minimatch](https://github.com/isaacs/minimatch) for pattern mat
 
 **Options:**
 
-- `createBackups`: Create backup files before restoration
-- `backupSuffix`: Suffix for backup files
-- `preservePermissions`: Maintain file permissions
-- `validateChecksums`: Verify file integrity
+- `preservePermissions`: Maintain file permissions during restoration
+- `validateChecksums`: Verify file integrity after restoration
 - `maxConcurrentFiles`: Maximum concurrent file operations
 - `encoding`: Default file encoding
 

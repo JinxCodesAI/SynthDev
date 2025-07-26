@@ -356,8 +356,6 @@ Edit `src/config/snapshots/snapshot-defaults.json`:
         "persistToDisk": false
     },
     "backup": {
-        "createBackups": true,
-        "backupSuffix": ".backup",
         "preservePermissions": true,
         "validateChecksums": true,
         "maxConcurrentFiles": 10,
