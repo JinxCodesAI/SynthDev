@@ -2,7 +2,6 @@
     "name": "list_tasks",
     "description": "List all tasks in the in-memory task management system in short format showing ID, name, and status with hierarchical structure",
     "auto_run": true,
-    "category": "task_management",
     "version": "1.0.0",
     "tags": ["tasks", "management", "list", "display"],
     "schema": {

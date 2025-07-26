@@ -2,7 +2,6 @@
     "name": "edit_tasks",
     "description": "Create or edit tasks in the in-memory task management system. Can create new tasks or update existing ones. Validates parent relationships and outputs current task list.",
     "auto_run": true,
-    "category": "task_management",
     "version": "1.0.0",
     "tags": ["tasks", "management", "productivity", "organization"],
     "schema": {

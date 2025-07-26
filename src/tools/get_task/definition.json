@@ -2,7 +2,6 @@
     "name": "get_task",
     "description": "Get detailed information about a single task by its ID from the in-memory task management system",
     "auto_run": true,
-    "category": "task_management",
     "version": "1.0.0",
     "tags": ["tasks", "management", "details", "single"],
     "schema": {
