@@ -747,6 +747,157 @@ npx vitest run --inspect-brk tests/unit/specific.test.js
 SYNTHDEV_VERBOSITY_LEVEL=5 npm test
 ```
 
+### Test Isolation and Sequential Execution
+
+**CRITICAL**: E2E tests and integration tests that spawn processes or modify shared resources MUST run sequentially to prevent interference.
+
+#### When to Use Sequential Execution
+
+**✅ ALWAYS use `describe.sequential()` for:**
+
+- E2E tests that spawn application processes
+- Tests that modify the file system (especially .env files)
+- Tests that use shared resources (ports, temporary directories)
+- Tests that modify global state or environment variables
+- Integration tests that interact with external systems
+
+**❌ NEVER run these tests in parallel:**
+
+```javascript
+// BAD - Will cause race conditions and timeouts
+describe('E2E Tests', () => {
+    it('should start app and test command 1', async () => {
+        // Spawns process on same port/resources
+    });
+
+    it('should start app and test command 2', async () => {
+        // Conflicts with first test
+    });
+});
+```
+
+**✅ ALWAYS use sequential execution:**
+
+```javascript
+// GOOD - Prevents conflicts and timeouts
+describe.sequential('E2E Tests', { retry: 2 }, () => {
+    let appProcess;
+
+    afterEach(async () => {
+        // Proper cleanup between tests
+        if (appProcess && !appProcess.killed) {
+            appProcess.kill('SIGTERM');
+            await new Promise(resolve => setTimeout(resolve, 500));
+            if (!appProcess.killed) {
+                appProcess.kill('SIGKILL');
+            }
+        }
+
+        // Wait for system to stabilize
+        await new Promise(resolve => setTimeout(resolve, 1000));
+    });
+
+    it('should test command 1', async () => {
+        // Test runs in isolation
+    });
+
+    it('should test command 2', async () => {
+        // Runs after first test completes
+    });
+});
+```
+
+#### Timeout Configuration
+
+**E2E tests require longer timeouts** due to process spawning and I/O operations:
+
+```javascript
+// Configure appropriate timeouts for different test types
+describe.sequential('E2E Tests', { retry: 2 }, () => {
+    let testTimeout;
+
+    beforeEach(() => {
+        // Adjust timeout based on environment
+        testTimeout = process.env.CI ? 45000 : 30000;
+    });
+
+    it('should complete within timeout', async () => {
+        // Test implementation
+    }, 60000); // Individual test timeout
+});
+```
+
+#### Process Cleanup Best Practices
+
+**CRITICAL**: Always clean up spawned processes to prevent zombie processes and port conflicts:
+
+```javascript
+afterEach(async () => {
+    if (appProcess && !appProcess.killed) {
+        try {
+            // 1. Graceful termination first
+            appProcess.kill('SIGTERM');
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            // 2. Force kill if still running
+            if (!appProcess.killed) {
+                appProcess.kill('SIGKILL');
+            }
+        } catch (error) {
+            // Process might already be dead
+        }
+        appProcess = null;
+    }
+
+    // 3. Wait for system stabilization
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // 4. Clean up state files
+    const stateFiles = [
+        '.synthdev-initial-snapshot',
+        '.synthdev-config-cache',
+        '.synthdev-session',
+    ];
+
+    for (const file of stateFiles) {
+        if (existsSync(file)) {
+            try {
+                unlinkSync(file);
+            } catch (error) {
+                // Ignore cleanup errors
+            }
+        }
+    }
+});
+```
+
+#### File System Test Isolation
+
+**CRITICAL**: Tests that modify files must not interfere with each other:
+
+```javascript
+// Use temporary directories for file operations
+import { mkdtempSync, rmSync } from 'fs';
+import { tmpdir } from 'os';
+import { join } from 'path';
+
+describe.sequential('File System Tests', () => {
+    let tempDir;
+
+    beforeEach(() => {
+        // Create unique temp directory for each test
+        tempDir = mkdtempSync(join(tmpdir(), 'test-'));
+    });
+
+    afterEach(() => {
+        // Clean up temp directory
+        if (tempDir && existsSync(tempDir)) {
+            rmSync(tempDir, { recursive: true, force: true });
+        }
+    });
+});
+```
+
 ## Best Practices
 
 ### Test Organization
@@ -808,6 +959,176 @@ beforeEach(() => {
 // Use process environment for spawned processes
 const appProcess = spawn('node', ['app.js'], {
     env: createTestProcessEnv({ SYNTHDEV_API_KEY: 'test-key' }),
+});
+```
+
+### Common Test Failure Prevention
+
+#### Preventing Timeout Failures
+
+**E2E tests commonly fail due to timeouts.** Follow these practices:
+
+**✅ Use appropriate timeouts:**
+
+```javascript
+describe.sequential('E2E Tests', { retry: 2 }, () => {
+    let testTimeout;
+
+    beforeEach(() => {
+        // Longer timeouts for CI environments
+        testTimeout = process.env.CI ? 45000 : 30000;
+    });
+
+    it('should complete within reasonable time', async () => {
+        return new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => {
+                reject(new Error('Test timeout - specific operation'));
+            }, testTimeout);
+
+            // Your test logic here
+
+            // Always clear timeout
+            clearTimeout(timeout);
+            resolve();
+        });
+    }, 60000); // Individual test timeout
+});
+```
+
+**✅ Wait for proper application startup:**
+
+```javascript
+// Wait for specific startup indicators
+await waitForOutput('💭 You:', 15000);
+
+// Add delays for process stabilization
+setTimeout(() => {
+    if (appProcess && appProcess.stdin) {
+        appProcess.stdin.write('/help\n');
+    }
+}, 500); // Allow process to fully initialize
+```
+
+**✅ Implement robust output waiting:**
+
+```javascript
+function waitForOutput(expectedText, timeout = 10000) {
+    return new Promise((resolve, reject) => {
+        const startTime = Date.now();
+
+        const checkOutput = () => {
+            if (testOutput.includes(expectedText)) {
+                resolve(true);
+            } else if (Date.now() - startTime > timeout) {
+                // Provide detailed error information
+                reject(
+                    new Error(
+                        `Timeout waiting for: "${expectedText}"\n` +
+                            `Current output: "${testOutput.slice(-200)}"\n` +
+                            `Process killed: ${appProcess?.killed}\n` +
+                            `Process PID: ${appProcess?.pid}`
+                    )
+                );
+            } else {
+                setTimeout(checkOutput, 100);
+            }
+        };
+
+        checkOutput();
+    });
+}
+```
+
+#### Preventing Environment File Errors
+
+**Tests fail when .env.test files are missing.** Handle this properly:
+
+**✅ Check for file existence before operations:**
+
+```javascript
+import { existsSync } from 'fs';
+
+// In envTestHelper.js - handle missing files gracefully
+setupTestEnv(envConfig) {
+    try {
+        // Create backup only if original exists
+        if (existsSync(this.originalEnvPath) && !this.isBackupCreated) {
+            const originalContent = readFileSync(this.originalEnvPath, 'utf8');
+            writeFileSync(this.backupEnvPath, originalContent);
+            this.isBackupCreated = true;
+        }
+
+        // Create test environment content
+        const testEnvContent = this.createEnvContent(envConfig);
+
+        // Write to test file first (for debugging)
+        writeFileSync(this.testEnvPath, testEnvContent);
+
+        // Then overwrite main .env
+        writeFileSync(this.originalEnvPath, testEnvContent);
+
+        this.isTestActive = true;
+        return () => this.cleanup();
+    } catch (error) {
+        console.error('Failed to setup test environment:', error);
+        this.forceRestore();
+        throw error;
+    }
+}
+```
+
+**✅ Prefer process environment over file manipulation:**
+
+```javascript
+// PREFERRED - No file system interaction
+const appProcess = spawn('node', ['src/core/app.js'], {
+    env: createTestProcessEnv({
+        SYNTHDEV_API_KEY: 'test-key-12345',
+        SYNTHDEV_VERBOSITY_LEVEL: '2',
+    }),
+    stdio: ['pipe', 'pipe', 'pipe'],
+});
+```
+
+#### Preventing Process Conflicts
+
+**Multiple processes can conflict on ports and resources:**
+
+**✅ Use unique identifiers:**
+
+```javascript
+// Use process PID or timestamp for unique resources
+const uniquePort = 3000 + (process.pid % 1000);
+const uniqueDir = `/tmp/test-${Date.now()}-${process.pid}`;
+```
+
+**✅ Implement proper process lifecycle:**
+
+```javascript
+describe.sequential('Process Tests', () => {
+    let appProcess;
+
+    beforeEach(() => {
+        // Ensure clean state
+        expect(appProcess).toBeUndefined();
+    });
+
+    afterEach(async () => {
+        if (appProcess && !appProcess.killed) {
+            // Graceful shutdown
+            appProcess.kill('SIGTERM');
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            // Force kill if needed
+            if (!appProcess.killed) {
+                appProcess.kill('SIGKILL');
+            }
+        }
+        appProcess = null;
+
+        // System stabilization
+        await new Promise(resolve => setTimeout(resolve, 1000));
+    });
 });
 ```
 

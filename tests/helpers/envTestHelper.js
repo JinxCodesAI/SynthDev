@@ -56,8 +56,13 @@ class EnvTestHelper {
             // Create test environment content
             const testEnvContent = this.createEnvContent(envConfig);
 
-            // Write to test file first
-            writeFileSync(this.testEnvPath, testEnvContent);
+            // Write to test file first (for debugging and verification)
+            try {
+                writeFileSync(this.testEnvPath, testEnvContent);
+            } catch (testFileError) {
+                console.warn('Warning: Could not create .env.test file:', testFileError.message);
+                // Continue anyway - the test file is optional for debugging
+            }
 
             // Only then overwrite the main .env
             writeFileSync(this.originalEnvPath, testEnvContent);
@@ -107,20 +112,33 @@ class EnvTestHelper {
      */
     cleanup() {
         try {
-            // Remove test env file
+            // Remove test env file if it exists
             if (existsSync(this.testEnvPath)) {
-                unlinkSync(this.testEnvPath);
+                try {
+                    unlinkSync(this.testEnvPath);
+                } catch (error) {
+                    console.warn('Warning: Could not remove .env.test file:', error.message);
+                }
             }
 
             // Restore original .env if backup exists
             if (existsSync(this.backupEnvPath)) {
-                const backupContent = readFileSync(this.backupEnvPath, 'utf8');
-                writeFileSync(this.originalEnvPath, backupContent);
-                unlinkSync(this.backupEnvPath);
-                this.isBackupCreated = false;
-            } else if (existsSync(this.originalEnvPath)) {
-                // If no backup exists, remove the test .env file
-                unlinkSync(this.originalEnvPath);
+                try {
+                    const backupContent = readFileSync(this.backupEnvPath, 'utf8');
+                    writeFileSync(this.originalEnvPath, backupContent);
+                    unlinkSync(this.backupEnvPath);
+                    this.isBackupCreated = false;
+                } catch (error) {
+                    console.error('Error restoring .env from backup:', error.message);
+                    throw error;
+                }
+            } else if (existsSync(this.originalEnvPath) && this.isTestActive) {
+                // If no backup exists but we created a test .env, remove it
+                try {
+                    unlinkSync(this.originalEnvPath);
+                } catch (error) {
+                    console.warn('Warning: Could not remove test .env file:', error.message);
+                }
             }
 
             this.isTestActive = false;
