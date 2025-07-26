@@ -81,16 +81,11 @@ export class SnapshotManager {
             const basePath = metadata.basePath || process.cwd();
             const resolvedBasePath = resolve(basePath);
 
-            // Determine if this should be differential
-            const enableDifferential = this.config.storage.enableDifferential !== false;
+            // Get the most recent snapshot as base for differential snapshot
             let baseSnapshotId = null;
-
-            if (enableDifferential) {
-                // Get the most recent snapshot as base
-                const recentSnapshots = await this.store.list({ limit: 1 });
-                if (recentSnapshots.length > 0) {
-                    baseSnapshotId = recentSnapshots[0].id;
-                }
+            const recentSnapshots = await this.store.list({ limit: 1 });
+            if (recentSnapshots.length > 0) {
+                baseSnapshotId = recentSnapshots[0].id;
             }
 
             // Capture files
@@ -114,22 +109,15 @@ export class SnapshotManager {
                 ...metadata,
             };
 
-            // Store snapshot (differential or full)
-            const snapshotId =
-                enableDifferential && typeof this.store.storeDifferential === 'function'
-                    ? await this.store.storeDifferential(
-                          {
-                              description,
-                              fileData,
-                              metadata: snapshotMetadata,
-                          },
-                          baseSnapshotId
-                      )
-                    : await this.store.store({
-                          description,
-                          fileData,
-                          metadata: snapshotMetadata,
-                      });
+            // Store differential snapshot
+            const snapshotId = await this.store.storeDifferential(
+                {
+                    description,
+                    fileData,
+                    metadata: snapshotMetadata,
+                },
+                baseSnapshotId
+            );
 
             // Perform auto-cleanup if enabled
             if (this.config.behavior.autoCleanup) {
