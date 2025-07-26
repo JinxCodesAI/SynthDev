@@ -83,9 +83,12 @@ export class SnapshotManager {
 
             // Get the most recent snapshot as base for differential snapshot
             let baseSnapshotId = null;
+            let baseSnapshot = null;
             const recentSnapshots = await this.store.list({ limit: 1 });
             if (recentSnapshots.length > 0) {
                 baseSnapshotId = recentSnapshots[0].id;
+                // Retrieve the full base snapshot for differential comparison
+                baseSnapshot = await this.store.retrieve(baseSnapshotId);
             }
 
             // Capture files
@@ -93,22 +96,34 @@ export class SnapshotManager {
             const fileData = await this.fileBackup.captureFiles(resolvedBasePath, {
                 specificFiles: metadata.specificFiles,
                 recursive: true,
+                baseSnapshot: baseSnapshot,
             });
 
             // Create snapshot metadata
+            const isDifferential = baseSnapshotId !== null;
+            const newFiles = fileData.stats.newFiles || 0;
+            const modifiedFiles = fileData.stats.modifiedFiles || 0;
+            const unchangedFiles = fileData.stats.unchangedFiles || 0;
+
+            // For differential snapshots, fileCount should be only changed files
+            // For full snapshots, fileCount should be all files
+            const fileCount = isDifferential
+                ? newFiles + modifiedFiles
+                : Object.keys(fileData.files).length;
+
             const snapshotMetadata = {
                 description,
                 basePath: resolvedBasePath,
                 triggerType: metadata.triggerType || 'manual',
                 captureTime: Date.now() - captureStartTime,
-                fileCount: Object.keys(fileData.files).length,
+                fileCount: fileCount,
                 totalSize: fileData.stats.totalSize,
                 differentialSize: fileData.stats.differentialSize || fileData.stats.totalSize,
-                newFiles: fileData.stats.newFiles || 0,
-                modifiedFiles: fileData.stats.modifiedFiles || 0,
-                unchangedFiles: fileData.stats.unchangedFiles || 0,
+                newFiles: newFiles,
+                modifiedFiles: modifiedFiles,
+                unchangedFiles: unchangedFiles,
                 linkedFiles: fileData.stats.linkedFiles || 0,
-                type: baseSnapshotId ? 'differential' : 'full',
+                type: isDifferential ? 'differential' : 'full',
                 baseSnapshotId: baseSnapshotId,
                 creator: process.env.USER || process.env.USERNAME || 'unknown',
                 ...metadata,
@@ -202,6 +217,7 @@ export class SnapshotManager {
                 timestamp: snapshot.timestamp,
                 fileCount: snapshot.fileCount,
                 totalSize: snapshot.totalSize,
+                differentialSize: snapshot.differentialSize,
                 triggerType: snapshot.triggerType,
                 creator: snapshot.creator,
                 basePath: snapshot.basePath,

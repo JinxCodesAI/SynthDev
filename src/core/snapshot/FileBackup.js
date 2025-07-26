@@ -32,11 +32,12 @@ export class FileBackup {
      * @param {Object} options - Capture options
      * @param {Array} options.specificFiles - Specific files to capture (optional)
      * @param {boolean} options.recursive - Recursively capture subdirectories
+     * @param {Object} options.baseSnapshot - Base snapshot for differential comparison (optional)
      * @returns {Promise<Object>} Captured file data
      */
     async captureFiles(basePath, options = {}) {
         try {
-            const { specificFiles = null, recursive = true } = options;
+            const { specificFiles = null, recursive = true, baseSnapshot = null } = options;
 
             this.logger.debug('Starting file capture', { basePath, options });
 
@@ -89,7 +90,7 @@ export class FileBackup {
             const batchSize = this.config.maxConcurrentFiles;
             for (let i = 0; i < filteredFiles.length; i += batchSize) {
                 const batch = filteredFiles.slice(i, i + batchSize);
-                await this._captureFileBatch(batch, fileData);
+                await this._captureFileBatch(batch, fileData, baseSnapshot);
             }
 
             // Calculate final stats

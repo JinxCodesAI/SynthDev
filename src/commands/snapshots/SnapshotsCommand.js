@@ -127,7 +127,19 @@ export class SnapshotsCommand extends InteractiveCommand {
             // Show success message
             consoleInterface.showMessage(this.messages.success.snapshotCreated);
             consoleInterface.showMessage(`📍 Snapshot ID: ${result.id}`);
-            consoleInterface.showMessage(`📁 Files captured: ${result.stats.fileCount}`);
+            // For differential snapshots, show only changed files count
+            // Use the original metadata fields which are always available
+            const newFiles = result.metadata.newFiles || 0;
+            const modifiedFiles = result.metadata.modifiedFiles || 0;
+            const unchangedFiles = result.metadata.unchangedFiles || 0;
+            const changedFiles = newFiles + modifiedFiles;
+
+            const fileCountToShow = result.metadata.type === 'differential'
+                ? changedFiles
+                : result.stats.fileCount;
+            const fileLabel = result.metadata.type === 'differential' ? 'changed files' : 'files captured';
+
+            consoleInterface.showMessage(`📁 ${fileLabel}: ${fileCountToShow}`);
 
             // Show differential size for differential snapshots, total size for full snapshots
             const sizeToShow =
@@ -141,10 +153,6 @@ export class SnapshotsCommand extends InteractiveCommand {
 
             // Show breakdown for differential snapshots
             if (result.metadata.type === 'differential') {
-                const newFiles = result.metadata.newFiles || 0;
-                const modifiedFiles = result.metadata.modifiedFiles || 0;
-                const unchangedFiles = result.metadata.unchangedFiles || 0;
-
                 consoleInterface.showMessage(
                     `📊 Changes: ${newFiles} new, ${modifiedFiles} modified, ${unchangedFiles} unchanged`
                 );
@@ -199,7 +207,12 @@ export class SnapshotsCommand extends InteractiveCommand {
 
             for (const snapshot of snapshots) {
                 const timestamp = new Date(snapshot.timestamp).toLocaleString();
-                const size = this.formatBytes(snapshot.totalSize);
+
+                // For differential snapshots, show differential size; for full snapshots, show total size
+                const sizeToShow = snapshot.type === 'differential' && snapshot.differentialSize !== undefined
+                    ? snapshot.differentialSize
+                    : snapshot.totalSize;
+                const size = this.formatBytes(sizeToShow);
                 const type = snapshot.triggerType === 'manual' ? '👤' : '🤖';
 
                 consoleInterface.showMessage(
