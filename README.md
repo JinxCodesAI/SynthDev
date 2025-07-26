@@ -211,7 +211,7 @@ Comprehensive tool categories with security and validation:
 #### File Operations
 
 - **read_file**: Read file contents with encoding support and size limits
-- **write_file**: Create/overwrite files with backup and validation
+- **write_file**: Create/overwrite files with validation
 - **edit_file**: Modify files with line-based editing and safety checks
 - **list_directory**: Directory listing with filtering and depth control
 
@@ -235,8 +235,7 @@ Comprehensive tool categories with security and validation:
 - **Path Validation**: All file operations restricted to project directory
 - **AI Safety Assessment**: Dynamic code analysis for script execution
 - **Tool Filtering**: Role-based access control with pattern matching
-- **Backup System**: Automatic backups for destructive operations
-- **Snapshot System**: Automatic snapshots before file-modifying operations
+- **Snapshot System**: Differential snapshots with checksum-based deduplication before file-modifying operations
 
 ### Multi-Agent Workflows
 
@@ -280,7 +279,7 @@ Index your codebase for AI-powered understanding:
 
 ### Snapshot System
 
-SynthDev features an advanced snapshot system for project state management:
+SynthDev features an advanced differential snapshot system for project state management:
 
 ```bash
 # Manual snapshots
@@ -297,6 +296,12 @@ SynthDev features an advanced snapshot system for project state management:
 # - Smart tool classification (file-modifying vs read-only)
 # - Configurable limits and cooldown periods
 ```
+
+**Key Features:**
+- **Differential Snapshots**: Only stores changes between snapshots for efficiency
+- **Checksum-based Deduplication**: Files with identical content are linked, not duplicated
+- **Smart Restoration**: Only overwrites files that have actually changed
+- **Safe Deletion**: When deleting snapshots, references are updated to maintain integrity
 
 ## Development Setup
 
@@ -392,7 +397,7 @@ src/
 │   ├── get_time/           # Time and date utilities
 │   ├── list_directory/     # Directory listing
 │   ├── read_file/          # File reading with encoding support
-│   └── write_file/         # File writing with backup
+│   └── write_file/         # File writing with validation
 ├── workflow/               # Multi-agent workflow system
 │   ├── WorkflowStateMachine.js # Main workflow orchestrator
 │   ├── WorkflowAgent.js        # Individual AI agent instances
