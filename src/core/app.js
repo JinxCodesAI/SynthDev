@@ -76,7 +76,7 @@ import { AutoSnapshotManager } from './snapshot/AutoSnapshotManager.js';
 /**
  * Main application orchestrator
  */
-class AICoderConsole {
+export default class AICoderConsole {
     constructor(config) {
         this.config = config;
 
