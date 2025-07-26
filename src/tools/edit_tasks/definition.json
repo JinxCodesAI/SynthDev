@@ -1,0 +1,56 @@
+{
+    "name": "edit_tasks",
+    "description": "Create or edit tasks in the in-memory task management system. Can create new tasks or update existing ones. Validates parent relationships and outputs current task list.",
+    "auto_run": true,
+    "category": "task_management",
+    "version": "1.0.0",
+    "tags": ["tasks", "management", "productivity", "organization"],
+    "schema": {
+        "type": "function",
+        "function": {
+            "name": "edit_tasks",
+            "description": "Create or edit tasks in the task management system. Each task has an ID, title, description, parent (optional), and status. If a task with the given ID exists, it will be updated with the provided fields (non-provided fields remain unchanged). If no ID is provided or the ID doesn't exist, a new task is created. Parent relationships are validated to prevent circular dependencies.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "tasks": {
+                        "type": "array",
+                        "description": "Array of task objects to create or edit. Each task can have id, title, description, parent, and status fields.",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "id": {
+                                    "type": "string",
+                                    "description": "Task ID (UUID). If provided and exists, the task will be updated. If not provided, a new task will be created with a generated ID."
+                                },
+                                "title": {
+                                    "type": "string",
+                                    "description": "Task title/name. Required for new tasks, optional for updates."
+                                },
+                                "description": {
+                                    "type": "string",
+                                    "description": "Detailed description of the task. Optional field."
+                                },
+                                "parent": {
+                                    "type": "string",
+                                    "description": "ID of the parent task. Must be a valid existing task ID. Creates a hierarchical relationship. Optional field."
+                                },
+                                "status": {
+                                    "type": "string",
+                                    "description": "Task status. Valid values: 'not_started', 'in_progress', 'completed', 'cancelled'. Defaults to 'not_started' for new tasks.",
+                                    "enum": ["not_started", "in_progress", "completed", "cancelled"]
+                                }
+                            },
+                            "additionalProperties": false
+                        },
+                        "minItems": 1
+                    }
+                },
+                "required": ["tasks"]
+            },
+            "response_format": {
+                "description": "Returns a JSON object with 'success' (boolean), 'timestamp' (ISO string), 'tool_name' (string), 'processed_tasks' (array of processed task results), and 'current_task_list' (hierarchical list of all tasks in short format). Error responses include 'error' field with detailed error message."
+            }
+        }
+    }
+}
