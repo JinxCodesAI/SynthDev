@@ -22,6 +22,7 @@ import WorkflowsCommand from '../workflow/WorkflowsCommand.js';
 import WorkflowCommand from '../workflow/WorkflowCommand.js';
 import { ConfigureCommand } from '../config/ConfigureCommand.js';
 import SnapshotsCommand from '../snapshots/SnapshotsCommand.js';
+import TaskCommand from '../task/TaskCommand.js';
 
 /**
  * Create and configure a command registry with all available commands
@@ -60,6 +61,9 @@ export function createCommandRegistry() {
 
         // Snapshot commands
         registry.register(new SnapshotsCommand());
+
+        // Task management
+        registry.register(new TaskCommand());
 
         // Workflow commands
         // registry.register(new WorkflowsCommand());

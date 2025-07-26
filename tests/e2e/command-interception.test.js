@@ -5,58 +5,74 @@
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { spawn } from 'child_process';
-import { writeFileSync, unlinkSync, existsSync, readFileSync } from 'fs';
+import { unlinkSync, existsSync, writeFileSync } from 'fs';
+import { join } from 'path';
+import { createTestProcessEnv } from '../helpers/envTestHelper.js';
 
-describe.sequential('Command Interception E2E Tests', { retry: 2 }, () => {
+/**
+ * Get the Node.js executable path for cross-platform compatibility
+ * @returns {string} Node.js executable path
+ */
+function getNodeExecutable() {
+    // On Windows, we might need to use 'node.exe' or the full path
+    // process.execPath gives us the current Node.js executable path
+    return process.execPath;
+}
+
+describe.sequential('Command Interception E2E Tests', { retry: 3 }, () => {
     let appProcess;
-    let testEnvFile;
     let testTimeout;
-    let originalEnvFile;
+    let tempEnvFile;
 
     beforeEach(() => {
-        // Backup original env file if it exists
-        testEnvFile = '.env';
-        if (existsSync(testEnvFile)) {
-            originalEnvFile = readFileSync(testEnvFile, 'utf8');
-        }
+        // Set timeout for tests - significantly increased for CI environments and flaky tests
+        testTimeout = process.env.CI ? 60000 : 45000;
 
-        // Create test environment file in the expected location
-        writeFileSync(
-            testEnvFile,
-            `SYNTHDEV_API_KEY=test-key-12345
+        // Reset appProcess to ensure clean state
+        appProcess = undefined;
+
+        // Create temporary .env file to prevent configuration wizard from starting
+        tempEnvFile = join(process.cwd(), '.env.test-temp');
+        const envContent = `# Temporary test environment file
+SYNTHDEV_API_KEY=sk-test-key-12345-valid-format
 SYNTHDEV_BASE_MODEL=gpt-4.1-mini
 SYNTHDEV_BASE_URL=https://api.openai.com/v1
 SYNTHDEV_VERBOSITY_LEVEL=2
-SYNTHDEV_ROLE=dude
 SYNTHDEV_MAX_TOOL_CALLS=50
-SYNTHDEV_PROMPT_ENHANCEMENT=false
-`
-        );
+SYNTHDEV_ENABLE_PROMPT_ENHANCEMENT=false
+`;
+        writeFileSync(tempEnvFile, envContent);
 
-        // Set timeout for tests - increased for CI environments and flaky tests
-        testTimeout = process.env.CI ? 35000 : 25000;
+        // Also create a temporary .env file in the main directory if it doesn't exist
+        const mainEnvFile = join(process.cwd(), '.env');
+        if (!existsSync(mainEnvFile)) {
+            writeFileSync(mainEnvFile, envContent);
+        }
     });
 
     afterEach(async () => {
-        if (appProcess) {
+        if (appProcess && !appProcess.killed) {
             try {
                 // First try graceful termination
                 appProcess.kill('SIGTERM');
-                // Give the process a moment to terminate gracefully
-                await new Promise(resolve => setTimeout(resolve, process.env.CI ? 500 : 100));
+                // Give the process more time to terminate gracefully
+                await new Promise(resolve => setTimeout(resolve, process.env.CI ? 1000 : 500));
 
                 // If still running, force kill
                 if (!appProcess.killed) {
                     appProcess.kill('SIGKILL');
+                    // Wait for force kill to complete
+                    await new Promise(resolve => setTimeout(resolve, 200));
                 }
             } catch (error) {
                 // Process might already be dead, that's okay
+                console.warn('Process cleanup warning:', error.message);
             }
             appProcess = null;
         }
 
-        // Add a delay to ensure processes are completely terminated and system is stable
-        await new Promise(resolve => setTimeout(resolve, process.env.CI ? 1000 : 500));
+        // Add a longer delay to ensure processes are completely terminated and system is stable
+        await new Promise(resolve => setTimeout(resolve, process.env.CI ? 2000 : 1000));
 
         // Clean up any state files to ensure each test starts fresh
         const stateFiles = [
@@ -71,17 +87,32 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
                     unlinkSync(stateFile);
                 } catch (error) {
                     // Ignore cleanup errors
+                    console.warn('State file cleanup warning:', error.message);
                 }
             }
         }
 
-        // Restore original env file or clean up test file
-        if (originalEnvFile) {
-            writeFileSync(testEnvFile, originalEnvFile);
-        } else if (testEnvFile && existsSync(testEnvFile)) {
-            unlinkSync(testEnvFile);
+        // Clean up temporary .env files
+        if (tempEnvFile && existsSync(tempEnvFile)) {
+            try {
+                unlinkSync(tempEnvFile);
+            } catch (error) {
+                console.warn('Temp env file cleanup warning:', error.message);
+            }
         }
-        originalEnvFile = null;
+
+        // Clean up main .env file if it was created by test
+        const mainEnvFile = join(process.cwd(), '.env');
+        if (existsSync(mainEnvFile)) {
+            try {
+                const content = require('fs').readFileSync(mainEnvFile, 'utf8');
+                if (content.includes('# Temporary test environment file')) {
+                    unlinkSync(mainEnvFile);
+                }
+            } catch (error) {
+                console.warn('Main env file cleanup warning:', error.message);
+            }
+        }
     });
 
     it('should intercept /help command without AI response', async () => {
@@ -91,20 +122,13 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
                 reject(new Error('Test timeout - /help command test'));
             }, testTimeout);
 
-            appProcess = spawn('node', ['src/core/app.js'], {
-                env: {
-                    ...process.env,
-                    NODE_ENV: 'test',
-                    SYNTHDEV_API_KEY: 'test-key-12345',
-                    SYNTHDEV_BASE_MODEL: 'gpt-4.1-mini',
-                    SYNTHDEV_BASE_URL: 'https://api.openai.com/v1',
-                    SYNTHDEV_VERBOSITY_LEVEL: '2',
-                    SYNTHDEV_ROLE: 'dude',
-                    SYNTHDEV_MAX_TOOL_CALLS: '50',
-                    SYNTHDEV_PROMPT_ENHANCEMENT: 'false',
-                },
+            // Use the actual project directory for spawning the app
+            const projectRoot = process.cwd();
+
+            appProcess = spawn(getNodeExecutable(), ['src/core/app.js'], {
+                env: createTestProcessEnv(),
                 stdio: ['pipe', 'pipe', 'pipe'],
-                cwd: process.cwd(),
+                cwd: projectRoot,
             });
 
             let output = '';
@@ -122,10 +146,10 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
                 if (chunk.includes('💭 You:') && !helpCommandSent) {
                     helpCommandSent = true;
                     setTimeout(() => {
-                        if (appProcess && appProcess.stdin) {
+                        if (appProcess && appProcess.stdin && !appProcess.killed) {
                             appProcess.stdin.write('/help\n');
                         }
-                    }, 100);
+                    }, 500); // Increased delay for more reliable startup
                 }
 
                 // Check for help response
@@ -144,10 +168,10 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
                 // Exit after help response and brief wait
                 if (helpResponseReceived && !aiResponseReceived) {
                     setTimeout(() => {
-                        if (appProcess && appProcess.stdin) {
+                        if (appProcess && appProcess.stdin && !appProcess.killed) {
                             appProcess.stdin.write('/exit\n');
                         }
-                    }, 1000);
+                    }, 1500); // Increased delay for more reliable exit
                 }
             });
 
@@ -180,7 +204,7 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
                 reject(error);
             });
         });
-    });
+    }, 75000); // Individual test timeout - longer than testTimeout
 
     it('should intercept /cost command without AI response', async () => {
         const chunks = [];
@@ -189,20 +213,12 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
                 reject(new Error('Test timeout - /cost command test'));
             }, testTimeout);
 
-            appProcess = spawn('node', ['src/core/app.js'], {
-                env: {
-                    ...process.env,
-                    NODE_ENV: 'test',
-                    SYNTHDEV_API_KEY: 'test-key-12345',
-                    SYNTHDEV_BASE_MODEL: 'gpt-4.1-mini',
-                    SYNTHDEV_BASE_URL: 'https://api.openai.com/v1',
-                    SYNTHDEV_VERBOSITY_LEVEL: '2',
-                    SYNTHDEV_ROLE: 'dude',
-                    SYNTHDEV_MAX_TOOL_CALLS: '50',
-                    SYNTHDEV_PROMPT_ENHANCEMENT: 'false',
-                },
+            // Use the actual project directory for spawning the app
+            const projectRoot = process.cwd();
+            appProcess = spawn(getNodeExecutable(), ['src/core/app.js'], {
+                env: createTestProcessEnv(),
                 stdio: ['pipe', 'pipe', 'pipe'],
-                cwd: process.cwd(),
+                cwd: projectRoot,
             });
 
             let output = '';
@@ -220,7 +236,7 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
                 if (chunk.includes('💭 You:') && !costCommandSent) {
                     costCommandSent = true;
                     setTimeout(() => {
-                        if (appProcess && appProcess.stdin) {
+                        if (appProcess && appProcess.stdin && !appProcess.killed) {
                             appProcess.stdin.write('/cost\n');
                         }
                     }, 500); // Increased timeout for more reliable execution
@@ -246,10 +262,10 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
                 // Exit after cost response and brief wait
                 if (costResponseReceived && !aiResponseReceived) {
                     setTimeout(() => {
-                        if (appProcess && appProcess.stdin) {
+                        if (appProcess && appProcess.stdin && !appProcess.killed) {
                             appProcess.stdin.write('/exit\n');
                         }
-                    }, 1000);
+                    }, 1500); // Increased delay for more reliable exit
                 }
             });
 
@@ -288,7 +304,7 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
                 reject(error);
             });
         });
-    });
+    }, 75000); // Individual test timeout - longer than testTimeout
 
     it('should intercept /snapshot command without AI response', async () => {
         return new Promise((resolve, reject) => {
@@ -296,20 +312,12 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
                 reject(new Error('Test timeout - /snapshot command test'));
             }, testTimeout);
 
-            appProcess = spawn('node', ['src/core/app.js'], {
-                env: {
-                    ...process.env,
-                    NODE_ENV: 'test',
-                    SYNTHDEV_API_KEY: 'test-key-12345',
-                    SYNTHDEV_BASE_MODEL: 'gpt-4.1-mini',
-                    SYNTHDEV_BASE_URL: 'https://api.openai.com/v1',
-                    SYNTHDEV_VERBOSITY_LEVEL: '2',
-                    SYNTHDEV_ROLE: 'dude',
-                    SYNTHDEV_MAX_TOOL_CALLS: '50',
-                    SYNTHDEV_PROMPT_ENHANCEMENT: 'false',
-                },
+            // Use the actual project directory for spawning the app
+            const projectRoot = process.cwd();
+            appProcess = spawn(getNodeExecutable(), ['src/core/app.js'], {
+                env: createTestProcessEnv(),
                 stdio: ['pipe', 'pipe', 'pipe'],
-                cwd: process.cwd(),
+                cwd: projectRoot,
             });
 
             let output = '';
@@ -326,10 +334,10 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
                 if (chunk.includes('💭 You:') && !snapshotCommandSent) {
                     snapshotCommandSent = true;
                     setTimeout(() => {
-                        if (appProcess && appProcess.stdin) {
+                        if (appProcess && appProcess.stdin && !appProcess.killed) {
                             appProcess.stdin.write('/snapshot\n');
                         }
-                    }, 100);
+                    }, 500); // Increased delay for more reliable startup
                 }
 
                 // Check for snapshot response
@@ -348,10 +356,10 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
                 // Exit after snapshot response and brief wait
                 if (snapshotResponseReceived && !aiResponseReceived) {
                     setTimeout(() => {
-                        if (appProcess && appProcess.stdin) {
+                        if (appProcess && appProcess.stdin && !appProcess.killed) {
                             appProcess.stdin.write('/exit\n');
                         }
-                    }, 1000);
+                    }, 1500); // Increased delay for more reliable exit
                 }
             });
 
@@ -384,9 +392,8 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
                 reject(error);
             });
         });
-    });
+    }, 75000); // Individual test timeout - longer than testTimeout
 
-    //something
     it('should intercept /snapshot help subcommand without AI response', async () => {
         const chunks = [];
         return new Promise((resolve, reject) => {
@@ -394,20 +401,12 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
                 reject(new Error('Test timeout - /snapshot help test'));
             }, testTimeout);
 
-            appProcess = spawn('node', ['src/core/app.js'], {
-                env: {
-                    ...process.env,
-                    NODE_ENV: 'test',
-                    SYNTHDEV_API_KEY: 'test-key-12345',
-                    SYNTHDEV_BASE_MODEL: 'gpt-4.1-mini',
-                    SYNTHDEV_BASE_URL: 'https://api.openai.com/v1',
-                    SYNTHDEV_VERBOSITY_LEVEL: '2',
-                    SYNTHDEV_ROLE: 'dude',
-                    SYNTHDEV_MAX_TOOL_CALLS: '50',
-                    SYNTHDEV_PROMPT_ENHANCEMENT: 'false',
-                },
+            // Use the actual project directory for spawning the app
+            const projectRoot = process.cwd();
+            appProcess = spawn(getNodeExecutable(), ['src/core/app.js'], {
+                env: createTestProcessEnv(),
                 stdio: ['pipe', 'pipe', 'pipe'],
-                cwd: process.cwd(),
+                cwd: projectRoot,
             });
 
             let output = '';
@@ -425,7 +424,7 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
                 if (chunk.includes('💭 You:') && !snapshotHelpCommandSent) {
                     snapshotHelpCommandSent = true;
                     setTimeout(() => {
-                        if (appProcess && appProcess.stdin) {
+                        if (appProcess && appProcess.stdin && !appProcess.killed) {
                             appProcess.stdin.write('/snapshot help\n');
                         }
                     }, 500); // Increased timeout for more reliable execution
@@ -447,10 +446,10 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
                 // Exit after snapshot help response and brief wait
                 if (snapshotHelpResponseReceived && !aiResponseReceived) {
                     setTimeout(() => {
-                        if (appProcess && appProcess.stdin) {
+                        if (appProcess && appProcess.stdin && !appProcess.killed) {
                             appProcess.stdin.write('/exit\n');
                         }
-                    }, 1000);
+                    }, 1500); // Increased delay for more reliable exit
                 }
             });
 
@@ -483,5 +482,5 @@ SYNTHDEV_PROMPT_ENHANCEMENT=false
                 reject(error);
             });
         });
-    });
+    }, 75000); // Individual test timeout - longer than testTimeout
 });

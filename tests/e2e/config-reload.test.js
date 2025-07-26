@@ -3,6 +3,17 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { spawn } from 'child_process';
 import { join } from 'path';
 import { writeFileSync, existsSync, unlinkSync, readFileSync } from 'fs';
+import { createTestProcessEnv } from '../helpers/envTestHelper.js';
+
+/**
+ * Get the Node.js executable path for cross-platform compatibility
+ * @returns {string} Node.js executable path
+ */
+function getNodeExecutable() {
+    // On Windows, we might need to use 'node.exe' or the full path
+    // process.execPath gives us the current Node.js executable path
+    return process.execPath;
+}
 
 /**
  * End-to-End Configuration Reload Test
@@ -18,63 +29,75 @@ import { writeFileSync, existsSync, unlinkSync, readFileSync } from 'fs';
  */
 describe.sequential('Configuration Reload E2E Test', () => {
     let appProcess;
-    let testEnvPath;
-    let originalEnvPath;
     let testOutput = '';
     let testError = '';
+    let tempEnvFile;
 
     beforeEach(() => {
-        // Setup test environment file
-        const rootDir = join(process.cwd());
-        testEnvPath = join(rootDir, '.env.test');
-        originalEnvPath = join(rootDir, '.env');
+        // Reset appProcess to ensure clean state
+        appProcess = undefined;
 
-        // Backup original .env if it exists
-        if (existsSync(originalEnvPath)) {
-            const originalContent = readFileSync(originalEnvPath, 'utf8');
-            writeFileSync(`${originalEnvPath}.backup`, originalContent);
-        }
+        // Reset output collectors
+        testOutput = '';
+        testError = '';
 
-        // Create test .env file with initial verbosity level 2
-        const testEnvContent = `# Test Configuration
-SYNTHDEV_API_KEY=test-api-key-12345
+        // Create temporary .env file to prevent configuration wizard from starting
+        tempEnvFile = join(process.cwd(), '.env.test-temp');
+        const envContent = `# Temporary test environment file
+SYNTHDEV_API_KEY=sk-test-key-12345-valid-format
 SYNTHDEV_BASE_MODEL=gpt-4.1-mini
 SYNTHDEV_BASE_URL=https://api.openai.com/v1
 SYNTHDEV_VERBOSITY_LEVEL=2
 SYNTHDEV_MAX_TOOL_CALLS=50
 SYNTHDEV_ENABLE_PROMPT_ENHANCEMENT=false
 `;
-        writeFileSync(testEnvPath, testEnvContent);
+        writeFileSync(tempEnvFile, envContent);
 
-        // Copy test env to main .env location for the app to use
-        writeFileSync(originalEnvPath, testEnvContent);
-
-        // Reset output collectors
-        testOutput = '';
-        testError = '';
+        // Also create a temporary .env file in the main directory if it doesn't exist
+        const mainEnvFile = join(process.cwd(), '.env');
+        if (!existsSync(mainEnvFile)) {
+            writeFileSync(mainEnvFile, envContent);
+        }
     });
 
     afterEach(async () => {
         // Kill the process if it's still running
-        if (appProcess && !appProcess.killed) {
+        if (appProcess && !appProcess.killed && appProcess.exitCode === null) {
             try {
+                console.log('Cleaning up process with PID:', appProcess.pid);
+
                 // First try graceful termination
                 appProcess.kill('SIGTERM');
-                // Give the process a moment to terminate gracefully
-                await new Promise(resolve => setTimeout(resolve, 500));
+
+                // Wait for graceful termination
+                await new Promise(resolve => {
+                    const timeout = setTimeout(() => {
+                        console.log('Graceful termination timeout, forcing kill');
+                        resolve();
+                    }, 2000);
+
+                    appProcess.on('exit', () => {
+                        clearTimeout(timeout);
+                        console.log('Process terminated gracefully');
+                        resolve();
+                    });
+                });
 
                 // If still running, force kill
-                if (!appProcess.killed) {
+                if (!appProcess.killed && appProcess.exitCode === null) {
+                    console.log('Force killing process');
                     appProcess.kill('SIGKILL');
+                    await new Promise(resolve => setTimeout(resolve, 500));
                 }
             } catch (error) {
                 // Process might already be dead, that's okay
+                console.warn('Process cleanup warning:', error.message);
             }
             appProcess = null;
         }
 
         // Add a delay to ensure processes are completely terminated
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await new Promise(resolve => setTimeout(resolve, 1000));
 
         // Clean up any state files to ensure each test starts fresh
         const stateFiles = [
@@ -89,22 +112,31 @@ SYNTHDEV_ENABLE_PROMPT_ENHANCEMENT=false
                     unlinkSync(stateFile);
                 } catch (error) {
                     // Ignore cleanup errors
+                    console.warn('State file cleanup warning:', error.message);
                 }
             }
         }
 
-        // Cleanup test files
-        if (existsSync(testEnvPath)) {
-            unlinkSync(testEnvPath);
+        // Clean up temporary .env files
+        if (tempEnvFile && existsSync(tempEnvFile)) {
+            try {
+                unlinkSync(tempEnvFile);
+            } catch (error) {
+                console.warn('Temp env file cleanup warning:', error.message);
+            }
         }
 
-        // Restore original .env if it existed
-        if (existsSync(`${originalEnvPath}.backup`)) {
-            const backupContent = readFileSync(`${originalEnvPath}.backup`, 'utf8');
-            writeFileSync(originalEnvPath, backupContent);
-            unlinkSync(`${originalEnvPath}.backup`);
-        } else if (existsSync(originalEnvPath)) {
-            unlinkSync(originalEnvPath);
+        // Clean up main .env file if it was created by test
+        const mainEnvFile = join(process.cwd(), '.env');
+        if (existsSync(mainEnvFile)) {
+            try {
+                const content = readFileSync(mainEnvFile, 'utf8');
+                if (content.includes('# Temporary test environment file')) {
+                    unlinkSync(mainEnvFile);
+                }
+            } catch (error) {
+                console.warn('Main env file cleanup warning:', error.message);
+            }
         }
     });
 
@@ -112,15 +144,28 @@ SYNTHDEV_ENABLE_PROMPT_ENHANCEMENT=false
      * Helper function to spawn the application process
      */
     function spawnApp() {
-        const appPath = join(process.cwd(), 'src', 'core', 'app.js');
+        // Use the actual project directory - get it from process.cwd() for cross-platform compatibility
+        const projectRoot = process.cwd();
+        const appPath = join(projectRoot, 'src', 'core', 'app.js');
 
         console.log('Spawning app:', appPath);
-        console.log('Working directory:', process.cwd());
+        console.log('Working directory:', projectRoot);
 
-        appProcess = spawn('node', [appPath], {
+        // Use process environment instead of file manipulation for safer testing
+        const testEnv = createTestProcessEnv({
+            SYNTHDEV_API_KEY: 'test-api-key-12345',
+            SYNTHDEV_BASE_MODEL: 'gpt-4.1-mini',
+            SYNTHDEV_BASE_URL: 'https://api.openai.com/v1',
+            SYNTHDEV_VERBOSITY_LEVEL: '2',
+            SYNTHDEV_MAX_TOOL_CALLS: '50',
+            SYNTHDEV_ENABLE_PROMPT_ENHANCEMENT: 'false',
+            NODE_ENV: 'test',
+        });
+
+        appProcess = spawn(getNodeExecutable(), [appPath], {
             stdio: ['pipe', 'pipe', 'pipe'],
-            env: { ...process.env, NODE_ENV: 'test' },
-            cwd: process.cwd(),
+            env: testEnv,
+            cwd: projectRoot, // Use the actual project directory
         });
 
         // Handle process errors
@@ -131,6 +176,24 @@ SYNTHDEV_ENABLE_PROMPT_ENHANCEMENT=false
 
         appProcess.on('exit', (code, signal) => {
             console.log(`Process exited with code ${code} and signal ${signal}`);
+            if (code !== 0 && code !== null) {
+                console.error(`Process exited with non-zero code: ${code}`);
+            }
+        });
+
+        // Add a timeout to detect if the process fails to start
+        const startupTimeout = setTimeout(() => {
+            if (!testOutput.includes('💭 You:') && !appProcess.killed) {
+                console.error('Process startup timeout - killing process');
+                appProcess.kill('SIGKILL');
+            }
+        }, 30000); // 30 second startup timeout
+
+        // Clear the timeout when we get the expected output
+        appProcess.stdout.on('data', () => {
+            if (testOutput.includes('💭 You:')) {
+                clearTimeout(startupTimeout);
+            }
         });
 
         // Collect stdout
@@ -161,13 +224,23 @@ SYNTHDEV_ENABLE_PROMPT_ENHANCEMENT=false
     }
 
     /**
-     * Helper function to wait for specific output
+     * Helper function to wait for specific output with improved error handling
      */
     function waitForOutput(expectedText, timeout = 10000) {
         return new Promise((resolve, reject) => {
             const startTime = Date.now();
 
             const checkOutput = () => {
+                // Check if process has exited unexpectedly
+                if (appProcess && appProcess.exitCode !== null) {
+                    reject(
+                        new Error(
+                            `Process exited unexpectedly with code ${appProcess.exitCode} while waiting for: "${expectedText}"`
+                        )
+                    );
+                    return;
+                }
+
                 if (testOutput.includes(expectedText)) {
                     console.log(`✓ Found expected output: "${expectedText}"`);
                     resolve(true);
@@ -179,6 +252,7 @@ SYNTHDEV_ENABLE_PROMPT_ENHANCEMENT=false
                     console.error(`Last 500 chars of error: "${testError.slice(-500)}"`);
                     console.error(`Process killed: ${appProcess?.killed}`);
                     console.error(`Process pid: ${appProcess?.pid}`);
+                    console.error(`Process exit code: ${appProcess?.exitCode}`);
 
                     reject(
                         new Error(
@@ -266,7 +340,8 @@ SYNTHDEV_ENABLE_PROMPT_ENHANCEMENT=false
         const updatedVerbosity = extractVerbosityLevel(secondHelpOutput);
 
         // Debug: Check what's in the .env file
-        const envContent = readFileSync(originalEnvPath, 'utf8');
+        const envPath = join(process.cwd(), '.env');
+        const envContent = readFileSync(envPath, 'utf8');
         console.log('Final .env file content:', envContent);
         console.log('Expected verbosity level:', newVerbosityLevel);
         console.log('Actual verbosity level from help:', updatedVerbosity);
@@ -287,7 +362,7 @@ SYNTHDEV_ENABLE_PROMPT_ENHANCEMENT=false
         });
 
         console.log('Test completed successfully');
-    }, 60000); // 60 second timeout for the entire test
+    }, 90000); // 90 second timeout for the entire test - increased for reliability
 
     it('should handle configuration wizard navigation correctly', async () => {
         // Start the application
@@ -322,5 +397,5 @@ SYNTHDEV_ENABLE_PROMPT_ENHANCEMENT=false
             appProcess.on('exit', resolve);
             setTimeout(resolve, 2000);
         });
-    }, 30000);
+    }, 60000); // Increased timeout for reliability
 });

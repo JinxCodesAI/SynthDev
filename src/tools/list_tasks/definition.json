@@ -1,0 +1,34 @@
+{
+    "name": "list_tasks",
+    "description": "List all tasks in the in-memory task management system in short format showing ID, name, and status with hierarchical structure",
+    "auto_run": true,
+    "version": "1.0.0",
+    "tags": ["tasks", "management", "list", "display"],
+    "schema": {
+        "type": "function",
+        "function": {
+            "name": "list_tasks",
+            "description": "Retrieve and display all tasks in the task management system. Shows tasks in hierarchical format with indentation to represent parent-child relationships. Each task displays its ID, title, and current status.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "format": {
+                        "type": "string",
+                        "description": "Output format for the task list. 'short' shows ID, title, and status. 'detailed' includes description and parent information.",
+                        "enum": ["short", "detailed"],
+                        "default": "short"
+                    },
+                    "status_filter": {
+                        "type": "string",
+                        "description": "Filter tasks by status. If provided, only tasks with the specified status will be shown.",
+                        "enum": ["not_started", "in_progress", "completed", "cancelled"]
+                    }
+                },
+                "additionalProperties": false
+            },
+            "response_format": {
+                "description": "Returns a JSON object with 'success' (boolean), 'timestamp' (ISO string), 'tool_name' (string), 'task_count' (number), and 'tasks' (array of task objects with hierarchical formatting). Each task object includes id, title, status, level, and formatted display. Error responses include 'error' field with detailed error message."
+            }
+        }
+    }
+}

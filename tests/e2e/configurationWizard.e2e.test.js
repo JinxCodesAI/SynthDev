@@ -8,6 +8,7 @@ import { ConfigurationWizard } from '../../src/commands/config/ConfigurationWiza
 import { ConfigureCommand } from '../../src/commands/config/ConfigureCommand.js';
 import { existsSync, readFileSync, unlinkSync } from 'fs';
 import { join } from 'path';
+import ConfigManager from '../../src/config/managers/configManager.js';
 
 describe.sequential('Configuration Wizard E2E Tests', () => {
     let testEnvPath;
@@ -23,6 +24,32 @@ describe.sequential('Configuration Wizard E2E Tests', () => {
         if (existsSync(testEnvPath)) {
             unlinkSync(testEnvPath);
         }
+
+        // Clean up main .env file if it was created by previous tests
+        const mainEnvFile = join(process.cwd(), '.env');
+        if (existsSync(mainEnvFile)) {
+            try {
+                const content = readFileSync(mainEnvFile, 'utf8');
+                if (content.includes('# Temporary test environment file')) {
+                    unlinkSync(mainEnvFile);
+                }
+            } catch (error) {
+                // Ignore cleanup errors
+            }
+        }
+
+        // Reset ConfigManager singleton state to ensure clean test environment
+        if (ConfigManager.instance) {
+            ConfigManager.instance = null;
+        }
+
+        // Mock ConfigManager to prevent it from interfering with test file paths
+        vi.spyOn(ConfigManager, 'getInstance').mockReturnValue({
+            reloadConfiguration: vi.fn(),
+            getConfig: vi.fn().mockReturnValue({
+                global: { verbosityLevel: 2 },
+            }),
+        });
 
         // Create wizard and command instances
         wizard = new ConfigurationWizard({ envFilePath: testEnvPath });
@@ -45,6 +72,27 @@ describe.sequential('Configuration Wizard E2E Tests', () => {
         if (existsSync(testEnvPath)) {
             unlinkSync(testEnvPath);
         }
+
+        // Clean up main .env file if it was created by test
+        const mainEnvFile = join(process.cwd(), '.env');
+        if (existsSync(mainEnvFile)) {
+            try {
+                const content = readFileSync(mainEnvFile, 'utf8');
+                if (content.includes('# Temporary test environment file')) {
+                    unlinkSync(mainEnvFile);
+                }
+            } catch (error) {
+                // Ignore cleanup errors
+            }
+        }
+
+        // Reset ConfigManager singleton state after each test
+        if (ConfigManager.instance) {
+            ConfigManager.instance = null;
+        }
+
+        // Restore all mocks
+        vi.restoreAllMocks();
     });
 
     describe('Configuration Persistence Issues', () => {
