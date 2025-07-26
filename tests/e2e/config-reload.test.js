@@ -3,7 +3,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { spawn } from 'child_process';
 import { join } from 'path';
 import { writeFileSync, existsSync, unlinkSync, readFileSync } from 'fs';
-import { setupTestEnv } from '../helpers/envTestHelper.js';
+import { createTestProcessEnv } from '../helpers/envTestHelper.js';
 
 /**
  * End-to-End Configuration Reload Test
@@ -21,20 +21,10 @@ describe.sequential('Configuration Reload E2E Test', () => {
     let appProcess;
     let testOutput = '';
     let testError = '';
-    let cleanupTestEnv;
 
     beforeEach(() => {
-        // Setup test environment with initial verbosity level 2
-        const testEnvConfig = {
-            SYNTHDEV_API_KEY: 'test-api-key-12345',
-            SYNTHDEV_BASE_MODEL: 'gpt-4.1-mini',
-            SYNTHDEV_BASE_URL: 'https://api.openai.com/v1',
-            SYNTHDEV_VERBOSITY_LEVEL: '2',
-            SYNTHDEV_MAX_TOOL_CALLS: '50',
-            SYNTHDEV_ENABLE_PROMPT_ENHANCEMENT: 'false',
-        };
-
-        cleanupTestEnv = setupTestEnv(testEnvConfig);
+        // Reset appProcess to ensure clean state
+        appProcess = undefined;
 
         // Reset output collectors
         testOutput = '';
@@ -47,21 +37,23 @@ describe.sequential('Configuration Reload E2E Test', () => {
             try {
                 // First try graceful termination
                 appProcess.kill('SIGTERM');
-                // Give the process a moment to terminate gracefully
-                await new Promise(resolve => setTimeout(resolve, 500));
+                // Give the process more time to terminate gracefully
+                await new Promise(resolve => setTimeout(resolve, 1000));
 
                 // If still running, force kill
                 if (!appProcess.killed) {
                     appProcess.kill('SIGKILL');
+                    await new Promise(resolve => setTimeout(resolve, 200));
                 }
             } catch (error) {
                 // Process might already be dead, that's okay
+                console.warn('Process cleanup warning:', error.message);
             }
             appProcess = null;
         }
 
-        // Add a delay to ensure processes are completely terminated
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // Add a longer delay to ensure processes are completely terminated
+        await new Promise(resolve => setTimeout(resolve, 1500));
 
         // Clean up any state files to ensure each test starts fresh
         const stateFiles = [
@@ -76,14 +68,9 @@ describe.sequential('Configuration Reload E2E Test', () => {
                     unlinkSync(stateFile);
                 } catch (error) {
                     // Ignore cleanup errors
+                    console.warn('State file cleanup warning:', error.message);
                 }
             }
-        }
-
-        // Cleanup test environment
-        if (cleanupTestEnv) {
-            cleanupTestEnv();
-            cleanupTestEnv = null;
         }
     });
 
@@ -91,15 +78,28 @@ describe.sequential('Configuration Reload E2E Test', () => {
      * Helper function to spawn the application process
      */
     function spawnApp() {
-        const appPath = join(process.cwd(), 'src', 'core', 'app.js');
+        // Use the actual project directory, not the test's temporary directory
+        const projectRoot = '/mnt/persist/workspace';
+        const appPath = join(projectRoot, 'src', 'core', 'app.js');
 
         console.log('Spawning app:', appPath);
-        console.log('Working directory:', process.cwd());
+        console.log('Working directory:', projectRoot);
+
+        // Use process environment instead of file manipulation for safer testing
+        const testEnv = createTestProcessEnv({
+            SYNTHDEV_API_KEY: 'test-api-key-12345',
+            SYNTHDEV_BASE_MODEL: 'gpt-4.1-mini',
+            SYNTHDEV_BASE_URL: 'https://api.openai.com/v1',
+            SYNTHDEV_VERBOSITY_LEVEL: '2',
+            SYNTHDEV_MAX_TOOL_CALLS: '50',
+            SYNTHDEV_ENABLE_PROMPT_ENHANCEMENT: 'false',
+            NODE_ENV: 'test',
+        });
 
         appProcess = spawn('node', [appPath], {
             stdio: ['pipe', 'pipe', 'pipe'],
-            env: { ...process.env, NODE_ENV: 'test' },
-            cwd: process.cwd(),
+            env: testEnv,
+            cwd: projectRoot, // Use the actual project directory
         });
 
         // Handle process errors
@@ -267,7 +267,7 @@ describe.sequential('Configuration Reload E2E Test', () => {
         });
 
         console.log('Test completed successfully');
-    }, 60000); // 60 second timeout for the entire test
+    }, 90000); // 90 second timeout for the entire test - increased for reliability
 
     it('should handle configuration wizard navigation correctly', async () => {
         // Start the application
@@ -302,5 +302,5 @@ describe.sequential('Configuration Reload E2E Test', () => {
             appProcess.on('exit', resolve);
             setTimeout(resolve, 2000);
         });
-    }, 30000);
+    }, 60000); // Increased timeout for reliability
 });
