@@ -18,7 +18,7 @@ class ListTasksTool extends BaseTool {
     }
 
     async implementation(params) {
-        const { format = 'short', status_filter } = params;
+        const { format = 'detailed', status_filter } = params;
 
         // Validate format parameter
         const validFormats = ['short', 'detailed'];
