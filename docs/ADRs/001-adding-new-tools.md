@@ -34,19 +34,33 @@ Every tool must include a `definition.json` file with the following structure:
 {
     "name": "your_tool_name",
     "description": "Brief description of what the tool does",
-    "parameters": {
-        "type": "object",
-        "properties": {
-            "parameter_name": {
-                "type": "string",
-                "description": "Parameter description"
+    "auto_run": true,
+    "version": "1.0.0",
+    "tags": ["category", "keywords"],
+    "schema": {
+        "type": "function",
+        "function": {
+            "name": "your_tool_name",
+            "description": "Detailed description for AI understanding",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "parameter_name": {
+                        "type": "string",
+                        "description": "Parameter description"
+                    },
+                    "optional_parameter": {
+                        "type": "string",
+                        "description": "Optional parameter description",
+                        "default": "default_value"
+                    }
+                },
+                "required": ["parameter_name"]
             },
-            "optional_parameter": {
-                "type": "string",
-                "description": "Optional parameter description"
+            "response_format": {
+                "description": "Description of the expected response format"
             }
-        },
-        "required": ["parameter_name"]
+        }
     }
 }
 ```
@@ -54,62 +68,62 @@ Every tool must include a `definition.json` file with the following structure:
 **Key Fields:**
 
 - `name`: Unique tool identifier (snake_case)
-- `description`: Clear, concise tool description for AI understanding
-- `parameters`: JSON Schema for input validation and AI tool calling
+- `description`: Brief tool description
+- `auto_run`: Whether tool runs automatically (true) or requires confirmation (false)
+- `version`: Tool version for tracking changes
+- `tags`: Array of keywords for categorization
+- `schema`: OpenAI function calling schema with detailed parameters and response format
 
 ### Tool Implementation (`implementation.js`)
 
-The implementation file must export a default function:
+The implementation file must use the BaseTool class and export a default function:
 
 ```javascript
-import { getLogger } from '../../core/managers/logger.js';
-import { getToolConfigManager } from '../../config/managers/toolConfigManager.js';
+import { BaseTool } from '../common/base-tool.js';
 
-/**
- * Tool implementation
- * @param {Object} params - Tool parameters
- * @param {Object} params.costsManager - Cost tracking manager
- * @returns {Object} Tool execution result
- */
-export default async function yourToolName(params) {
-    const logger = getLogger();
-    const toolConfig = getToolConfigManager();
+class YourToolNameTool extends BaseTool {
+    constructor() {
+        super('your_tool_name', 'Brief description of what the tool does');
 
-    try {
-        // Validate parameters
-        const { parameter_name } = params;
-        if (!parameter_name) {
-            return {
-                success: false,
-                error: toolConfig.getMessage('errors.missing_parameter', {
-                    param: 'parameter_name',
-                }),
-            };
+        // Define parameter validation
+        this.requiredParams = ['parameter_name'];
+        this.parameterTypes = {
+            parameter_name: 'string',
+            optional_parameter: 'string',
+        };
+    }
+
+    async implementation(params) {
+        const { parameter_name, optional_parameter = 'default_value' } = params;
+
+        try {
+            // Tool logic here
+            const result = await this.performToolOperation(parameter_name, optional_parameter);
+
+            return this.createSuccessResponse({
+                result: result,
+                parameter_name,
+                optional_parameter,
+            });
+        } catch (error) {
+            return this.createErrorResponse(`Tool operation failed: ${error.message}`, {
+                parameter_name,
+                stack: error.stack,
+            });
         }
+    }
 
-        // Tool logic here
-        const result = await performToolOperation(parameter_name);
-
-        logger.debug(`Tool executed successfully: ${result}`);
-
-        return {
-            success: true,
-            result: result,
-            timestamp: new Date().toISOString(),
-        };
-    } catch (error) {
-        logger.error(error, `Tool execution failed: ${params}`);
-        return {
-            success: false,
-            error: error.message,
-            timestamp: new Date().toISOString(),
-        };
+    async performToolOperation(parameter, optionalParam) {
+        // Implement your tool logic here
+        return 'Tool operation result';
     }
 }
 
-async function performToolOperation(parameter) {
-    // Implement your tool logic here
-    return 'Tool operation result';
+// Create and export the tool instance
+const yourToolNameTool = new YourToolNameTool();
+
+export default async function yourToolName(params) {
+    return await yourToolNameTool.execute(params);
 }
 ```
 
@@ -117,43 +131,45 @@ async function performToolOperation(parameter) {
 
 ### 1. Error Handling
 
-- Always wrap tool logic in try-catch blocks
-- Return standardized error responses
-- Use tool configuration messages for user-facing errors
-- Log errors with appropriate detail level
+- Use `BaseTool.createErrorResponse()` for standardized error responses
+- Include relevant context in error responses (parameters, stack traces)
+- Handle specific error types appropriately (file not found, permission denied, etc.)
+- Use try-catch blocks in the implementation method
 
 ### 2. Parameter Validation
 
-- Validate all required parameters
+- Define `requiredParams` array for automatic validation
+- Define `parameterTypes` object for type checking
 - Use descriptive error messages for validation failures
-- Consider parameter type conversion when needed
-- Validate file paths and permissions for file operations
+- The BaseTool class handles basic validation automatically
 
 ### 3. Return Values
 
+- Use `BaseTool.createSuccessResponse()` for standardized success responses
 - Always include `success` boolean field
-- Include `timestamp` for tracking
-- Provide meaningful `result` or `error` fields
-- Follow consistent naming conventions
+- Include `timestamp` and `tool_name` automatically
+- Provide meaningful data in the response object
 
 ### 4. Logging
 
+- Access logger via `this.logger` in BaseTool classes
 - Use appropriate log levels (debug, info, warn, error)
 - Include relevant context in log messages
 - Avoid logging sensitive information (API keys, passwords)
 
-### 5. Configuration Integration
+### 5. Base Tool Classes
 
-- Use `getToolConfigManager()` for tool-specific messages
-- Support tool-specific configuration options
-- Follow existing configuration patterns
+- Extend `BaseTool` for general tools
+- Extend `FileBaseTool` for file operations (includes path validation)
+- Extend `CommandBaseTool` for command execution tools
+- Use the appropriate base class for your tool's functionality
 
 ### 6. Safety Considerations
 
 - Implement safety checks for dangerous operations
-- Use `requires_backup: true` for file-modifying tools
+- Set `auto_run: false` in definition.json for tools requiring confirmation
 - Validate user input to prevent security issues
-- Consider rate limiting for resource-intensive operations
+- Use base tool classes for built-in safety features
 
 ## Tool Categories
 
@@ -231,6 +247,14 @@ describe('Your Tool Name', () => {
             expect(result.success).toBe(false);
             expect(result.error).toContain('parameter_name');
         });
+
+        it('should validate parameter types', async () => {
+            const result = await yourToolName({
+                parameter_name: 123, // Wrong type
+            });
+            expect(result.success).toBe(false);
+            expect(result.error).toContain('type');
+        });
     });
 
     describe('successful execution', () => {
@@ -239,13 +263,14 @@ describe('Your Tool Name', () => {
                 parameter_name: 'test_value',
             });
             expect(result.success).toBe(true);
-            expect(result.result).toBeDefined();
+            expect(result.tool_name).toBe('your_tool_name');
+            expect(result.timestamp).toBeDefined();
         });
     });
 
     describe('error handling', () => {
         it('should handle errors gracefully', async () => {
-            // Test error scenarios
+            // Test error scenarios specific to your tool
         });
     });
 });
@@ -255,7 +280,7 @@ describe('Your Tool Name', () => {
 
 Test tool integration with the tool manager and AI system.
 
-## Tool Discovery
+## Tool Discovery and Usage
 
 Tools are automatically discovered by the `ToolManager`:
 
@@ -264,6 +289,21 @@ Tools are automatically discovered by the `ToolManager`:
 3. **Implementation Loading**: Imports the implementation module
 4. **Registration**: Registers tool with the system
 5. **Categorization**: Organizes tools by category
+
+### Tool Usage Patterns
+
+**AI Tool Calls**: Tools are called by AI through `toolManager.executeToolCall()` with OpenAI function calling format.
+
+**Command Integration**: Commands can call tools directly by importing and calling the exported function:
+
+```javascript
+import editTasks from '../../tools/edit_tasks/implementation.js';
+
+// In command implementation
+const result = await editTasks({ tasks: [...] });
+```
+
+This pattern allows commands to use tool functionality without going through the AI tool calling system.
 
 ## Role-Based Tool Filtering
 
@@ -280,7 +320,7 @@ Tools can be excluded from specific AI roles:
 
 ## Configuration Messages
 
-Add tool-specific messages to `src/config/tools/tool-messages.json`:
+Tool-specific messages can be added to `src/config/tools/tool-messages.json` if needed:
 
 ```json
 {
@@ -295,6 +335,8 @@ Add tool-specific messages to `src/config/tools/tool-messages.json`:
     }
 }
 ```
+
+**Note:** Most tools use the BaseTool class methods for standardized responses and don't require custom configuration messages.
 
 ## Consequences
 
@@ -315,74 +357,89 @@ Add tool-specific messages to `src/config/tools/tool-messages.json`:
 ## Tool Registration Process
 
 1. **Create Tool Directory**: `src/tools/your_tool_name/`
-2. **Implement Definition**: Create `definition.json` with proper schema
-3. **Implement Logic**: Create `implementation.js` with default export
-4. **Add Configuration**: Update `tool-messages.json` if needed
-5. **Write Tests**: Create comprehensive unit tests
-6. **Test Integration**: Verify tool works with AI system
-7. **Update Documentation**: Add tool to relevant documentation
+2. **Implement Definition**: Create `definition.json` with proper schema structure
+3. **Implement Logic**: Create `implementation.js` extending BaseTool with default export function
+4. **Write Tests**: Create comprehensive unit tests
+5. **Test Integration**: Verify tool works with AI system and commands
+6. **Update Documentation**: Add tool to relevant documentation
 
 ## Validation Checklist
 
 Before submitting a new tool:
 
 - [ ] Tool directory follows naming convention (snake_case)
-- [ ] `definition.json` includes all required fields
-- [ ] Implementation follows error handling patterns
-- [ ] Parameters are properly validated
-- [ ] Return values follow standard format
-- [ ] Unit tests cover all scenarios
+- [ ] `definition.json` includes all required fields (name, description, auto_run, version, tags, schema)
+- [ ] Implementation extends appropriate BaseTool class
+- [ ] Default export function calls tool.execute(params)
+- [ ] Parameters are properly validated using requiredParams and parameterTypes
+- [ ] Return values use createSuccessResponse() and createErrorResponse()
+- [ ] Unit tests cover parameter validation, success cases, and error handling
 - [ ] Tool integrates properly with role system
-- [ ] Safety considerations are addressed
+- [ ] Safety considerations are addressed (auto_run setting, input validation)
 - [ ] Documentation is complete
 
 ## Real Tool Examples
 
-### File Operation Tool: `write_file`
+### Task Management Tool: `edit_tasks`
 
-**Definition (`src/tools/write_file/definition.json`):**
+**Definition (`src/tools/edit_tasks/definition.json`):**
 
 ```json
 {
-    "name": "write_file",
-    "description": "Create or overwrite a file with new content",
-    "parameters": {
-        "type": "object",
-        "properties": {
-            "path": {
-                "type": "string",
-                "description": "The file path where content should be written"
-            },
-            "content": {
-                "type": "string",
-                "description": "The content to write to the file"
-            },
-            "encoding": {
-                "type": "string",
-                "description": "File encoding (default: utf8)"
+    "name": "edit_tasks",
+    "description": "Create or edit tasks in the in-memory task management system",
+    "auto_run": true,
+    "version": "1.0.0",
+    "tags": ["tasks", "management", "productivity"],
+    "schema": {
+        "type": "function",
+        "function": {
+            "name": "edit_tasks",
+            "description": "Create or edit tasks in the task management system",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "tasks": {
+                        "type": "array",
+                        "description": "Array of task objects to create or edit",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "title": { "type": "string" },
+                                "description": { "type": "string" },
+                                "status": {
+                                    "type": "string",
+                                    "enum": ["not_started", "in_progress", "completed", "cancelled"]
+                                },
+                                "parent": { "type": "string" }
+                            }
+                        }
+                    }
+                },
+                "required": ["tasks"]
             }
-        },
-        "required": ["path", "content"]
+        }
     }
 }
 ```
 
 **Implementation Pattern:**
 
-- Validates file path and content
-- Handles encoding (defaults to utf8)
-- Creates directories if needed
-- Returns success/error with detailed messages
-- Integrates with backup system for file modifications
+- Extends BaseTool with proper parameter validation
+- Validates task data structure and relationships
+- Prevents circular dependencies in parent-child relationships
+- Returns detailed success/error responses with processed task information
+- Integrates with shared task manager for data persistence
 
 ### Other Examples
 
 See existing tools for reference:
 
-- `src/tools/read_file/` - Simple file reading operation
-- `src/tools/execute_script/` - Complex tool with safety checks
-- `src/tools/exact_search/` - Search and analysis tool
-- `src/tools/calculate/` - Simple utility tool
+- `src/tools/read_file/` - File reading with FileBaseTool base class
+- `src/tools/calculate/` - Simple utility tool with BaseTool
+- `src/tools/list_tasks/` - Task management tool with parameter validation
+- `src/tools/get_task/` - Single entity retrieval with detailed responses
+- `src/tools/execute_script/` - Complex tool with safety checks and CommandBaseTool
 
 ---
 
