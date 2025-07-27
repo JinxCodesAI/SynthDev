@@ -4,7 +4,7 @@
  */
 
 import { getLogger } from '../../core/managers/logger.js';
-import { readFileSync, writeFileSync, existsSync, mkdirSync, statSync, copyFileSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, statSync } from 'fs';
 import { readdir } from 'fs/promises';
 import { join, dirname, relative, resolve } from 'path';
 import { createHash } from 'crypto';
@@ -16,8 +16,6 @@ export class FileBackup {
 
         // Configuration with defaults
         this.config = {
-            createBackups: config.createBackups !== false, // Default to true
-            backupSuffix: config.backupSuffix || '.backup',
             preservePermissions: config.preservePermissions !== false, // Default to true
             validateChecksums: config.validateChecksums !== false, // Default to true
             maxConcurrentFiles: config.maxConcurrentFiles || 10,
@@ -34,11 +32,12 @@ export class FileBackup {
      * @param {Object} options - Capture options
      * @param {Array} options.specificFiles - Specific files to capture (optional)
      * @param {boolean} options.recursive - Recursively capture subdirectories
+     * @param {Object} options.baseSnapshot - Base snapshot for differential comparison (optional)
      * @returns {Promise<Object>} Captured file data
      */
     async captureFiles(basePath, options = {}) {
         try {
-            const { specificFiles = null, recursive = true } = options;
+            const { specificFiles = null, recursive = true, baseSnapshot = null } = options;
 
             this.logger.debug('Starting file capture', { basePath, options });
 
@@ -51,6 +50,12 @@ export class FileBackup {
                     totalFiles: 0,
                     totalSize: 0,
                     captureTime: 0,
+                    // Differential statistics
+                    newFiles: 0,
+                    modifiedFiles: 0,
+                    unchangedFiles: 0,
+                    linkedFiles: 0,
+                    differentialSize: 0,
                 },
             };
 
@@ -85,7 +90,7 @@ export class FileBackup {
             const batchSize = this.config.maxConcurrentFiles;
             for (let i = 0; i < filteredFiles.length; i += batchSize) {
                 const batch = filteredFiles.slice(i, i + batchSize);
-                await this._captureFileBatch(batch, fileData);
+                await this._captureFileBatch(batch, fileData, baseSnapshot);
             }
 
             // Calculate final stats
@@ -109,18 +114,14 @@ export class FileBackup {
      * Restore files from captured data
      * @param {Object} fileData - Captured file data
      * @param {Object} options - Restoration options
-     * @param {boolean} options.createBackups - Create backups before restoration
      * @param {boolean} options.validateChecksums - Validate checksums after restoration
      * @param {Array} options.specificFiles - Specific files to restore (optional)
      * @returns {Promise<Object>} Restoration results
      */
     async restoreFiles(fileData, options = {}) {
         try {
-            const {
-                createBackups = this.config.createBackups,
-                validateChecksums = this.config.validateChecksums,
-                specificFiles = null,
-            } = options;
+            const { validateChecksums = this.config.validateChecksums, specificFiles = null } =
+                options;
 
             this.logger.debug('Starting file restoration', {
                 basePath: fileData.basePath,
@@ -133,7 +134,6 @@ export class FileBackup {
                 restored: [],
                 skipped: [],
                 errors: [],
-                backups: [],
                 stats: {
                     totalFiles: 0,
                     restoredFiles: 0,
@@ -155,7 +155,7 @@ export class FileBackup {
             const batchSize = this.config.maxConcurrentFiles;
             for (let i = 0; i < filesToRestore.length; i += batchSize) {
                 const batch = filesToRestore.slice(i, i + batchSize);
-                await this._restoreFileBatch(batch, fileData, options, results);
+                await this._restoreFileBatch(batch, fileData, results);
             }
 
             // Validate checksums if requested
@@ -409,8 +409,9 @@ export class FileBackup {
      * @private
      * @param {Array} filePaths - Array of file paths to capture
      * @param {Object} fileData - File data object to populate
+     * @param {Object} baseSnapshot - Base snapshot for differential comparison (optional)
      */
-    async _captureFileBatch(filePaths, fileData) {
+    async _captureFileBatch(filePaths, fileData, baseSnapshot = null) {
         const capturePromises = filePaths.map(async filePath => {
             try {
                 const stats = statSync(filePath);
@@ -418,21 +419,75 @@ export class FileBackup {
                 const content = readFileSync(filePath, this.config.encoding);
                 const checksum = this._calculateChecksum(content);
 
-                fileData.files[relativePath] = {
-                    content,
-                    checksum,
-                    size: stats.size,
-                    modified: stats.mtime.toISOString(),
-                    permissions: stats.mode,
-                };
+                // Check if this file exists in base snapshot and has same checksum
+                let isNewOrModified = true;
+                let action = 'created';
+                let originalCaptureTime = stats.mtime.toISOString();
+
+                if (baseSnapshot && baseSnapshot.fileData && baseSnapshot.fileData.files) {
+                    const baseFile = baseSnapshot.fileData.files[relativePath];
+                    if (baseFile) {
+                        if (baseFile.checksum === checksum) {
+                            // File unchanged - create reference to existing snapshot
+                            isNewOrModified = false;
+                            action = 'unchanged';
+                            // Use the original capture time from the base snapshot
+                            originalCaptureTime =
+                                baseFile.modified ||
+                                baseFile.captureTime ||
+                                stats.mtime.toISOString();
+
+                            fileData.files[relativePath] = {
+                                checksum,
+                                size: stats.size,
+                                modified: originalCaptureTime,
+                                permissions: stats.mode,
+                                action: 'unchanged',
+                                snapshotId: baseSnapshot.id, // Reference to base snapshot
+                            };
+                            fileData.stats.unchangedFiles++;
+                            fileData.stats.linkedFiles++;
+
+                            this.logger.debug('File linked (unchanged)', {
+                                relativePath,
+                                checksum,
+                                referencedSnapshot: baseSnapshot.id,
+                                originalCaptureTime,
+                            });
+                        } else {
+                            action = 'modified';
+                        }
+                    }
+                }
+
+                if (isNewOrModified) {
+                    // File is new or modified - store full content
+                    fileData.files[relativePath] = {
+                        content,
+                        checksum,
+                        size: stats.size,
+                        modified: originalCaptureTime,
+                        permissions: stats.mode,
+                        action,
+                    };
+
+                    fileData.stats.differentialSize += stats.size;
+
+                    if (action === 'created') {
+                        fileData.stats.newFiles++;
+                    } else {
+                        fileData.stats.modifiedFiles++;
+                    }
+
+                    this.logger.debug('File captured', {
+                        relativePath,
+                        size: stats.size,
+                        checksum,
+                        action,
+                    });
+                }
 
                 fileData.stats.totalSize += stats.size;
-
-                this.logger.debug('File captured', {
-                    relativePath,
-                    size: stats.size,
-                    checksum,
-                });
             } catch (error) {
                 this.logger.warn('Failed to capture file', {
                     filePath,
@@ -449,59 +504,77 @@ export class FileBackup {
      * @private
      * @param {Array} relativePaths - Array of relative file paths to restore
      * @param {Object} fileData - File data containing content to restore
-     * @param {Object} options - Restoration options
      * @param {Object} results - Results object to populate
      */
-    async _restoreFileBatch(relativePaths, fileData, options, results) {
-        const { createBackups } = options;
-
+    async _restoreFileBatch(relativePaths, fileData, results) {
         const restorePromises = relativePaths.map(async relativePath => {
             try {
                 const fileInfo = fileData.files[relativePath];
                 const fullPath = join(fileData.basePath, relativePath);
 
-                // Create directory if it doesn't exist
-                const dir = dirname(fullPath);
-                if (!existsSync(dir)) {
-                    mkdirSync(dir, { recursive: true });
-                }
-
-                // Create backup if requested and file exists
-                if (createBackups && existsSync(fullPath)) {
-                    const backupPath = fullPath + this.config.backupSuffix;
-                    copyFileSync(fullPath, backupPath);
-                    results.backups.push({
-                        original: fullPath,
-                        backup: backupPath,
-                    });
-                }
-
-                // Write file content
-                writeFileSync(fullPath, fileInfo.content, this.config.encoding);
-
-                // Restore permissions if configured
-                if (this.config.preservePermissions && fileInfo.permissions) {
+                // Check if file needs to be restored by comparing checksums
+                let needsRestore = true;
+                if (existsSync(fullPath)) {
                     try {
-                        // Note: This is a simplified permissions restoration
-                        // In a real implementation, you might want more sophisticated permission handling
-                    } catch (permError) {
-                        this.logger.warn('Failed to restore file permissions', {
-                            fullPath,
-                            error: permError.message,
+                        const currentContent = readFileSync(fullPath, this.config.encoding);
+                        const currentChecksum = this._calculateChecksum(currentContent);
+
+                        if (currentChecksum === fileInfo.checksum) {
+                            needsRestore = false;
+                            results.skipped.push({
+                                path: relativePath,
+                                reason: 'File unchanged (checksum match)',
+                                checksum: fileInfo.checksum,
+                            });
+
+                            this.logger.debug('File skipped (unchanged)', {
+                                relativePath,
+                                checksum: fileInfo.checksum,
+                            });
+                        }
+                    } catch (readError) {
+                        // If we can't read the current file, we should restore it
+                        this.logger.debug('Cannot read current file, will restore', {
+                            relativePath,
+                            error: readError.message,
                         });
                     }
                 }
 
-                results.restored.push({
-                    path: relativePath,
-                    size: fileInfo.size,
-                    checksum: fileInfo.checksum,
-                });
+                if (needsRestore) {
+                    // Create directory if it doesn't exist
+                    const dir = dirname(fullPath);
+                    if (!existsSync(dir)) {
+                        mkdirSync(dir, { recursive: true });
+                    }
 
-                this.logger.debug('File restored', {
-                    relativePath,
-                    size: fileInfo.size,
-                });
+                    // Write file content
+                    writeFileSync(fullPath, fileInfo.content, this.config.encoding);
+
+                    // Restore permissions if configured
+                    if (this.config.preservePermissions && fileInfo.permissions) {
+                        try {
+                            // Note: This is a simplified permissions restoration
+                            // In a real implementation, you might want more sophisticated permission handling
+                        } catch (permError) {
+                            this.logger.warn('Failed to restore file permissions', {
+                                fullPath,
+                                error: permError.message,
+                            });
+                        }
+                    }
+
+                    results.restored.push({
+                        path: relativePath,
+                        size: fileInfo.size,
+                        checksum: fileInfo.checksum,
+                    });
+
+                    this.logger.debug('File restored', {
+                        relativePath,
+                        size: fileInfo.size,
+                    });
+                }
             } catch (error) {
                 this.logger.error(error, 'Failed to restore file', { relativePath });
                 results.errors.push({

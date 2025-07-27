@@ -22,7 +22,7 @@ tests/snapshot/
 ├── unit/                           # Unit tests for individual components
 │   ├── SnapshotManager.test.js
 │   ├── FileFilter.test.js
-│   ├── FileBackup.test.js
+│   ├── FileBackup.test.js              # File capture and restoration with checksum validation
 │   ├── stores/
 │   │   └── MemorySnapshotStore.test.js
 │   └── commands/
@@ -163,7 +163,7 @@ describe('FileBackup', () => {
         it('should restore files to exact previous state');
         it('should preserve file permissions');
         it('should handle restoration conflicts');
-        it('should create backup before restoration');
+        it('should validate checksums before restoration');
         it('should rollback on restoration failure');
     });
 
@@ -242,7 +242,7 @@ describe('SnapshotsCommand', () => {
 describe('Snapshot Creation Integration', () => {
     it('should create snapshot with file filtering applied');
     it('should integrate SnapshotManager with MemoryStore');
-    it('should integrate FileBackup with FileFilter');
+    it('should integrate FileBackup with FileFilter and checksum validation');
     it('should handle configuration changes during creation');
     it('should manage memory limits during creation');
 });
@@ -415,7 +415,7 @@ export class TestUtils {
 export class MockFactories {
     static createMemoryStore(config = {})
     static createFileFilter(config = {})
-    static createFileBackup(config = {})
+    static createFileBackup(config = {})    // File capture with checksum validation
     static createSnapshotManager(dependencies = {})
     static createCommandContext(overrides = {})
 }

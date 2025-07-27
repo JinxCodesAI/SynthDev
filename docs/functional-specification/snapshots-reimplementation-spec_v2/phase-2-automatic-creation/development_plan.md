@@ -18,7 +18,7 @@ This document outlines the detailed implementation plan for Phase 2 of the snaps
 
 - [ ] Phase 1 fully implemented and tested
 - [ ] SnapshotManager API stable and documented
-- [ ] File filtering and backup systems working
+- [ ] File filtering and differential snapshot systems working
 - [ ] Configuration system established
 - [ ] All Phase 1 tests passing
 
@@ -415,7 +415,7 @@ src/core/snapshot/
 - ToolExecutionHooks component
 - Tool lifecycle monitoring
 - File modification detection
-- Backup coordination
+- Differential snapshot coordination
 
 **Files to Create**:
 
@@ -423,14 +423,14 @@ src/core/snapshot/
 src/core/snapshot/
 ├── ToolExecutionHooks.js
 ├── FileModificationDetector.js
-└── BackupCoordinator.js
+└── SnapshotCoordinator.js
 ```
 
 **Key Features**:
 
 - Monitor tool execution lifecycle
 - Detect file modifications
-- Coordinate pre-execution backups
+- Coordinate pre-execution differential snapshots
 - Integrate with existing tool system
 
 **Implementation Tasks**:
@@ -440,7 +440,7 @@ src/core/snapshot/
     - Implement tool execution hooks
     - Add tool lifecycle monitoring
     - Implement file modification detection
-    - Add backup coordination
+    - Add differential snapshot coordination
 
 2. **File Modification Detection** (2 hours):
 
@@ -459,7 +459,7 @@ src/core/snapshot/
 
 - [ ] Tool execution hooks working
 - [ ] File modification detection accurate
-- [ ] Backup coordination seamless
+- [ ] Differential snapshot coordination seamless
 - [ ] Integration with ToolManager minimal
 - [ ] Performance impact minimal
 
@@ -657,7 +657,7 @@ src/core/snapshot/
 
 - Complete automatic snapshot creation workflow
 - Instruction classification and trigger workflow
-- Tool execution and backup workflow
+- Tool execution and differential snapshot workflow
 - Configuration change and validation workflow
 - Error handling and recovery workflow
 

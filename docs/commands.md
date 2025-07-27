@@ -73,7 +73,7 @@ The cost command provides comprehensive cost tracking including:
 
 ### `/snapshots`
 
-**Description**: Manage conversation snapshots for backup and restore
+**Description**: Manage differential snapshots with checksum-based deduplication for project state management
 **Usage**: `/snapshots`
 
 ### `/index`

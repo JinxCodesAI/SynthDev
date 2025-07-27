@@ -81,16 +81,14 @@ export class SnapshotManager {
             const basePath = metadata.basePath || process.cwd();
             const resolvedBasePath = resolve(basePath);
 
-            // Determine if this should be differential
-            const enableDifferential = this.config.storage.enableDifferential !== false;
+            // Get the most recent snapshot as base for differential snapshot
             let baseSnapshotId = null;
-
-            if (enableDifferential) {
-                // Get the most recent snapshot as base
-                const recentSnapshots = await this.store.list({ limit: 1 });
-                if (recentSnapshots.length > 0) {
-                    baseSnapshotId = recentSnapshots[0].id;
-                }
+            let baseSnapshot = null;
+            const recentSnapshots = await this.store.list({ limit: 1 });
+            if (recentSnapshots.length > 0) {
+                baseSnapshotId = recentSnapshots[0].id;
+                // Retrieve the full base snapshot for differential comparison
+                baseSnapshot = await this.store.retrieve(baseSnapshotId);
             }
 
             // Capture files
@@ -98,38 +96,48 @@ export class SnapshotManager {
             const fileData = await this.fileBackup.captureFiles(resolvedBasePath, {
                 specificFiles: metadata.specificFiles,
                 recursive: true,
+                baseSnapshot: baseSnapshot,
             });
 
             // Create snapshot metadata
+            const isDifferential = baseSnapshotId !== null;
+            const newFiles = fileData.stats.newFiles || 0;
+            const modifiedFiles = fileData.stats.modifiedFiles || 0;
+            const unchangedFiles = fileData.stats.unchangedFiles || 0;
+
+            // For differential snapshots, fileCount should be only changed files
+            // For full snapshots, fileCount should be all files
+            const fileCount = isDifferential
+                ? newFiles + modifiedFiles
+                : Object.keys(fileData.files).length;
+
             const snapshotMetadata = {
                 description,
                 basePath: resolvedBasePath,
                 triggerType: metadata.triggerType || 'manual',
                 captureTime: Date.now() - captureStartTime,
-                fileCount: Object.keys(fileData.files).length,
+                fileCount: fileCount,
                 totalSize: fileData.stats.totalSize,
-                type: baseSnapshotId ? 'differential' : 'full',
+                differentialSize: fileData.stats.differentialSize || fileData.stats.totalSize,
+                newFiles: newFiles,
+                modifiedFiles: modifiedFiles,
+                unchangedFiles: unchangedFiles,
+                linkedFiles: fileData.stats.linkedFiles || 0,
+                type: isDifferential ? 'differential' : 'full',
                 baseSnapshotId: baseSnapshotId,
                 creator: process.env.USER || process.env.USERNAME || 'unknown',
                 ...metadata,
             };
 
-            // Store snapshot (differential or full)
-            const snapshotId =
-                enableDifferential && typeof this.store.storeDifferential === 'function'
-                    ? await this.store.storeDifferential(
-                          {
-                              description,
-                              fileData,
-                              metadata: snapshotMetadata,
-                          },
-                          baseSnapshotId
-                      )
-                    : await this.store.store({
-                          description,
-                          fileData,
-                          metadata: snapshotMetadata,
-                      });
+            // Store differential snapshot
+            const snapshotId = await this.store.storeDifferential(
+                {
+                    description,
+                    fileData,
+                    metadata: snapshotMetadata,
+                },
+                baseSnapshotId
+            );
 
             // Perform auto-cleanup if enabled
             if (this.config.behavior.autoCleanup) {
@@ -143,7 +151,14 @@ export class SnapshotManager {
             const result = {
                 id: snapshotId,
                 description,
-                metadata: snapshotMetadata,
+                metadata: {
+                    ...snapshotMetadata,
+                    // Include differential stats in metadata for display
+                    ...(differentialStats && {
+                        changedFiles: differentialStats.changedFiles,
+                        unchangedFiles: differentialStats.unchangedFiles,
+                    }),
+                },
                 stats: {
                     fileCount: snapshotMetadata.fileCount,
                     totalSize: snapshotMetadata.totalSize,
@@ -202,9 +217,16 @@ export class SnapshotManager {
                 timestamp: snapshot.timestamp,
                 fileCount: snapshot.fileCount,
                 totalSize: snapshot.totalSize,
+                differentialSize: snapshot.differentialSize,
                 triggerType: snapshot.triggerType,
                 creator: snapshot.creator,
                 basePath: snapshot.basePath,
+                type: snapshot.type,
+                // Include differential stats if available
+                ...(snapshot.differentialStats && {
+                    changedFiles: snapshot.differentialStats.changedFiles,
+                    unchangedFiles: snapshot.differentialStats.unchangedFiles,
+                }),
             }));
 
             this.logger.debug('Snapshots listed successfully', {
@@ -226,7 +248,6 @@ export class SnapshotManager {
      * @param {boolean} options.preview - Only preview, don't actually restore
      * @param {boolean} options.force - Skip confirmation prompts
      * @param {Array} options.specificFiles - Specific files to restore
-     * @param {boolean} options.createBackups - Create backups before restoration
      * @returns {Promise<Object>} Restoration result
      */
     async restoreSnapshot(snapshotId, options = {}) {
@@ -277,7 +298,6 @@ export class SnapshotManager {
 
             // Perform restoration
             const restoreOptions = {
-                createBackups: options.createBackups ?? this.config.backup.createBackups,
                 validateChecksums: this.config.backup.validateChecksums,
                 specificFiles: options.specificFiles,
             };
@@ -294,7 +314,6 @@ export class SnapshotManager {
                 stats: restoreResult.stats,
                 restored: restoreResult.restored,
                 errors: restoreResult.errors,
-                backups: restoreResult.backups,
             };
 
             this.logger.debug('Snapshot restored successfully', {
@@ -481,17 +500,61 @@ export class SnapshotManager {
                 description: snapshot.description,
                 metadata: snapshot.metadata,
                 fileCount: Object.keys(snapshot.fileData.files).length,
-                files: Object.keys(snapshot.fileData.files).map(relativePath => ({
-                    path: relativePath,
-                    size: snapshot.fileData.files[relativePath].size,
-                    modified: snapshot.fileData.files[relativePath].modified,
-                    checksum: snapshot.fileData.files[relativePath].checksum,
-                })),
+                files: await this._resolveFileDetails(snapshot.fileData.files),
             };
         } catch (error) {
             this.logger.error(error, 'Failed to get snapshot details', { snapshotId });
             throw error;
         }
+    }
+
+    /**
+     * Resolve file details, handling linked files by fetching from referenced snapshots
+     * @private
+     * @param {Object} files - Files object from snapshot
+     * @returns {Promise<Array>} Array of resolved file details
+     */
+    async _resolveFileDetails(files) {
+        const resolvedFiles = [];
+
+        for (const [relativePath, fileInfo] of Object.entries(files)) {
+            const resolvedFileInfo = {
+                path: relativePath,
+                size: fileInfo.size,
+                checksum: fileInfo.checksum,
+                action: fileInfo.action || 'created',
+            };
+
+            // Handle linked files (unchanged files referencing other snapshots)
+            if (fileInfo.snapshotId && fileInfo.action === 'unchanged') {
+                try {
+                    // Get the referenced snapshot to get the original file details
+                    const referencedSnapshot = await this.store.retrieve(fileInfo.snapshotId);
+                    if (referencedSnapshot && referencedSnapshot.fileData.files[relativePath]) {
+                        const originalFile = referencedSnapshot.fileData.files[relativePath];
+                        resolvedFileInfo.modified = originalFile.modified || fileInfo.modified;
+                    } else {
+                        // Fallback to current file info if referenced snapshot not found
+                        resolvedFileInfo.modified = fileInfo.modified;
+                    }
+                } catch (error) {
+                    // Fallback to current file info if error retrieving referenced snapshot
+                    this.logger.warn('Failed to resolve referenced snapshot for file', {
+                        relativePath,
+                        snapshotId: fileInfo.snapshotId,
+                        error: error.message,
+                    });
+                    resolvedFileInfo.modified = fileInfo.modified;
+                }
+            } else {
+                // For new/modified files, use the current file info
+                resolvedFileInfo.modified = fileInfo.modified;
+            }
+
+            resolvedFiles.push(resolvedFileInfo);
+        }
+
+        return resolvedFiles;
     }
 
     /**
