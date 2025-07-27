@@ -28,7 +28,7 @@
                                 },
                                 "description": {
                                     "type": "string",
-                                    "description": "Detailed description of the task. Optional field."
+                                    "description": "Detailed description of the task. Required for new tasks, optional for updates (overrides)."
                                 },
                                 "parent": {
                                     "type": "string",
