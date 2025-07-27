@@ -20,6 +20,10 @@ class SpawnAgentTool extends BaseTool {
 
             // Spawn agent through AgentManager
             const agentManager = this.context.agentManager;
+            if (!agentManager) {
+                throw new Error('AgentManager not available in context');
+            }
+
             const result = await agentManager.spawnAgent(
                 currentRole,
                 role_name,

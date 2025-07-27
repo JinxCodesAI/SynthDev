@@ -18,6 +18,9 @@ class ReturnResultsTool extends BaseTool {
             this._validateResultStructure(result);
 
             const agentManager = this.context.agentManager;
+            if (!agentManager) {
+                throw new Error('AgentManager not available in context');
+            }
 
             // Get current agent ID from context or determine from role
             // Results are sent as messages to the parent supervisor

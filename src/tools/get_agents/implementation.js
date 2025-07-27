@@ -15,6 +15,10 @@ class GetAgentsTool extends BaseTool {
 
         try {
             const agentManager = this.context.agentManager;
+            if (!agentManager) {
+                throw new Error('AgentManager not available in context');
+            }
+
             const currentRole = this.context?.currentRole || 'unknown';
 
             // Get agents spawned by current supervisor

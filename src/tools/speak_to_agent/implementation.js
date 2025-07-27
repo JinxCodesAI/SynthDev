@@ -16,6 +16,9 @@ class SpeakToAgentTool extends BaseTool {
 
         try {
             const agentManager = this.context.agentManager;
+            if (!agentManager) {
+                throw new Error('AgentManager not available in context');
+            }
 
             // Validate agent exists and is accessible
             const agentStatus = agentManager.getAgentStatus(agent_id);
