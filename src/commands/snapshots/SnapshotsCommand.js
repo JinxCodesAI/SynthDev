@@ -134,10 +134,10 @@ export class SnapshotsCommand extends InteractiveCommand {
             const unchangedFiles = result.metadata.unchangedFiles || 0;
             const changedFiles = newFiles + modifiedFiles;
 
-            const fileCountToShow = result.metadata.type === 'differential'
-                ? changedFiles
-                : result.stats.fileCount;
-            const fileLabel = result.metadata.type === 'differential' ? 'changed files' : 'files captured';
+            const fileCountToShow =
+                result.metadata.type === 'differential' ? changedFiles : result.stats.fileCount;
+            const fileLabel =
+                result.metadata.type === 'differential' ? 'changed files' : 'files captured';
 
             consoleInterface.showMessage(`📁 ${fileLabel}: ${fileCountToShow}`);
 
@@ -209,9 +209,10 @@ export class SnapshotsCommand extends InteractiveCommand {
                 const timestamp = new Date(snapshot.timestamp).toLocaleString();
 
                 // For differential snapshots, show differential size; for full snapshots, show total size
-                const sizeToShow = snapshot.type === 'differential' && snapshot.differentialSize !== undefined
-                    ? snapshot.differentialSize
-                    : snapshot.totalSize;
+                const sizeToShow =
+                    snapshot.type === 'differential' && snapshot.differentialSize !== undefined
+                        ? snapshot.differentialSize
+                        : snapshot.totalSize;
                 const size = this.formatBytes(sizeToShow);
                 const type = snapshot.triggerType === 'manual' ? '👤' : '🤖';
 

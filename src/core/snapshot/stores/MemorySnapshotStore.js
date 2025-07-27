@@ -563,7 +563,9 @@ export class MemorySnapshotStore {
 
         // Find all snapshots that reference the snapshot being deleted
         for (const [snapshotId, snapshot] of this.snapshots.entries()) {
-            if (snapshotId === snapshotIdToDelete) continue;
+            if (snapshotId === snapshotIdToDelete) {
+                continue;
+            }
 
             let hasReferences = false;
             const updatedFiles = {};
@@ -636,7 +638,11 @@ export class MemorySnapshotStore {
         const sortedSnapshots = Array.from(this.snapshots.entries())
             .map(([id, snapshot]) => ({ id, snapshot }))
             .filter(({ id }) => id !== excludeSnapshotId)
-            .sort((a, b) => new Date(a.snapshot.metadata.timestamp) - new Date(b.snapshot.metadata.timestamp));
+            .sort(
+                (a, b) =>
+                    new Date(a.snapshot.metadata.timestamp) -
+                    new Date(b.snapshot.metadata.timestamp)
+            );
 
         // Find the most recent snapshot (before the one being deleted) that contains this file
         for (let i = sortedSnapshots.length - 1; i >= 0; i--) {

@@ -126,7 +126,7 @@ describe('FileBackup', () => {
 
             // Check that the modified file was restored
             expect(result.restored[0].path).toBe('file1.txt');
-            
+
             // Verify the file content was restored
             const restoredContent = readFileSync(modifiedPath, 'utf8');
             expect(restoredContent).toBe('Hello World');
@@ -149,7 +149,7 @@ describe('FileBackup', () => {
 
             // Check that the deleted file was restored
             expect(result.restored[0].path).toBe('file2.txt');
-            
+
             // Verify the file was recreated
             expect(existsSync(deletedPath)).toBe(true);
             const restoredContent = readFileSync(deletedPath, 'utf8');
@@ -162,7 +162,7 @@ describe('FileBackup', () => {
 
             // Restore only specific files
             const result = await fileBackup.restoreFiles(capturedData, {
-                specificFiles: ['file1.txt', 'file2.txt']
+                specificFiles: ['file1.txt', 'file2.txt'],
             });
 
             // Should skip the specified files since they haven't changed

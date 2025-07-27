@@ -298,6 +298,7 @@ SynthDev features an advanced differential snapshot system for project state man
 ```
 
 **Key Features:**
+
 - **Differential Snapshots**: Only stores changes between snapshots for efficiency
 - **Checksum-based Deduplication**: Files with identical content are linked, not duplicated
 - **Smart Restoration**: Only overwrites files that have actually changed

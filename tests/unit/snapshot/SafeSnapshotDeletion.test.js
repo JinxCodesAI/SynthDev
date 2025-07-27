@@ -35,35 +35,41 @@ describe('Safe Snapshot Deletion', () => {
                 metadata: { timestamp: new Date('2023-01-01').toISOString() },
             });
 
-            const snapshot2Id = await store.storeDifferential({
-                description: 'Second snapshot',
-                fileData: {
-                    basePath: '/test',
-                    files: {
-                        'file1.txt': {
-                            content: 'modified content',
-                            checksum: 'checksum2',
-                            size: 16,
+            const snapshot2Id = await store.storeDifferential(
+                {
+                    description: 'Second snapshot',
+                    fileData: {
+                        basePath: '/test',
+                        files: {
+                            'file1.txt': {
+                                content: 'modified content',
+                                checksum: 'checksum2',
+                                size: 16,
+                            },
                         },
                     },
+                    metadata: { timestamp: new Date('2023-01-02').toISOString() },
                 },
-                metadata: { timestamp: new Date('2023-01-02').toISOString() },
-            }, snapshot1Id);
+                snapshot1Id
+            );
 
-            const snapshot3Id = await store.storeDifferential({
-                description: 'Third snapshot',
-                fileData: {
-                    basePath: '/test',
-                    files: {
-                        'file1.txt': {
-                            content: 'modified content', // Same content as snapshot2
-                            checksum: 'checksum2',
-                            size: 16,
+            const snapshot3Id = await store.storeDifferential(
+                {
+                    description: 'Third snapshot',
+                    fileData: {
+                        basePath: '/test',
+                        files: {
+                            'file1.txt': {
+                                content: 'modified content', // Same content as snapshot2
+                                checksum: 'checksum2',
+                                size: 16,
+                            },
                         },
                     },
+                    metadata: { timestamp: new Date('2023-01-03').toISOString() },
                 },
-                metadata: { timestamp: new Date('2023-01-03').toISOString() },
-            }, snapshot2Id);
+                snapshot2Id
+            );
 
             // Verify that snapshot3 references snapshot2
             const snapshot3Before = await store.retrieve(snapshot3Id);
@@ -180,35 +186,41 @@ describe('Safe Snapshot Deletion', () => {
                 metadata: { timestamp: new Date('2023-01-01').toISOString() },
             });
 
-            const snapshot2Id = await store.storeDifferential({
-                description: 'Second snapshot',
-                fileData: {
-                    basePath: '/test',
-                    files: {
-                        'file1.txt': {
-                            content: 'same content',
-                            checksum: 'same_checksum',
-                            size: 12,
+            const snapshot2Id = await store.storeDifferential(
+                {
+                    description: 'Second snapshot',
+                    fileData: {
+                        basePath: '/test',
+                        files: {
+                            'file1.txt': {
+                                content: 'same content',
+                                checksum: 'same_checksum',
+                                size: 12,
+                            },
                         },
                     },
+                    metadata: { timestamp: new Date('2023-01-02').toISOString() },
                 },
-                metadata: { timestamp: new Date('2023-01-02').toISOString() },
-            }, snapshot1Id);
+                snapshot1Id
+            );
 
-            const snapshot3Id = await store.storeDifferential({
-                description: 'Third snapshot',
-                fileData: {
-                    basePath: '/test',
-                    files: {
-                        'file1.txt': {
-                            content: 'same content',
-                            checksum: 'same_checksum',
-                            size: 12,
+            const snapshot3Id = await store.storeDifferential(
+                {
+                    description: 'Third snapshot',
+                    fileData: {
+                        basePath: '/test',
+                        files: {
+                            'file1.txt': {
+                                content: 'same content',
+                                checksum: 'same_checksum',
+                                size: 12,
+                            },
                         },
                     },
+                    metadata: { timestamp: new Date('2023-01-03').toISOString() },
                 },
-                metadata: { timestamp: new Date('2023-01-03').toISOString() },
-            }, snapshot2Id);
+                snapshot2Id
+            );
 
             // Find earlier snapshot for the checksum, excluding snapshot3
             const result = store._findEarlierSnapshotForFile('same_checksum', snapshot3Id);
