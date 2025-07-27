@@ -220,7 +220,7 @@ class ToolManager {
         return this.toolDefinitions.has(toolName);
     }
 
-    async executeToolCall(toolCall, consoleInterface, snapshotManager = null) {
+    async executeToolCall(toolCall, consoleInterface, snapshotManager = null, context = null) {
         const toolName = toolCall.function.name;
         const toolArgs = JSON.parse(toolCall.function.arguments);
 
@@ -271,8 +271,15 @@ class ToolManager {
         const implementation = this.toolImplementations.get(toolName);
 
         try {
+            // Prepare tool parameters with context
+            const toolParams = {
+                ...toolArgs,
+                costsManager: this.costsManager,
+                context: context || {},
+            };
+
             // Execute tool and get result
-            const result = await implementation({ ...toolArgs, costsManager: this.costsManager });
+            const result = await implementation(toolParams);
 
             // Ensure result has standard fields
             const standardizedResult = {

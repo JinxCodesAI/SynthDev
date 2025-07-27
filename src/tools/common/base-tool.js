@@ -159,23 +159,30 @@ export class BaseTool {
      */
     async execute(params) {
         try {
+            // Extract context from params if present
+            const { context, ...toolParams } = params;
+            this.context = context || {};
+
             // Validate basic parameters if defined
             if (this.requiredParams) {
-                const validationError = this.validateRequiredParams(params, this.requiredParams);
+                const validationError = this.validateRequiredParams(
+                    toolParams,
+                    this.requiredParams
+                );
                 if (validationError) {
                     return validationError;
                 }
             }
 
             if (this.parameterTypes) {
-                const typeError = this.validateParameterTypes(params, this.parameterTypes);
+                const typeError = this.validateParameterTypes(toolParams, this.parameterTypes);
                 if (typeError) {
                     return typeError;
                 }
             }
 
             // Call the implementation method
-            return await this.implementation(params);
+            return await this.implementation(toolParams);
         } catch (error) {
             return this.createErrorResponse(`Unexpected error: ${error.message}`, {
                 stack: error.stack,

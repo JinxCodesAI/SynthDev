@@ -1,0 +1,32 @@
+{
+    "name": "speak_to_agent",
+    "description": "Sends a message to a previously spawned agent for follow-up instructions or status updates",
+    "auto_run": true,
+    "version": "1.0.0",
+    "category": "agent_management",
+    "tags": ["agents", "communication", "collaboration"],
+    "schema": {
+        "type": "function",
+        "function": {
+            "name": "speak_to_agent",
+            "description": "Sends a follow-up message to a specific worker agent. Use this to provide additional instructions, clarifications, feedback, or to request progress updates from spawned agents.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "agent_id": {
+                        "type": "string",
+                        "description": "The unique ID of the target agent, obtained from spawn_agent or get_agents tools."
+                    },
+                    "message": {
+                        "type": "string",
+                        "description": "The message, instruction, or question to send to the agent. Be specific and actionable."
+                    }
+                },
+                "required": ["agent_id", "message"]
+            },
+            "response_format": {
+                "description": "Returns confirmation of message delivery and agent response if available"
+            }
+        }
+    }
+}

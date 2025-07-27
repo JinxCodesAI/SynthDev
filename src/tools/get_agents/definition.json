@@ -1,0 +1,16 @@
+{
+    "name": "get_agents",
+    "description": "Lists all agents spawned by the current agent with their status and metadata",
+    "auto_run": true,
+    "version": "1.0.0",
+    "schema": {
+        "type": "function",
+        "function": {
+            "name": "get_agents",
+            "description": "Retrieves a comprehensive list of all worker agents spawned by the current agent, including their ID, role, current status, creation time, and task information.",
+            "response_format": {
+                "description": "Returns array of agent objects with detailed status information"
+            }
+        }
+    }
+}

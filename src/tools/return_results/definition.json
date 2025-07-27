@@ -1,0 +1,61 @@
+{
+    "name": "return_results",
+    "description": "Signals task completion and returns structured results to supervisor agent",
+    "auto_run": true,
+    "version": "1.0.0",
+    "category": "agent_management",
+    "tags": ["agents", "completion", "handoff"],
+    "schema": {
+        "type": "function",
+        "function": {
+            "name": "return_results",
+            "description": "Used by worker agents to formally conclude their assigned task and pass structured results back to their supervisor. This is the primary mechanism for task completion and result handoff in the agentic system.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "result": {
+                        "type": "object",
+                        "description": "Structured result object containing task outcome and deliverables",
+                        "properties": {
+                            "status": {
+                                "type": "string",
+                                "enum": ["success", "failure", "partial"],
+                                "description": "Overall task completion status"
+                            },
+                            "summary": {
+                                "type": "string",
+                                "description": "Detailed summary of work completed and outcomes achieved"
+                            },
+                            "artifacts": {
+                                "type": "array",
+                                "items": {
+                                    "type": "object",
+                                    "properties": {
+                                        "file_path": { "type": "string" },
+                                        "description": { "type": "string" },
+                                        "change_type": {
+                                            "type": "string",
+                                            "enum": ["created", "modified", "deleted", "referenced"]
+                                        }
+                                    },
+                                    "required": ["file_path", "description", "change_type"]
+                                },
+                                "description": "Array of file artifacts with detailed change descriptions"
+                            },
+                            "known_issues": {
+                                "type": "array",
+                                "items": { "type": "string" },
+                                "description": "Issues requiring further attention, empty array if everything completed without issues"
+                            }
+                        },
+                        "required": ["status", "summary", "artifacts", "known_issues"]
+                    }
+                },
+                "required": ["result"]
+            },
+            "response_format": {
+                "description": "Returns confirmation of task completion and result storage"
+            }
+        }
+    }
+}
