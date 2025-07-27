@@ -54,6 +54,7 @@ describe.sequential('Snapshot Workflow Integration', () => {
 
             // Modify files
             writeFileSync(join(testDir, 'test1.txt'), 'modified content 1');
+            writeFileSync(join(testDir, 'test2.txt'), 'modified content 3');
             writeFileSync(join(testDir, 'test3.txt'), 'new file content');
 
             // Create second snapshot

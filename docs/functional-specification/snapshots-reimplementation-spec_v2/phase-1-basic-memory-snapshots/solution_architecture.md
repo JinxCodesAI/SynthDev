@@ -2,11 +2,11 @@
 
 ## Overview
 
-This document defines the technical architecture for Phase 1 of the snapshot system implementation, focusing on in-memory snapshots with file backup and restoration capabilities.
+This document defines the technical architecture for Phase 1 of the snapshot system implementation, focusing on in-memory differential snapshots with checksum-based deduplication and restoration capabilities.
 
 ## Architecture Principles
 
-- **Separation of Concerns**: Clear boundaries between storage, filtering, backup, and command handling
+- **Separation of Concerns**: Clear boundaries between storage, filtering, file capture, and command handling
 - **Strategy Pattern**: Pluggable storage implementations (memory first, Git later)
 - **Configuration-Driven**: Behavior controlled through configuration files following SynthDev patterns
 - **Command Pattern**: Snapshot operations as discrete, reversible commands
@@ -31,8 +31,8 @@ class SnapshotManager {
     async restoreSnapshot(snapshotId, options = {})
     async deleteSnapshot(snapshotId)
 
-    // Backup integration
-    async createBackupSnapshot(toolName, files)
+    // Differential snapshot integration
+    async createDifferentialSnapshot(toolName, files)
 
     // Configuration
     updateConfiguration(newConfig)
@@ -41,7 +41,7 @@ class SnapshotManager {
 
 **Key Features**:
 
-- Coordinates between storage, backup, and filtering components
+- Coordinates between storage, file capture, and filtering components
 - Manages snapshot lifecycle and metadata
 - Provides unified API for all snapshot operations
 - Handles configuration updates and validation
@@ -96,7 +96,7 @@ class FileBackup {
 **Key Features**:
 
 - Efficient file content capture with filtering
-- Safe file restoration with backup verification
+- Safe file restoration with checksum verification
 - Preview mode for restore impact assessment
 - Handles file permissions and metadata
 
@@ -319,7 +319,7 @@ SnapshotManager  FileFilter  MemoryStore
 
 - Respect file system permissions
 - Validate file paths to prevent directory traversal
-- Safe file restoration with backup verification
+- Safe file restoration with checksum verification
 - Temporary file cleanup
 
 ### Data Protection

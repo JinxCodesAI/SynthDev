@@ -21,7 +21,7 @@ This phase implements the foundation of the snapshot system with in-memory file 
 - Snapshot listing via `/snapshot list`
 - File-based restoration via `/snapshot restore <id>`
 - Snapshot deletion via `/snapshot delete <id>`
-- Basic file backup when tools modify files
+- Differential snapshots with checksum-based deduplication when tools modify files
 - File filtering system (exclude node_modules, .git, etc.)
 - Configuration system for snapshot behavior and file filtering
 
@@ -31,7 +31,7 @@ This phase implements the foundation of the snapshot system with in-memory file 
 - MemorySnapshotStore (in-memory storage)
 - FileFilter (file inclusion/exclusion logic)
 - SnapshotsCommand (following ADR-002 patterns)
-- FileBackup (file capture and restoration)
+- FileBackup (file capture and restoration with checksum validation)
 
 ## Phase Documentation
 
@@ -56,14 +56,14 @@ This phase includes comprehensive planning and design documents:
 ### Subphase 1.1: Core Snapshot Functionality
 
 - Manual snapshot creation, listing, restoration, and deletion
-- Basic file backup and restoration
+- Differential file capture and restoration with checksum validation
 - In-memory storage implementation
 
 ### Subphase 1.2: File Filtering System
 
 - Default file filtering (node_modules, .git, build artifacts, etc.)
 - File pattern matching and exclusion logic
-- Integration with snapshot creation and backup processes
+- Integration with snapshot creation and differential capture processes
 
 ### Subphase 1.3: Configuration System
 

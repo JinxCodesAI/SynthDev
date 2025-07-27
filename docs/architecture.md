@@ -93,7 +93,7 @@ The main application orchestrator that:
 
 - Conversation state management
 - Git integration for versioning
-- Backup and restore functionality
+- Differential snapshot and restore functionality with checksum-based deduplication
 
 #### Logger (`logger.js`)
 
@@ -163,7 +163,7 @@ The main application orchestrator that:
 - **Path Validation**: All file operations restricted to project directory
 - **AI Safety Assessment**: Dynamic code analysis for script execution
 - **Tool Filtering**: Role-based access control with pattern matching
-- **Backup System**: Automatic backups for destructive operations
+- **Snapshot System**: Differential snapshots with checksum-based deduplication for safe state management
 
 ### Configuration System (`src/config/`)
 

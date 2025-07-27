@@ -38,7 +38,7 @@ src/core/snapshot/
 ├── SnapshotManager.js (skeleton)
 ├── stores/
 │   └── MemorySnapshotStore.js (skeleton)
-├── FileBackup.js (skeleton)
+├── FileBackup.js (file capture and restoration with checksum validation)
 └── FileFilter.js (skeleton)
 
 src/commands/snapshots/
@@ -172,15 +172,15 @@ tests/snapshot/
 **Deliverables**:
 
 - File content capture with filtering
-- Safe file restoration
-- Backup verification
+- Safe file restoration with checksum validation
+- Differential snapshot support
 - Preview functionality
 
 **Key Features**:
 
 - Efficient file reading with streaming
 - File metadata preservation
-- Restoration with backup
+- Restoration with checksum verification
 - Impact assessment
 - Error recovery
 
@@ -195,7 +195,7 @@ tests/snapshot/
 
 **Deliverables**:
 
-- File backup integration
+- File capture integration with differential snapshots
 - Snapshot creation with file content
 - Restoration workflow
 - Configuration integration
@@ -339,7 +339,7 @@ src/config/snapshots/
 #### Component Integration Tests
 
 - SnapshotManager + MemoryStore integration
-- FileBackup + FileFilter integration
+- FileBackup + FileFilter integration with checksum validation
 - Command + Manager integration
 - Configuration + All components integration
 

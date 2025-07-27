@@ -638,9 +638,10 @@ describe('E2E Application Tests', () => {
 **✅ DO:**
 
 - Use `createTestProcessEnv()` for spawned processes (safer)
-- Use `setupTestEnv()` only when file-based override is required
+- Use `setupTestEnv()` for file-based testing (operates in temp directory)
 - Always call cleanup functions in `afterEach`
 - Register cleanup handlers for process exit scenarios
+- All environment tests now operate in temporary directories by default
 
 **❌ DON'T:**
 
@@ -648,6 +649,7 @@ describe('E2E Application Tests', () => {
 - Forget to restore original environment after tests
 - Use hardcoded environment values in production code
 - Skip cleanup in test teardown
+- Use `createProjectEnvHelper()` unless absolutely necessary for E2E tests
 
 ### Emergency Cleanup
 
@@ -930,7 +932,7 @@ describe.sequential('File System Tests', () => {
 
 ### Environment Safety
 
-**CRITICAL**: Never permanently modify the `.env` file during testing.
+**CRITICAL**: All environment tests now operate in temporary directories by default to prevent any risk of modifying the real `.env` file.
 
 **❌ NEVER do this:**
 
@@ -946,19 +948,34 @@ afterEach(() => {
 });
 ```
 
-**✅ ALWAYS use the environment helper:**
+**✅ ALWAYS use the environment helper (now safe by default):**
 
 ```javascript
-// GOOD - Safe with automatic cleanup
-import { createTestProcessEnv } from '../helpers/envTestHelper.js';
+// GOOD - Operates in temporary directory with automatic cleanup
+import { setupTestEnv, createTestProcessEnv } from '../helpers/envTestHelper.js';
 
-beforeEach(() => {
-    // No file manipulation
-});
+describe('My Test', () => {
+    let cleanupTestEnv;
 
-// Use process environment for spawned processes
-const appProcess = spawn('node', ['app.js'], {
-    env: createTestProcessEnv({ SYNTHDEV_API_KEY: 'test-key' }),
+    beforeEach(() => {
+        // This now operates in a temporary directory - completely safe
+        cleanupTestEnv = setupTestEnv({
+            SYNTHDEV_API_KEY: 'test-key-12345',
+        });
+    });
+
+    afterEach(() => {
+        if (cleanupTestEnv) {
+            cleanupTestEnv();
+        }
+    });
+
+    // Or use process environment for spawned processes (also safe)
+    it('should spawn process with test env', () => {
+        const appProcess = spawn('node', ['app.js'], {
+            env: createTestProcessEnv({ SYNTHDEV_API_KEY: 'test-key' }),
+        });
+    });
 });
 ```
 

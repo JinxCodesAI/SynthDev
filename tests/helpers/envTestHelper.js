@@ -5,38 +5,95 @@
  * Ensures .env file is never permanently overwritten during testing.
  */
 
-import { writeFileSync, readFileSync, existsSync, unlinkSync } from 'fs';
-import { join } from 'path';
+import { writeFileSync, readFileSync, existsSync, unlinkSync, mkdirSync } from 'fs';
+import { join, dirname } from 'path';
+import { mkdtempSync } from 'fs';
+import { tmpdir } from 'os';
+
+// Global registry for cleanup handlers to prevent memory leaks
+const globalCleanupRegistry = new Set();
+let cleanupHandlersRegistered = false;
 
 class EnvTestHelper {
-    constructor() {
-        this.originalEnvPath = join(process.cwd(), '.env');
-        this.backupEnvPath = join(process.cwd(), '.env.backup');
-        this.testEnvPath = join(process.cwd(), '.env.test');
+    constructor(workingDir = null) {
+        // Use provided working directory or detect appropriate one
+        this.workingDir = workingDir || this.detectWorkingDirectory();
+
+        this.originalEnvPath = join(this.workingDir, '.env');
+        this.backupEnvPath = join(this.workingDir, '.env.backup');
+        this.testEnvPath = join(this.workingDir, '.env.test');
         this.isBackupCreated = false;
         this.isTestActive = false;
 
-        // Register cleanup handlers
-        this.registerCleanupHandlers();
+        // Ensure working directory exists
+        this.ensureWorkingDirectory();
+
+        // Register this instance for cleanup
+        globalCleanupRegistry.add(this);
+
+        // Register global cleanup handlers only once
+        this.registerGlobalCleanupHandlers();
     }
 
     /**
-     * Register process exit handlers to ensure cleanup
+     * Detect appropriate working directory for tests
+     * @returns {string} Working directory path
      */
-    registerCleanupHandlers() {
-        const cleanup = () => {
-            if (this.isTestActive) {
-                console.warn('⚠️  Emergency cleanup: Restoring .env file');
-                this.forceRestore();
+    detectWorkingDirectory() {
+        // ALWAYS use temporary directory for tests to prevent modifying real .env files
+        // This ensures complete isolation and safety
+        const testId = process.env.VITEST_WORKER_ID || process.pid || Date.now();
+        const tempDir = join(tmpdir(), `synthdev-test-${testId}`);
+        return tempDir;
+    }
+
+    /**
+     * Ensure working directory exists
+     */
+    ensureWorkingDirectory() {
+        try {
+            if (!existsSync(this.workingDir)) {
+                mkdirSync(this.workingDir, { recursive: true });
+            }
+        } catch (error) {
+            console.warn(
+                `Warning: Could not create working directory ${this.workingDir}:`,
+                error.message
+            );
+            // Fall back to current working directory
+            this.workingDir = process.cwd();
+            this.originalEnvPath = join(this.workingDir, '.env');
+            this.backupEnvPath = join(this.workingDir, '.env.backup');
+            this.testEnvPath = join(this.workingDir, '.env.test');
+        }
+    }
+
+    /**
+     * Register global cleanup handlers (only once) to ensure cleanup
+     */
+    registerGlobalCleanupHandlers() {
+        if (cleanupHandlersRegistered) {
+            return;
+        }
+
+        const globalCleanup = () => {
+            // Clean up all active instances
+            for (const instance of globalCleanupRegistry) {
+                if (instance.isTestActive) {
+                    console.warn('⚠️  Emergency cleanup: Restoring .env file for instance');
+                    instance.forceRestore();
+                }
             }
         };
 
         // Handle various exit scenarios
-        process.on('exit', cleanup);
-        process.on('SIGINT', cleanup);
-        process.on('SIGTERM', cleanup);
-        process.on('uncaughtException', cleanup);
-        process.on('unhandledRejection', cleanup);
+        process.on('exit', globalCleanup);
+        process.on('SIGINT', globalCleanup);
+        process.on('SIGTERM', globalCleanup);
+        process.on('uncaughtException', globalCleanup);
+        process.on('unhandledRejection', globalCleanup);
+
+        cleanupHandlersRegistered = true;
     }
 
     /**
@@ -46,6 +103,9 @@ class EnvTestHelper {
      */
     setupTestEnv(envConfig) {
         try {
+            // Ensure working directory exists
+            this.ensureWorkingDirectory();
+
             // Create backup of original .env if it exists
             if (existsSync(this.originalEnvPath) && !this.isBackupCreated) {
                 const originalContent = readFileSync(this.originalEnvPath, 'utf8');
@@ -58,14 +118,28 @@ class EnvTestHelper {
 
             // Write to test file first (for debugging and verification)
             try {
+                // Ensure directory exists for test file
+                const testFileDir = dirname(this.testEnvPath);
+                if (!existsSync(testFileDir)) {
+                    mkdirSync(testFileDir, { recursive: true });
+                }
                 writeFileSync(this.testEnvPath, testEnvContent);
             } catch (testFileError) {
                 console.warn('Warning: Could not create .env.test file:', testFileError.message);
                 // Continue anyway - the test file is optional for debugging
             }
 
-            // Only then overwrite the main .env
-            writeFileSync(this.originalEnvPath, testEnvContent);
+            // Only then overwrite the main .env (ensure directory exists)
+            try {
+                const envFileDir = dirname(this.originalEnvPath);
+                if (!existsSync(envFileDir)) {
+                    mkdirSync(envFileDir, { recursive: true });
+                }
+                writeFileSync(this.originalEnvPath, testEnvContent);
+            } catch (envFileError) {
+                console.error('Failed to write .env file:', envFileError.message);
+                throw envFileError;
+            }
 
             this.isTestActive = true;
 
@@ -142,6 +216,9 @@ class EnvTestHelper {
             }
 
             this.isTestActive = false;
+
+            // Remove this instance from global cleanup registry
+            globalCleanupRegistry.delete(this);
         } catch (error) {
             console.error('Failed to cleanup test environment:', error);
             // Try force restore as last resort
@@ -166,6 +243,9 @@ class EnvTestHelper {
 
             this.isBackupCreated = false;
             this.isTestActive = false;
+
+            // Remove this instance from global cleanup registry
+            globalCleanupRegistry.delete(this);
         } catch (error) {
             console.error('Force restore failed:', error);
         }
@@ -211,16 +291,21 @@ class EnvTestHelper {
      * @returns {boolean} True if .env contains test content
      */
     isEnvFileInTestState() {
-        if (!existsSync(this.originalEnvPath)) {
+        try {
+            if (!existsSync(this.originalEnvPath)) {
+                return false;
+            }
+
+            const content = readFileSync(this.originalEnvPath, 'utf8');
+            return (
+                content.includes('test-key-12345') ||
+                content.includes('test-api-key-12345') ||
+                content.includes('# Test Environment Configuration')
+            );
+        } catch (error) {
+            console.warn('Warning: Could not read .env file for state check:', error.message);
             return false;
         }
-
-        const content = readFileSync(this.originalEnvPath, 'utf8');
-        return (
-            content.includes('test-key-12345') ||
-            content.includes('test-api-key-12345') ||
-            content.includes('# Test Environment Configuration')
-        );
     }
 
     /**
@@ -229,6 +314,8 @@ class EnvTestHelper {
      */
     getStatus() {
         return {
+            workingDir: this.workingDir,
+            originalEnvPath: this.originalEnvPath,
             originalEnvExists: existsSync(this.originalEnvPath),
             backupExists: existsSync(this.backupEnvPath),
             testEnvExists: existsSync(this.testEnvPath),
@@ -239,14 +326,23 @@ class EnvTestHelper {
     }
 }
 
-// Export singleton instance
+// Export singleton instance that always uses temporary directory for safety
 export const envTestHelper = new EnvTestHelper();
 
 // Export class for custom instances if needed
 export { EnvTestHelper };
 
 /**
- * Convenience function for setting up test environment
+ * Create an EnvTestHelper instance that works with the real project directory
+ * WARNING: This should only be used for E2E tests that need to test actual .env file behavior
+ * @returns {EnvTestHelper} Helper instance using project directory
+ */
+export function createProjectEnvHelper() {
+    return new EnvTestHelper(process.cwd());
+}
+
+/**
+ * Convenience function for setting up test environment (uses temp directory)
  * @param {Object} envConfig - Environment configuration
  * @returns {Function} Cleanup function
  */

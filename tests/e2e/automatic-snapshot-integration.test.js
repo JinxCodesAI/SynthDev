@@ -35,7 +35,7 @@ vi.mock('../../../src/config/managers/snapshotConfigManager.js', () => ({
                 followSymlinks: false,
                 caseSensitive: false,
             },
-            backup: { createBackups: true },
+            backup: { encoding: 'utf8' },
             behavior: { autoCleanup: false },
             messages: { success: {}, errors: {}, info: {} },
             phase2: {
@@ -66,7 +66,7 @@ vi.mock('../../../src/config/managers/snapshotConfigManager.js', () => ({
             followSymlinks: false,
             caseSensitive: false,
         }),
-        getBackupConfig: () => ({ createBackups: true }),
+        getBackupConfig: () => ({ encoding: 'utf8' }),
         getBehaviorConfig: () => ({ autoCleanup: false }),
         getMessagesConfig: () => ({ success: {}, errors: {}, info: {} }),
     }),

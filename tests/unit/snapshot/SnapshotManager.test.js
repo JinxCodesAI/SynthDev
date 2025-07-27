@@ -40,7 +40,6 @@ vi.mock('../../../src/core/snapshot/FileBackup.js', () => ({
             stats: { restoredFiles: 1 },
             restored: ['test.txt'],
             errors: [],
-            backups: [],
         }),
     })),
 }));

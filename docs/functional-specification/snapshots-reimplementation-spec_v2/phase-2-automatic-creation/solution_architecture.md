@@ -7,7 +7,7 @@ This document defines the technical architecture for Phase 2 of the snapshot sys
 ## Architecture Principles
 
 - **Event-Driven Design**: Snapshots triggered by deterministic tool execution events
-- **Declaration-Based**: Tools declare their backup requirements in their definitions
+- **Declaration-Based**: Tools declare their snapshot requirements in their definitions
 - **Lifecycle Integration**: Seamless integration with existing tool execution workflow
 - **Change Monitoring**: Monitor actual file changes and warn about unexpected modifications
 - **Non-Intrusive**: Minimal impact on existing application flow and performance
@@ -206,18 +206,18 @@ class ToolExecutionHooks {
     trackFileChanges(beforeSnapshot, afterSnapshot)
     isFileModifyingTool(toolName)
 
-    // Backup management
-    async createPreExecutionBackup(toolName, args, context)
-    async validateBackupNecessity(toolName, args)
+    // Snapshot management
+    async createPreExecutionSnapshot(toolName, args, context)
+    async validateSnapshotNecessity(toolName, args)
 }
 ```
 
 **Key Features**:
 
 - Tool-specific file modification detection
-- Pre-execution backup creation
+- Pre-execution differential snapshot creation
 - File change tracking
-- Smart backup validation
+- Smart snapshot validation
 - Integration with existing tool system
 
 ### Configuration System
@@ -228,7 +228,7 @@ class ToolExecutionHooks {
 **Files**:
 
 - `auto-snapshot-defaults.json` - Automatic snapshot settings
-- `tool-declarations.json` - Tool backup requirement declarations
+- `tool-declarations.json` - Tool snapshot requirement declarations
 - `trigger-rules.json` - Trigger configuration
 - `integration-settings.json` - App integration settings
 
@@ -456,7 +456,7 @@ class App {
 1. **Tool Registration**: Register hooks during tool loading
 2. **Execution Lifecycle**: Monitor tool execution phases
 3. **File Modification Detection**: Track file changes
-4. **Backup Management**: Coordinate with snapshot system
+4. **Snapshot Management**: Coordinate with differential snapshot system
 
 #### Implementation Strategy
 
@@ -516,7 +516,7 @@ class ToolManager {
 **Optional Properties**:
 
 - `fileTargets` - Array of file paths the tool will modify
-- `backupPriority` - Priority level for backup creation
+- `snapshotPriority` - Priority level for snapshot creation
 - `changeDetection` - Custom change detection rules
 
 ### Tool Declaration Logic

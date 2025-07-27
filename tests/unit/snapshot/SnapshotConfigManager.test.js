@@ -71,8 +71,6 @@ describe('SnapshotConfigManager', () => {
             const backupConfig = configManager.getBackupConfig();
 
             expect(backupConfig).toBeDefined();
-            expect(backupConfig.createBackups).toBe(true);
-            expect(backupConfig.backupSuffix).toBe('.backup');
             expect(backupConfig.preservePermissions).toBe(true);
             expect(backupConfig.validateChecksums).toBe(true);
             expect(backupConfig.maxConcurrentFiles).toBe(10);

@@ -33,7 +33,6 @@ const mockConfig = {
         maxMemoryMB: 100,
     },
     backup: {
-        createBackups: true,
         encoding: 'utf8',
     },
     behavior: {
