@@ -467,6 +467,33 @@ class SystemMessages {
     }
 
     /**
+     * Get enabled agents for a specific role
+     * @param {string} role - The role name
+     * @returns {string[]} Array of role names this role can spawn
+     */
+    static getEnabledAgents(role) {
+        const instance = new SystemMessages();
+        const roleConfig = instance.roles[role];
+
+        if (!roleConfig) {
+            throw new Error(`Unknown role: ${role}`);
+        }
+
+        return roleConfig.enabled_agents || [];
+    }
+
+    /**
+     * Check if a role can spawn another role
+     * @param {string} supervisorRole - The supervisor role name
+     * @param {string} workerRole - The worker role name to spawn
+     * @returns {boolean} True if spawning is allowed
+     */
+    static canSpawnAgent(supervisorRole, workerRole) {
+        const enabledAgents = SystemMessages.getEnabledAgents(supervisorRole);
+        return enabledAgents.includes(workerRole);
+    }
+
+    /**
      * Reload role configurations (clears cache)
      */
     static reloadRoles() {

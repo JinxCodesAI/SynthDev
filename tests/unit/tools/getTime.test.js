@@ -116,14 +116,14 @@ describe('GetTime Tool', () => {
             const result = await getTime(null);
 
             expect(result.success).toBe(false);
-            expect(result.error).toContain('Cannot read properties of null');
+            expect(result.error).toContain('Cannot destructure property');
         });
 
         it('should handle undefined parameters', async () => {
             const result = await getTime(undefined);
 
             expect(result.success).toBe(false);
-            expect(result.error).toContain('Cannot read properties of undefined');
+            expect(result.error).toContain('Cannot destructure property');
         });
 
         it('should validate format parameter type', async () => {

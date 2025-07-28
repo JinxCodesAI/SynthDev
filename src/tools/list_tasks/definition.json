@@ -20,7 +20,7 @@
                     },
                     "status_filter": {
                         "type": "string",
-                        "description": "Filter tasks by status. If provided, only tasks with the specified status will be shown.",
+                        "description": "Filter tasks by status. If provided, only tasks with the specified status will be shown. Leave blank to show all tasks.",
                         "enum": ["not_started", "in_progress", "completed", "cancelled"]
                     }
                 }

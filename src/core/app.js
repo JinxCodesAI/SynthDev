@@ -72,6 +72,7 @@ import WorkflowStateMachine from '../workflow/WorkflowStateMachine.js';
 import { initializeLogger, getLogger } from './managers/logger.js';
 import GitUtils from '../utils/GitUtils.js';
 import { AutoSnapshotManager } from './snapshot/AutoSnapshotManager.js';
+import AgentManager from '../agents/AgentManager.js';
 
 /**
  * Main application orchestrator
@@ -129,6 +130,10 @@ export default class AICoderConsole {
             this.consoleInterface,
             this.costsManager
         );
+
+        // Initialize AgentManager
+        this.agentManager = AgentManager.getInstance();
+
         this.commandHandler = new CommandHandler(
             this.apiClient,
             this.toolManager,
@@ -205,10 +210,21 @@ export default class AICoderConsole {
                     this._toolsExecutionShown = true;
                 }
 
+                // Prepare context for tool execution
+                const toolContext = {
+                    currentRole: this.apiClient.role,
+                    currentAgentId: null, // Main user has no agent ID
+                    agentManager: this.agentManager,
+                    costsManager: this.costsManager,
+                    toolManager: this.toolManager,
+                    app: this,
+                };
+
                 return await this.toolManager.executeToolCall(
                     toolCall,
                     this.consoleInterface,
-                    null // snapshotManager removed
+                    null, // snapshotManager removed
+                    toolContext
                 );
             },
 
