@@ -213,6 +213,7 @@ export default class AICoderConsole {
                 // Prepare context for tool execution
                 const toolContext = {
                     currentRole: this.apiClient.role,
+                    currentAgentId: null, // Main user has no agent ID
                     agentManager: this.agentManager,
                     costsManager: this.costsManager,
                     toolManager: this.toolManager,

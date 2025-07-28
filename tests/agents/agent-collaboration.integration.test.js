@@ -40,6 +40,7 @@ describe.sequential('Agent Collaboration Integration', () => {
         mockContext = {
             agentManager,
             currentRole: 'agentic_coder',
+            currentAgentId: null, // Main user has no agent ID
             costsManager: { trackCost: vi.fn() },
             toolManager: { getTools: vi.fn().mockReturnValue([]) },
         };
@@ -348,14 +349,12 @@ describe.sequential('Agent Collaboration Integration', () => {
 
         expect(spawnResult.success).toBe(true);
 
-        // Verify hierarchy tracking
-        expect(agentManager.agentHierarchy.has('agentic_coder')).toBe(true);
-        expect(agentManager.agentHierarchy.get('agentic_coder').has(spawnResult.agent_id)).toBe(
-            true
-        );
+        // Verify hierarchy tracking (null for main user)
+        expect(agentManager.agentHierarchy.has(null)).toBe(true);
+        expect(agentManager.agentHierarchy.get(null).has(spawnResult.agent_id)).toBe(true);
 
-        // Verify agent knows its parent
+        // Verify agent knows its parent (null for main user)
         const agentStatus = agentManager.getAgentStatus(spawnResult.agent_id);
-        expect(agentStatus.parentId).toBe('agentic_coder');
+        expect(agentStatus.parentId).toBe(null);
     });
 });

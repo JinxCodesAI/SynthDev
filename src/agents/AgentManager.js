@@ -43,21 +43,24 @@ class AgentManager {
             );
         }
 
+        // Get supervisor agent ID from context (null for main user)
+        const supervisorAgentId = context?.currentAgentId || null;
+
         // Create new agent process
         const agent = new AgentProcess(
             workerRoleName,
             taskPrompt,
-            supervisorRole, // Use supervisor role as parent ID for now
+            supervisorAgentId, // Use actual agent ID as parent
             context.costsManager,
             context.toolManager
         );
 
         // Register agent
         this.activeAgents.set(agent.agentId, agent);
-        this._trackAgentHierarchy(supervisorRole, agent.agentId);
+        this._trackAgentHierarchy(supervisorAgentId, agent.agentId);
 
         this.logger.info(
-            `Spawned ${workerRoleName} agent ${agent.agentId} for supervisor ${supervisorRole}`
+            `Spawned ${workerRoleName} agent ${agent.agentId} for supervisor ${supervisorAgentId || 'user'}`
         );
 
         return {
@@ -105,13 +108,14 @@ class AgentManager {
 
     /**
      * List agents spawned by a specific supervisor
-     * @param {string} supervisorId - Supervisor ID (role name for now)
+     * @param {string|null} supervisorAgentId - Supervisor agent ID (null for main user)
      * @param {Object} options - Filtering options
      * @returns {Array} Array of agent status objects
      */
-    listAgents(supervisorId, options = {}) {
+    listAgents(supervisorAgentId, options = {}) {
         const { include_completed = true } = options;
-        const childIds = this.agentHierarchy.get(supervisorId) || new Set();
+        // Use null for main user, actual agent ID for agent supervisors
+        const childIds = this.agentHierarchy.get(supervisorAgentId) || new Set();
 
         const agents = [];
         for (const agentId of childIds) {

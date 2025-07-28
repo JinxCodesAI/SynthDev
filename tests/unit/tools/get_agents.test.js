@@ -41,6 +41,7 @@ describe('get_agents tool', () => {
                 listAgents: vi.fn().mockReturnValue(mockAgents),
             },
             currentRole: 'agentic_coder',
+            currentAgentId: null, // Main user has no agent ID
         };
     });
 
@@ -59,7 +60,7 @@ describe('get_agents tool', () => {
                 context: mockContext,
             });
 
-            expect(mockContext.agentManager.listAgents).toHaveBeenCalledWith('agentic_coder', {
+            expect(mockContext.agentManager.listAgents).toHaveBeenCalledWith(null, {
                 include_completed: false,
             });
         });
@@ -69,7 +70,7 @@ describe('get_agents tool', () => {
                 context: mockContext,
             });
 
-            expect(mockContext.agentManager.listAgents).toHaveBeenCalledWith('agentic_coder', {
+            expect(mockContext.agentManager.listAgents).toHaveBeenCalledWith(null, {
                 include_completed: true,
             });
         });
@@ -195,17 +196,17 @@ describe('get_agents tool', () => {
     });
 
     describe('context handling', () => {
-        it('should use unknown role when currentRole is missing', async () => {
-            const contextWithoutRole = {
+        it('should use null when currentAgentId is missing', async () => {
+            const contextWithoutAgentId = {
                 agentManager: mockContext.agentManager,
-                // currentRole is missing
+                // currentAgentId is missing
             };
 
             await get_agents({
-                context: contextWithoutRole,
+                context: contextWithoutAgentId,
             });
 
-            expect(mockContext.agentManager.listAgents).toHaveBeenCalledWith('unknown', {
+            expect(mockContext.agentManager.listAgents).toHaveBeenCalledWith(null, {
                 include_completed: true,
             });
         });

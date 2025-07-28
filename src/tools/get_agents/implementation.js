@@ -19,10 +19,10 @@ class GetAgentsTool extends BaseTool {
                 throw new Error('AgentManager not available in context');
             }
 
-            const currentRole = this.context?.currentRole || 'unknown';
+            const currentAgentId = this.context?.currentAgentId || null;
 
-            // Get agents spawned by current supervisor
-            const agents = agentManager.listAgents(currentRole, { include_completed });
+            // Get agents spawned by current supervisor (null for main user)
+            const agents = agentManager.listAgents(currentAgentId, { include_completed });
 
             // Format agent information for response
             const agentList = agents.map(agent => ({
