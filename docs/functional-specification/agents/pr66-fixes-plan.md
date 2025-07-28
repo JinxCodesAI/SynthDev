@@ -19,6 +19,7 @@ This document provides a complete, self-contained guide to fix all issues identi
 **Problem**: The system uses `supervisorRole` (string) as parent ID instead of actual agent IDs (UUIDs), making it impossible to track multiple agents of the same role.
 
 **Affected Code**:
+
 - `src/agents/AgentManager.js` lines 50, 57: `supervisorRole` passed as `parentId`
 - `src/agents/AgentProcess.js` line 14: Constructor accepts role name as `parentId`
 - `src/tools/get_agents/implementation.js` line 25: Uses `currentRole` for hierarchy lookup
@@ -30,6 +31,7 @@ This document provides a complete, self-contained guide to fix all issues identi
 **Problem**: `sendMessageToAgent()` uses `await agent.execute()` which can create circular dependencies when agents try to communicate with each other.
 
 **Affected Code**:
+
 - `src/agents/AgentManager.js` line 87: `const response = await agent.execute();`
 - `src/tools/speak_to_agent/implementation.js` line 36: Returns immediate agent response
 
@@ -40,12 +42,14 @@ This document provides a complete, self-contained guide to fix all issues identi
 **Problem**: Agent status definitions don't match implementation, and status transitions are incomplete.
 
 **Current Status Issues**:
+
 - Status transitions not implemented in `execute()` method
 - `running` agents can be messaged (should not be disturbed)
 - Missing `inactive` status handling
 - Documentation contradicts implementation
 
 **Affected Code**:
+
 - `src/agents/AgentProcess.js`: Missing status transition logic
 - `src/agents/README.md`: Incorrect status descriptions
 - `src/tools/speak_to_agent/implementation.js`: Incomplete status checking
@@ -55,6 +59,7 @@ This document provides a complete, self-contained guide to fix all issues identi
 **Problem**: When agents complete tasks via `return_results`, their results are not automatically forwarded to parent agents as messages.
 
 **Affected Code**:
+
 - `src/agents/AgentManager.js` line 147: TODO comment about notifying supervisor
 - `src/tools/return_results/implementation.js`: No parent notification logic
 - `src/agents/AgentProcess.js`: No result forwarding mechanism
@@ -64,6 +69,7 @@ This document provides a complete, self-contained guide to fix all issues identi
 **Problem**: Tool definitions lack detailed response specifications and usage guidance.
 
 **Affected Files**:
+
 - `src/tools/get_agents/definition.json`: Vague response format description
 - `src/tools/speak_to_agent/definition.json`: Missing status-based usage guidance
 - All agent tool definitions: Lack comprehensive examples
@@ -73,6 +79,7 @@ This document provides a complete, self-contained guide to fix all issues identi
 **Problem**: Role system messages are generic and don't provide specific workflow guidance. Tool assignments are inappropriate for role purposes.
 
 **Specific Issues**:
+
 - PM role lacks task creation and delegation specifics
 - Architect role should focus on documentation creation
 - Test-runner role has development tools instead of execution tools
@@ -95,6 +102,7 @@ This section provides step-by-step instructions with exact code changes needed t
 **File**: `src/agents/AgentManager.js`
 
 **Current Code (lines 37-68)**:
+
 ```javascript
 async spawnAgent(supervisorRole, workerRoleName, taskPrompt, context) {
     // Validate spawn permission
@@ -122,6 +130,7 @@ async spawnAgent(supervisorRole, workerRoleName, taskPrompt, context) {
 ```
 
 **Fixed Code**:
+
 ```javascript
 async spawnAgent(supervisorRole, workerRoleName, taskPrompt, context) {
     // Validate spawn permission
@@ -166,6 +175,7 @@ async spawnAgent(supervisorRole, workerRoleName, taskPrompt, context) {
 **File**: `src/agents/AgentManager.js`
 
 **Current Code (lines 107-128)**:
+
 ```javascript
 listAgents(supervisorId, options = {}) {
     const { include_completed = true } = options;
@@ -175,6 +185,7 @@ listAgents(supervisorId, options = {}) {
 ```
 
 **Fixed Code**:
+
 ```javascript
 listAgents(supervisorAgentId, options = {}) {
     const { include_completed = true } = options;
@@ -201,6 +212,7 @@ listAgents(supervisorAgentId, options = {}) {
 **File**: `src/core/app.js` (around line 214)
 
 **Current Code**:
+
 ```javascript
 const toolContext = {
     currentRole: this.apiClient.role,
@@ -212,6 +224,7 @@ const toolContext = {
 ```
 
 **Fixed Code**:
+
 ```javascript
 const toolContext = {
     currentRole: this.apiClient.role,
@@ -228,6 +241,7 @@ const toolContext = {
 **File**: `src/tools/get_agents/implementation.js`
 
 **Current Code (lines 22-25)**:
+
 ```javascript
 const currentRole = this.context?.currentRole || 'unknown';
 
@@ -236,6 +250,7 @@ const agents = agentManager.listAgents(currentRole, { include_completed });
 ```
 
 **Fixed Code**:
+
 ```javascript
 const currentAgentId = this.context?.currentAgentId || null;
 
@@ -252,6 +267,7 @@ const agents = agentManager.listAgents(currentAgentId, { include_completed });
 **File**: `src/agents/AgentManager.js`
 
 **Current Code (lines 77-94)**:
+
 ```javascript
 async sendMessageToAgent(agentId, message) {
     const agent = this.activeAgents.get(agentId);
@@ -274,6 +290,7 @@ async sendMessageToAgent(agentId, message) {
 ```
 
 **Fixed Code**:
+
 ```javascript
 async sendMessageToAgent(agentId, message) {
     const agent = this.activeAgents.get(agentId);
@@ -334,6 +351,7 @@ async _executeAgentAsync(agent) {
 **File**: `src/tools/speak_to_agent/implementation.js`
 
 **Current Code (lines 35-45)**:
+
 ```javascript
 // Send message and get response
 const response = await agentManager.sendMessageToAgent(agent_id, message);
@@ -349,6 +367,7 @@ return this.createSuccessResponse({
 ```
 
 **Fixed Code**:
+
 ```javascript
 // Send message (now asynchronous)
 const response = await agentManager.sendMessageToAgent(agent_id, message);
@@ -371,6 +390,7 @@ return this.createSuccessResponse({
 **File**: `src/agents/AgentProcess.js`
 
 **Add after line 88 (in execute method)**:
+
 ```javascript
 async execute() {
     try {
@@ -398,6 +418,7 @@ async execute() {
 **File**: `src/agents/README.md`
 
 **Current Content (lines 25-30)**:
+
 ```markdown
 ## Agent Statuses
 
@@ -408,6 +429,7 @@ async execute() {
 ```
 
 **Fixed Content**:
+
 ```markdown
 ## Agent Statuses
 
@@ -433,6 +455,7 @@ async execute() {
 **File**: `src/agents/AgentManager.js`
 
 **Add new method after line 149**:
+
 ```javascript
 /**
  * Notify parent agent of child completion
@@ -471,6 +494,7 @@ async _notifyParentOfCompletion(childAgentId, result) {
 ```
 
 **Update reportResult method (lines 136-149)**:
+
 ```javascript
 async reportResult(workerId, result) {
     const agent = this.activeAgents.get(workerId);
@@ -493,6 +517,7 @@ async reportResult(workerId, result) {
 **File**: `src/tools/return_results/implementation.js`
 
 **Current Code (lines 47-55)**:
+
 ```javascript
 return this.createSuccessResponse({
     task_completed: true,
@@ -506,6 +531,7 @@ return this.createSuccessResponse({
 ```
 
 **Fixed Code**:
+
 ```javascript
 return this.createSuccessResponse({
     task_completed: true,
@@ -523,6 +549,7 @@ return this.createSuccessResponse({
 **File**: `src/tools/get_agents/definition.json`
 
 **Current Code (lines 11-13)**:
+
 ```json
 "response_format": {
     "description": "Returns array of agent objects with detailed status information"
@@ -530,6 +557,7 @@ return this.createSuccessResponse({
 ```
 
 **Fixed Code**:
+
 ```json
 "response_format": {
     "description": "Returns comprehensive agent listing with status details",
@@ -563,18 +591,21 @@ return this.createSuccessResponse({
 **File**: `src/tools/speak_to_agent/definition.json`
 
 **Current Code (lines 3, 12)**:
+
 ```json
 "description": "Sends a message to a previously spawned agent for follow-up instructions or status updates",
 "description": "Sends a follow-up message to a specific worker agent. Use this to provide additional instructions, clarifications, feedback, or to request progress updates from spawned agents.",
 ```
 
 **Fixed Code**:
+
 ```json
 "description": "Sends a message to a previously spawned agent for follow-up instructions or status updates. Check agent status first with get_agents - only inactive and completed agents can receive messages.",
 "description": "Sends a follow-up message to a specific worker agent. IMPORTANT: Check agent status first using get_agents tool. Only 'inactive' and 'completed' agents can receive messages. 'running' agents should not be disturbed, 'failed' agents cannot process messages. Use this for additional instructions, clarifications, feedback, or progress updates.",
 ```
 
 **Add after line 28**:
+
 ```json
 "usage_guidance": {
     "description": "Agent status determines messaging capability",
@@ -601,11 +632,13 @@ return this.createSuccessResponse({
 **File**: `src/config/roles/agentic/team-roles.agentic.json`
 
 **Current PM systemMessage (line 4)**:
+
 ```json
 "systemMessage": "You are a Project Manager responsible for coordinating software development projects. You can delegate work to architects and developers to ensure successful project delivery. You excel at breaking down complex requirements, planning work phases, managing timelines, and ensuring quality deliverables. You coordinate between different specialists and ensure all project goals are met. When you need architectural guidance, spawn an architect. When you need code implementation, spawn a developer. Always maintain clear communication and track progress effectively."
 ```
 
 **Fixed PM systemMessage**:
+
 ```json
 "systemMessage": "You are a Project Manager responsible for coordinating software development projects through agent delegation.\n\nWORKFLOW:\n1. ANALYZE requirements and break them into phases\n2. CREATE tasks using task management tools\n3. SPAWN architect for system design (when architectural decisions needed)\n4. SPAWN developer for implementation (when code needs to be written)\n5. MONITOR progress using get_agents and speak_to_agent\n6. COORDINATE between agents and handle their results\n7. DELIVER final project summary using return_results\n\nAGENT MANAGEMENT:\n- Use spawn_agent for new specialized work\n- Use get_agents to check status before messaging\n- Use speak_to_agent only for inactive/completed agents\n- Process agent results and provide feedback\n- Ensure all agents complete before finalizing project\n\nDELIVERABLES:\n- Create comprehensive project plans\n- Coordinate between specialists\n- Ensure quality and timeline adherence\n- Provide detailed project completion reports"
 ```
@@ -613,11 +646,13 @@ return this.createSuccessResponse({
 #### Step 6.2: Enhanced Architect Role Configuration
 
 **Current Architect systemMessage (line 21)**:
+
 ```json
 "systemMessage": "You are a Software Architect focused on designing robust, scalable system architectures. You create technical specifications, design patterns, and architectural decisions. You analyze requirements and design solutions that are maintainable, performant, and align with best practices. You document architectural decisions and provide guidance on system design. When you complete your architectural work, use return_results to provide comprehensive design documentation and recommendations."
 ```
 
 **Fixed Architect systemMessage**:
+
 ```json
 "systemMessage": "You are a Software Architect focused on creating comprehensive technical specifications and design documentation.\n\nPRIMARY RESPONSIBILITIES:\n1. ANALYZE requirements and create functional specifications\n2. DESIGN system architecture and component interactions\n3. CREATE detailed development plans with implementation steps\n4. DOCUMENT architectural decisions and rationale\n5. PROVIDE technical guidance and best practices\n\nDELIVERABLES (create as markdown files):\n- functional-specification.md: Detailed requirements analysis\n- development-plan.md: Step-by-step implementation guide\n- architecture-decisions.md: Technical choices and rationale\n- api-specifications.md: Interface definitions (if applicable)\n\nTOOLS FOCUS:\n- Use write_file to create comprehensive documentation\n- Use read_file and explain_codebase to understand existing systems\n- Use exact_search to analyze current implementations\n\nCOMPLETION:\n- Use return_results with detailed artifact descriptions\n- Include all created documentation files\n- Provide clear next steps for developers"
 ```
@@ -625,6 +660,7 @@ return this.createSuccessResponse({
 #### Step 6.3: Specialized Test-Runner Role
 
 **Current test-runner systemMessage and tools (lines 54-68)**:
+
 ```json
 "systemMessage": "You are a Testing Specialist responsible for creating and executing comprehensive test suites...",
 "includedTools": [
@@ -635,6 +671,7 @@ return this.createSuccessResponse({
 ```
 
 **Fixed test-runner configuration**:
+
 ```json
 "systemMessage": "You are a Test Execution Specialist focused on running existing tests and reporting results. You do NOT write tests - that's the developer's job.\n\nPRIMARY RESPONSIBILITIES:\n1. DISCOVER how to run tests in the project (package.json, Makefile, etc.)\n2. EXECUTE test commands using execute_terminal\n3. ANALYZE test results and identify failures\n4. REPORT detailed test outcomes with specific error information\n5. SUGGEST fixes for failing tests (but don't implement them)\n\nWORKFLOW:\n1. Read project files to understand test setup\n2. Run test commands (npm test, pytest, etc.)\n3. Parse output to identify failures\n4. Provide clear, actionable failure reports\n5. Use return_results with detailed test summary\n\nFOCUS AREAS:\n- Test execution, not test creation\n- Clear error reporting and analysis\n- Actionable feedback for developers",
 
@@ -649,11 +686,13 @@ return this.createSuccessResponse({
 #### Step 6.4: Specialized Git-Manager Role
 
 **Current git-manager systemMessage (line 72)**:
+
 ```json
 "systemMessage": "You are a Git Operations Specialist responsible for version control management. You handle git operations including commits, branches, merges, and repository management. You follow git best practices, write meaningful commit messages, and manage branching strategies effectively. You ensure clean git history and proper version control workflows. When you complete git operations, use return_results to provide a summary of version control actions taken."
 ```
 
 **Fixed git-manager systemMessage**:
+
 ```json
 "systemMessage": "You are a Git Operations Specialist focused on SAFE version control operations.\n\nSAFETY FIRST:\n- ALWAYS use 'git status' before any operation\n- ALWAYS use 'git diff' to review changes before committing\n- NEVER use destructive commands (reset --hard, force push, etc.)\n- NEVER commit without reviewing changes first\n\nWORKFLOW:\n1. CHECK current status with 'git status'\n2. REVIEW changes with 'git diff' \n3. STAGE specific files with 'git add <file>'\n4. COMMIT with meaningful messages\n5. PUSH safely to remote branches\n\nBEST PRACTICES:\n- Write clear, descriptive commit messages\n- Commit related changes together\n- Use conventional commit format when possible\n- Check branch status before operations\n\nCOMPLETION:\n- Use return_results with summary of git operations\n- Include commit hashes and branch information\n- Report any conflicts or issues encountered"
 ```
@@ -667,11 +706,13 @@ return this.createSuccessResponse({
 **File**: `docs/functional-specification/agents/agentic-system-spec.md`
 
 **Current Code (line 13)**:
+
 ```markdown
 3. **Isolated Contexts**: Every spawned agent operates in a completely isolated environment with its own `AIAPIClient` instance. This prevents context pollution and allows each agent to remain focused on its specific task.
 ```
 
 **Fixed Code**:
+
 ```markdown
 3. **Isolated Contexts**: Every spawned agent operates in a completely isolated context with its own `AIAPIClient` instance. This prevents context pollution and allows each agent to remain focused on its specific task.
 ```
@@ -685,6 +726,7 @@ The following test files need updates to reflect the new agent hierarchy system:
 **File**: `tests/agents/AgentManager.test.js`
 
 **Key Changes Needed**:
+
 1. Update `spawnAgent` tests to use agent IDs instead of roles
 2. Update `listAgents` tests to use agent IDs for hierarchy lookup
 3. Add tests for parent notification system
@@ -695,6 +737,7 @@ The following test files need updates to reflect the new agent hierarchy system:
 **File**: `tests/agents/agent-collaboration.integration.test.js`
 
 **Key Changes Needed**:
+
 1. Update agent spawning scenarios to track agent IDs
 2. Test parent-child messaging with actual agent IDs
 3. Verify result notification flows to parent agents
@@ -705,6 +748,7 @@ The following test files need updates to reflect the new agent hierarchy system:
 **Files**: `tests/unit/tools/spawn_agent.test.js`, `tests/unit/tools/get_agents.test.js`, `tests/unit/tools/speak_to_agent.test.js`, `tests/unit/tools/return_results.test.js`
 
 **Key Changes Needed**:
+
 1. Update context mocking to include `currentAgentId`
 2. Test new asynchronous communication model
 3. Verify enhanced tool documentation compliance
@@ -713,58 +757,65 @@ The following test files need updates to reflect the new agent hierarchy system:
 ## Implementation Priority and Timeline
 
 ### Phase 1: Critical Fixes (Must complete before merge)
+
 **Estimated Time**: 2-3 days
 
 1. **Agent Hierarchy System** (6-8 hours)
-   - Update AgentManager.spawnAgent()
-   - Update AgentManager.listAgents()
-   - Update tool context passing
-   - Update get_agents tool
-   - Update related tests
+
+    - Update AgentManager.spawnAgent()
+    - Update AgentManager.listAgents()
+    - Update tool context passing
+    - Update get_agents tool
+    - Update related tests
 
 2. **Asynchronous Communication** (4-6 hours)
-   - Update AgentManager.sendMessageToAgent()
-   - Add _executeAgentAsync() method
-   - Update speak_to_agent tool
-   - Update related tests
+
+    - Update AgentManager.sendMessageToAgent()
+    - Add \_executeAgentAsync() method
+    - Update speak_to_agent tool
+    - Update related tests
 
 3. **Agent Status Management** (3-4 hours)
-   - Update AgentProcess.execute()
-   - Update status transition logic
-   - Update README documentation
-   - Update related tests
+
+    - Update AgentProcess.execute()
+    - Update status transition logic
+    - Update README documentation
+    - Update related tests
 
 4. **Parent Notification System** (4-5 hours)
-   - Add _notifyParentOfCompletion() method
-   - Update reportResult() method
-   - Update return_results tool response
-   - Update related tests
+    - Add \_notifyParentOfCompletion() method
+    - Update reportResult() method
+    - Update return_results tool response
+    - Update related tests
 
 ### Phase 2: High Priority Fixes (Should complete before merge)
+
 **Estimated Time**: 1-2 days
 
 1. **Tool Documentation Enhancement** (3-4 hours)
-   - Update get_agents definition
-   - Update speak_to_agent definition
-   - Add usage guidance
-   - Update tool tests
+    - Update get_agents definition
+    - Update speak_to_agent definition
+    - Add usage guidance
+    - Update tool tests
 
 ### Phase 3: Medium Priority Fixes (Can be follow-up PR)
+
 **Estimated Time**: 1-2 days
 
 1. **Role Configuration Improvements** (4-6 hours)
-   - Update PM role configuration
-   - Update Architect role configuration
-   - Update test-runner role configuration
-   - Update git-manager role configuration
-   - Test role behavior
+    - Update PM role configuration
+    - Update Architect role configuration
+    - Update test-runner role configuration
+    - Update git-manager role configuration
+    - Test role behavior
 
 ### Phase 4: Low Priority Fixes (Documentation cleanup)
+
 **Estimated Time**: 1-2 hours
 
 1. **Documentation Terminology** (1-2 hours)
-   - Update specification terminology
-   - Update README files
+    - Update specification terminology
+    - Update README files
 
 ## Success Criteria Checklist
 
