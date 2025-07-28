@@ -194,11 +194,9 @@ describe('return_results tool', () => {
             expect(response.success).toBe(true);
             expect(response.task_completed).toBe(true);
             expect(response.agent_id).toBe('worker-agent-123');
-            expect(response.result_status).toBe('success');
-            expect(response.summary).toBe('Task completed successfully');
-            expect(response.artifacts_count).toBe(2);
-            expect(response.completed_at).toBeDefined();
-            expect(response.message).toContain('Task completed successfully');
+            expect(response.message).toBe(
+                'Results have been sent to parent agent. Wait for response or further instructions.'
+            );
 
             // Verify AgentManager was called with enriched result
             expect(mockContext.agentManager.reportResult).toHaveBeenCalledWith(
@@ -220,7 +218,9 @@ describe('return_results tool', () => {
             });
 
             expect(response.success).toBe(true);
-            expect(response.artifacts_count).toBe(0);
+            expect(response.message).toBe(
+                'Results have been sent to parent agent. Wait for response or further instructions.'
+            );
         });
 
         it('should handle missing artifacts property', async () => {
@@ -233,7 +233,9 @@ describe('return_results tool', () => {
             });
 
             expect(response.success).toBe(true);
-            expect(response.artifacts_count).toBe(0);
+            expect(response.message).toBe(
+                'Results have been sent to parent agent. Wait for response or further instructions.'
+            );
         });
 
         it('should handle known issues', async () => {
@@ -358,10 +360,6 @@ describe('return_results tool', () => {
 
             expect(response).toHaveProperty('task_completed');
             expect(response).toHaveProperty('agent_id');
-            expect(response).toHaveProperty('result_status');
-            expect(response).toHaveProperty('summary');
-            expect(response).toHaveProperty('artifacts_count');
-            expect(response).toHaveProperty('completed_at');
             expect(response).toHaveProperty('message');
         });
     });

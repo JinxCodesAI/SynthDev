@@ -133,8 +133,9 @@ describe.sequential('Agent Collaboration Integration', () => {
         expect(returnResult.success).toBe(true);
         expect(returnResult.task_completed).toBe(true);
         expect(returnResult.agent_id).toBe(agentId);
-        expect(returnResult.result_status).toBe('success');
-        expect(returnResult.artifacts_count).toBe(2);
+        expect(returnResult.message).toBe(
+            'Results have been sent to parent agent. Wait for response or further instructions.'
+        );
 
         // Step 5: Verify agent status changed to completed
         const agentStatus = agentManager.getAgentStatus(agentId);

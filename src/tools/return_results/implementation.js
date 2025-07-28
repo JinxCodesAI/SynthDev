@@ -47,11 +47,8 @@ class ReturnResultsTool extends BaseTool {
             return this.createSuccessResponse({
                 task_completed: true,
                 agent_id: currentAgentId,
-                result_status: result.status,
-                summary: result.summary,
-                artifacts_count: result.artifacts?.length || 0,
-                completed_at: enrichedResult.completed_at,
-                message: `Task completed successfully with status: ${result.status}`,
+                message:
+                    'Results have been sent to parent agent. Wait for response or further instructions.',
             });
         } catch (error) {
             return this.createErrorResponse(`Failed to return results: ${error.message}`, {

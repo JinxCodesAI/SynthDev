@@ -185,8 +185,48 @@ class AgentManager {
 
         this.logger.info(`Agent ${workerId} reported completion with status: ${result.status}`);
 
-        // TODO: In Phase 2, notify supervisor agent of completion
-        // For now, just log the completion
+        // Notify parent agent of completion
+        await this._notifyParentOfCompletion(workerId, result);
+    }
+
+    /**
+     * Notify parent agent of child completion
+     * @param {string} childAgentId - Child agent ID
+     * @param {Object} result - Completion result
+     * @private
+     */
+    async _notifyParentOfCompletion(childAgentId, result) {
+        const childAgent = this.activeAgents.get(childAgentId);
+        if (!childAgent || !childAgent.parentId) {
+            return; // No parent to notify (main user spawned this agent)
+        }
+
+        const parentAgent = this.activeAgents.get(childAgent.parentId);
+        if (!parentAgent) {
+            this.logger.warn(
+                `Parent agent ${childAgent.parentId} not found for child ${childAgentId}`
+            );
+            return;
+        }
+
+        // Format result message for parent
+        const resultMessage = {
+            role: 'user',
+            content:
+                `Agent ${childAgent.roleName} (${childAgentId}) has completed its task.\n\n` +
+                `Status: ${result.status}\n` +
+                `Summary: ${result.summary}\n` +
+                `Artifacts: ${result.artifacts?.length || 0} files\n` +
+                `Known Issues: ${result.known_issues?.length || 0}\n\n` +
+                'Full result details available via get_agents tool.',
+        };
+
+        // Add message to parent's conversation
+        parentAgent.addMessage(resultMessage);
+
+        this.logger.info(
+            `Notified parent agent ${childAgent.parentId} of child ${childAgentId} completion`
+        );
     }
 
     /**
