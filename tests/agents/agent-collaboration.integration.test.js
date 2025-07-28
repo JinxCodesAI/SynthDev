@@ -76,6 +76,10 @@ describe.sequential('Agent Collaboration Integration', () => {
 
         const agentId = spawnResult.agent_id;
 
+        // Simulate agent finishing execution and becoming inactive
+        const agent = agentManager.activeAgents.get(agentId);
+        agent.markInactive();
+
         // Step 2: Check agent appears in agent list
         const listResult = await get_agents({
             context: mockContext,
@@ -85,9 +89,9 @@ describe.sequential('Agent Collaboration Integration', () => {
         expect(listResult.agents).toHaveLength(1);
         expect(listResult.agents[0].agent_id).toBe(agentId);
         expect(listResult.agents[0].role_name).toBe('test_writer');
-        expect(listResult.agents[0].status).toBe('running');
+        expect(listResult.agents[0].status).toBe('inactive');
         expect(listResult.total_count).toBe(1);
-        expect(listResult.active_count).toBe(1);
+        expect(listResult.active_count).toBe(0); // Agent is inactive
         expect(listResult.completed_count).toBe(0);
 
         // Step 3: Send follow-up message to agent
@@ -100,8 +104,8 @@ describe.sequential('Agent Collaboration Integration', () => {
         expect(speakResult.success).toBe(true);
         expect(speakResult.agent_id).toBe(agentId);
         expect(speakResult.message_sent).toBe(true);
-        expect(speakResult.agent_response).toBe('Mock agent response');
         expect(speakResult.agent_status).toBe('running');
+        expect(speakResult.message).toContain('Message has been sent');
 
         // Step 4: Agent returns results
         const returnResult = await return_results({
@@ -260,7 +264,7 @@ describe.sequential('Agent Collaboration Integration', () => {
 
         expect(speakResult.success).toBe(true);
         expect(speakResult.message_sent).toBe(true);
-        expect(speakResult.agent_response).toBe('Mock agent response');
+        expect(speakResult.message).toContain('Message has been sent');
     });
 
     it('should handle agent failure scenarios', async () => {

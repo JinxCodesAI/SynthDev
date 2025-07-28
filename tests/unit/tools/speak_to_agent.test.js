@@ -9,9 +9,11 @@ describe('speak_to_agent tool', () => {
             agentManager: {
                 getAgentStatus: vi.fn(),
                 sendMessageToAgent: vi.fn().mockResolvedValue({
-                    content: 'Mock agent response',
+                    message_sent: true,
+                    agent_id: 'agent-123',
                     status: 'running',
-                    agentId: 'agent-123',
+                    message:
+                        'Message has been sent, response will be sent in future message. If response blocks your progress wait, otherwise continue operation.',
                 }),
             },
         };
@@ -69,9 +71,9 @@ describe('speak_to_agent tool', () => {
             expect(result.success).toBe(true);
             expect(result.agent_id).toBe('agent-123');
             expect(result.message_sent).toBe(true);
-            expect(result.agent_response).toBe('Mock agent response');
             expect(result.agent_status).toBe('running');
             expect(result.timestamp).toBeDefined();
+            expect(result.message).toContain('Message has been sent');
 
             expect(mockContext.agentManager.getAgentStatus).toHaveBeenCalledWith('agent-123');
             expect(mockContext.agentManager.sendMessageToAgent).toHaveBeenCalledWith(
@@ -226,7 +228,6 @@ describe('speak_to_agent tool', () => {
 
             expect(result).toHaveProperty('agent_id');
             expect(result).toHaveProperty('message_sent');
-            expect(result).toHaveProperty('agent_response');
             expect(result).toHaveProperty('agent_status');
             expect(result).toHaveProperty('message');
         });

@@ -24,10 +24,17 @@ Represents a single, isolated agent instance. Features:
 
 ## Agent Statuses
 
-- **running**: Agent is actively processing tasks and can receive messages
-- **inactive**: Agent finished its response without sending `return_results`
-- **completed**: Agent has finished its primary task by calling `return_results` but can still receive follow-up messages
-- **failed**: Agent encountered an error and cannot process further messages
+- **running**: Agent is actively processing tasks and should NOT be disturbed with new messages
+- **inactive**: Agent finished its response without sending `return_results`, CAN receive messages
+- **completed**: Agent called `return_results` to finish its task, CAN receive messages for clarifications
+- **failed**: Agent encountered an error and CANNOT process messages
+
+### Message Sending Rules
+
+- **running** agents: Cannot receive messages (will throw error)
+- **inactive** agents: Can receive messages to continue work
+- **completed** agents: Can receive messages for corrections or follow-up tasks
+- **failed** agents: Cannot receive messages (will throw error)
 
 ## Usage
 

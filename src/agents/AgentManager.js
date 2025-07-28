@@ -83,17 +83,54 @@ class AgentManager {
             throw new Error(`Agent ${agentId} not found`);
         }
 
+        // Check if agent can receive messages
+        if (agent.status === 'failed') {
+            throw new Error(`Agent ${agentId} has failed and cannot process messages`);
+        }
+
+        if (agent.status === 'running') {
+            throw new Error(`Agent ${agentId} is currently processing and should not be disturbed`);
+        }
+
         // Add message to agent's conversation history
         agent.addMessage({ role: 'user', content: message });
 
-        // Execute agent's API client to get response
-        const response = await agent.execute();
+        // Set agent to running status before execution
+        agent.status = 'running';
+
+        // Execute agent asynchronously and handle status transitions
+        this._executeAgentAsync(agent);
 
         return {
-            content: response,
-            status: agent.status,
-            agentId: agentId,
+            message_sent: true,
+            agent_id: agentId,
+            status: 'running',
+            message:
+                'Message has been sent, response will be sent in future message. If response blocks your progress wait, otherwise continue operation.',
         };
+    }
+
+    /**
+     * Execute agent asynchronously and handle status transitions
+     * @param {AgentProcess} agent - Agent to execute
+     * @private
+     */
+    async _executeAgentAsync(agent) {
+        try {
+            const response = await agent.execute();
+
+            // Check if agent called return_results during execution
+            if (agent.status !== 'completed') {
+                agent.markInactive();
+            }
+
+            this.logger.info(
+                `Agent ${agent.agentId} finished execution with status: ${agent.status}`
+            );
+        } catch (error) {
+            agent.markFailed(error);
+            this.logger.error(`Agent ${agent.agentId} execution failed: ${error.message}`);
+        }
     }
 
     /**

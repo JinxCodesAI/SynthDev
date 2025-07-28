@@ -75,9 +75,11 @@ describe('AgentManager', () => {
             // Create a mock agent first
             mockAgent = {
                 agentId: 'test-agent-id',
-                status: 'running',
+                status: 'inactive', // Agent can receive messages
                 addMessage: vi.fn(),
                 execute: vi.fn().mockResolvedValue('Mock response'),
+                markInactive: vi.fn(),
+                markFailed: vi.fn(),
             };
 
             agentManager.activeAgents.set('test-agent-id', mockAgent);
@@ -90,9 +92,10 @@ describe('AgentManager', () => {
                 role: 'user',
                 content: 'Test message',
             });
-            expect(mockAgent.execute).toHaveBeenCalled();
-            expect(response.content).toBe('Mock response');
-            expect(response.agentId).toBe('test-agent-id');
+            expect(response.message_sent).toBe(true);
+            expect(response.agent_id).toBe('test-agent-id');
+            expect(response.status).toBe('running');
+            expect(response.message).toContain('Message has been sent');
         });
 
         it('should throw error for non-existent agent', async () => {

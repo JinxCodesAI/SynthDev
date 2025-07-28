@@ -79,7 +79,16 @@ class AgentProcess {
      */
     async execute() {
         try {
+            // Set status to running at start of execution
+            this.status = 'running';
+
             const response = await this.apiClient.sendMessage();
+
+            // If execution completes without calling return_results, mark as inactive
+            if (this.status === 'running') {
+                this.markInactive();
+            }
+
             return response;
         } catch (error) {
             this.logger.error(`Agent ${this.agentId} execution failed: ${error.message}`);
