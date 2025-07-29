@@ -2,10 +2,12 @@ import { describe, it, expect, beforeEach, vi } from 'vitest';
 import AgentProcess from '../../src/agents/AgentProcess.js';
 import AIAPIClient from '../../src/core/ai/aiAPIClient.js';
 import SystemMessages from '../../src/core/ai/systemMessages.js';
+import ConfigManager from '../../src/config/managers/configManager.js';
 
 // Mock dependencies
 vi.mock('../../src/core/ai/aiAPIClient.js');
 vi.mock('../../src/core/ai/systemMessages.js');
+vi.mock('../../src/config/managers/configManager.js');
 vi.mock('../../src/core/managers/logger.js', () => ({
     getLogger: vi.fn(() => ({
         info: vi.fn(),
@@ -39,9 +41,33 @@ describe('AgentProcess', () => {
         SystemMessages.getLevel.mockReturnValue('base');
         SystemMessages.getSystemMessage.mockReturnValue('Mock system message for test_writer');
 
-        // Mock environment variables
-        process.env.OPENAI_API_KEY = 'mock-api-key';
-        process.env.OPENAI_BASE_URL = 'https://mock-api.com';
+        // Mock ConfigManager
+        const mockConfigManager = {
+            getModel: vi.fn((level) => {
+                const configs = {
+                    base: {
+                        apiKey: 'mock-api-key',
+                        baseUrl: 'https://mock-api.com',
+                        model: 'gpt-4.1-mini',
+                        baseModel: 'gpt-4.1-mini'
+                    },
+                    smart: {
+                        apiKey: 'mock-api-key',
+                        baseUrl: 'https://mock-api.com',
+                        model: 'smart',
+                        baseModel: 'smart'
+                    },
+                    fast: {
+                        apiKey: 'mock-api-key',
+                        baseUrl: 'https://mock-api.com',
+                        model: 'fast',
+                        baseModel: 'fast'
+                    }
+                };
+                return configs[level] || configs.base;
+            })
+        };
+        ConfigManager.getInstance = vi.fn(() => mockConfigManager);
 
         agentProcess = new AgentProcess(
             'test_writer',
@@ -68,12 +94,18 @@ describe('AgentProcess', () => {
                 mockCostsManager,
                 'mock-api-key',
                 'https://mock-api.com',
-                'base'
+                'gpt-4.1-mini'
             );
         });
 
         it('should get role level from SystemMessages', () => {
             expect(SystemMessages.getLevel).toHaveBeenCalledWith('test_writer');
+        });
+
+        it('should use ConfigManager to get model configuration', () => {
+            expect(ConfigManager.getInstance).toHaveBeenCalled();
+            const mockConfigManager = ConfigManager.getInstance();
+            expect(mockConfigManager.getModel).toHaveBeenCalledWith('base');
         });
 
         it('should set system message and initial task', () => {
