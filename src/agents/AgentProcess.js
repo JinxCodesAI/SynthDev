@@ -1,6 +1,7 @@
 import { randomUUID } from 'crypto';
 import AIAPIClient from '../core/ai/aiAPIClient.js';
 import SystemMessages from '../core/ai/systemMessages.js';
+import ConfigManager from '../config/managers/configManager.js';
 import { getLogger } from '../core/managers/logger.js';
 
 /**
@@ -34,12 +35,16 @@ class AgentProcess {
         // Get role-specific model level
         const level = SystemMessages.getLevel(this.roleName);
 
+        // Get configuration from ConfigManager
+        const config = ConfigManager.getInstance();
+        const modelConfig = config.getModel(level);
+
         // Create isolated API client instance
         this.apiClient = new AIAPIClient(
             costsManager,
-            process.env.OPENAI_API_KEY,
-            process.env.OPENAI_BASE_URL,
-            level
+            modelConfig.apiKey,
+            modelConfig.baseUrl,
+            modelConfig.model || modelConfig.baseModel
         );
 
         // Store references for tool execution context
