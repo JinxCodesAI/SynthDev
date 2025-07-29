@@ -3,7 +3,6 @@
     "description": "Signals task completion and returns structured results to supervisor agent",
     "auto_run": true,
     "version": "1.0.0",
-    "category": "agent_management",
     "tags": ["agents", "completion", "handoff"],
     "schema": {
         "type": "function",
