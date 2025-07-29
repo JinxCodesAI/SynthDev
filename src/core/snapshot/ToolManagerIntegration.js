@@ -48,13 +48,15 @@ export class ToolManagerIntegration {
         toolManager.executeToolCall = async (
             toolCall,
             consoleInterface,
-            snapshotManager = null
+            snapshotManager = null,
+            context = null
         ) => {
             return await this.enhancedExecuteToolCall(
                 originalExecuteToolCall,
                 toolCall,
                 consoleInterface,
-                snapshotManager
+                snapshotManager,
+                context
             );
         };
 
@@ -69,7 +71,8 @@ export class ToolManagerIntegration {
         originalExecuteToolCall,
         toolCall,
         consoleInterface,
-        snapshotManager = null
+        snapshotManager = null,
+        context = null
     ) {
         const toolName = toolCall.function.name;
         const toolArgs = JSON.parse(toolCall.function.arguments);
@@ -78,7 +81,12 @@ export class ToolManagerIntegration {
         try {
             if (!this.config.enabled) {
                 // If integration is disabled, just call original method
-                return await originalExecuteToolCall(toolCall, consoleInterface, snapshotManager);
+                return await originalExecuteToolCall(
+                    toolCall,
+                    consoleInterface,
+                    snapshotManager,
+                    context
+                );
             }
 
             // Before tool execution hook
@@ -88,7 +96,8 @@ export class ToolManagerIntegration {
             const result = await originalExecuteToolCall(
                 toolCall,
                 consoleInterface,
-                snapshotManager
+                snapshotManager,
+                context
             );
 
             // After tool execution hook
