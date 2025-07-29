@@ -64,10 +64,7 @@ class AgentProcess {
         this.apiClient.setSystemMessage(systemMessage);
 
         // Add initial task prompt as user message
-        this.apiClient.addMessage({
-            role: 'user',
-            content: this.taskPrompt,
-        });
+        this.apiClient.addUserMessage(this.taskPrompt);
     }
 
     /**
