@@ -128,9 +128,9 @@ describe('Agent Spawning E2E', () => {
             console.log('🔍 E2E Test: Parsed result:', parsedResult);
 
             expect(parsedResult.success).toBe(true);
-            expect(result.agent_id).toBeDefined();
-            expect(result.role_name).toBe('architect');
-            expect(result.timestamp).toBeDefined();
+            expect(parsedResult.agent_id).toBeDefined();
+            expect(parsedResult.role_name).toBe('architect');
+            expect(parsedResult.timestamp).toBeDefined();
 
             console.log('✅ E2E Test: Agent spawned successfully:', {
                 agent_id: parsedResult.agent_id,
@@ -138,14 +138,15 @@ describe('Agent Spawning E2E', () => {
             });
 
             // Test 4: Verify agent was registered in AgentManager
-            const agents = agentManager.getAgents();
+            const agents = agentManager.listAgents(null); // null for main user
             expect(agents).toHaveLength(1);
-            expect(agents[0].agentId).toBe(result.agent_id);
+            expect(agents[0].agentId).toBe(parsedResult.agent_id);
             expect(agents[0].roleName).toBe('architect');
             expect(agents[0].status).toBe('running');
 
             // Test 5: Verify agent has proper initialization
-            const spawnedAgent = agents[0];
+            const spawnedAgent = agentManager.activeAgents.get(parsedResult.agent_id);
+            expect(spawnedAgent).toBeDefined();
             expect(spawnedAgent.apiClient).toBeDefined();
             expect(spawnedAgent.taskPrompt).toBe(
                 'Design a comprehensive system architecture for a new web application'
@@ -163,7 +164,7 @@ describe('Agent Spawning E2E', () => {
             // Test 7: Verify agent status can be retrieved
             const agentStatus = spawnedAgent.getStatus();
             expect(agentStatus).toBeDefined();
-            expect(agentStatus.agentId).toBe(result.agent_id);
+            expect(agentStatus.agentId).toBe(parsedResult.agent_id);
             expect(agentStatus.status).toBe('running');
             expect(agentStatus.roleName).toBe('architect');
 
@@ -200,9 +201,13 @@ describe('Agent Spawning E2E', () => {
 
             // Should return error result, not throw exception
             expect(result).toBeDefined();
-            expect(result.success).toBe(false);
-            expect(result.error).toBeDefined();
-            expect(typeof result.error).toBe('string');
+
+            // Parse the result if it's in content format
+            const parsedResult = result.content ? JSON.parse(result.content) : result;
+
+            expect(parsedResult.success).toBe(false);
+            expect(parsedResult.error).toBeDefined();
+            expect(typeof parsedResult.error).toBe('string');
         });
 
         it('should validate agent communication workflow', async () => {
@@ -231,7 +236,8 @@ describe('Agent Spawning E2E', () => {
                 executionContext
             );
 
-            expect(spawnResult.success).toBe(true);
+            const parsedSpawnResult = spawnResult.content ? JSON.parse(spawnResult.content) : spawnResult;
+            expect(parsedSpawnResult.success).toBe(true);
 
             // Test get_agents tool
             const getAgentsResult = await toolManager.executeToolCall(
@@ -247,9 +253,10 @@ describe('Agent Spawning E2E', () => {
                 executionContext
             );
 
-            expect(getAgentsResult.success).toBe(true);
-            expect(getAgentsResult.agents).toHaveLength(1);
-            expect(getAgentsResult.agents[0].agent_id).toBe(spawnResult.agent_id);
+            const parsedGetAgentsResult = getAgentsResult.content ? JSON.parse(getAgentsResult.content) : getAgentsResult;
+            expect(parsedGetAgentsResult.success).toBe(true);
+            expect(parsedGetAgentsResult.agents).toHaveLength(1);
+            expect(parsedGetAgentsResult.agents[0].agent_id).toBe(parsedSpawnResult.agent_id);
 
             console.log('✅ E2E Test: Complete agent workflow validated');
         });

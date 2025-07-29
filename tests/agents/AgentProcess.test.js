@@ -32,6 +32,7 @@ describe('AgentProcess', () => {
         mockAPIClient = {
             setSystemMessage: vi.fn(),
             addMessage: vi.fn(),
+            addUserMessage: vi.fn(),
             sendMessage: vi.fn().mockResolvedValue('Mock AI response'),
             messages: [],
         };
@@ -113,10 +114,7 @@ describe('AgentProcess', () => {
             expect(mockAPIClient.setSystemMessage).toHaveBeenCalledWith(
                 'Mock system message for test_writer'
             );
-            expect(mockAPIClient.addMessage).toHaveBeenCalledWith({
-                role: 'user',
-                content: 'Write comprehensive tests',
-            });
+            expect(mockAPIClient.addUserMessage).toHaveBeenCalledWith('Write comprehensive tests');
         });
     });
 
