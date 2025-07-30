@@ -713,6 +713,83 @@ export const testFixtures = {
 };
 ```
 
+### Configuration Fixtures
+
+Configuration fixtures provide controlled, predictable configurations for different test scenarios. They should be used to ensure tests are deterministic and don't depend on external state.
+
+#### Auto-Snapshot Configuration Fixtures
+
+Configuration fixtures are stored in `tests/e2e/fixtures/` and provide different configuration scenarios for reliable testing:
+
+- **`auto-snapshot-enabled.json`**: Full auto-snapshot functionality enabled - for testing snapshot creation, tool execution triggers, and initial snapshots
+- **`auto-snapshot-disabled.json`**: All auto-snapshot features disabled - for testing that functionality is properly disabled when configured off
+- **`auto-snapshot-manual-only.json`**: Only manual snapshots enabled - for testing manual snapshot creation without automatic triggers
+
+#### Fixture Management System
+
+The `ConfigFixtures` class (`tests/helpers/configFixtures.js`) provides:
+
+- **Dynamic Configuration Loading**: Load different fixture configurations at runtime
+- **Mock Configuration Managers**: Create mock configuration managers that use fixture data
+- **Proper Cleanup**: Restore original configurations after tests complete
+- **Configuration Isolation**: Ensure tests don't interfere with each other's configurations
+
+#### Usage Guidelines
+
+1. **Isolation**: Each test should use its own fixture or properly clean up shared fixtures
+2. **Naming**: Fixtures should have descriptive names indicating their purpose (e.g., `auto-snapshot-disabled.json`)
+3. **Documentation**: Complex fixtures should include a `description` field explaining their purpose
+4. **Versioning**: When fixtures change, ensure backward compatibility or update all dependent tests
+5. **Configuration Testing**: Tests should use fixtures instead of live configuration files to ensure reliability
+
+#### Example Usage
+
+```javascript
+import { ConfigFixtures } from '../helpers/configFixtures.js';
+
+describe('Configuration-dependent Tests', () => {
+    let configFixtures;
+    let mockConfigManager;
+    let cleanupFixture;
+
+    beforeEach(() => {
+        // Initialize fixture system
+        configFixtures = new ConfigFixtures();
+
+        // Use disabled configuration for testing
+        mockConfigManager = configFixtures.createMockConfigManager(
+            ConfigFixtures.FIXTURES.AUTO_SNAPSHOT_DISABLED
+        );
+    });
+
+    afterEach(() => {
+        // Clean up fixtures
+        if (cleanupFixture) {
+            cleanupFixture();
+            cleanupFixture = null;
+        }
+        if (configFixtures) {
+            configFixtures.restoreAll();
+        }
+    });
+
+    it('should work with disabled auto-snapshot configuration', async () => {
+        // Apply configuration and test
+        const manager = new AutoSnapshotManager(toolManager);
+        const disabledConfig = configFixtures.loadFixture(
+            ConfigFixtures.FIXTURES.AUTO_SNAPSHOT_DISABLED
+        );
+        manager.updateConfiguration(disabledConfig);
+
+        await manager.initialize();
+
+        // Test that no automatic snapshots are created
+        const snapshots = await manager.snapshotManager.listSnapshots();
+        expect(snapshots.length).toBe(0);
+    });
+});
+```
+
 ## Test Execution Guidelines
 
 ### Running Tests

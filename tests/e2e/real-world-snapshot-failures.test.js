@@ -10,6 +10,7 @@ import { tmpdir } from 'os';
 import { AutoSnapshotManager } from '../../src/core/snapshot/AutoSnapshotManager.js';
 import { SnapshotManager } from '../../src/core/snapshot/SnapshotManager.js';
 import { SnapshotsCommand } from '../../src/commands/snapshots/SnapshotsCommand.js';
+import { ConfigFixtures } from '../helpers/configFixtures.js';
 
 // Mock logger to avoid initialization issues
 vi.mock('../../../src/core/managers/logger.js', () => ({
@@ -22,6 +23,15 @@ vi.mock('../../../src/core/managers/logger.js', () => ({
     initializeLogger: vi.fn(),
 }));
 
+// Create fixture-based configuration
+let configFixtures;
+let mockConfigManager;
+
+// Mock config managers with fixture support
+vi.mock('../../../src/config/managers/snapshotConfigManager.js', () => ({
+    getSnapshotConfigManager: () => mockConfigManager,
+}));
+
 describe.sequential('Real-World Snapshot Failures', () => {
     let testDir;
     let originalCwd;
@@ -29,6 +39,7 @@ describe.sequential('Real-World Snapshot Failures', () => {
     let snapshotManager;
     let snapshotsCommand;
     let mockToolManager;
+    let cleanupFixture;
 
     beforeEach(async () => {
         // Create a real temporary directory for testing
@@ -53,6 +64,15 @@ describe.sequential('Real-World Snapshot Failures', () => {
         // Create subdirectory with empty file
         mkdirSync(join(testDir, 'docs'), { recursive: true });
         writeFileSync(join(testDir, 'docs', '.gitkeep'), '');
+
+        // Initialize fixture system
+        configFixtures = new ConfigFixtures();
+
+        // Use enabled auto-snapshot fixture by default for these tests
+        // (These tests are specifically testing enabled functionality)
+        mockConfigManager = configFixtures.createMockConfigManager(
+            ConfigFixtures.FIXTURES.AUTO_SNAPSHOT_ENABLED
+        );
 
         // Create mock toolManager first
         mockToolManager = {
@@ -86,6 +106,15 @@ describe.sequential('Real-World Snapshot Failures', () => {
     });
 
     afterEach(async () => {
+        // Clean up fixtures
+        if (cleanupFixture) {
+            cleanupFixture();
+            cleanupFixture = null;
+        }
+        if (configFixtures) {
+            configFixtures.restoreAll();
+        }
+
         // Restore original working directory
         if (originalCwd) {
             process.chdir(originalCwd);
