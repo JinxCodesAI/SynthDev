@@ -165,7 +165,35 @@ class SystemMessages {
             );
         }
 
-        return roleConfig.includedTools || [];
+        const includedTools = [...(roleConfig.includedTools || [])];
+        const excludedTools = roleConfig.excludedTools || [];
+
+        // Automatically add agentic tools if enabled_agents is an array (even empty)
+        if (Array.isArray(roleConfig.enabled_agents)) {
+            const agenticTools = ['spawn_agent', 'speak_to_agent', 'get_agents'];
+            agenticTools.forEach(tool => {
+                // Add tool if not already included and not explicitly excluded
+                if (!includedTools.includes(tool) && !excludedTools.includes(tool)) {
+                    includedTools.push(tool);
+                }
+            });
+        }
+
+        // Automatically add task tools if can_create_tasks_for is a non-empty array
+        if (
+            Array.isArray(roleConfig.can_create_tasks_for) &&
+            roleConfig.can_create_tasks_for.length > 0
+        ) {
+            const taskTools = ['list_tasks', 'edit_tasks', 'get_task'];
+            taskTools.forEach(tool => {
+                // Add tool if not already included and not explicitly excluded
+                if (!includedTools.includes(tool) && !excludedTools.includes(tool)) {
+                    includedTools.push(tool);
+                }
+            });
+        }
+
+        return includedTools;
     }
 
     /**
@@ -491,6 +519,22 @@ class SystemMessages {
     static canSpawnAgent(supervisorRole, workerRole) {
         const enabledAgents = SystemMessages.getEnabledAgents(supervisorRole);
         return enabledAgents.includes(workerRole);
+    }
+
+    /**
+     * Get roles that this role can create tasks for
+     * @param {string} role - The role name
+     * @returns {string[]} Array of role names this role can create tasks for
+     */
+    static getCanCreateTasksFor(role) {
+        const instance = new SystemMessages();
+        const roleConfig = instance.roles[role];
+
+        if (!roleConfig) {
+            throw new Error(`Unknown role: ${role}`);
+        }
+
+        return roleConfig.can_create_tasks_for || [];
     }
 
     /**
