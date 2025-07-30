@@ -112,7 +112,7 @@ class SystemMessages {
 ${agentDescriptions}
 
 Use get_agents to understand what agents are already available.
-If agent you need is not available, use spawn_agent to initialize new agent that you need to do something for you.`);
+If agent you need is not available, use spawn_agent to initialize new agent that you need to do something for you. For existing agents use speak_to_agent to communicate with them.`);
         }
 
         // Add task creation instructions if can_create_tasks_for exists and is not empty
