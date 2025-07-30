@@ -106,6 +106,7 @@ export class AutoSnapshotManager {
      */
     async _initializeSnapshotTrigger() {
         const triggerConfig = {
+            ...this.config.autoSnapshot,
             ...this.config.triggerRules,
             ...this.config.descriptionGeneration,
         };
@@ -279,8 +280,12 @@ export class AutoSnapshotManager {
             this.fileChangeDetector.updateConfiguration(newConfig.fileChangeDetection);
         }
 
-        if (this.snapshotTrigger && (newConfig.triggerRules || newConfig.descriptionGeneration)) {
+        if (
+            this.snapshotTrigger &&
+            (newConfig.autoSnapshot || newConfig.triggerRules || newConfig.descriptionGeneration)
+        ) {
             this.snapshotTrigger.updateConfiguration({
+                ...newConfig.autoSnapshot,
                 ...newConfig.triggerRules,
                 ...newConfig.descriptionGeneration,
             });

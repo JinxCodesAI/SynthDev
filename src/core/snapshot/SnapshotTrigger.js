@@ -104,7 +104,13 @@ export class SnapshotTrigger {
      * Determine if a snapshot should be triggered
      * @private
      */
-    _shouldTriggerSnapshot(toolName, args, context) {
+    _shouldTriggerSnapshot(toolName, _args, _context) {
+        // Check if tool execution snapshots are enabled
+        if (!this.config.createOnToolExecution) {
+            this.logger.debug(`Tool execution snapshots disabled, skipping ${toolName}`);
+            return false;
+        }
+
         // Check if tool should create snapshots
         if (!this.toolMonitor.shouldCreateSnapshot(toolName)) {
             this.logger.debug(`Tool ${toolName} does not require snapshot`);
@@ -216,7 +222,7 @@ export class SnapshotTrigger {
      * @param {Object} context - Execution context
      * @returns {Promise<void>}
      */
-    async onExecutionComplete(toolName, results, context) {
+    async onExecutionComplete(toolName, results, _context) {
         this.logger.debug(`Tool execution completed: ${toolName}`, {
             success: results?.success,
             hasErrors: !!results?.error,
@@ -236,7 +242,7 @@ export class SnapshotTrigger {
      * @param {Object} context - Application context
      * @returns {Promise<void>}
      */
-    async onApplicationStart(context) {
+    async onApplicationStart(_context) {
         this.logger.debug('Application started, resetting session state');
 
         // Reset session state
