@@ -3,7 +3,6 @@
     "description": "Sends a message to a previously spawned agent for follow-up instructions or status updates. Check agent status first with get_agents - only inactive and completed agents can receive messages.",
     "auto_run": true,
     "version": "1.0.0",
-    "category": "agent_management",
     "tags": ["agents", "communication", "collaboration"],
     "schema": {
         "type": "function",

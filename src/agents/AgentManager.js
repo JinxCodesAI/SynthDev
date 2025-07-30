@@ -78,6 +78,7 @@ class AgentManager {
      * @returns {Promise<Object>} Agent response
      */
     async sendMessageToAgent(agentId, message) {
+        this.logger.info(`Sending message to agent ${agentId}:`);
         const agent = this.activeAgents.get(agentId);
         if (!agent) {
             throw new Error(`Agent ${agentId} not found`);
@@ -94,6 +95,9 @@ class AgentManager {
 
         // Add message to agent's conversation history
         agent.addMessage({ role: 'user', content: message });
+        this.logger.debug(
+            `💬 Added following message: ${message} \n to agent ${agentId} conversation`
+        );
 
         // Set agent to running status before execution
         agent.status = 'running';

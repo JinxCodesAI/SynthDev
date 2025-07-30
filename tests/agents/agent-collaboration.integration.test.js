@@ -11,6 +11,7 @@ vi.mock('../../src/core/ai/aiAPIClient.js', () => ({
     default: vi.fn().mockImplementation(() => ({
         setSystemMessage: vi.fn(),
         addMessage: vi.fn(),
+        addUserMessage: vi.fn(),
         sendMessage: vi.fn().mockResolvedValue('Mock agent response'),
         messages: [],
     })),

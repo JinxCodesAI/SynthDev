@@ -447,6 +447,14 @@ class AIAPIClient {
         this._pushMessage({ role: 'user', content: userMessage });
     }
 
+    /**
+     * Add a message to the conversation
+     * @param {Object} message - Message object with role and content
+     */
+    addMessage(message) {
+        this._pushMessage(message);
+    }
+
     async _makeAPICall() {
         const config = ConfigManager.getInstance();
 
