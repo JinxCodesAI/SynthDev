@@ -30,6 +30,7 @@ vi.mock('../../src/core/managers/logger.js', () => ({
 describe.sequential('Agent Collaboration Integration', () => {
     let agentManager;
     let mockContext;
+    let mockAPIClient;
 
     beforeEach(() => {
         // Reset singleton and clear mocks
@@ -37,6 +38,15 @@ describe.sequential('Agent Collaboration Integration', () => {
         vi.clearAllMocks();
 
         agentManager = AgentManager.getInstance();
+
+        // Create a mock API client that we can track
+        mockAPIClient = {
+            setSystemMessage: vi.fn(),
+            addMessage: vi.fn(),
+            addUserMessage: vi.fn(),
+            sendMessage: vi.fn().mockResolvedValue('Mock agent response'),
+            messages: [],
+        };
 
         mockContext = {
             agentManager,
@@ -182,6 +192,9 @@ describe.sequential('Agent Collaboration Integration', () => {
         expect(docWriterResult.success).toBe(true);
 
         // Verify all agents are listed
+        // Wait a bit for agents to finish their initial execution
+        await new Promise(resolve => setTimeout(resolve, 50));
+
         const listResult = await get_agents({
             context: mockContext,
         });
@@ -189,7 +202,7 @@ describe.sequential('Agent Collaboration Integration', () => {
         expect(listResult.success).toBe(true);
         expect(listResult.agents).toHaveLength(3);
         expect(listResult.total_count).toBe(3);
-        expect(listResult.active_count).toBe(3);
+        expect(listResult.active_count).toBe(0); // Agents should be inactive after initial execution
 
         // Complete one agent
         await return_results({
@@ -207,7 +220,7 @@ describe.sequential('Agent Collaboration Integration', () => {
             context: mockContext,
         });
 
-        expect(updatedListResult.active_count).toBe(2);
+        expect(updatedListResult.active_count).toBe(0); // All agents should be inactive after initial execution
         expect(updatedListResult.completed_count).toBe(1);
     });
 
@@ -335,7 +348,7 @@ describe.sequential('Agent Collaboration Integration', () => {
 
         expect(filteredResult.agents).toHaveLength(1);
         expect(filteredResult.agents[0].agent_id).toBe(agent2Result.agent_id);
-        expect(filteredResult.agents[0].status).toBe('running');
+        expect(filteredResult.agents[0].status).toBe('inactive'); // Agent should be inactive after initial execution
 
         // Test including all agents
         const allAgentsResult = await get_agents({
@@ -362,5 +375,51 @@ describe.sequential('Agent Collaboration Integration', () => {
         // Verify agent knows its parent (null for main user)
         const agentStatus = agentManager.getAgentStatus(spawnResult.agent_id);
         expect(agentStatus.parentId).toBe(null);
+    });
+
+    it('should properly initialize agent with task prompt and execute it', async () => {
+        // Import AIAPIClient to access the mock
+        const AIAPIClient = (await import('../../src/core/ai/aiAPIClient.js')).default;
+
+        // Spawn agent
+        const spawnResult = await spawn_agent({
+            role_name: 'test_writer',
+            task_prompt: 'Write comprehensive unit tests for the user authentication module',
+            context: mockContext,
+        });
+
+        expect(spawnResult.success).toBe(true);
+        expect(spawnResult.agent_id).toBeDefined();
+
+        // Get the agent instance
+        const agent = agentManager.activeAgents.get(spawnResult.agent_id);
+        expect(agent).toBeDefined();
+
+        // Verify that the API client was created and configured correctly
+        expect(AIAPIClient).toHaveBeenCalled();
+
+        // Get the mock API client instance that was created for this agent
+        const apiClientInstance =
+            AIAPIClient.mock.results[AIAPIClient.mock.results.length - 1].value;
+
+        // Verify system message was set
+        expect(apiClientInstance.setSystemMessage).toHaveBeenCalledWith('Mock system message');
+
+        // Verify initial task prompt was added to conversation (not sent immediately)
+        expect(apiClientInstance.addMessage).toHaveBeenCalledWith({
+            role: 'user',
+            content: 'Write comprehensive unit tests for the user authentication module',
+        });
+
+        // Verify that the agent was executed (sendMessage should have been called)
+        // This happens asynchronously, so we need to wait a bit
+        await new Promise(resolve => setTimeout(resolve, 10));
+        expect(apiClientInstance.sendMessage).toHaveBeenCalled();
+
+        // Verify agent is in the expected state after initialization
+        expect(agent.taskPrompt).toBe(
+            'Write comprehensive unit tests for the user authentication module'
+        );
+        expect(agent.roleName).toBe('test_writer');
     });
 });

@@ -63,6 +63,9 @@ class AgentManager {
             `Spawned ${workerRoleName} agent ${agent.agentId} for supervisor ${supervisorAgentId || 'user'}`
         );
 
+        // Execute agent asynchronously to process the initial task prompt
+        this._executeAgentAsync(agent);
+
         return {
             agentId: agent.agentId,
             status: agent.status,
