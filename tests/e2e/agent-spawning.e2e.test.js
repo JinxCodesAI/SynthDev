@@ -236,7 +236,9 @@ describe('Agent Spawning E2E', () => {
                 executionContext
             );
 
-            const parsedSpawnResult = spawnResult.content ? JSON.parse(spawnResult.content) : spawnResult;
+            const parsedSpawnResult = spawnResult.content
+                ? JSON.parse(spawnResult.content)
+                : spawnResult;
             expect(parsedSpawnResult.success).toBe(true);
 
             // Test get_agents tool
@@ -253,7 +255,9 @@ describe('Agent Spawning E2E', () => {
                 executionContext
             );
 
-            const parsedGetAgentsResult = getAgentsResult.content ? JSON.parse(getAgentsResult.content) : getAgentsResult;
+            const parsedGetAgentsResult = getAgentsResult.content
+                ? JSON.parse(getAgentsResult.content)
+                : getAgentsResult;
             expect(parsedGetAgentsResult.success).toBe(true);
             expect(parsedGetAgentsResult.agents).toHaveLength(1);
             expect(parsedGetAgentsResult.agents[0].agent_id).toBe(parsedSpawnResult.agent_id);

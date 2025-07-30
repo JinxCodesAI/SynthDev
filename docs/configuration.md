@@ -377,8 +377,8 @@ Edit `src/config/snapshots/auto-snapshot-defaults.json`:
 ```json
 {
     "autoSnapshot": {
-        "enabled": true,
-        "createOnToolExecution": true
+        "enabled": false,
+        "createOnToolExecution": false
     },
     "toolDeclarations": {
         "defaultModifiesFiles": false,

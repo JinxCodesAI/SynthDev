@@ -1,0 +1,1312 @@
+
+💭 You: You Are in empty git repository I want you to create fully functional and modern looking  image cropper app from scratch
+🐛 Debug: 🔍 DEBUG: _processMessage called for role
+pm
+
+🧠 Synth-Dev is thinking...
+
+🐛 Debug: 🤖 google/gemini-2.5-pro usage: 2669 tokens, 2463 prompt tokens, 206 completion tokens
+🐛 Debug: 🔍 DEBUG: Parsing tools for role
+pm
+🐛 Debug: 🔍 DEBUG: Tool calls in response:
+[ 'edit_tasks' ]
+🐛 Debug: 🔍 DEBUG: Parsing tool calls found:
+0
+🐛 Debug: AI response contains tool calls
+🔧 Executing tools...
+
+🔧 Executing tool: edit_tasks
+📝 Arguments: {
+  tasks: [
+    {
+      description: 'Create a fully functional and modern looking image cropper app from scratch.',
+      title: 'Image Cropper App'
+    }
+  ]
+}
+✅ Tool result: {
+  success: true,
+  timestamp: '2025-07-30T10:40:31.175Z',
+  tool_name: 'edit_tasks',
+  processed_tasks: [ { index: 0, action: 'created', task: [Object] } ],
+  current_task_list: [
+    {
+      id: 'd2e8bf25-e5b5-42cc-8c1a-ff527a49d4e9',
+      title: 'Image Cropper App',
+      status: 'not_started',
+      level: 0
+    }
+  ]
+}
+
+🐛 Debug: 🤖 google/gemini-2.5-pro usage: 2293 tokens, 2120 prompt tokens, 173 completion tokens
+🔧 Executing tool: spawn_agent
+📝 Arguments: {
+  role_name: 'architect',
+  task_prompt: 'I need you to design and implement a fully functional and modern looking image cropper app from scratch. Please start with the project structure and frontend framework selection. I have created a task for you with ID d2e8bf25-e5b5-42cc-8c1a-ff527a49d4e9.'
+}
+ℹ️ Spawned architect agent 8f6134f4-cc5f-47ac-b72d-50fa9bd23629 for supervisor user
+✅ Tool result: {
+  success: true,
+  timestamp: '2025-07-30T10:40:35.526Z',
+  tool_name: 'spawn_agent',
+  agent_id: '8f6134f4-cc5f-47ac-b72d-50fa9bd23629',
+  status: 'running',
+  role_name: 'architect',
+  created_at: 2025-07-30T10:40:35.525Z,
+  message: 'Successfully spawned architect agent with ID: 8f6134f4-cc5f-47ac-b72d-50fa9bd23629. Continue spawning other agents if necessary or wait for messages with results'
+}
+
+🐛 Debug: 🤖 google/gemini-2.5-pro usage: 2679 tokens, 2366 prompt tokens, 313 completion tokens
+🔧 Executing tool: edit_tasks
+📝 Arguments: {
+  tasks: [
+    {
+      title: 'Project Monitoring',
+      description: 'Monitor the progress of the architect agent and the overall project.',
+      parent: 'd2e8bf25-e5b5-42cc-8c1a-ff527a49d4e9'
+    }
+  ]
+}
+✅ Tool result: {
+  success: true,
+  timestamp: '2025-07-30T10:40:40.347Z',
+  tool_name: 'edit_tasks',
+  processed_tasks: [ { index: 0, action: 'created', task: [Object] } ],
+  current_task_list: [
+    {
+      id: 'd2e8bf25-e5b5-42cc-8c1a-ff527a49d4e9',
+      title: 'Image Cropper App',
+      status: 'not_started',
+      level: 0
+    },
+    {
+      id: '82ddb112-fc97-415c-976b-36fd7cc9c99a',
+      title: '  Project Monitoring',
+      status: 'not_started',
+      level: 1
+    }
+  ]
+}
+
+🐛 Debug: 🤖 google/gemini-2.5-pro usage: 3568 tokens, 3485 prompt tokens, 83 completion tokens
+🔧 Executing tool: get_agents
+📝 Arguments: {}
+✅ Tool result: {
+  success: true,
+  timestamp: '2025-07-30T10:40:58.053Z',
+  tool_name: 'get_agents',
+  agents: [
+    {
+      agent_id: '8f6134f4-cc5f-47ac-b72d-50fa9bd23629',
+      role_name: 'architect',
+      status: 'running',
+      created_at: 2025-07-30T10:40:35.525Z,
+      task_prompt: 'I need you to design and implement a fully functional and modern looking image cropper app from scra...',
+      has_result: false,
+      parent_id: null
+    }
+  ],
+  total_count: 1,
+  active_count: 1,
+  completed_count: 0,
+  failed_count: 0,
+  include_completed: true,
+  message: 'Found 1 agents'
+}
+
+🐛 Debug: 🤖 google/gemini-2.5-pro usage: 3159 tokens, 2890 prompt tokens, 269 completion tokens
+🔧 Executing tool: get_agents
+📝 Arguments: {}
+✅ Tool result: {
+  success: true,
+  timestamp: '2025-07-30T10:41:03.927Z',
+  tool_name: 'get_agents',
+  agents: [
+    {
+      agent_id: '8f6134f4-cc5f-47ac-b72d-50fa9bd23629',
+      role_name: 'architect',
+      status: 'running',
+      created_at: 2025-07-30T10:40:35.525Z,
+      task_prompt: 'I need you to design and implement a fully functional and modern looking image cropper app from scra...',
+      has_result: false,
+      parent_id: null
+    }
+  ],
+  total_count: 1,
+  active_count: 1,
+  completed_count: 0,
+  failed_count: 0,
+  include_completed: true,
+  message: 'Found 1 agents'
+}
+
+🐛 Debug: 🤖 google/gemini-2.5-pro usage: 3110 tokens, 3091 prompt tokens, 19 completion tokens
+🔧 Executing tool: get_agents
+📝 Arguments: {}
+✅ Tool result: {
+  success: true,
+  timestamp: '2025-07-30T10:41:06.719Z',
+  tool_name: 'get_agents',
+  agents: [
+    {
+      agent_id: '8f6134f4-cc5f-47ac-b72d-50fa9bd23629',
+      role_name: 'architect',
+      status: 'running',
+      created_at: 2025-07-30T10:40:35.525Z,
+      task_prompt: 'I need you to design and implement a fully functional and modern looking image cropper app from scra...',
+      has_result: false,
+      parent_id: null
+    }
+  ],
+  total_count: 1,
+  active_count: 1,
+  completed_count: 0,
+  failed_count: 0,
+  include_completed: true,
+  message: 'Found 1 agents'
+}
+
+🐛 Debug: 🤖 google/gemini-2.5-pro usage: 3294 tokens, 3275 prompt tokens, 19 completion tokens
+🔧 Executing tool: get_agents
+📝 Arguments: {}
+✅ Tool result: {
+  success: true,
+  timestamp: '2025-07-30T10:41:08.441Z',
+  tool_name: 'get_agents',
+  agents: [
+    {
+      agent_id: '8f6134f4-cc5f-47ac-b72d-50fa9bd23629',
+      role_name: 'architect',
+      status: 'running',
+      created_at: 2025-07-30T10:40:35.525Z,
+      task_prompt: 'I need you to design and implement a fully functional and modern looking image cropper app from scra...',
+      has_result: false,
+      parent_id: null
+    }
+  ],
+  total_count: 1,
+  active_count: 1,
+  completed_count: 0,
+  failed_count: 0,
+  include_completed: true,
+  message: 'Found 1 agents'
+}
+
+🐛 Debug: 🤖 google/gemini-2.5-pro usage: 3478 tokens, 3459 prompt tokens, 19 completion tokens
+🔧 Executing tool: get_agents
+📝 Arguments: {}
+✅ Tool result: {
+  success: true,
+  timestamp: '2025-07-30T10:41:09.858Z',
+  tool_name: 'get_agents',
+  agents: [
+    {
+      agent_id: '8f6134f4-cc5f-47ac-b72d-50fa9bd23629',
+      role_name: 'architect',
+      status: 'running',
+      created_at: 2025-07-30T10:40:35.525Z,
+      task_prompt: 'I need you to design and implement a fully functional and modern looking image cropper app from scra...',
+      has_result: false,
+      parent_id: null
+    }
+  ],
+  total_count: 1,
+  active_count: 1,
+  completed_count: 0,
+  failed_count: 0,
+  include_completed: true,
+  message: 'Found 1 agents'
+}
+
+🐛 Debug: 🤖 google/gemini-2.5-pro usage: 3662 tokens, 3643 prompt tokens, 19 completion tokens
+🔧 Executing tool: get_agents
+📝 Arguments: {}
+✅ Tool result: {
+  success: true,
+  timestamp: '2025-07-30T10:41:11.377Z',
+  tool_name: 'get_agents',
+  agents: [
+    {
+      agent_id: '8f6134f4-cc5f-47ac-b72d-50fa9bd23629',
+      role_name: 'architect',
+      status: 'running',
+      created_at: 2025-07-30T10:40:35.525Z,
+      task_prompt: 'I need you to design and implement a fully functional and modern looking image cropper app from scra...',
+      has_result: false,
+      parent_id: null
+    }
+  ],
+  total_count: 1,
+  active_count: 1,
+  completed_count: 0,
+  failed_count: 0,
+  include_completed: true,
+  message: 'Found 1 agents'
+}
+
+🐛 Debug: 🤖 google/gemini-2.5-pro usage: 3846 tokens, 3827 prompt tokens, 19 completion tokens
+🔧 Executing tool: get_agents
+📝 Arguments: {}
+✅ Tool result: {
+  success: true,
+  timestamp: '2025-07-30T10:41:12.872Z',
+  tool_name: 'get_agents',
+  agents: [
+    {
+      agent_id: '8f6134f4-cc5f-47ac-b72d-50fa9bd23629',
+      role_name: 'architect',
+      status: 'running',
+      created_at: 2025-07-30T10:40:35.525Z,
+      task_prompt: 'I need you to design and implement a fully functional and modern looking image cropper app from scra...',
+      has_result: false,
+      parent_id: null
+    }
+  ],
+  total_count: 1,
+  active_count: 1,
+  completed_count: 0,
+  failed_count: 0,
+  include_completed: true,
+  message: 'Found 1 agents'
+}
+
+🐛 Debug: 🤖 google/gemini-2.5-pro usage: 4030 tokens, 4011 prompt tokens, 19 completion tokens
+🔧 Executing tool: get_agents
+📝 Arguments: {}
+✅ Tool result: {
+  success: true,
+  timestamp: '2025-07-30T10:41:14.723Z',
+  tool_name: 'get_agents',
+  agents: [
+    {
+      agent_id: '8f6134f4-cc5f-47ac-b72d-50fa9bd23629',
+      role_name: 'architect',
+      status: 'running',
+      created_at: 2025-07-30T10:40:35.525Z,
+      task_prompt: 'I need you to design and implement a fully functional and modern looking image cropper app from scra...',
+      has_result: false,
+      parent_id: null
+    }
+  ],
+  total_count: 1,
+  active_count: 1,
+  completed_count: 0,
+  failed_count: 0,
+  include_completed: true,
+  message: 'Found 1 agents'
+}
+
+🐛 Debug: 🤖 google/gemini-2.5-pro usage: 4214 tokens, 4195 prompt tokens, 19 completion tokens
+🔧 Executing tool: get_agents
+📝 Arguments: {}
+✅ Tool result: {
+  success: true,
+  timestamp: '2025-07-30T10:41:16.365Z',
+  tool_name: 'get_agents',
+  agents: [
+    {
+      agent_id: '8f6134f4-cc5f-47ac-b72d-50fa9bd23629',
+      role_name: 'architect',
+      status: 'running',
+      created_at: 2025-07-30T10:40:35.525Z,
+      task_prompt: 'I need you to design and implement a fully functional and modern looking image cropper app from scra...',
+      has_result: false,
+      parent_id: null
+    }
+  ],
+  total_count: 1,
+  active_count: 1,
+  completed_count: 0,
+  failed_count: 0,
+  include_completed: true,
+  message: 'Found 1 agents'
+}
+
+🐛 Debug: 🤖 google/gemini-2.5-pro usage: 4398 tokens, 4379 prompt tokens, 19 completion tokens
+🔧 Executing tool: get_agents
+📝 Arguments: {}
+✅ Tool result: {
+  success: true,
+  timestamp: '2025-07-30T10:41:18.122Z',
+  tool_name: 'get_agents',
+  agents: [
+    {
+      agent_id: '8f6134f4-cc5f-47ac-b72d-50fa9bd23629',
+      role_name: 'architect',
+      status: 'running',
+      created_at: 2025-07-30T10:40:35.525Z,
+      task_prompt: 'I need you to design and implement a fully functional and modern looking image cropper app from scra...',
+      has_result: false,
+      parent_id: null
+    }
+  ],
+  total_count: 1,
+  active_count: 1,
+  completed_count: 0,
+  failed_count: 0,
+  include_completed: true,
+  message: 'Found 1 agents'
+}
+
+🐛 Debug: 🤖 google/gemini-2.5-pro usage: 4582 tokens, 4563 prompt tokens, 19 completion tokens
+🔧 Executing tool: get_agents
+📝 Arguments: {}
+✅ Tool result: {
+  success: true,
+  timestamp: '2025-07-30T10:41:19.835Z',
+  tool_name: 'get_agents',
+  agents: [
+    {
+      agent_id: '8f6134f4-cc5f-47ac-b72d-50fa9bd23629',
+      role_name: 'architect',
+      status: 'running',
+      created_at: 2025-07-30T10:40:35.525Z,
+      task_prompt: 'I need you to design and implement a fully functional and modern looking image cropper app from scra...',
+      has_result: false,
+      parent_id: null
+    }
+  ],
+  total_count: 1,
+  active_count: 1,
+  completed_count: 0,
+  failed_count: 0,
+  include_completed: true,
+  message: 'Found 1 agents'
+}
+
+🐛 Debug: 🤖 google/gemini-2.5-pro usage: 4766 tokens, 4747 prompt tokens, 19 completion tokens
+🔧 Executing tool: get_agents
+📝 Arguments: {}
+✅ Tool result: {
+  success: true,
+  timestamp: '2025-07-30T10:41:21.938Z',
+  tool_name: 'get_agents',
+  agents: [
+    {
+      agent_id: '8f6134f4-cc5f-47ac-b72d-50fa9bd23629',
+      role_name: 'architect',
+      status: 'running',
+      created_at: 2025-07-30T10:40:35.525Z,
+      task_prompt: 'I need you to design and implement a fully functional and modern looking image cropper app from scra...',
+      has_result: false,
+      parent_id: null
+    }
+  ],
+  total_count: 1,
+  active_count: 1,
+  completed_count: 0,
+  failed_count: 0,
+  include_completed: true,
+  message: 'Found 1 agents'
+}
+
+🐛 Debug: 🤖 google/gemini-2.5-pro usage: 4950 tokens, 4931 prompt tokens, 19 completion tokens
+🔧 Executing tool: get_agents
+📝 Arguments: {}
+✅ Tool result: {
+  success: true,
+  timestamp: '2025-07-30T10:41:23.562Z',
+  tool_name: 'get_agents',
+  agents: [
+    {
+      agent_id: '8f6134f4-cc5f-47ac-b72d-50fa9bd23629',
+      role_name: 'architect',
+      status: 'running',
+      created_at: 2025-07-30T10:40:35.525Z,
+      task_prompt: 'I need you to design and implement a fully functional and modern looking image cropper app from scra...',
+      has_result: false,
+      parent_id: null
+    }
+  ],
+  total_count: 1,
+  active_count: 1,
+  completed_count: 0,
+  failed_count: 0,
+  include_completed: true,
+  message: 'Found 1 agents'
+}
+
+🐛 Debug: 🤖 google/gemini-2.5-pro usage: 5134 tokens, 5115 prompt tokens, 19 completion tokens
+🔧 Executing tool: get_agents
+📝 Arguments: {}
+✅ Tool result: {
+  success: true,
+  timestamp: '2025-07-30T10:41:25.477Z',
+  tool_name: 'get_agents',
+  agents: [
+    {
+      agent_id: '8f6134f4-cc5f-47ac-b72d-50fa9bd23629',
+      role_name: 'architect',
+      status: 'running',
+      created_at: 2025-07-30T10:40:35.525Z,
+      task_prompt: 'I need you to design and implement a fully functional and modern looking image cropper app from scra...',
+      has_result: false,
+      parent_id: null
+    }
+  ],
+  total_count: 1,
+  active_count: 1,
+  completed_count: 0,
+  failed_count: 0,
+  include_completed: true,
+  message: 'Found 1 agents'
+}
+
+🐛 Debug: 🤖 google/gemini-2.5-pro usage: 5318 tokens, 5299 prompt tokens, 19 completion tokens
+🔧 Executing tool: get_agents
+📝 Arguments: {}
+✅ Tool result: {
+  success: true,
+  timestamp: '2025-07-30T10:41:27.178Z',
+  tool_name: 'get_agents',
+  agents: [
+    {
+      agent_id: '8f6134f4-cc5f-47ac-b72d-50fa9bd23629',
+      role_name: 'architect',
+      status: 'running',
+      created_at: 2025-07-30T10:40:35.525Z,
+      task_prompt: 'I need you to design and implement a fully functional and modern looking image cropper app from scra...',
+      has_result: false,
+      parent_id: null
+    }
+  ],
+  total_count: 1,
+  active_count: 1,
+  completed_count: 0,
+  failed_count: 0,
+  include_completed: true,
+  message: 'Found 1 agents'
+}
+
+🐛 Debug: 🤖 google/gemini-2.5-pro usage: 5502 tokens, 5483 prompt tokens, 19 completion tokens
+🔧 Executing tool: get_agents
+📝 Arguments: {}
+✅ Tool result: {
+  success: true,
+  timestamp: '2025-07-30T10:41:29.069Z',
+  tool_name: 'get_agents',
+  agents: [
+    {
+      agent_id: '8f6134f4-cc5f-47ac-b72d-50fa9bd23629',
+      role_name: 'architect',
+      status: 'running',
+      created_at: 2025-07-30T10:40:35.525Z,
+      task_prompt: 'I need you to design and implement a fully functional and modern looking image cropper app from scra...',
+      has_result: false,
+      parent_id: null
+    }
+  ],
+  total_count: 1,
+  active_count: 1,
+  completed_count: 0,
+  failed_count: 0,
+  include_completed: true,
+  message: 'Found 1 agents'
+}
+
+🐛 Debug: 🤖 google/gemini-2.5-pro usage: 5686 tokens, 5667 prompt tokens, 19 completion tokens
+🔧 Executing tool: get_agents
+📝 Arguments: {}
+✅ Tool result: {
+  success: true,
+  timestamp: '2025-07-30T10:41:30.989Z',
+  tool_name: 'get_agents',
+  agents: [
+    {
+      agent_id: '8f6134f4-cc5f-47ac-b72d-50fa9bd23629',
+      role_name: 'architect',
+      status: 'running',
+      created_at: 2025-07-30T10:40:35.525Z,
+      task_prompt: 'I need you to design and implement a fully functional and modern looking image cropper app from scra...',
+      has_result: false,
+      parent_id: null
+    }
+  ],
+  total_count: 1,
+  active_count: 1,
+  completed_count: 0,
+  failed_count: 0,
+  include_completed: true,
+  message: 'Found 1 agents'
+}
+
+🐛 Debug: 🤖 google/gemini-2.5-pro usage: 5870 tokens, 5851 prompt tokens, 19 completion tokens
+🔧 Executing tool: get_agents
+📝 Arguments: {}
+✅ Tool result: {
+  success: true,
+  timestamp: '2025-07-30T10:41:32.751Z',
+  tool_name: 'get_agents',
+  agents: [
+    {
+      agent_id: '8f6134f4-cc5f-47ac-b72d-50fa9bd23629',
+      role_name: 'architect',
+      status: 'running',
+      created_at: 2025-07-30T10:40:35.525Z,
+      task_prompt: 'I need you to design and implement a fully functional and modern looking image cropper app from scra...',
+      has_result: false,
+      parent_id: null
+    }
+  ],
+  total_count: 1,
+  active_count: 1,
+  completed_count: 0,
+  failed_count: 0,
+  include_completed: true,
+  message: 'Found 1 agents'
+}
+
+🐛 Debug: 🤖 google/gemini-2.5-pro usage: 6054 tokens, 6035 prompt tokens, 19 completion tokens
+🔧 Executing tool: get_agents
+📝 Arguments: {}
+✅ Tool result: {
+  success: true,
+  timestamp: '2025-07-30T10:41:34.468Z',
+  tool_name: 'get_agents',
+  agents: [
+    {
+      agent_id: '8f6134f4-cc5f-47ac-b72d-50fa9bd23629',
+      role_name: 'architect',
+      status: 'running',
+      created_at: 2025-07-30T10:40:35.525Z,
+      task_prompt: 'I need you to design and implement a fully functional and modern looking image cropper app from scra...',
+      has_result: false,
+      parent_id: null
+    }
+  ],
+  total_count: 1,
+  active_count: 1,
+  completed_count: 0,
+  failed_count: 0,
+  include_completed: true,
+  message: 'Found 1 agents'
+}
+
+🐛 Debug: 🤖 google/gemini-2.5-pro usage: 6238 tokens, 6219 prompt tokens, 19 completion tokens
+🔧 Executing tool: get_agents
+📝 Arguments: {}
+✅ Tool result: {
+  success: true,
+  timestamp: '2025-07-30T10:41:36.199Z',
+  tool_name: 'get_agents',
+  agents: [
+    {
+      agent_id: '8f6134f4-cc5f-47ac-b72d-50fa9bd23629',
+      role_name: 'architect',
+      status: 'running',
+      created_at: 2025-07-30T10:40:35.525Z,
+      task_prompt: 'I need you to design and implement a fully functional and modern looking image cropper app from scra...',
+      has_result: false,
+      parent_id: null
+    }
+  ],
+  total_count: 1,
+  active_count: 1,
+  completed_count: 0,
+  failed_count: 0,
+  include_completed: true,
+  message: 'Found 1 agents'
+}
+
+🐛 Debug: 🤖 google/gemini-2.5-pro usage: 6422 tokens, 6403 prompt tokens, 19 completion tokens
+🔧 Executing tool: get_agents
+📝 Arguments: {}
+✅ Tool result: {
+  success: true,
+  timestamp: '2025-07-30T10:41:38.144Z',
+  tool_name: 'get_agents',
+  agents: [
+    {
+      agent_id: '8f6134f4-cc5f-47ac-b72d-50fa9bd23629',
+      role_name: 'architect',
+      status: 'running',
+      created_at: 2025-07-30T10:40:35.525Z,
+      task_prompt: 'I need you to design and implement a fully functional and modern looking image cropper app from scra...',
+      has_result: false,
+      parent_id: null
+    }
+  ],
+  total_count: 1,
+  active_count: 1,
+  completed_count: 0,
+  failed_count: 0,
+  include_completed: true,
+  message: 'Found 1 agents'
+}
+
+🐛 Debug: 🤖 google/gemini-2.5-pro usage: 6606 tokens, 6587 prompt tokens, 19 completion tokens
+🔧 Executing tool: get_agents
+📝 Arguments: {}
+✅ Tool result: {
+  success: true,
+  timestamp: '2025-07-30T10:41:39.950Z',
+  tool_name: 'get_agents',
+  agents: [
+    {
+      agent_id: '8f6134f4-cc5f-47ac-b72d-50fa9bd23629',
+      role_name: 'architect',
+      status: 'running',
+      created_at: 2025-07-30T10:40:35.525Z,
+      task_prompt: 'I need you to design and implement a fully functional and modern looking image cropper app from scra...',
+      has_result: false,
+      parent_id: null
+    }
+  ],
+  total_count: 1,
+  active_count: 1,
+  completed_count: 0,
+  failed_count: 0,
+  include_completed: true,
+  message: 'Found 1 agents'
+}
+
+🐛 Debug: 🤖 google/gemini-2.5-pro usage: 6790 tokens, 6771 prompt tokens, 19 completion tokens
+🔧 Executing tool: get_agents
+📝 Arguments: {}
+✅ Tool result: {
+  success: true,
+  timestamp: '2025-07-30T10:41:41.524Z',
+  tool_name: 'get_agents',
+  agents: [
+    {
+      agent_id: '8f6134f4-cc5f-47ac-b72d-50fa9bd23629',
+      role_name: 'architect',
+      status: 'running',
+      created_at: 2025-07-30T10:40:35.525Z,
+      task_prompt: 'I need you to design and implement a fully functional and modern looking image cropper app from scra...',
+      has_result: false,
+      parent_id: null
+    }
+  ],
+  total_count: 1,
+  active_count: 1,
+  completed_count: 0,
+  failed_count: 0,
+  include_completed: true,
+  message: 'Found 1 agents'
+}
+
+🐛 Debug: 🤖 google/gemini-2.5-pro usage: 6974 tokens, 6955 prompt tokens, 19 completion tokens
+🔧 Executing tool: get_agents
+📝 Arguments: {}
+✅ Tool result: {
+  success: true,
+  timestamp: '2025-07-30T10:41:43.012Z',
+  tool_name: 'get_agents',
+  agents: [
+    {
+      agent_id: '8f6134f4-cc5f-47ac-b72d-50fa9bd23629',
+      role_name: 'architect',
+      status: 'running',
+      created_at: 2025-07-30T10:40:35.525Z,
+      task_prompt: 'I need you to design and implement a fully functional and modern looking image cropper app from scra...',
+      has_result: false,
+      parent_id: null
+    }
+  ],
+  total_count: 1,
+  active_count: 1,
+  completed_count: 0,
+  failed_count: 0,
+  include_completed: true,
+  message: 'Found 1 agents'
+}
+
+🐛 Debug: 🤖 google/gemini-2.5-pro usage: 7158 tokens, 7139 prompt tokens, 19 completion tokens
+🔧 Executing tool: get_agents
+📝 Arguments: {}
+✅ Tool result: {
+  success: true,
+  timestamp: '2025-07-30T10:41:44.822Z',
+  tool_name: 'get_agents',
+  agents: [
+    {
+      agent_id: '8f6134f4-cc5f-47ac-b72d-50fa9bd23629',
+      role_name: 'architect',
+      status: 'running',
+      created_at: 2025-07-30T10:40:35.525Z,
+      task_prompt: 'I need you to design and implement a fully functional and modern looking image cropper app from scra...',
+      has_result: false,
+      parent_id: null
+    }
+  ],
+  total_count: 1,
+  active_count: 1,
+  completed_count: 0,
+  failed_count: 0,
+  include_completed: true,
+  message: 'Found 1 agents'
+}
+
+🐛 Debug: 🤖 google/gemini-2.5-pro usage: 7342 tokens, 7323 prompt tokens, 19 completion tokens
+🔧 Executing tool: get_agents
+📝 Arguments: {}
+✅ Tool result: {
+  success: true,
+  timestamp: '2025-07-30T10:41:46.413Z',
+  tool_name: 'get_agents',
+  agents: [
+    {
+      agent_id: '8f6134f4-cc5f-47ac-b72d-50fa9bd23629',
+      role_name: 'architect',
+      status: 'running',
+      created_at: 2025-07-30T10:40:35.525Z,
+      task_prompt: 'I need you to design and implement a fully functional and modern looking image cropper app from scra...',
+      has_result: false,
+      parent_id: null
+    }
+  ],
+  total_count: 1,
+  active_count: 1,
+  completed_count: 0,
+  failed_count: 0,
+  include_completed: true,
+  message: 'Found 1 agents'
+}
+
+🐛 Debug: 🤖 google/gemini-2.5-pro usage: 7526 tokens, 7507 prompt tokens, 19 completion tokens
+🔧 Executing tool: get_agents
+📝 Arguments: {}
+✅ Tool result: {
+  success: true,
+  timestamp: '2025-07-30T10:41:47.870Z',
+  tool_name: 'get_agents',
+  agents: [
+    {
+      agent_id: '8f6134f4-cc5f-47ac-b72d-50fa9bd23629',
+      role_name: 'architect',
+      status: 'running',
+      created_at: 2025-07-30T10:40:35.525Z,
+      task_prompt: 'I need you to design and implement a fully functional and modern looking image cropper app from scra...',
+      has_result: false,
+      parent_id: null
+    }
+  ],
+  total_count: 1,
+  active_count: 1,
+  completed_count: 0,
+  failed_count: 0,
+  include_completed: true,
+  message: 'Found 1 agents'
+}
+
+🐛 Debug: 🤖 google/gemini-2.5-pro usage: 7710 tokens, 7691 prompt tokens, 19 completion tokens
+🔧 Executing tool: get_agents
+📝 Arguments: {}
+✅ Tool result: {
+  success: true,
+  timestamp: '2025-07-30T10:41:49.241Z',
+  tool_name: 'get_agents',
+  agents: [
+    {
+      agent_id: '8f6134f4-cc5f-47ac-b72d-50fa9bd23629',
+      role_name: 'architect',
+      status: 'running',
+      created_at: 2025-07-30T10:40:35.525Z,
+      task_prompt: 'I need you to design and implement a fully functional and modern looking image cropper app from scra...',
+      has_result: false,
+      parent_id: null
+    }
+  ],
+  total_count: 1,
+  active_count: 1,
+  completed_count: 0,
+  failed_count: 0,
+  include_completed: true,
+  message: 'Found 1 agents'
+}
+
+🐛 Debug: 🤖 google/gemini-2.5-pro usage: 7894 tokens, 7875 prompt tokens, 19 completion tokens
+🔧 Executing tool: get_agents
+📝 Arguments: {}
+✅ Tool result: {
+  success: true,
+  timestamp: '2025-07-30T10:41:50.943Z',
+  tool_name: 'get_agents',
+  agents: [
+    {
+      agent_id: '8f6134f4-cc5f-47ac-b72d-50fa9bd23629',
+      role_name: 'architect',
+      status: 'running',
+      created_at: 2025-07-30T10:40:35.525Z,
+      task_prompt: 'I need you to design and implement a fully functional and modern looking image cropper app from scra...',
+      has_result: false,
+      parent_id: null
+    }
+  ],
+  total_count: 1,
+  active_count: 1,
+  completed_count: 0,
+  failed_count: 0,
+  include_completed: true,
+  message: 'Found 1 agents'
+}
+
+🐛 Debug: 🤖 google/gemini-2.5-pro usage: 8078 tokens, 8059 prompt tokens, 19 completion tokens
+🔧 Executing tool: get_agents
+📝 Arguments: {}
+✅ Tool result: {
+  success: true,
+  timestamp: '2025-07-30T10:41:52.644Z',
+  tool_name: 'get_agents',
+  agents: [
+    {
+      agent_id: '8f6134f4-cc5f-47ac-b72d-50fa9bd23629',
+      role_name: 'architect',
+      status: 'running',
+      created_at: 2025-07-30T10:40:35.525Z,
+      task_prompt: 'I need you to design and implement a fully functional and modern looking image cropper app from scra...',
+      has_result: false,
+      parent_id: null
+    }
+  ],
+  total_count: 1,
+  active_count: 1,
+  completed_count: 0,
+  failed_count: 0,
+  include_completed: true,
+  message: 'Found 1 agents'
+}
+
+🐛 Debug: 🤖 google/gemini-2.5-pro usage: 8262 tokens, 8243 prompt tokens, 19 completion tokens
+🔧 Executing tool: get_agents
+📝 Arguments: {}
+✅ Tool result: {
+  success: true,
+  timestamp: '2025-07-30T10:41:54.196Z',
+  tool_name: 'get_agents',
+  agents: [
+    {
+      agent_id: '8f6134f4-cc5f-47ac-b72d-50fa9bd23629',
+      role_name: 'architect',
+      status: 'running',
+      created_at: 2025-07-30T10:40:35.525Z,
+      task_prompt: 'I need you to design and implement a fully functional and modern looking image cropper app from scra...',
+      has_result: false,
+      parent_id: null
+    }
+  ],
+  total_count: 1,
+  active_count: 1,
+  completed_count: 0,
+  failed_count: 0,
+  include_completed: true,
+  message: 'Found 1 agents'
+}
+
+🐛 Debug: 🤖 google/gemini-2.5-pro usage: 8446 tokens, 8427 prompt tokens, 19 completion tokens
+🔧 Executing tool: get_agents
+📝 Arguments: {}
+✅ Tool result: {
+  success: true,
+  timestamp: '2025-07-30T10:41:55.766Z',
+  tool_name: 'get_agents',
+  agents: [
+    {
+      agent_id: '8f6134f4-cc5f-47ac-b72d-50fa9bd23629',
+      role_name: 'architect',
+      status: 'running',
+      created_at: 2025-07-30T10:40:35.525Z,
+      task_prompt: 'I need you to design and implement a fully functional and modern looking image cropper app from scra...',
+      has_result: false,
+      parent_id: null
+    }
+  ],
+  total_count: 1,
+  active_count: 1,
+  completed_count: 0,
+  failed_count: 0,
+  include_completed: true,
+  message: 'Found 1 agents'
+}
+
+🐛 Debug: 🤖 google/gemini-2.5-pro usage: 8630 tokens, 8611 prompt tokens, 19 completion tokens
+🔧 Executing tool: get_agents
+📝 Arguments: {}
+✅ Tool result: {
+  success: true,
+  timestamp: '2025-07-30T10:41:57.141Z',
+  tool_name: 'get_agents',
+  agents: [
+    {
+      agent_id: '8f6134f4-cc5f-47ac-b72d-50fa9bd23629',
+      role_name: 'architect',
+      status: 'running',
+      created_at: 2025-07-30T10:40:35.525Z,
+      task_prompt: 'I need you to design and implement a fully functional and modern looking image cropper app from scra...',
+      has_result: false,
+      parent_id: null
+    }
+  ],
+  total_count: 1,
+  active_count: 1,
+  completed_count: 0,
+  failed_count: 0,
+  include_completed: true,
+  message: 'Found 1 agents'
+}
+
+🐛 Debug: 🤖 google/gemini-2.5-pro usage: 8814 tokens, 8795 prompt tokens, 19 completion tokens
+🔧 Executing tool: get_agents
+📝 Arguments: {}
+✅ Tool result: {
+  success: true,
+  timestamp: '2025-07-30T10:41:58.545Z',
+  tool_name: 'get_agents',
+  agents: [
+    {
+      agent_id: '8f6134f4-cc5f-47ac-b72d-50fa9bd23629',
+      role_name: 'architect',
+      status: 'running',
+      created_at: 2025-07-30T10:40:35.525Z,
+      task_prompt: 'I need you to design and implement a fully functional and modern looking image cropper app from scra...',
+      has_result: false,
+      parent_id: null
+    }
+  ],
+  total_count: 1,
+  active_count: 1,
+  completed_count: 0,
+  failed_count: 0,
+  include_completed: true,
+  message: 'Found 1 agents'
+}
+
+🐛 Debug: 🤖 google/gemini-2.5-pro usage: 8998 tokens, 8979 prompt tokens, 19 completion tokens
+🔧 Executing tool: get_agents
+📝 Arguments: {}
+✅ Tool result: {
+  success: true,
+  timestamp: '2025-07-30T10:42:00.037Z',
+  tool_name: 'get_agents',
+  agents: [
+    {
+      agent_id: '8f6134f4-cc5f-47ac-b72d-50fa9bd23629',
+      role_name: 'architect',
+      status: 'running',
+      created_at: 2025-07-30T10:40:35.525Z,
+      task_prompt: 'I need you to design and implement a fully functional and modern looking image cropper app from scra...',
+      has_result: false,
+      parent_id: null
+    }
+  ],
+  total_count: 1,
+  active_count: 1,
+  completed_count: 0,
+  failed_count: 0,
+  include_completed: true,
+  message: 'Found 1 agents'
+}
+
+🐛 Debug: 🤖 google/gemini-2.5-pro usage: 9182 tokens, 9163 prompt tokens, 19 completion tokens
+🔧 Executing tool: get_agents
+📝 Arguments: {}
+✅ Tool result: {
+  success: true,
+  timestamp: '2025-07-30T10:42:01.661Z',
+  tool_name: 'get_agents',
+  agents: [
+    {
+      agent_id: '8f6134f4-cc5f-47ac-b72d-50fa9bd23629',
+      role_name: 'architect',
+      status: 'running',
+      created_at: 2025-07-30T10:40:35.525Z,
+      task_prompt: 'I need you to design and implement a fully functional and modern looking image cropper app from scra...',
+      has_result: false,
+      parent_id: null
+    }
+  ],
+  total_count: 1,
+  active_count: 1,
+  completed_count: 0,
+  failed_count: 0,
+  include_completed: true,
+  message: 'Found 1 agents'
+}
+
+🐛 Debug: 🤖 google/gemini-2.5-pro usage: 9366 tokens, 9347 prompt tokens, 19 completion tokens
+🔧 Executing tool: get_agents
+📝 Arguments: {}
+✅ Tool result: {
+  success: true,
+  timestamp: '2025-07-30T10:42:03.228Z',
+  tool_name: 'get_agents',
+  agents: [
+    {
+      agent_id: '8f6134f4-cc5f-47ac-b72d-50fa9bd23629',
+      role_name: 'architect',
+      status: 'running',
+      created_at: 2025-07-30T10:40:35.525Z,
+      task_prompt: 'I need you to design and implement a fully functional and modern looking image cropper app from scra...',
+      has_result: false,
+      parent_id: null
+    }
+  ],
+  total_count: 1,
+  active_count: 1,
+  completed_count: 0,
+  failed_count: 0,
+  include_completed: true,
+  message: 'Found 1 agents'
+}
+
+🐛 Debug: 🤖 google/gemini-2.5-pro usage: 9550 tokens, 9531 prompt tokens, 19 completion tokens
+🔧 Executing tool: get_agents
+📝 Arguments: {}
+✅ Tool result: {
+  success: true,
+  timestamp: '2025-07-30T10:42:05.313Z',
+  tool_name: 'get_agents',
+  agents: [
+    {
+      agent_id: '8f6134f4-cc5f-47ac-b72d-50fa9bd23629',
+      role_name: 'architect',
+      status: 'running',
+      created_at: 2025-07-30T10:40:35.525Z,
+      task_prompt: 'I need you to design and implement a fully functional and modern looking image cropper app from scra...',
+      has_result: false,
+      parent_id: null
+    }
+  ],
+  total_count: 1,
+  active_count: 1,
+  completed_count: 0,
+  failed_count: 0,
+  include_completed: true,
+  message: 'Found 1 agents'
+}
+
+🐛 Debug: 🤖 google/gemini-2.5-pro usage: 9734 tokens, 9715 prompt tokens, 19 completion tokens
+🔧 Executing tool: get_agents
+📝 Arguments: {}
+✅ Tool result: {
+  success: true,
+  timestamp: '2025-07-30T10:42:06.902Z',
+  tool_name: 'get_agents',
+  agents: [
+    {
+      agent_id: '8f6134f4-cc5f-47ac-b72d-50fa9bd23629',
+      role_name: 'architect',
+      status: 'running',
+      created_at: 2025-07-30T10:40:35.525Z,
+      task_prompt: 'I need you to design and implement a fully functional and modern looking image cropper app from scra...',
+      has_result: false,
+      parent_id: null
+    }
+  ],
+  total_count: 1,
+  active_count: 1,
+  completed_count: 0,
+  failed_count: 0,
+  include_completed: true,
+  message: 'Found 1 agents'
+}
+
+🐛 Debug: 🤖 google/gemini-2.5-pro usage: 9918 tokens, 9899 prompt tokens, 19 completion tokens
+🔧 Executing tool: get_agents
+📝 Arguments: {}
+✅ Tool result: {
+  success: true,
+  timestamp: '2025-07-30T10:42:08.384Z',
+  tool_name: 'get_agents',
+  agents: [
+    {
+      agent_id: '8f6134f4-cc5f-47ac-b72d-50fa9bd23629',
+      role_name: 'architect',
+      status: 'running',
+      created_at: 2025-07-30T10:40:35.525Z,
+      task_prompt: 'I need you to design and implement a fully functional and modern looking image cropper app from scra...',
+      has_result: false,
+      parent_id: null
+    }
+  ],
+  total_count: 1,
+  active_count: 1,
+  completed_count: 0,
+  failed_count: 0,
+  include_completed: true,
+  message: 'Found 1 agents'
+}
+
+🐛 Debug: 🤖 google/gemini-2.5-pro usage: 10102 tokens, 10083 prompt tokens, 19 completion tokens
+🔧 Executing tool: get_agents
+📝 Arguments: {}
+✅ Tool result: {
+  success: true,
+  timestamp: '2025-07-30T10:42:09.866Z',
+  tool_name: 'get_agents',
+  agents: [
+    {
+      agent_id: '8f6134f4-cc5f-47ac-b72d-50fa9bd23629',
+      role_name: 'architect',
+      status: 'running',
+      created_at: 2025-07-30T10:40:35.525Z,
+      task_prompt: 'I need you to design and implement a fully functional and modern looking image cropper app from scra...',
+      has_result: false,
+      parent_id: null
+    }
+  ],
+  total_count: 1,
+  active_count: 1,
+  completed_count: 0,
+  failed_count: 0,
+  include_completed: true,
+  message: 'Found 1 agents'
+}
+
+🐛 Debug: 🤖 google/gemini-2.5-pro usage: 10286 tokens, 10267 prompt tokens, 19 completion tokens
+🔧 Executing tool: get_agents
+📝 Arguments: {}
+✅ Tool result: {
+  success: true,
+  timestamp: '2025-07-30T10:42:11.529Z',
+  tool_name: 'get_agents',
+  agents: [
+    {
+      agent_id: '8f6134f4-cc5f-47ac-b72d-50fa9bd23629',
+      role_name: 'architect',
+      status: 'running',
+      created_at: 2025-07-30T10:40:35.525Z,
+      task_prompt: 'I need you to design and implement a fully functional and modern looking image cropper app from scra...',
+      has_result: false,
+      parent_id: null
+    }
+  ],
+  total_count: 1,
+  active_count: 1,
+  completed_count: 0,
+  failed_count: 0,
+  include_completed: true,
+  message: 'Found 1 agents'
+}
+
+🐛 Debug: 🤖 google/gemini-2.5-pro usage: 10470 tokens, 10451 prompt tokens, 19 completion tokens
+🔧 Executing tool: get_agents
+📝 Arguments: {}
+✅ Tool result: {
+  success: true,
+  timestamp: '2025-07-30T10:42:12.981Z',
+  tool_name: 'get_agents',
+  agents: [
+    {
+      agent_id: '8f6134f4-cc5f-47ac-b72d-50fa9bd23629',
+      role_name: 'architect',
+      status: 'running',
+      created_at: 2025-07-30T10:40:35.525Z,
+      task_prompt: 'I need you to design and implement a fully functional and modern looking image cropper app from scra...',
+      has_result: false,
+      parent_id: null
+    }
+  ],
+  total_count: 1,
+  active_count: 1,
+  completed_count: 0,
+  failed_count: 0,
+  include_completed: true,
+  message: 'Found 1 agents'
+}
+
+🐛 Debug: 🤖 google/gemini-2.5-pro usage: 10654 tokens, 10635 prompt tokens, 19 completion tokens
+🔧 Executing tool: get_agents
+📝 Arguments: {}
+✅ Tool result: {
+  success: true,
+  timestamp: '2025-07-30T10:42:14.531Z',
+  tool_name: 'get_agents',
+  agents: [
+    {
+      agent_id: '8f6134f4-cc5f-47ac-b72d-50fa9bd23629',
+      role_name: 'architect',
+      status: 'running',
+      created_at: 2025-07-30T10:40:35.525Z,
+      task_prompt: 'I need you to design and implement a fully functional and modern looking image cropper app from scra...',
+      has_result: false,
+      parent_id: null
+    }
+  ],
+  total_count: 1,
+  active_count: 1,
+  completed_count: 0,
+  failed_count: 0,
+  include_completed: true,
+  message: 'Found 1 agents'
+}
+
+🐛 Debug: 🤖 google/gemini-2.5-pro usage: 10838 tokens, 10819 prompt tokens, 19 completion tokens
+🔧 Executing tool: get_agents
+📝 Arguments: {}
+✅ Tool result: {
+  success: true,
+  timestamp: '2025-07-30T10:42:15.898Z',
+  tool_name: 'get_agents',
+  agents: [
+    {
+      agent_id: '8f6134f4-cc5f-47ac-b72d-50fa9bd23629',
+      role_name: 'architect',
+      status: 'running',
+      created_at: 2025-07-30T10:40:35.525Z,
+      task_prompt: 'I need you to design and implement a fully functional and modern looking image cropper app from scra...',
+      has_result: false,
+      parent_id: null
+    }
+  ],
+  total_count: 1,
+  active_count: 1,
+  completed_count: 0,
+  failed_count: 0,
+  include_completed: true,
+  message: 'Found 1 agents'
+}
+
+🐛 Debug: 🤖 google/gemini-2.5-pro usage: 11022 tokens, 11003 prompt tokens, 19 completion tokens
+🔧 Executing tool: get_agents
+📝 Arguments: {}
+✅ Tool result: {
+  success: true,
+  timestamp: '2025-07-30T10:42:17.227Z',
+  tool_name: 'get_agents',
+  agents: [
+    {
+      agent_id: '8f6134f4-cc5f-47ac-b72d-50fa9bd23629',
+      role_name: 'architect',
+      status: 'running',
+      created_at: 2025-07-30T10:40:35.525Z,
+      task_prompt: 'I need you to design and implement a fully functional and modern looking image cropper app from scra...',
+      has_result: false,
+      parent_id: null
+    }
+  ],
+  total_count: 1,
+  active_count: 1,
+  completed_count: 0,
+  failed_count: 0,
+  include_completed: true,
+  message: 'Found 1 agents'
+}
+
+🐛 Debug: 🤖 google/gemini-2.5-pro usage: 11206 tokens, 11187 prompt tokens, 19 completion tokens
+🔧 Executing tool: get_agents
+📝 Arguments: {}
+✅ Tool result: {
+  success: true,
+  timestamp: '2025-07-30T10:42:18.852Z',
+  tool_name: 'get_agents',
+  agents: [
+    {
+      agent_id: '8f6134f4-cc5f-47ac-b72d-50fa9bd23629',
+      role_name: 'architect',
+      status: 'running',
+      created_at: 2025-07-30T10:40:35.525Z,
+      task_prompt: 'I need you to design and implement a fully functional and modern looking image cropper app from scra...',
+      has_result: false,
+      parent_id: null
+    }
+  ],
+  total_count: 1,
+  active_count: 1,
+  completed_count: 0,
+  failed_count: 0,
+  include_completed: true,
+  message: 'Found 1 agents'
+}
