@@ -67,6 +67,37 @@ vi.mock('../../../src/config/validation/configurationLoader.js', () => ({
                         enabled_agents: ['developer'],
                         includedTools: ['read_file', 'spawn_agent', 'speak_to_agent'],
                     },
+                    // Role for system message testing
+                    test_system_message: {
+                        systemMessage: 'Base system message.',
+                        enabled_agents: ['developer', 'tester'],
+                        can_create_tasks_for: ['developer'],
+                        includedTools: ['read_file'],
+                        agent_description: 'test role for system message enhancement',
+                    },
+                    // Developer role for system message testing
+                    developer: {
+                        systemMessage: 'Developer role.',
+                        agent_description: 'responsible for implementing features',
+                        includedTools: ['write_file'],
+                    },
+                    // Tester role for system message testing
+                    tester: {
+                        systemMessage: 'Tester role.',
+                        agent_description: 'responsible for testing code',
+                        includedTools: ['execute_tests'],
+                    },
+                    // Role without agent_description for testing missing descriptions
+                    test_missing_description: {
+                        systemMessage: 'Role without description.',
+                        enabled_agents: ['no_description_role'],
+                        includedTools: ['read_file'],
+                    },
+                    // Role without agent_description
+                    no_description_role: {
+                        systemMessage: 'Role without description.',
+                        includedTools: ['write_file'],
+                    },
                 };
             }
             return {};
@@ -88,6 +119,9 @@ describe('SystemMessages - Automatic Tool Inclusion', () => {
             expect(tools).toContain('spawn_agent');
             expect(tools).toContain('speak_to_agent');
             expect(tools).toContain('get_agents');
+            expect(tools).toContain('return_results');
+            expect(tools).toContain('list_tasks');
+            expect(tools).toContain('get_task');
             expect(tools).toContain('read_file'); // original tool
         });
 
@@ -96,6 +130,9 @@ describe('SystemMessages - Automatic Tool Inclusion', () => {
             expect(tools).toContain('spawn_agent');
             expect(tools).toContain('speak_to_agent');
             expect(tools).toContain('get_agents');
+            expect(tools).toContain('return_results');
+            expect(tools).toContain('list_tasks');
+            expect(tools).toContain('get_task');
             expect(tools).toContain('read_file'); // original tool
         });
 
@@ -104,6 +141,9 @@ describe('SystemMessages - Automatic Tool Inclusion', () => {
             expect(tools).not.toContain('spawn_agent');
             expect(tools).not.toContain('speak_to_agent');
             expect(tools).not.toContain('get_agents');
+            expect(tools).not.toContain('return_results');
+            expect(tools).not.toContain('list_tasks');
+            expect(tools).not.toContain('get_task');
             expect(tools).toContain('read_file'); // original tool
         });
 
@@ -202,6 +242,59 @@ describe('SystemMessages - Automatic Tool Inclusion', () => {
             expect(() => {
                 SystemMessages.getCanCreateTasksFor('unknown_role');
             }).toThrow('Unknown role: unknown_role');
+        });
+    });
+
+    describe('System Message Enhancement', () => {
+        it('should append role coordination info when enabled_agents is present', () => {
+            const systemMessage = SystemMessages.getSystemMessage('test_system_message');
+
+            expect(systemMessage).toContain('Base system message.');
+            expect(systemMessage).toContain(
+                'Your role is test_system_message and you need to coordinate with other roles developer, tester'
+            );
+            expect(systemMessage).toContain('developer - responsible for implementing features');
+            expect(systemMessage).toContain('tester - responsible for testing code');
+            expect(systemMessage).toContain(
+                'Use get_agents to understand what agents are already available'
+            );
+            expect(systemMessage).toContain('use spawn_agent to initialize new agent');
+        });
+
+        it('should append task creation info when can_create_tasks_for is present', () => {
+            const systemMessage = SystemMessages.getSystemMessage('test_system_message');
+
+            expect(systemMessage).toContain('Create tasks for developer if role is more suitable');
+        });
+
+        it('should append task management info when enabled_agents is present', () => {
+            const systemMessage = SystemMessages.getSystemMessage('test_system_message');
+
+            expect(systemMessage).toContain(
+                'Use list_tasks, get_task to validate if there are any tasks you should start working on'
+            );
+        });
+
+        it('should append return_results info when enabled_agents is present', () => {
+            const systemMessage = SystemMessages.getSystemMessage('test_system_message');
+
+            expect(systemMessage).toContain(
+                'use return_results to give your supervisor detailed report'
+            );
+        });
+
+        it('should not append coordination info when enabled_agents is empty', () => {
+            const systemMessage = SystemMessages.getSystemMessage('test_none');
+
+            expect(systemMessage).not.toContain('coordinate with other roles');
+            expect(systemMessage).not.toContain('Use get_agents');
+            expect(systemMessage).not.toContain('use return_results');
+        });
+
+        it('should handle missing agent descriptions gracefully', () => {
+            const systemMessage = SystemMessages.getSystemMessage('test_missing_description');
+
+            expect(systemMessage).toContain('no_description_role - No description available');
         });
     });
 });
