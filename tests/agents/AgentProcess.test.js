@@ -44,29 +44,29 @@ describe('AgentProcess', () => {
 
         // Mock ConfigManager
         const mockConfigManager = {
-            getModel: vi.fn((level) => {
+            getModel: vi.fn(level => {
                 const configs = {
                     base: {
                         apiKey: 'mock-api-key',
                         baseUrl: 'https://mock-api.com',
                         model: 'gpt-4.1-mini',
-                        baseModel: 'gpt-4.1-mini'
+                        baseModel: 'gpt-4.1-mini',
                     },
                     smart: {
                         apiKey: 'mock-api-key',
                         baseUrl: 'https://mock-api.com',
                         model: 'smart',
-                        baseModel: 'smart'
+                        baseModel: 'smart',
                     },
                     fast: {
                         apiKey: 'mock-api-key',
                         baseUrl: 'https://mock-api.com',
                         model: 'fast',
-                        baseModel: 'fast'
-                    }
+                        baseModel: 'fast',
+                    },
                 };
                 return configs[level] || configs.base;
-            })
+            }),
         };
         ConfigManager.getInstance = vi.fn(() => mockConfigManager);
 

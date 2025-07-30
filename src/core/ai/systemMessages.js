@@ -87,6 +87,62 @@ class SystemMessages {
     }
 
     /**
+     * Generate role coordination information based on enabled_agents and can_create_tasks_for
+     * @param {string} role - The role name
+     * @param {Object} roleConfig - The role configuration
+     * @returns {string|null} Role coordination information or null if not applicable
+     * @private
+     */
+    _generateRoleCoordinationInfo(role, roleConfig) {
+        const parts = [];
+
+        // Add agent coordination instructions if enabled_agents exists
+        if (Array.isArray(roleConfig.enabled_agents) && roleConfig.enabled_agents.length > 0) {
+            const enabledAgents = roleConfig.enabled_agents;
+            const agentDescriptions = enabledAgents
+                .map(agentRole => {
+                    const agentConfig = this.roles[agentRole];
+                    const description =
+                        agentConfig?.agent_description || 'No description available';
+                    return `${agentRole} - ${description}`;
+                })
+                .join('\n');
+
+            parts.push(`Your role is ${role} and you need to coordinate with other roles ${enabledAgents.join(', ')} to accomplish given task. Agents you can interact with:
+${agentDescriptions}
+
+Use get_agents to understand what agents are already available.
+If agent you need is not available, use spawn_agent to initialize new agent that you need to do something for you. For existing agents use speak_to_agent to communicate with them.`);
+        }
+
+        // Add task creation instructions if can_create_tasks_for exists and is not empty
+        if (
+            Array.isArray(roleConfig.can_create_tasks_for) &&
+            roleConfig.can_create_tasks_for.length > 0
+        ) {
+            parts.push(
+                `Create tasks for ${roleConfig.can_create_tasks_for.join(', ')} if role is more suitable to do the task than you.`
+            );
+        }
+
+        // Add task management instructions if enabled_agents exists (agents might have tasks)
+        if (Array.isArray(roleConfig.enabled_agents)) {
+            parts.push(
+                'Use list_tasks, get_task to validate if there are any tasks you should start working on.'
+            );
+        }
+
+        // Add return_results instruction if enabled_agents exists
+        if (Array.isArray(roleConfig.enabled_agents)) {
+            parts.push(
+                'After you finish work, use return_results to give your supervisor detailed report about your progress.'
+            );
+        }
+
+        return parts.length > 0 ? parts.join('\n\n') : null;
+    }
+
+    /**
      * Generate environment information string
      * @private
      * @returns {string} Environment information
@@ -127,9 +183,18 @@ class SystemMessages {
             );
         }
 
+        // Build the complete system message
+        let systemMessage = roleConfig.systemMessage;
+
+        // Add role coordination instructions
+        const roleCoordinationInfo = instance._generateRoleCoordinationInfo(role, roleConfig);
+        if (roleCoordinationInfo) {
+            systemMessage += `\n\n${roleCoordinationInfo}`;
+        }
+
         // Append environment information to the system message
         const environmentInfo = instance._generateEnvironmentInfo();
-        return roleConfig.systemMessage + environmentInfo;
+        return systemMessage + environmentInfo;
     }
 
     /**
@@ -165,7 +230,46 @@ class SystemMessages {
             );
         }
 
-        return roleConfig.includedTools || [];
+        const includedTools = [...(roleConfig.includedTools || [])];
+        const excludedTools = roleConfig.excludedTools || [];
+
+        // Automatically add agentic tools if enabled_agents is an array (even empty)
+        if (Array.isArray(roleConfig.enabled_agents)) {
+            const agenticTools = ['spawn_agent', 'speak_to_agent', 'get_agents', 'return_results'];
+            agenticTools.forEach(tool => {
+                // Add tool if not already included and not explicitly excluded
+                if (!includedTools.includes(tool) && !excludedTools.includes(tool)) {
+                    includedTools.push(tool);
+                }
+            });
+        }
+
+        // Automatically add task management tools if can_create_tasks_for is a non-empty array
+        if (
+            Array.isArray(roleConfig.can_create_tasks_for) &&
+            roleConfig.can_create_tasks_for.length > 0
+        ) {
+            const taskManagementTools = ['list_tasks', 'edit_tasks', 'get_task'];
+            taskManagementTools.forEach(tool => {
+                // Add tool if not already included and not explicitly excluded
+                if (!includedTools.includes(tool) && !excludedTools.includes(tool)) {
+                    includedTools.push(tool);
+                }
+            });
+        }
+
+        // Automatically add task viewing tools if enabled_agents is an array (agents might have tasks assigned)
+        if (Array.isArray(roleConfig.enabled_agents)) {
+            const taskViewingTools = ['list_tasks', 'get_task'];
+            taskViewingTools.forEach(tool => {
+                // Add tool if not already included and not explicitly excluded
+                if (!includedTools.includes(tool) && !excludedTools.includes(tool)) {
+                    includedTools.push(tool);
+                }
+            });
+        }
+
+        return includedTools;
     }
 
     /**
@@ -491,6 +595,22 @@ class SystemMessages {
     static canSpawnAgent(supervisorRole, workerRole) {
         const enabledAgents = SystemMessages.getEnabledAgents(supervisorRole);
         return enabledAgents.includes(workerRole);
+    }
+
+    /**
+     * Get roles that this role can create tasks for
+     * @param {string} role - The role name
+     * @returns {string[]} Array of role names this role can create tasks for
+     */
+    static getCanCreateTasksFor(role) {
+        const instance = new SystemMessages();
+        const roleConfig = instance.roles[role];
+
+        if (!roleConfig) {
+            throw new Error(`Unknown role: ${role}`);
+        }
+
+        return roleConfig.can_create_tasks_for || [];
     }
 
     /**
