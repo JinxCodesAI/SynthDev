@@ -288,14 +288,42 @@ class ConfigurationLoader {
                         this.logger.warn(
                             `Role '${roleName}' from ${filePath} overwrites existing role definition`
                         );
-                    }
 
-                    // Add group metadata to role config
-                    mergedRoles[roleName] = {
-                        ...roleConfig,
-                        _group: group,
-                        _source: jsonFile,
-                    };
+                        // Preserve important fields from the original role if they're missing in the new one
+                        const existingRole = mergedRoles[roleName];
+                        const preservedFields = {};
+
+                        // Preserve agent_description if it exists in the original but not in the new role
+                        if (existingRole.agent_description && !roleConfig.agent_description) {
+                            preservedFields.agent_description = existingRole.agent_description;
+                        }
+
+                        // Preserve enabled_agents if it exists in the original but not in the new role
+                        if (existingRole.enabled_agents && !roleConfig.enabled_agents) {
+                            preservedFields.enabled_agents = existingRole.enabled_agents;
+                        }
+
+                        // Preserve can_create_tasks_for if it exists in the original but not in the new role
+                        if (existingRole.can_create_tasks_for && !roleConfig.can_create_tasks_for) {
+                            preservedFields.can_create_tasks_for =
+                                existingRole.can_create_tasks_for;
+                        }
+
+                        // Add group metadata to role config with preserved fields
+                        mergedRoles[roleName] = {
+                            ...preservedFields,
+                            ...roleConfig,
+                            _group: group,
+                            _source: jsonFile,
+                        };
+                    } else {
+                        // Add group metadata to role config
+                        mergedRoles[roleName] = {
+                            ...roleConfig,
+                            _group: group,
+                            _source: jsonFile,
+                        };
+                    }
 
                     // Track role in group
                     if (!roleGroups[group]) {
