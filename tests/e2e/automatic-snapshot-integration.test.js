@@ -10,6 +10,7 @@ import { tmpdir } from 'os';
 import { AutoSnapshotManager } from '../../src/core/snapshot/AutoSnapshotManager.js';
 import { resetSnapshotManager } from '../../src/core/snapshot/SnapshotManagerSingleton.js';
 import ToolManager from '../../src/core/managers/toolManager.js';
+import { ConfigFixtures } from '../helpers/configFixtures.js';
 
 // Mock logger and config
 vi.mock('../../../src/core/managers/logger.js', () => ({
@@ -22,61 +23,24 @@ vi.mock('../../../src/core/managers/logger.js', () => ({
     initializeLogger: vi.fn(),
 }));
 
-// Mock config managers
-vi.mock('../../../src/config/managers/snapshotConfigManager.js', () => ({
-    getSnapshotConfigManager: () => ({
-        getConfig: () => ({
-            storage: { type: 'memory', maxSnapshots: 50 },
-            fileFiltering: {
-                defaultExclusions: ['node_modules/**', '.git/**'],
-                customExclusions: [],
-                maxFileSize: 10 * 1024 * 1024,
-                binaryFileHandling: 'exclude',
-                followSymlinks: false,
-                caseSensitive: false,
-            },
-            backup: { encoding: 'utf8' },
-            behavior: { autoCleanup: false },
-            messages: { success: {}, errors: {}, info: {} },
-            phase2: {
-                autoSnapshot: { enabled: true, createOnToolExecution: true },
-                toolDeclarations: { defaultModifiesFiles: false },
-                triggerRules: { maxSnapshotsPerSession: 20, cooldownPeriod: 1000 },
-                descriptionGeneration: { maxLength: 100, includeToolName: true },
-                fileChangeDetection: { enabled: true, useChecksums: false },
-                initialSnapshot: { enabled: true, createOnStartup: true },
-                integration: { enabled: true, trackFileChanges: true },
-            },
-        }),
-        getPhase2Config: () => ({
-            autoSnapshot: { enabled: true, createOnToolExecution: true },
-            toolDeclarations: { defaultModifiesFiles: false },
-            triggerRules: { maxSnapshotsPerSession: 20, cooldownPeriod: 1000 },
-            descriptionGeneration: { maxLength: 100, includeToolName: true },
-            fileChangeDetection: { enabled: true, useChecksums: false },
-            initialSnapshot: { enabled: true, createOnStartup: true },
-            integration: { enabled: true, trackFileChanges: true },
-        }),
-        getStorageConfig: () => ({ type: 'memory', maxSnapshots: 50 }),
-        getFileFilteringConfig: () => ({
-            defaultExclusions: ['node_modules/**', '.git/**'],
-            customExclusions: [],
-            maxFileSize: 10 * 1024 * 1024,
-            binaryFileHandling: 'exclude',
-            followSymlinks: false,
-            caseSensitive: false,
-        }),
-        getBackupConfig: () => ({ encoding: 'utf8' }),
-        getBehaviorConfig: () => ({ autoCleanup: false }),
-        getMessagesConfig: () => ({ success: {}, errors: {}, info: {} }),
-    }),
-}));
+// Create fixture-based configuration
+let configFixtures;
+let mockConfigManager;
+
+// Create a dynamic mock that can be updated at runtime
+const dynamicMock = {
+    getSnapshotConfigManager: () => mockConfigManager,
+};
+
+// Mock config managers with fixture support
+vi.mock('../../../src/config/managers/snapshotConfigManager.js', () => dynamicMock);
 
 describe.sequential('Automatic Snapshot Integration', () => {
     let testDir;
     let originalCwd;
     let autoSnapshotManager;
     let toolManager;
+    let cleanupFixture;
 
     beforeEach(async () => {
         testDir = join(
@@ -91,6 +55,14 @@ describe.sequential('Automatic Snapshot Integration', () => {
         writeFileSync(join(testDir, 'README.md'), '# Test Project\n\nMIT License');
         writeFileSync(join(testDir, 'package.json'), '{"name": "test", "version": "1.0.0"}');
 
+        // Initialize fixture system
+        configFixtures = new ConfigFixtures();
+
+        // Use enabled auto-snapshot fixture by default
+        mockConfigManager = configFixtures.createMockConfigManager(
+            ConfigFixtures.FIXTURES.AUTO_SNAPSHOT_ENABLED
+        );
+
         // Initialize managers
         toolManager = new ToolManager();
         await toolManager.loadTools();
@@ -99,6 +71,18 @@ describe.sequential('Automatic Snapshot Integration', () => {
     });
 
     afterEach(() => {
+        // Clean up fixtures
+        if (cleanupFixture) {
+            cleanupFixture();
+            cleanupFixture = null;
+        }
+        if (configFixtures) {
+            configFixtures.restoreAll();
+        }
+
+        // Reset singleton to ensure clean state between tests
+        resetSnapshotManager();
+
         if (originalCwd) {
             process.chdir(originalCwd);
         }
@@ -566,6 +550,123 @@ describe.sequential('Automatic Snapshot Integration', () => {
             // Should respect cooldown and not create snapshot for second tool
             // (This test may need adjustment based on actual cooldown implementation)
             expect(finalSnapshots.length).toBeLessThanOrEqual(initialCount + 2);
+        });
+    });
+
+    describe('Configuration Fixture Testing', () => {
+        it('should work correctly with disabled auto-snapshot configuration', async () => {
+            // Reset singleton to ensure clean state
+            resetSnapshotManager();
+
+            // Switch to disabled configuration fixture
+            mockConfigManager = configFixtures.createMockConfigManager(
+                ConfigFixtures.FIXTURES.AUTO_SNAPSHOT_DISABLED
+            );
+
+            // Create new manager with disabled config
+            const disabledAutoSnapshotManager = new AutoSnapshotManager(toolManager);
+
+            // Update the configuration to use the disabled fixture
+            const disabledConfig = configFixtures.loadFixture(
+                ConfigFixtures.FIXTURES.AUTO_SNAPSHOT_DISABLED
+            );
+            disabledAutoSnapshotManager.updateConfiguration(disabledConfig);
+
+            await disabledAutoSnapshotManager.initialize();
+
+            // Should not create initial snapshot when disabled
+            const snapshots = await disabledAutoSnapshotManager.snapshotManager.listSnapshots();
+            expect(snapshots.length).toBe(0);
+
+            // Should not create automatic snapshots on tool execution
+            const mockConsoleInterface = {
+                showToolExecution: vi.fn(),
+                showToolResult: vi.fn(),
+                promptForConfirmation: vi.fn().mockResolvedValue(true),
+                showToolCancelled: vi.fn(),
+            };
+
+            await toolManager.executeToolCall(
+                {
+                    id: 'test-call-disabled',
+                    function: {
+                        name: 'write_file',
+                        arguments: JSON.stringify({
+                            file_path: 'test-disabled.txt',
+                            content: 'test content',
+                        }),
+                    },
+                },
+                mockConsoleInterface
+            );
+
+            const finalSnapshots =
+                await disabledAutoSnapshotManager.snapshotManager.listSnapshots();
+            expect(finalSnapshots.length).toBe(0);
+        });
+
+        it('should work correctly with manual-only configuration', async () => {
+            // Reset singleton to ensure clean state
+            resetSnapshotManager();
+
+            // Switch to manual-only configuration fixture
+            mockConfigManager = configFixtures.createMockConfigManager(
+                ConfigFixtures.FIXTURES.AUTO_SNAPSHOT_MANUAL_ONLY
+            );
+
+            // Create new manager with manual-only config
+            const manualOnlyManager = new AutoSnapshotManager(toolManager);
+
+            // Update the configuration to use the manual-only fixture
+            const manualOnlyConfig = configFixtures.loadFixture(
+                ConfigFixtures.FIXTURES.AUTO_SNAPSHOT_MANUAL_ONLY
+            );
+            manualOnlyManager.updateConfiguration(manualOnlyConfig);
+
+            await manualOnlyManager.initialize();
+
+            // Manually disable the tool manager integration to prevent automatic snapshots
+            if (manualOnlyManager.toolManagerIntegration) {
+                manualOnlyManager.toolManagerIntegration.enabled = false;
+            }
+
+            // Should not create initial snapshot
+            const initialSnapshots = await manualOnlyManager.snapshotManager.listSnapshots();
+            expect(initialSnapshots.length).toBe(0);
+
+            // Should not create automatic snapshots on tool execution
+            const mockConsoleInterface = {
+                showToolExecution: vi.fn(),
+                showToolResult: vi.fn(),
+                promptForConfirmation: vi.fn().mockResolvedValue(true),
+                showToolCancelled: vi.fn(),
+            };
+
+            await toolManager.executeToolCall(
+                {
+                    id: 'test-call-manual',
+                    function: {
+                        name: 'write_file',
+                        arguments: JSON.stringify({
+                            file_path: 'test-manual.txt',
+                            content: 'test content',
+                        }),
+                    },
+                },
+                mockConsoleInterface
+            );
+
+            const afterToolSnapshots = await manualOnlyManager.snapshotManager.listSnapshots();
+            expect(afterToolSnapshots.length).toBe(0);
+
+            // But should allow manual snapshot creation
+            const manualSnapshot =
+                await manualOnlyManager.snapshotManager.createSnapshot('Manual test snapshot');
+            expect(manualSnapshot).toBeDefined();
+
+            const finalSnapshots = await manualOnlyManager.snapshotManager.listSnapshots();
+            expect(finalSnapshots.length).toBe(1);
+            expect(finalSnapshots[0].triggerType).toBe('manual');
         });
     });
 });
