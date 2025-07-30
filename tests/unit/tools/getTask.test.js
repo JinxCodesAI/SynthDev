@@ -71,6 +71,7 @@ describe('Get Task Tool', () => {
                         title: 'Test Task',
                         description: 'Test description',
                         status: 'in_progress',
+                        target_role: 'developer',
                     },
                 ],
             });
@@ -83,12 +84,13 @@ describe('Get Task Tool', () => {
             expect(result.task.title).toBe('Test Task');
             expect(result.task.description).toBe('Test description');
             expect(result.task.status).toBe('in_progress');
+            expect(result.task.target_role).toBe('developer');
             expect(result.task.parent).toBeNull();
         });
 
         it('should include metadata fields', async () => {
             const createResult = await editTasks({
-                tasks: [{ title: 'Test Task' }],
+                tasks: [{ title: 'Test Task', target_role: 'tester' }],
             });
             const taskId = createResult.processed_tasks[0].task.id;
 
@@ -98,13 +100,15 @@ describe('Get Task Tool', () => {
             expect(result.task).toHaveProperty('has_children');
             expect(result.task).toHaveProperty('is_root_task');
             expect(result.task).toHaveProperty('status_display');
+            expect(result.task).toHaveProperty('target_role');
             expect(result.task.has_children).toBe(false);
             expect(result.task.is_root_task).toBe(true);
+            expect(result.task.target_role).toBe('tester');
         });
 
         it('should include status display information', async () => {
             const createResult = await editTasks({
-                tasks: [{ title: 'Test Task', status: 'completed' }],
+                tasks: [{ title: 'Test Task', status: 'completed', target_role: 'developer' }],
             });
             const taskId = createResult.processed_tasks[0].task.id;
 
@@ -122,7 +126,7 @@ describe('Get Task Tool', () => {
     describe('Children Information', () => {
         it('should not include children by default', async () => {
             const createResult = await editTasks({
-                tasks: [{ title: 'Parent Task' }],
+                tasks: [{ title: 'Parent Task', target_role: 'manager' }],
             });
             const taskId = createResult.processed_tasks[0].task.id;
 
@@ -136,15 +140,25 @@ describe('Get Task Tool', () => {
         it('should include children when requested', async () => {
             // Create parent task
             const parentResult = await editTasks({
-                tasks: [{ title: 'Parent Task' }],
+                tasks: [{ title: 'Parent Task', target_role: 'manager' }],
             });
             const parentId = parentResult.processed_tasks[0].task.id;
 
             // Create child tasks
             await editTasks({
                 tasks: [
-                    { title: 'Child 1', parent: parentId, status: 'completed' },
-                    { title: 'Child 2', parent: parentId, status: 'in_progress' },
+                    {
+                        title: 'Child 1',
+                        parent: parentId,
+                        status: 'completed',
+                        target_role: 'developer',
+                    },
+                    {
+                        title: 'Child 2',
+                        parent: parentId,
+                        status: 'in_progress',
+                        target_role: 'tester',
+                    },
                 ],
             });
 
@@ -166,14 +180,16 @@ describe('Get Task Tool', () => {
 
             expect(child1).toBeDefined();
             expect(child1.status).toBe('completed');
+            expect(child1.target_role).toBe('developer');
             expect(child1.status_display.symbol).toBe('[x]');
             expect(child2).toBeDefined();
             expect(child2.status).toBe('in_progress');
+            expect(child2.target_role).toBe('tester');
         });
 
         it('should show empty children array for task with no children', async () => {
             const createResult = await editTasks({
-                tasks: [{ title: 'Childless Task' }],
+                tasks: [{ title: 'Childless Task', target_role: 'developer' }],
             });
             const taskId = createResult.processed_tasks[0].task.id;
 
@@ -192,7 +208,7 @@ describe('Get Task Tool', () => {
     describe('Parent Chain Information', () => {
         it('should not include parent chain by default', async () => {
             const createResult = await editTasks({
-                tasks: [{ title: 'Test Task' }],
+                tasks: [{ title: 'Test Task', target_role: 'developer' }],
             });
             const taskId = createResult.processed_tasks[0].task.id;
 
@@ -205,7 +221,7 @@ describe('Get Task Tool', () => {
 
         it('should include empty parent chain for root task', async () => {
             const createResult = await editTasks({
-                tasks: [{ title: 'Root Task' }],
+                tasks: [{ title: 'Root Task', target_role: 'manager' }],
             });
             const taskId = createResult.processed_tasks[0].task.id;
 
@@ -223,17 +239,24 @@ describe('Get Task Tool', () => {
         it('should include parent chain for nested task', async () => {
             // Create grandparent -> parent -> child structure
             const grandparentResult = await editTasks({
-                tasks: [{ title: 'Grandparent', status: 'completed' }],
+                tasks: [{ title: 'Grandparent', status: 'completed', target_role: 'manager' }],
             });
             const grandparentId = grandparentResult.processed_tasks[0].task.id;
 
             const parentResult = await editTasks({
-                tasks: [{ title: 'Parent', parent: grandparentId, status: 'in_progress' }],
+                tasks: [
+                    {
+                        title: 'Parent',
+                        parent: grandparentId,
+                        status: 'in_progress',
+                        target_role: 'lead',
+                    },
+                ],
             });
             const parentId = parentResult.processed_tasks[0].task.id;
 
             const childResult = await editTasks({
-                tasks: [{ title: 'Child', parent: parentId }],
+                tasks: [{ title: 'Child', parent: parentId, target_role: 'developer' }],
             });
             const childId = childResult.processed_tasks[0].task.id;
 
@@ -259,17 +282,17 @@ describe('Get Task Tool', () => {
         it('should include both children and parent chain when requested', async () => {
             // Create a middle task with parent and children
             const grandparentResult = await editTasks({
-                tasks: [{ title: 'Grandparent' }],
+                tasks: [{ title: 'Grandparent', target_role: 'manager' }],
             });
             const grandparentId = grandparentResult.processed_tasks[0].task.id;
 
             const parentResult = await editTasks({
-                tasks: [{ title: 'Parent', parent: grandparentId }],
+                tasks: [{ title: 'Parent', parent: grandparentId, target_role: 'lead' }],
             });
             const parentId = parentResult.processed_tasks[0].task.id;
 
             await editTasks({
-                tasks: [{ title: 'Child', parent: parentId }],
+                tasks: [{ title: 'Child', parent: parentId, target_role: 'developer' }],
             });
 
             const result = await getTask({
@@ -292,7 +315,7 @@ describe('Get Task Tool', () => {
     describe('Response Format', () => {
         it('should include all required response fields', async () => {
             const createResult = await editTasks({
-                tasks: [{ title: 'Test Task' }],
+                tasks: [{ title: 'Test Task', target_role: 'developer' }],
             });
             const taskId = createResult.processed_tasks[0].task.id;
 

@@ -63,8 +63,9 @@ describe('TaskCommand Integration', () => {
                         title: 'Parent Task',
                         description: 'Main project task',
                         status: 'in_progress',
+                        target_role: 'manager',
                     },
-                    { title: 'Another Root Task', status: 'not_started' },
+                    { title: 'Another Root Task', status: 'not_started', target_role: 'developer' },
                 ],
             });
 
@@ -76,8 +77,18 @@ describe('TaskCommand Integration', () => {
             // Create child tasks
             await editTasks({
                 tasks: [
-                    { title: 'Child Task 1', parent: parentId, status: 'completed' },
-                    { title: 'Child Task 2', parent: parentId, status: 'not_started' },
+                    {
+                        title: 'Child Task 1',
+                        parent: parentId,
+                        status: 'completed',
+                        target_role: 'developer',
+                    },
+                    {
+                        title: 'Child Task 2',
+                        parent: parentId,
+                        status: 'not_started',
+                        target_role: 'tester',
+                    },
                 ],
             });
 
@@ -160,17 +171,17 @@ describe('TaskCommand Integration', () => {
         it('should display hierarchical structure correctly', async () => {
             // Create a 3-level hierarchy
             const grandparentResult = await editTasks({
-                tasks: [{ title: 'Grandparent Task' }],
+                tasks: [{ title: 'Grandparent Task', target_role: 'manager' }],
             });
             const grandparentId = grandparentResult.processed_tasks[0].task.id;
 
             const parentResult = await editTasks({
-                tasks: [{ title: 'Parent Task', parent: grandparentId }],
+                tasks: [{ title: 'Parent Task', parent: grandparentId, target_role: 'lead' }],
             });
             const parentId = parentResult.processed_tasks[0].task.id;
 
             await editTasks({
-                tasks: [{ title: 'Child Task', parent: parentId }],
+                tasks: [{ title: 'Child Task', parent: parentId, target_role: 'developer' }],
             });
 
             // Test list command shows hierarchy
@@ -197,19 +208,36 @@ describe('TaskCommand Integration', () => {
         it('should show parent chain and children in task details', async () => {
             // Create hierarchy
             const grandparentResult = await editTasks({
-                tasks: [{ title: 'Grandparent Task', status: 'completed' }],
+                tasks: [{ title: 'Grandparent Task', status: 'completed', target_role: 'manager' }],
             });
             const grandparentId = grandparentResult.processed_tasks[0].task.id;
 
             const parentResult = await editTasks({
-                tasks: [{ title: 'Parent Task', parent: grandparentId, status: 'in_progress' }],
+                tasks: [
+                    {
+                        title: 'Parent Task',
+                        parent: grandparentId,
+                        status: 'in_progress',
+                        target_role: 'lead',
+                    },
+                ],
             });
             const parentId = parentResult.processed_tasks[0].task.id;
 
             await editTasks({
                 tasks: [
-                    { title: 'Child Task 1', parent: parentId, status: 'not_started' },
-                    { title: 'Child Task 2', parent: parentId, status: 'completed' },
+                    {
+                        title: 'Child Task 1',
+                        parent: parentId,
+                        status: 'not_started',
+                        target_role: 'developer',
+                    },
+                    {
+                        title: 'Child Task 2',
+                        parent: parentId,
+                        status: 'completed',
+                        target_role: 'tester',
+                    },
                 ],
             });
 
@@ -241,10 +269,10 @@ describe('TaskCommand Integration', () => {
             // Create tasks with different statuses
             await editTasks({
                 tasks: [
-                    { title: 'Not Started Task', status: 'not_started' },
-                    { title: 'In Progress Task', status: 'in_progress' },
-                    { title: 'Completed Task', status: 'completed' },
-                    { title: 'Cancelled Task', status: 'cancelled' },
+                    { title: 'Not Started Task', status: 'not_started', target_role: 'developer' },
+                    { title: 'In Progress Task', status: 'in_progress', target_role: 'tester' },
+                    { title: 'Completed Task', status: 'completed', target_role: 'reviewer' },
+                    { title: 'Cancelled Task', status: 'cancelled', target_role: 'manager' },
                 ],
             });
 
@@ -267,10 +295,10 @@ describe('TaskCommand Integration', () => {
         it('should display correct status symbols', async () => {
             await editTasks({
                 tasks: [
-                    { title: 'Not Started', status: 'not_started' },
-                    { title: 'In Progress', status: 'in_progress' },
-                    { title: 'Completed', status: 'completed' },
-                    { title: 'Cancelled', status: 'cancelled' },
+                    { title: 'Not Started', status: 'not_started', target_role: 'developer' },
+                    { title: 'In Progress', status: 'in_progress', target_role: 'tester' },
+                    { title: 'Completed', status: 'completed', target_role: 'reviewer' },
+                    { title: 'Cancelled', status: 'cancelled', target_role: 'manager' },
                 ],
             });
 
@@ -304,7 +332,7 @@ describe('TaskCommand Integration', () => {
         it('should route to task details when UUID provided', async () => {
             // Create a task first
             const createResult = await editTasks({
-                tasks: [{ title: 'Test Task' }],
+                tasks: [{ title: 'Test Task', target_role: 'developer' }],
             });
             const taskId = createResult.processed_tasks[0].task.id;
 

@@ -26,6 +26,10 @@
                                     "type": "string",
                                     "description": "Task title/name. Required for new tasks, optional for updates."
                                 },
+                                "target_role": {
+                                    "type": "string",
+                                    "description": "role of agent that should pickup the task. Required for new tasks. do not change for in_progress or completed tasks"
+                                },
                                 "description": {
                                     "type": "string",
                                     "description": "Detailed description of the task. Required for new tasks, optional for updates (overrides)."

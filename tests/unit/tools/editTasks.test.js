@@ -58,13 +58,14 @@ describe('Edit Tasks Tool', () => {
     describe('Task Creation', () => {
         it('should create a new task with minimal data', async () => {
             const result = await editTasks({
-                tasks: [{ title: 'Test Task' }],
+                tasks: [{ title: 'Test Task', target_role: 'developer' }],
             });
 
             expect(result.success).toBe(true);
             expect(result.processed_tasks).toHaveLength(1);
             expect(result.processed_tasks[0].action).toBe('created');
             expect(result.processed_tasks[0].task.title).toBe('Test Task');
+            expect(result.processed_tasks[0].task.target_role).toBe('developer');
             expect(result.processed_tasks[0].task.id).toBeDefined();
             expect(result.processed_tasks[0].task.status).toBe('not_started');
         });
@@ -76,6 +77,7 @@ describe('Edit Tasks Tool', () => {
                         title: 'Complete Task',
                         description: 'A detailed description',
                         status: 'in_progress',
+                        target_role: 'developer',
                     },
                 ],
             });
@@ -84,17 +86,23 @@ describe('Edit Tasks Tool', () => {
             expect(result.processed_tasks[0].task.title).toBe('Complete Task');
             expect(result.processed_tasks[0].task.description).toBe('A detailed description');
             expect(result.processed_tasks[0].task.status).toBe('in_progress');
+            expect(result.processed_tasks[0].task.target_role).toBe('developer');
         });
 
         it('should create multiple tasks', async () => {
             const result = await editTasks({
-                tasks: [{ title: 'Task 1' }, { title: 'Task 2', status: 'completed' }],
+                tasks: [
+                    { title: 'Task 1', target_role: 'developer' },
+                    { title: 'Task 2', status: 'completed', target_role: 'tester' },
+                ],
             });
 
             expect(result.success).toBe(true);
             expect(result.processed_tasks).toHaveLength(2);
             expect(result.processed_tasks[0].task.title).toBe('Task 1');
+            expect(result.processed_tasks[0].task.target_role).toBe('developer');
             expect(result.processed_tasks[1].task.title).toBe('Task 2');
+            expect(result.processed_tasks[1].task.target_role).toBe('tester');
             expect(result.processed_tasks[1].task.status).toBe('completed');
         });
     });
@@ -103,7 +111,7 @@ describe('Edit Tasks Tool', () => {
         it('should update an existing task', async () => {
             // First create a task
             const createResult = await editTasks({
-                tasks: [{ title: 'Original Task' }],
+                tasks: [{ title: 'Original Task', target_role: 'developer' }],
             });
             const taskId = createResult.processed_tasks[0].task.id;
 
@@ -132,6 +140,7 @@ describe('Edit Tasks Tool', () => {
                         title: 'Original Task',
                         description: 'Original description',
                         status: 'in_progress',
+                        target_role: 'developer',
                     },
                 ],
             });
@@ -151,6 +160,7 @@ describe('Edit Tasks Tool', () => {
             expect(updateResult.processed_tasks[0].task.title).toBe('Updated Title');
             expect(updateResult.processed_tasks[0].task.description).toBe('Original description');
             expect(updateResult.processed_tasks[0].task.status).toBe('in_progress');
+            expect(updateResult.processed_tasks[0].task.target_role).toBe('developer');
         });
     });
 
@@ -176,6 +186,7 @@ describe('Edit Tasks Tool', () => {
                 tasks: [
                     {
                         title: 'Test Task',
+                        target_role: 'developer',
                         unknown_field: 'value',
                     },
                 ],
@@ -204,7 +215,7 @@ describe('Edit Tasks Tool', () => {
         it('should create task with valid parent', async () => {
             // Create parent task
             const parentResult = await editTasks({
-                tasks: [{ title: 'Parent Task' }],
+                tasks: [{ title: 'Parent Task', target_role: 'manager' }],
             });
             const parentId = parentResult.processed_tasks[0].task.id;
 
@@ -214,6 +225,7 @@ describe('Edit Tasks Tool', () => {
                     {
                         title: 'Child Task',
                         parent: parentId,
+                        target_role: 'developer',
                     },
                 ],
             });
@@ -228,6 +240,7 @@ describe('Edit Tasks Tool', () => {
                     {
                         title: 'Child Task',
                         parent: 'non-existent-id',
+                        target_role: 'developer',
                     },
                 ],
             });
@@ -244,6 +257,7 @@ describe('Edit Tasks Tool', () => {
                         id: taskId,
                         title: 'Self Parent Task',
                         parent: taskId,
+                        target_role: 'developer',
                     },
                 ],
             });
@@ -256,7 +270,7 @@ describe('Edit Tasks Tool', () => {
     describe('Task List Output', () => {
         it('should include current task list in response', async () => {
             const result = await editTasks({
-                tasks: [{ title: 'Test Task' }],
+                tasks: [{ title: 'Test Task', target_role: 'developer' }],
             });
 
             expect(result.success).toBe(true);
@@ -269,7 +283,7 @@ describe('Edit Tasks Tool', () => {
         it('should show hierarchical structure in task list', async () => {
             // Create parent and child tasks
             const parentResult = await editTasks({
-                tasks: [{ title: 'Parent Task' }],
+                tasks: [{ title: 'Parent Task', target_role: 'manager' }],
             });
             const parentId = parentResult.processed_tasks[0].task.id;
 
@@ -278,12 +292,13 @@ describe('Edit Tasks Tool', () => {
                     {
                         title: 'Child Task',
                         parent: parentId,
+                        target_role: 'developer',
                     },
                 ],
             });
 
             const listResult = await editTasks({
-                tasks: [{ title: 'Another Task' }],
+                tasks: [{ title: 'Another Task', target_role: 'tester' }],
             });
 
             expect(listResult.current_task_list).toHaveLength(3);
@@ -292,6 +307,191 @@ describe('Edit Tasks Tool', () => {
                 t.title.includes('Child Task')
             );
             expect(childTask.title).toMatch(/^\s+Child Task/);
+        });
+    });
+
+    describe('Target Role Validation', () => {
+        it('should require target_role for new tasks', async () => {
+            const result = await editTasks({
+                tasks: [
+                    {
+                        title: 'Test Task',
+                        description: 'A task without target_role',
+                    },
+                ],
+            });
+
+            expect(result.success).toBe(false);
+            expect(result.errors[0].error).toContain('target_role is required for new tasks');
+        });
+
+        it('should accept valid target_role for new tasks', async () => {
+            const result = await editTasks({
+                tasks: [
+                    {
+                        title: 'Test Task',
+                        target_role: 'developer',
+                    },
+                ],
+            });
+
+            expect(result.success).toBe(true);
+            expect(result.processed_tasks[0].task.target_role).toBe('developer');
+        });
+
+        it('should reject non-string target_role', async () => {
+            const result = await editTasks({
+                tasks: [
+                    {
+                        title: 'Test Task',
+                        target_role: 123,
+                    },
+                ],
+            });
+
+            expect(result.success).toBe(false);
+            expect(result.errors[0].error).toContain('target_role must be a string');
+        });
+
+        it('should allow target_role updates for not_started tasks', async () => {
+            // Create a task
+            const createResult = await editTasks({
+                tasks: [
+                    {
+                        title: 'Test Task',
+                        target_role: 'developer',
+                        status: 'not_started',
+                    },
+                ],
+            });
+            const taskId = createResult.processed_tasks[0].task.id;
+
+            // Update target_role
+            const updateResult = await editTasks({
+                tasks: [
+                    {
+                        id: taskId,
+                        target_role: 'tester',
+                    },
+                ],
+            });
+
+            expect(updateResult.success).toBe(true);
+            expect(updateResult.processed_tasks[0].task.target_role).toBe('tester');
+        });
+
+        it('should prevent target_role changes for in_progress tasks', async () => {
+            // Create a task in progress
+            const createResult = await editTasks({
+                tasks: [
+                    {
+                        title: 'Test Task',
+                        target_role: 'developer',
+                        status: 'in_progress',
+                    },
+                ],
+            });
+            const taskId = createResult.processed_tasks[0].task.id;
+
+            // Try to update target_role
+            const updateResult = await editTasks({
+                tasks: [
+                    {
+                        id: taskId,
+                        target_role: 'tester',
+                    },
+                ],
+            });
+
+            expect(updateResult.success).toBe(false);
+            expect(updateResult.errors[0].error).toContain(
+                'target_role cannot be changed for in_progress or completed tasks'
+            );
+        });
+
+        it('should prevent target_role changes for completed tasks', async () => {
+            // Create a completed task
+            const createResult = await editTasks({
+                tasks: [
+                    {
+                        title: 'Test Task',
+                        target_role: 'developer',
+                        status: 'completed',
+                    },
+                ],
+            });
+            const taskId = createResult.processed_tasks[0].task.id;
+
+            // Try to update target_role
+            const updateResult = await editTasks({
+                tasks: [
+                    {
+                        id: taskId,
+                        target_role: 'tester',
+                    },
+                ],
+            });
+
+            expect(updateResult.success).toBe(false);
+            expect(updateResult.errors[0].error).toContain(
+                'target_role cannot be changed for in_progress or completed tasks'
+            );
+        });
+
+        it('should allow target_role changes for cancelled tasks', async () => {
+            // Create a cancelled task
+            const createResult = await editTasks({
+                tasks: [
+                    {
+                        title: 'Test Task',
+                        target_role: 'developer',
+                        status: 'cancelled',
+                    },
+                ],
+            });
+            const taskId = createResult.processed_tasks[0].task.id;
+
+            // Update target_role
+            const updateResult = await editTasks({
+                tasks: [
+                    {
+                        id: taskId,
+                        target_role: 'tester',
+                    },
+                ],
+            });
+
+            expect(updateResult.success).toBe(true);
+            expect(updateResult.processed_tasks[0].task.target_role).toBe('tester');
+        });
+
+        it('should preserve target_role when updating other fields', async () => {
+            // Create a task
+            const createResult = await editTasks({
+                tasks: [
+                    {
+                        title: 'Original Task',
+                        target_role: 'developer',
+                        description: 'Original description',
+                    },
+                ],
+            });
+            const taskId = createResult.processed_tasks[0].task.id;
+
+            // Update only title
+            const updateResult = await editTasks({
+                tasks: [
+                    {
+                        id: taskId,
+                        title: 'Updated Task',
+                    },
+                ],
+            });
+
+            expect(updateResult.success).toBe(true);
+            expect(updateResult.processed_tasks[0].task.title).toBe('Updated Task');
+            expect(updateResult.processed_tasks[0].task.target_role).toBe('developer');
+            expect(updateResult.processed_tasks[0].task.description).toBe('Original description');
         });
     });
 

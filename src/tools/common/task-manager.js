@@ -12,7 +12,8 @@ import { randomUUID } from 'crypto';
  *   title: string,
  *   description: string,
  *   parent: string | null (parent task ID),
- *   status: string ('not_started', 'in_progress', 'completed', 'cancelled')
+ *   status: string ('not_started', 'in_progress', 'completed', 'cancelled'),
+ *   target_role: string (role of agent that should pickup the task)
  * }
  */
 
@@ -30,11 +31,12 @@ class TaskManager {
      * @param {string} [taskData.description] - Task description
      * @param {string} [taskData.parent] - Parent task ID
      * @param {string} [taskData.status] - Task status
+     * @param {string} [taskData.target_role] - Role of agent that should pickup the task
      * @returns {Object} Result with success/error and task data
      */
     createOrUpdateTask(taskData) {
         try {
-            const { id, title, description, parent, status } = taskData;
+            const { id, title, description, parent, status, target_role } = taskData;
 
             // Validate required fields for new tasks
             if (!id && !title) {
@@ -59,6 +61,8 @@ class TaskManager {
                     description !== undefined ? description : existingTask.description || '',
                 parent: parent !== undefined ? parent : existingTask.parent || null,
                 status: status !== undefined ? status : existingTask.status || 'not_started',
+                target_role:
+                    target_role !== undefined ? target_role : existingTask.target_role || null,
             };
 
             // Validate status
