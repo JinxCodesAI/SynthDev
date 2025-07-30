@@ -54,6 +54,7 @@ class ListTasksTool extends BaseTool {
                     title: task.title,
                     status: task.status,
                     level: task.level,
+                    target_role: task.target_role,
                     display: `${task.indent}[${this.getStatusSymbol(task.status)}] ${task.title} (${task.id.substring(0, 8)}...)`,
                 };
 
@@ -65,6 +66,9 @@ class ListTasksTool extends BaseTool {
                         baseTask.display += ` - ${task.description}`;
                     }
                     baseTask.display += ` (ID: ${task.id.substring(0, 8)}...)`;
+                    if (task.target_role) {
+                        baseTask.display += ` (Role: ${task.target_role})`;
+                    }
                     if (task.parent) {
                         baseTask.display += ` (Parent: ${task.parent.substring(0, 8)}...)`;
                     }

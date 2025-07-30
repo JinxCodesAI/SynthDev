@@ -8,13 +8,13 @@
         "type": "function",
         "function": {
             "name": "list_tasks",
-            "description": "Retrieve and display all tasks in the task management system. Shows tasks in hierarchical format with indentation to represent parent-child relationships. Each task displays its ID, title, and current status.",
+            "description": "Retrieve and display all tasks in the task management system. Shows tasks in hierarchical format with indentation to represent parent-child relationships. Each task displays its ID, title, current status, and target role.",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "format": {
                         "type": "string",
-                        "description": "Output format for the task list. 'short' shows ID, title, and status. 'detailed' includes description and parent information.",
+                        "description": "Output format for the task list. 'short' shows ID, title, status, and target role. 'detailed' includes description, parent information, and target role.",
                         "enum": ["short", "detailed"],
                         "default": "short"
                     },
@@ -26,7 +26,7 @@
                 }
             },
             "response_format": {
-                "description": "Returns a JSON object with 'success' (boolean), 'timestamp' (ISO string), 'tool_name' (string), 'task_count' (number), and 'tasks' (array of task objects with hierarchical formatting). Each task object includes id, title, status, level, and formatted display. Error responses include 'error' field with detailed error message."
+                "description": "Returns a JSON object with 'success' (boolean), 'timestamp' (ISO string), 'tool_name' (string), 'task_count' (number), and 'tasks' (array of task objects with hierarchical formatting). Each task object includes id, title, status, target_role, level, and formatted display. Error responses include 'error' field with detailed error message."
             }
         }
     }

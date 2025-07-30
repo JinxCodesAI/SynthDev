@@ -8,7 +8,7 @@
         "type": "function",
         "function": {
             "name": "get_task",
-            "description": "Retrieve detailed information about a specific task by its ID. Returns all task properties including title, description, parent relationship, status, and additional metadata like children count and hierarchy level.",
+            "description": "Retrieve detailed information about a specific task by its ID. Returns all task properties including title, description, parent relationship, status, target role, and additional metadata like children count and hierarchy level.",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -30,7 +30,7 @@
                 "required": ["task_id"]
             },
             "response_format": {
-                "description": "Returns a JSON object with 'success' (boolean), 'timestamp' (ISO string), 'tool_name' (string), and 'task' (detailed task object). The task object includes id, title, description, parent, status, and optional children/parent_chain arrays based on parameters. Error responses include 'error' field with detailed error message for non-existent tasks."
+                "description": "Returns a JSON object with 'success' (boolean), 'timestamp' (ISO string), 'tool_name' (string), and 'task' (detailed task object). The task object includes id, title, description, parent, status, target_role, and optional children/parent_chain arrays based on parameters. Error responses include 'error' field with detailed error message for non-existent tasks."
             }
         }
     }

@@ -84,6 +84,7 @@ class GetTaskTool extends BaseTool {
             id: child.id,
             title: child.title,
             status: child.status,
+            target_role: child.target_role,
             status_display: this.getStatusDisplay(child.status),
             has_children: this.hasChildren(child.id),
         }));

@@ -92,10 +92,10 @@ class EditTasksTool extends BaseTool {
      * @returns {Object|null} Error object if validation fails, null if valid
      */
     validateTaskData(taskData, index) {
-        const { id, title, description, parent, status } = taskData;
+        const { id, title, description, parent, status, target_role } = taskData;
 
         // Check for unknown fields
-        const allowedFields = ['id', 'title', 'description', 'parent', 'status'];
+        const allowedFields = ['id', 'title', 'description', 'parent', 'status', 'target_role'];
         const providedFields = Object.keys(taskData);
         const unknownFields = providedFields.filter(field => !allowedFields.includes(field));
 
@@ -148,6 +148,14 @@ class EditTasksTool extends BaseTool {
             };
         }
 
+        if (target_role !== undefined && typeof target_role !== 'string') {
+            return {
+                index,
+                error: 'Task target_role must be a string',
+                taskData,
+            };
+        }
+
         // Validate status values
         const validStatuses = ['not_started', 'in_progress', 'completed', 'cancelled'];
         if (status !== undefined && !validStatuses.includes(status)) {
@@ -156,6 +164,33 @@ class EditTasksTool extends BaseTool {
                 error: `Invalid status: ${status}. Valid statuses: ${validStatuses.join(', ')}`,
                 taskData,
             };
+        }
+
+        // Validate target_role requirements based on task status and whether it's a new task
+        const isNewTask = !id || !taskManager.getTask(id).success;
+        const isInProgressOrCompleted = status === 'in_progress' || status === 'completed';
+
+        if (isNewTask && !target_role) {
+            return {
+                index,
+                error: 'target_role is required for new tasks',
+                taskData,
+            };
+        }
+
+        // For existing tasks that are in_progress or completed, don't allow target_role changes
+        if (!isNewTask && target_role !== undefined) {
+            const existingTask = taskManager.getTask(id);
+            if (existingTask.success) {
+                const currentStatus = existingTask.task.status;
+                if (currentStatus === 'in_progress' || currentStatus === 'completed') {
+                    return {
+                        index,
+                        error: 'target_role cannot be changed for in_progress or completed tasks',
+                        taskData,
+                    };
+                }
+            }
         }
 
         return null;
