@@ -116,9 +116,11 @@ describe('Logger', () => {
         it('should compress long arguments at level 2', () => {
             logger = getLogger(2);
             const longString = 'a'.repeat(100);
-            logger.toolExecution('test_tool', { longParam: longString });
+            logger.toolExecution('test_tool', 'test_role', { longParam: longString });
 
-            expect(consoleSpy.log).toHaveBeenCalledWith('🔧 Executing tool: test_tool');
+            expect(consoleSpy.log).toHaveBeenCalledWith(
+                '🔧 Role: test_role Executing tool: test_tool'
+            );
             expect(consoleSpy.log).toHaveBeenCalledWith('📝 Arguments:', {
                 longParam: `${'a'.repeat(47)}...`,
             });
@@ -127,9 +129,11 @@ describe('Logger', () => {
         it('should show full arguments at level 3+', () => {
             logger = getLogger(3);
             const args = { param: 'value' };
-            logger.toolExecutionDetailed('test_tool', args);
+            logger.toolExecutionDetailed('test_tool', 'test_role', args);
 
-            expect(consoleSpy.log).toHaveBeenCalledWith('🔧 Executing tool: test_tool');
+            expect(consoleSpy.log).toHaveBeenCalledWith(
+                '🔧 Role: test_role Executing tool: test_tool'
+            );
             expect(consoleSpy.log).toHaveBeenCalledWith('📝 Arguments:', args);
         });
     });

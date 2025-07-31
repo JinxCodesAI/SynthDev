@@ -282,10 +282,11 @@ describe('ConsoleInterface', () => {
         it('should show tool execution details', () => {
             const toolName = 'test_tool';
             const args = { param: 'value' };
+            const role = 'test_role';
 
-            consoleInterface.showToolExecution(toolName, args);
+            consoleInterface.showToolExecution(toolName, args, role);
 
-            expect(mockLogger.toolExecutionDetailed).toHaveBeenCalledWith(toolName, args);
+            expect(mockLogger.toolExecutionDetailed).toHaveBeenCalledWith(toolName, role, args);
         });
     });
 

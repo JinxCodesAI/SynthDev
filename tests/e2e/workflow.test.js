@@ -124,7 +124,13 @@ describe('End-to-End Workflow Tests', () => {
                 showToolResult: vi.fn(),
             };
 
-            const result = await toolManager.executeToolCall(mockToolCall, mockConsoleInterface);
+            const mockContext = { currentRole: 'test_role' };
+            const result = await toolManager.executeToolCall(
+                mockToolCall,
+                mockConsoleInterface,
+                null,
+                mockContext
+            );
 
             expect(result).toBeDefined();
             expect(result.role).toBe('tool');

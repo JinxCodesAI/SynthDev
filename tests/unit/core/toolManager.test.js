@@ -149,7 +149,13 @@ describe('ToolManager', () => {
                 },
             };
 
-            const result = await toolManager.executeToolCall(toolCall, mockConsole);
+            const mockContext = { currentRole: 'test_role' };
+            const result = await toolManager.executeToolCall(
+                toolCall,
+                mockConsole,
+                null,
+                mockContext
+            );
 
             expect(result.role).toBe('tool');
             expect(result.tool_call_id).toBe('test-call-1');
@@ -196,7 +202,13 @@ describe('ToolManager', () => {
                 },
             };
 
-            const result = await toolManager.executeToolCall(toolCall, mockConsole);
+            const mockContext = { currentRole: 'test_role' };
+            const result = await toolManager.executeToolCall(
+                toolCall,
+                mockConsole,
+                null,
+                mockContext
+            );
 
             expect(result.role).toBe('tool');
             expect(result.tool_call_id).toBe('test-call-3');
@@ -230,11 +242,16 @@ describe('ToolManager', () => {
                 },
             };
 
-            await toolManager.executeToolCall(toolCall, mockConsole);
+            const mockContext = { currentRole: 'test_role' };
+            await toolManager.executeToolCall(toolCall, mockConsole, null, mockContext);
 
-            expect(mockConsole.showToolExecution).toHaveBeenCalledWith('test_tool', {
-                param1: 'value1',
-            });
+            expect(mockConsole.showToolExecution).toHaveBeenCalledWith(
+                'test_tool',
+                {
+                    param1: 'value1',
+                },
+                'test_role'
+            );
         });
 
         it('should show tool result', async () => {
@@ -246,7 +263,8 @@ describe('ToolManager', () => {
                 },
             };
 
-            await toolManager.executeToolCall(toolCall, mockConsole);
+            const mockContext = { currentRole: 'test_role' };
+            await toolManager.executeToolCall(toolCall, mockConsole, null, mockContext);
 
             expect(mockConsole.showToolResult).toHaveBeenCalledWith(
                 expect.objectContaining({
