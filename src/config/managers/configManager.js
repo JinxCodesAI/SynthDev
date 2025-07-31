@@ -23,10 +23,12 @@ class ConfigManager {
         this.envFilePath = join(__dirname, '..', '..', '..', '.env');
         this.envFileExists = existsSync(this.envFilePath);
 
+        // Initialize logger
+        this.logger = getLogger();
+
         if (this.envFileExists) {
             config({ path: this.envFilePath });
         } else {
-            this.logger = getLogger();
             this.logger.warn(`No .env file found in :${this.envFilePath}`);
         }
 
