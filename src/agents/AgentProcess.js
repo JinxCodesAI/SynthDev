@@ -61,7 +61,7 @@ class AgentProcess {
         const systemMessage = SystemMessages.getSystemMessage(this.roleName);
 
         // Set system message for the agent
-        this.apiClient.setSystemMessage(systemMessage);
+        this.apiClient.setSystemMessage(systemMessage, this.roleName);
 
         // Add initial task prompt as user message to conversation history
         // Note: We use addMessage instead of sendUserMessage to avoid immediate execution

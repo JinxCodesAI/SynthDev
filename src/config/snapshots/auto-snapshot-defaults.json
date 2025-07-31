@@ -1,10 +1,10 @@
 {
     "autoSnapshot": {
-        "enabled": true,
-        "createOnToolExecution": true,
-        "createInitialSnapshot": true,
-        "verifyFileChanges": true,
-        "warnOnUnexpectedChanges": true
+        "enabled": false,
+        "createOnToolExecution": false,
+        "createInitialSnapshot": false,
+        "verifyFileChanges": false,
+        "warnOnUnexpectedChanges": false
     },
     "toolDeclarations": {
         "defaultModifiesFiles": false,
