@@ -11,7 +11,7 @@ import { AutoSnapshotManager } from '../../src/core/snapshot/AutoSnapshotManager
 
 import { SnapshotsCommand } from '../../src/commands/snapshots/SnapshotsCommand.js';
 // Mock logger to avoid initialization issues
-vi.mock('../../../src/core/managers/logger.js', () => ({
+vi.mock('../../src/core/managers/logger.js', () => ({
     getLogger: () => ({
         debug: vi.fn(),
         info: vi.fn(),
@@ -213,7 +213,7 @@ const mockPhase2Config = {
 };
 
 // Mock config managers with enabled configuration
-vi.mock('../../../src/config/managers/snapshotConfigManager.js', () => ({
+vi.mock('../../src/config/managers/snapshotConfigManager.js', () => ({
     getSnapshotConfigManager: () => ({
         getConfig: () => mockConfig,
         getPhase2Config: () => mockPhase2Config,
@@ -228,7 +228,6 @@ vi.mock('../../../src/config/managers/snapshotConfigManager.js', () => ({
 describe.sequential('Real-World Snapshot Failures', () => {
     let testDir;
     let originalCwd;
-    let autoSnapshotManager;
     let snapshotManager;
     let snapshotsCommand;
     let mockToolManager;
@@ -357,6 +356,9 @@ describe.sequential('Real-World Snapshot Failures', () => {
         });
 
         it('should show initial snapshot via SnapshotsCommand', async () => {
+            // Create AutoSnapshotManager inside test to ensure mocks are applied
+            const autoSnapshotManager = new AutoSnapshotManager(mockToolManager);
+
             // Initialize AutoSnapshotManager
             await autoSnapshotManager.initialize();
 
@@ -380,6 +382,9 @@ describe.sequential('Real-World Snapshot Failures', () => {
 
     describe('Issue 2: No Automatic Snapshots on Tool Execution', () => {
         it('should create automatic snapshot before file modification', async () => {
+            // Create AutoSnapshotManager inside test to ensure mocks are applied
+            const autoSnapshotManager = new AutoSnapshotManager(mockToolManager);
+
             // Initialize system
             await autoSnapshotManager.initialize();
 
@@ -485,6 +490,9 @@ describe.sequential('Real-World Snapshot Failures', () => {
 
     describe('Issue 5: Integration Between Components', () => {
         it('should maintain consistency between AutoSnapshotManager and SnapshotsCommand', async () => {
+            // Create AutoSnapshotManager inside test to ensure mocks are applied
+            const autoSnapshotManager = new AutoSnapshotManager(mockToolManager);
+
             // Initialize AutoSnapshotManager
             await autoSnapshotManager.initialize();
 

@@ -13,7 +13,7 @@ import ToolManager from '../../src/core/managers/toolManager.js';
 import { ConfigFixtures } from '../helpers/configFixtures.js';
 
 // Mock logger and config
-vi.mock('../../../src/core/managers/logger.js', () => ({
+vi.mock('../../src/core/managers/logger.js', () => ({
     getLogger: () => ({
         debug: vi.fn(),
         info: vi.fn(),
@@ -27,13 +27,10 @@ vi.mock('../../../src/core/managers/logger.js', () => ({
 let configFixtures;
 let mockConfigManager;
 
-// Create a dynamic mock that can be updated at runtime
-const dynamicMock = {
-    getSnapshotConfigManager: () => mockConfigManager,
-};
-
 // Mock config managers with fixture support
-vi.mock('../../../src/config/managers/snapshotConfigManager.js', () => dynamicMock);
+vi.mock('../../src/config/managers/snapshotConfigManager.js', () => ({
+    getSnapshotConfigManager: () => mockConfigManager,
+}));
 
 // Helper function to determine current configuration state
 function getCurrentAutoSnapshotConfig() {
@@ -90,9 +87,6 @@ describe.sequential('Automatic Snapshot Integration', () => {
             : ConfigFixtures.FIXTURES.AUTO_SNAPSHOT_DISABLED;
 
         mockConfigManager = configFixtures.createMockConfigManager(fixtureToUse);
-
-        // Ensure the mock is properly set up before creating AutoSnapshotManager
-        dynamicMock.getSnapshotConfigManager = () => mockConfigManager;
 
         // Initialize managers
         toolManager = new ToolManager();
@@ -202,7 +196,9 @@ describe.sequential('Automatic Snapshot Integration', () => {
                         }),
                     },
                 },
-                mockConsoleInterface
+                mockConsoleInterface,
+                null, // snapshotManager
+                { currentRole: 'test-role' } // context
             );
 
             const resultContent = JSON.parse(result.content);
@@ -251,7 +247,9 @@ describe.sequential('Automatic Snapshot Integration', () => {
                         }),
                     },
                 },
-                mockConsoleInterface
+                mockConsoleInterface,
+                null, // snapshotManager
+                { currentRole: 'test-role' } // context
             );
 
             const resultContent = JSON.parse(result.content);
@@ -286,7 +284,9 @@ describe.sequential('Automatic Snapshot Integration', () => {
                         }),
                     },
                 },
-                mockConsoleInterface
+                mockConsoleInterface,
+                null, // snapshotManager
+                { currentRole: 'test-role' } // context
             );
 
             const resultContent = JSON.parse(result.content);
@@ -375,7 +375,9 @@ describe.sequential('Automatic Snapshot Integration', () => {
                         }),
                     },
                 },
-                mockConsoleInterface
+                mockConsoleInterface,
+                null, // snapshotManager
+                { currentRole: 'test-role' } // context
             );
 
             // Should have created automatic snapshot
@@ -418,7 +420,9 @@ describe.sequential('Automatic Snapshot Integration', () => {
                         }),
                     },
                 },
-                mockConsoleInterface
+                mockConsoleInterface,
+                null, // snapshotManager
+                { currentRole: 'test-role' } // context
             );
 
             const snapshots = await autoSnapshotManager.snapshotManager.listSnapshots();
@@ -464,7 +468,9 @@ describe.sequential('Automatic Snapshot Integration', () => {
                         }),
                     },
                 },
-                mockConsoleInterface
+                mockConsoleInterface,
+                null, // snapshotManager
+                { currentRole: 'test-role' } // context
             );
 
             const snapshots = await autoSnapshotManager.snapshotManager.listSnapshots();
@@ -516,7 +522,9 @@ describe.sequential('Automatic Snapshot Integration', () => {
                         }),
                     },
                 },
-                mockConsoleInterface
+                mockConsoleInterface,
+                null, // snapshotManager
+                { currentRole: 'test-role' } // context
             );
 
             // Should not crash the snapshot system
@@ -555,7 +563,9 @@ describe.sequential('Automatic Snapshot Integration', () => {
                         }),
                     },
                 },
-                mockConsoleInterface
+                mockConsoleInterface,
+                null, // snapshotManager
+                { currentRole: 'test-role' } // context
             );
 
             // Tool should succeed even if snapshot fails
@@ -616,7 +626,9 @@ describe.sequential('Automatic Snapshot Integration', () => {
                         }),
                     },
                 },
-                mockConsoleInterface
+                mockConsoleInterface,
+                null, // snapshotManager
+                { currentRole: 'test-role' } // context
             );
 
             await toolManager.executeToolCall(
@@ -630,7 +642,9 @@ describe.sequential('Automatic Snapshot Integration', () => {
                         }),
                     },
                 },
-                mockConsoleInterface
+                mockConsoleInterface,
+                null, // snapshotManager
+                { currentRole: 'test-role' } // context
             );
 
             const finalSnapshots = await autoSnapshotManager.snapshotManager.listSnapshots();
@@ -685,7 +699,9 @@ describe.sequential('Automatic Snapshot Integration', () => {
                         }),
                     },
                 },
-                mockConsoleInterface
+                mockConsoleInterface,
+                null, // snapshotManager
+                { currentRole: 'test-role' } // context
             );
 
             const finalSnapshots =
@@ -741,7 +757,9 @@ describe.sequential('Automatic Snapshot Integration', () => {
                         }),
                     },
                 },
-                mockConsoleInterface
+                mockConsoleInterface,
+                null, // snapshotManager
+                { currentRole: 'test-role' } // context
             );
 
             const afterToolSnapshots = await manualOnlyManager.snapshotManager.listSnapshots();
