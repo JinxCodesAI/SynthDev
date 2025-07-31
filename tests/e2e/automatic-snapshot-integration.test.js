@@ -92,7 +92,9 @@ describe.sequential('Automatic Snapshot Integration', () => {
         toolManager = new ToolManager();
         await toolManager.loadTools();
 
-        autoSnapshotManager = new AutoSnapshotManager(toolManager);
+        // Reset singleton before creating new instance
+        AutoSnapshotManager.resetInstance();
+        autoSnapshotManager = AutoSnapshotManager.getInstance(toolManager);
     });
 
     afterEach(() => {
@@ -105,8 +107,9 @@ describe.sequential('Automatic Snapshot Integration', () => {
             configFixtures.restoreAll();
         }
 
-        // Reset singleton to ensure clean state between tests
+        // Reset singletons to ensure clean state between tests
         resetSnapshotManager();
+        AutoSnapshotManager.resetInstance();
 
         if (originalCwd) {
             process.chdir(originalCwd);
@@ -145,14 +148,13 @@ describe.sequential('Automatic Snapshot Integration', () => {
             // Use the fixture configuration, not the global file configuration
             const fixtureConfig = mockConfigManager.getPhase2Config().autoSnapshot;
 
-            // Initialize twice
+            // First initialization - should create initial snapshot
             await autoSnapshotManager.initialize();
             const snapshots1 = await autoSnapshotManager.snapshotManager.listSnapshots();
 
-            // Initialize again
-            const autoSnapshotManager2 = new AutoSnapshotManager(toolManager);
-            await autoSnapshotManager2.initialize();
-            const snapshots2 = await autoSnapshotManager2.snapshotManager.listSnapshots();
+            // Second initialization on same singleton instance - should not create duplicate
+            await autoSnapshotManager.initialize();
+            const snapshots2 = await autoSnapshotManager.snapshotManager.listSnapshots();
 
             if (fixtureConfig.enabled && fixtureConfig.createInitialSnapshot) {
                 // Should not create duplicate initial snapshots when enabled
@@ -589,7 +591,9 @@ describe.sequential('Automatic Snapshot Integration', () => {
                 initialSnapshot: { enabled: false },
             };
 
-            const disabledManager = new AutoSnapshotManager(toolManager);
+            // Reset singleton and get new instance
+            AutoSnapshotManager.resetInstance();
+            const disabledManager = AutoSnapshotManager.getInstance(toolManager);
             // Mock the config to return disabled settings
             disabledManager.config = disabledConfig;
             disabledManager.enabled = false;
@@ -666,7 +670,8 @@ describe.sequential('Automatic Snapshot Integration', () => {
             );
 
             // Create new manager with disabled config
-            const disabledAutoSnapshotManager = new AutoSnapshotManager(toolManager);
+            AutoSnapshotManager.resetInstance();
+            const disabledAutoSnapshotManager = AutoSnapshotManager.getInstance(toolManager);
 
             // Update the configuration to use the disabled fixture
             const disabledConfig = configFixtures.loadFixture(
@@ -719,7 +724,8 @@ describe.sequential('Automatic Snapshot Integration', () => {
             );
 
             // Create new manager with manual-only config
-            const manualOnlyManager = new AutoSnapshotManager(toolManager);
+            AutoSnapshotManager.resetInstance();
+            const manualOnlyManager = AutoSnapshotManager.getInstance(toolManager);
 
             // Update the configuration to use the manual-only fixture
             const manualOnlyConfig = configFixtures.loadFixture(

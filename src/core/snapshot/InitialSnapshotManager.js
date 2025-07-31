@@ -112,7 +112,9 @@ export class InitialSnapshotManager {
 
             // Check if state file exists
             const stateFilePath = resolve(resolvedBasePath, this.config.stateFile);
-            if (existsSync(stateFilePath)) {
+            const fileExists = existsSync(stateFilePath);
+
+            if (fileExists) {
                 this.logger.debug('Initial snapshot state file found');
                 return true;
             }
@@ -140,7 +142,8 @@ export class InitialSnapshotManager {
      */
     async shouldCreateInitialSnapshot(basePath) {
         // Check if we're in a first run scenario
-        if (!(await this.isFirstRun(basePath))) {
+        const isFirstRun = await this.isFirstRun(basePath);
+        if (!isFirstRun) {
             this.logger.debug('Not a first run, skipping initial snapshot');
             return false;
         }
