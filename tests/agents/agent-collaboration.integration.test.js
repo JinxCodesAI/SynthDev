@@ -13,6 +13,7 @@ vi.mock('../../src/core/ai/aiAPIClient.js', () => ({
         addMessage: vi.fn(),
         addUserMessage: vi.fn(),
         sendMessage: vi.fn().mockResolvedValue('Mock agent response'),
+        setTools: vi.fn(),
         messages: [],
     })),
 }));
