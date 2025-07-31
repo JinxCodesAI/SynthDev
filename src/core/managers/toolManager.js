@@ -244,7 +244,7 @@ class ToolManager {
         const toolDefinition = this.toolDefinitions.get(toolName);
 
         // Show tool execution info
-        consoleInterface.showToolExecution(toolName, toolArgs);
+        consoleInterface.showToolExecution(toolName, toolArgs, context.currentRole);
 
         // Check if tool requires confirmation (auto_run: false)
         if (toolDefinition && toolDefinition.auto_run === false) {

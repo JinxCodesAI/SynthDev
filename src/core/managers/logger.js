@@ -58,11 +58,12 @@ class Logger {
     /**
      * Level 2: Tool execution with compressed arguments (default level)
      * @param {string} toolName - Name of the tool
+     * @param {string} role - Role of the tool
      * @param {Object} args - Tool arguments
      */
-    toolExecution(toolName, args) {
+    toolExecution(toolName, role, args) {
         if (this.verbosityLevel >= 2) {
-            console.log(`🔧 Executing tool: ${toolName}`);
+            console.log(`🔧 Role: ${role} Executing tool: ${toolName}`);
             const compressedArgs = this._compressArguments(args);
             console.log('📝 Arguments:', compressedArgs);
         }
@@ -71,14 +72,15 @@ class Logger {
     /**
      * Level 3: Uncompressed arguments but no results
      * @param {string} toolName - Name of the tool
+     * @param {string} role - Role of the tool
      * @param {Object} args - Tool arguments
      */
-    toolExecutionDetailed(toolName, args) {
+    toolExecutionDetailed(toolName, role, args) {
         if (this.verbosityLevel >= 3) {
-            console.log(`🔧 Executing tool: ${toolName}`);
+            console.log(`🔧 Role: ${role} Executing tool: ${toolName}`);
             console.log('📝 Arguments:', args);
         } else if (this.verbosityLevel === 2) {
-            this.toolExecution(toolName, args);
+            this.toolExecution(toolName, role, args);
         }
     }
 

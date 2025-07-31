@@ -68,8 +68,8 @@ class ConsoleInterface {
         this.logger.raw();
     }
 
-    showToolExecution(toolName, args) {
-        this.logger.toolExecutionDetailed(toolName, args);
+    showToolExecution(toolName, args, role) {
+        this.logger.toolExecutionDetailed(toolName, role, args);
     }
 
     showToolResult(result) {
