@@ -384,7 +384,7 @@ export default class AICoderConsole {
                     );
 
                     this.currentAgentId = result.agentId;
-                    this.consoleInterface.showInfo(
+                    this.consoleInterface.showMessage(
                         `🤖 Spawned ${currentRole} agent ${result.agentId} with your task`
                     );
                 } catch (error) {
