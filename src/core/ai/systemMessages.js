@@ -108,7 +108,7 @@ class SystemMessages {
                 })
                 .join('\n');
 
-            parts.push(`Your role is ${role} and you need to coordinate with other roles ${enabledAgents.join(', ')} to accomplish given task. Agents you can interact with:
+            parts.push(`Your role is ${role} and you need to coordinate with other roles like: ${enabledAgents.join(', ')} to accomplish given task. Agents you can interact with:
 ${agentDescriptions}
 
 Use get_agents to understand what agents are already available.

@@ -251,7 +251,7 @@ describe('SystemMessages - Automatic Tool Inclusion', () => {
 
             expect(systemMessage).toContain('Base system message.');
             expect(systemMessage).toContain(
-                'Your role is test_system_message and you need to coordinate with other roles developer, tester'
+                'Your role is test_system_message and you need to coordinate with other roles like: developer, tester'
             );
             expect(systemMessage).toContain('developer - responsible for implementing features');
             expect(systemMessage).toContain('tester - responsible for testing code');

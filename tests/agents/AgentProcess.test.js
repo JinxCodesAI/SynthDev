@@ -12,6 +12,7 @@ vi.mock('../../src/core/managers/logger.js', () => ({
     getLogger: vi.fn(() => ({
         info: vi.fn(),
         error: vi.fn(),
+        debug: vi.fn(),
     })),
 }));
 
@@ -114,7 +115,10 @@ describe('AgentProcess', () => {
             expect(mockAPIClient.setSystemMessage).toHaveBeenCalledWith(
                 'Mock system message for test_writer'
             );
-            expect(mockAPIClient.addUserMessage).toHaveBeenCalledWith('Write comprehensive tests');
+            expect(mockAPIClient.addMessage).toHaveBeenCalledWith({
+                role: 'user',
+                content: 'Write comprehensive tests',
+            });
         });
     });
 
