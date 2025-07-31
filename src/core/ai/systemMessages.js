@@ -111,8 +111,9 @@ class SystemMessages {
             parts.push(`Your role is ${role} and you need to coordinate with other roles like: ${enabledAgents.join(', ')} to accomplish given task. Agents you can interact with:
 ${agentDescriptions}
 
-Use get_agents to understand what agents are already available.
-If agent you need is not available, use spawn_agent to initialize new agent that you need to do something for you. For existing agents use speak_to_agent to communicate with them.`);
+Use get_agents to understand what agents are already available, but avoid calling it repeatedly.
+If agent you need is not available, use spawn_agent to initialize new agent that you need to do something for you. For existing agents use speak_to_agent to communicate with them.
+If there is nothing useful you can do, and there is nothing to report back just wait.`);
         }
 
         // Add task creation instructions if can_create_tasks_for exists and is not empty
@@ -595,6 +596,16 @@ If agent you need is not available, use spawn_agent to initialize new agent that
     static canSpawnAgent(supervisorRole, workerRole) {
         const enabledAgents = SystemMessages.getEnabledAgents(supervisorRole);
         return enabledAgents.includes(workerRole);
+    }
+
+    /**
+     * Check if a role is agentic (has enabled_agents configured)
+     * @param {string} role - The role name
+     * @returns {boolean} True if role is agentic
+     */
+    static isAgentic(role) {
+        const enabledAgents = SystemMessages.getEnabledAgents(role);
+        return Array.isArray(enabledAgents) && enabledAgents.length > 0;
     }
 
     /**

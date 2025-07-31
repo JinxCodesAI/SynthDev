@@ -18,6 +18,7 @@ vi.mock('../../../src/core/ai/systemMessages.js', () => ({
         getRolesByGroup: vi.fn(),
         getRoleGroup: vi.fn(),
         resolveRole: vi.fn(),
+        isAgentic: vi.fn(),
     },
 }));
 
@@ -84,6 +85,7 @@ describe('RoleCommand', () => {
                 };
             }
         });
+        mockSystemMessages.isAgentic.mockReturnValue(false); // Default to non-agentic
 
         // Create mock context
         mockContext = {
@@ -92,6 +94,12 @@ describe('RoleCommand', () => {
                 setSystemMessage: vi.fn().mockResolvedValue(true),
                 getFilteredToolCount: vi.fn().mockReturnValue(8),
                 getTotalToolCount: vi.fn().mockReturnValue(10),
+            },
+            app: {
+                agentManager: {
+                    _generateAgentId: vi.fn().mockReturnValue('agent-1'),
+                },
+                currentAgentId: null,
             },
         };
 

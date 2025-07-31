@@ -88,8 +88,9 @@ export class RoleCommand extends BaseCommand {
             await apiClient.setSystemMessage(systemMessage, roleName);
 
             const groupDisplay = group !== 'global' ? ` [${group}]` : '';
+            const agenticDisplay = SystemMessages.isAgentic(roleName) ? ' [agentic]' : '';
             logger.user(
-                `🎭 Role switched from '${previousRole || 'none'}' to '${roleName}'${groupDisplay}`
+                `🎭 Role switched from '${previousRole || 'none'}' to '${roleName}'${groupDisplay}${agenticDisplay}`
             );
             logger.info(
                 `🔧 Tools: ${apiClient.getFilteredToolCount()}/${apiClient.getTotalToolCount()} available`
@@ -99,6 +100,17 @@ export class RoleCommand extends BaseCommand {
             if (excludedTools.length > 0) {
                 logger.info(`🚫 Excluded tools for ${roleName}: ${excludedTools.join(', ')}`);
             }
+
+            // If role is agentic, prepare for agent spawning on first input
+            if (SystemMessages.isAgentic(roleName)) {
+                // Clear current agent ID - will be set when agent is spawned on first input
+                context.app.currentAgentId = null;
+                logger.info('🤖 Agentic role ready - agent will be spawned on first input');
+            } else {
+                // Clear current agent ID for non-agentic roles
+                context.app.currentAgentId = null;
+            }
+
             logger.raw();
 
             return true;

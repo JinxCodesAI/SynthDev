@@ -72,6 +72,7 @@ describe('AgentProcess', () => {
         ConfigManager.getInstance = vi.fn(() => mockConfigManager);
 
         agentProcess = new AgentProcess(
+            'agent-1',
             'test_writer',
             'Write comprehensive tests',
             'parent-123',
@@ -113,7 +114,8 @@ describe('AgentProcess', () => {
         it('should set system message and initial task', () => {
             expect(SystemMessages.getSystemMessage).toHaveBeenCalledWith('test_writer');
             expect(mockAPIClient.setSystemMessage).toHaveBeenCalledWith(
-                'Mock system message for test_writer'
+                'Mock system message for test_writer',
+                'test_writer'
             );
             expect(mockAPIClient.addMessage).toHaveBeenCalledWith({
                 role: 'user',
@@ -222,6 +224,7 @@ describe('AgentProcess', () => {
             SystemMessages.getLevel.mockReturnValue('smart');
 
             const smartAgent = new AgentProcess(
+                'agent-2',
                 'smart_role',
                 'Complex task',
                 'parent',
@@ -241,6 +244,7 @@ describe('AgentProcess', () => {
             SystemMessages.getLevel.mockReturnValue('fast');
 
             const fastAgent = new AgentProcess(
+                'agent-3',
                 'fast_role',
                 'Quick task',
                 'parent',
@@ -257,9 +261,10 @@ describe('AgentProcess', () => {
         });
     });
 
-    describe('unique agent IDs', () => {
-        it('should generate unique IDs for different agents', () => {
+    describe('simple agent IDs', () => {
+        it('should use provided simple IDs for different agents', () => {
             const agent1 = new AgentProcess(
+                'agent-4',
                 'role1',
                 'task1',
                 'parent',
@@ -267,6 +272,7 @@ describe('AgentProcess', () => {
                 mockToolManager
             );
             const agent2 = new AgentProcess(
+                'agent-5',
                 'role2',
                 'task2',
                 'parent',
@@ -275,8 +281,8 @@ describe('AgentProcess', () => {
             );
 
             expect(agent1.agentId).not.toBe(agent2.agentId);
-            expect(agent1.agentId).toMatch(/^[0-9a-f-]{36}$/); // UUID format
-            expect(agent2.agentId).toMatch(/^[0-9a-f-]{36}$/); // UUID format
+            expect(agent1.agentId).toBe('agent-4'); // Simple ID format
+            expect(agent2.agentId).toBe('agent-5'); // Simple ID format
         });
     });
 });

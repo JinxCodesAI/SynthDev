@@ -407,7 +407,10 @@ describe.sequential('Agent Collaboration Integration', () => {
             AIAPIClient.mock.results[AIAPIClient.mock.results.length - 1].value;
 
         // Verify system message was set
-        expect(apiClientInstance.setSystemMessage).toHaveBeenCalledWith('Mock system message');
+        expect(apiClientInstance.setSystemMessage).toHaveBeenCalledWith(
+            'Mock system message',
+            'test_writer'
+        );
 
         // Verify initial task prompt was added to conversation (not sent immediately)
         expect(apiClientInstance.addMessage).toHaveBeenCalledWith({

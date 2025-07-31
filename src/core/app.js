@@ -134,6 +134,7 @@ export default class AICoderConsole {
 
         // Initialize AgentManager
         this.agentManager = AgentManager.getInstance();
+        this.currentAgentId = null; // Track current agent ID for agentic roles
 
         this.commandHandler = new CommandHandler(
             this.apiClient,
@@ -214,7 +215,7 @@ export default class AICoderConsole {
                 // Prepare context for tool execution
                 const toolContext = {
                     currentRole: this.apiClient.role,
-                    currentAgentId: null, // Main user has no agent ID
+                    currentAgentId: this.currentAgentId, // Use tracked agent ID for agentic roles
                     agentManager: this.agentManager,
                     costsManager: this.costsManager,
                     toolManager: this.toolManager,
@@ -356,6 +357,55 @@ export default class AICoderConsole {
         const commandResult = await this.commandHandler.handleCommand(trimmed);
         if (commandResult !== false) {
             // Command was handled (regardless of specific return value)
+            this.consoleInterface.prompt();
+            return;
+        }
+
+        // Check if we're in agentic mode and should spawn/communicate with agent
+        const currentRole = this.apiClient.getCurrentRole();
+        if (currentRole && SystemMessages.isAgentic(currentRole)) {
+            if (!this.currentAgentId) {
+                // First input after switching to agentic role - spawn the agent
+                try {
+                    const context = {
+                        currentRole: currentRole,
+                        currentAgentId: null, // No parent for the initial agentic role
+                        agentManager: this.agentManager,
+                        costsManager: this.costsManager,
+                        toolManager: this.toolManager,
+                        app: this,
+                    };
+
+                    const result = await this.agentManager.spawnAgent(
+                        'user', // User is spawning the agentic role
+                        currentRole,
+                        trimmed, // User input becomes the initial task
+                        context
+                    );
+
+                    this.currentAgentId = result.agentId;
+                    this.consoleInterface.showInfo(
+                        `🤖 Spawned ${currentRole} agent ${result.agentId} with your task`
+                    );
+                } catch (error) {
+                    this.consoleInterface.showError(
+                        `Failed to spawn ${currentRole} agent: ${error.message}`
+                    );
+                }
+            } else {
+                // Subsequent input - communicate with existing agent
+                try {
+                    const result = await this.agentManager.sendMessageToAgent(
+                        this.currentAgentId,
+                        trimmed
+                    );
+                    this.consoleInterface.showToolResult(result);
+                } catch (error) {
+                    this.consoleInterface.showError(
+                        `Failed to communicate with agent: ${error.message}`
+                    );
+                }
+            }
             this.consoleInterface.prompt();
             return;
         }
