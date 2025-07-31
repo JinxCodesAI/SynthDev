@@ -52,6 +52,60 @@ class AgentProcess {
         // Store references for tool execution context
         this.costsManager = costsManager;
         this.toolManager = toolManager;
+
+        // Set up callbacks for tool execution
+        this._setupAPIClientCallbacks();
+    }
+
+    /**
+     * Set up callbacks for AIAPIClient to handle tool execution
+     * @private
+     */
+    _setupAPIClientCallbacks() {
+        this.apiClient.setCallbacks({
+            onToolExecution: async toolCall => {
+                // Log tool execution for agents to match main app logging
+                const toolName = toolCall.function.name;
+                const toolArgs = JSON.parse(toolCall.function.arguments);
+                this.logger.toolExecutionDetailed(toolName, this.apiClient.role, toolArgs);
+
+                // Prepare context for tool execution
+                const toolContext = {
+                    currentRole: this.apiClient.role,
+                    currentAgentId: this.agentId,
+                    agentManager: null, // Agents don't have access to agentManager to prevent recursion
+                    costsManager: this.costsManager,
+                    toolManager: this.toolManager,
+                    app: null, // Agents don't have access to main app instance
+                };
+
+                try {
+                    const result = await this.toolManager.executeToolCall(
+                        toolCall,
+                        null, // No console interface for agents
+                        null, // No snapshot manager
+                        toolContext
+                    );
+
+                    // Log tool result for agents to match main app logging
+                    if (result && result.content) {
+                        const resultContent = JSON.parse(result.content);
+                        this.logger.toolResult(resultContent);
+                    }
+
+                    return result;
+                } catch (error) {
+                    this.logger.error(
+                        `Agent ${this.agentId} tool execution failed: ${error.message}`
+                    );
+                    throw error;
+                }
+            },
+
+            onError: error => {
+                this.logger.error(`Agent ${this.agentId} API error: ${error.message}`);
+            },
+        });
     }
 
     /**
