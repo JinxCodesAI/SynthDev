@@ -46,6 +46,9 @@ class AgentProcess {
             modelConfig.model || modelConfig.baseModel
         );
 
+        // Set tools in API client
+        this.apiClient.setTools(toolManager.getTools());
+
         // Store references for tool execution context
         this.costsManager = costsManager;
         this.toolManager = toolManager;

@@ -32,6 +32,7 @@ describe('AgentProcess', () => {
         // Mock AIAPIClient
         mockAPIClient = {
             setSystemMessage: vi.fn(),
+            setTools: vi.fn(),
             addMessage: vi.fn(),
             addUserMessage: vi.fn(),
             sendMessage: vi.fn().mockResolvedValue('Mock AI response'),
@@ -121,6 +122,22 @@ describe('AgentProcess', () => {
                 role: 'user',
                 content: 'Write comprehensive tests',
             });
+        });
+
+        it('should set tools from toolManager', () => {
+            const mockTools = [{ name: 'tool1' }, { name: 'tool2' }];
+            mockToolManager.getTools.mockReturnValue(mockTools);
+
+            new AgentProcess(
+                'agent-test',
+                'test_writer',
+                'Write comprehensive tests',
+                'parent-123',
+                mockCostsManager,
+                mockToolManager
+            );
+
+            expect(mockAPIClient.setTools).toHaveBeenCalledWith(mockTools);
         });
     });
 
