@@ -7,7 +7,7 @@ import { getLogger } from '../core/managers/logger.js';
  * Represents a single, isolated agent instance with its own conversation context
  */
 class AgentProcess {
-    constructor(agentId, roleName, taskPrompt, parentId, costsManager, toolManager) {
+    constructor(agentId, roleName, taskPrompt, parentId, costsManager, toolManager, agentManager) {
         this.agentId = agentId;
         this.roleName = roleName;
         this.taskPrompt = taskPrompt;
@@ -16,6 +16,11 @@ class AgentProcess {
         this.createdAt = new Date();
         this.result = null;
         this.logger = getLogger();
+
+        // Store references for tool execution context
+        this.costsManager = costsManager;
+        this.toolManager = toolManager;
+        this.agentManager = agentManager;
 
         // Create isolated AIAPIClient instance
         this._initializeAPIClient(costsManager, toolManager);
@@ -49,10 +54,6 @@ class AgentProcess {
         // Set tools in API client
         this.apiClient.setTools(toolManager.getTools());
 
-        // Store references for tool execution context
-        this.costsManager = costsManager;
-        this.toolManager = toolManager;
-
         // Set up callbacks for tool execution
         this._setupAPIClientCallbacks();
     }
@@ -73,7 +74,7 @@ class AgentProcess {
                 const toolContext = {
                     currentRole: this.apiClient.role,
                     currentAgentId: this.agentId,
-                    agentManager: null, // Agents don't have access to agentManager to prevent recursion
+                    agentManager: this.agentManager, // Provide agentManager - permissions are handled by AgentManager itself
                     costsManager: this.costsManager,
                     toolManager: this.toolManager,
                     app: null, // Agents don't have access to main app instance
