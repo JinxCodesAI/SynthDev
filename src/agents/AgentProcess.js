@@ -1,4 +1,3 @@
-import { randomUUID } from 'crypto';
 import AIAPIClient from '../core/ai/aiAPIClient.js';
 import SystemMessages from '../core/ai/systemMessages.js';
 import ConfigManager from '../config/managers/configManager.js';
@@ -8,8 +7,8 @@ import { getLogger } from '../core/managers/logger.js';
  * Represents a single, isolated agent instance with its own conversation context
  */
 class AgentProcess {
-    constructor(roleName, taskPrompt, parentId, costsManager, toolManager) {
-        this.agentId = randomUUID();
+    constructor(agentId, roleName, taskPrompt, parentId, costsManager, toolManager) {
+        this.agentId = agentId;
         this.roleName = roleName;
         this.taskPrompt = taskPrompt;
         this.parentId = parentId;
@@ -46,6 +45,9 @@ class AgentProcess {
             modelConfig.baseUrl,
             modelConfig.model || modelConfig.baseModel
         );
+
+        // Set tools in API client
+        this.apiClient.setTools(toolManager.getTools());
 
         // Store references for tool execution context
         this.costsManager = costsManager;

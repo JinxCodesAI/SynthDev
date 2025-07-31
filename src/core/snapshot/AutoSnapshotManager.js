@@ -1,6 +1,7 @@
 /**
  * Auto Snapshot Manager for Phase 2 - Automatic Snapshot Creation
  * Main coordinator class that brings together all Phase 2 components
+ * Implemented as a singleton to ensure only one instance exists per application
  */
 
 import { getLogger } from '../managers/logger.js';
@@ -13,7 +14,16 @@ import { InitialSnapshotManager } from './InitialSnapshotManager.js';
 import { ToolManagerIntegration } from './ToolManagerIntegration.js';
 
 export class AutoSnapshotManager {
+    static #instance = null;
+    static _allowConstruction = false;
     constructor(toolManager = null) {
+        // Prevent direct instantiation (except from getInstance)
+        if (AutoSnapshotManager.#instance && !AutoSnapshotManager._allowConstruction) {
+            throw new Error(
+                'AutoSnapshotManager is a singleton. Use AutoSnapshotManager.getInstance() instead.'
+            );
+        }
+
         this.logger = getLogger();
         this.configManager = getSnapshotConfigManager();
 
@@ -36,6 +46,7 @@ export class AutoSnapshotManager {
 
         // Integration state
         this.toolManagerIntegrated = false;
+        this.isInitialized = false;
 
         this.logger.debug('AutoSnapshotManager created', {
             enabled: this.enabled,
@@ -50,6 +61,12 @@ export class AutoSnapshotManager {
     async initialize() {
         if (!this.enabled) {
             this.logger.debug('Auto snapshot system disabled');
+            return;
+        }
+
+        // Prevent multiple initializations
+        if (this.isInitialized) {
+            this.logger.debug('Auto snapshot system already initialized');
             return;
         }
 
@@ -73,6 +90,7 @@ export class AutoSnapshotManager {
                 await this._createInitialSnapshot();
             }
 
+            this.isInitialized = true;
             this.logger.info('✅ Auto Snapshot System initialized successfully');
         } catch (error) {
             this.logger.error('Failed to initialize Auto Snapshot System', error);
@@ -406,6 +424,51 @@ export class AutoSnapshotManager {
 
         return validation;
     }
+
+    /**
+     * Get the singleton instance of AutoSnapshotManager
+     * @param {Object} toolManager - Optional tool manager for first initialization
+     * @returns {AutoSnapshotManager} The singleton instance
+     */
+    static getInstance(toolManager = null) {
+        if (!AutoSnapshotManager.#instance) {
+            AutoSnapshotManager._allowConstruction = true;
+            AutoSnapshotManager.#instance = new AutoSnapshotManager(toolManager);
+            AutoSnapshotManager._allowConstruction = false;
+        }
+        return AutoSnapshotManager.#instance;
+    }
+
+    /**
+     * Reset the singleton instance (primarily for testing)
+     * @returns {void}
+     */
+    static resetInstance() {
+        if (AutoSnapshotManager.#instance) {
+            // Clean up the existing instance if needed
+            if (typeof AutoSnapshotManager.#instance.cleanup === 'function') {
+                AutoSnapshotManager.#instance.cleanup();
+            }
+        }
+        AutoSnapshotManager.#instance = null;
+    }
+
+    /**
+     * Check if an instance exists
+     * @returns {boolean} Whether an instance exists
+     */
+    static hasInstance() {
+        return AutoSnapshotManager.#instance !== null;
+    }
+}
+
+/**
+ * Get the singleton instance of AutoSnapshotManager
+ * @param {Object} toolManager - Optional tool manager for first initialization
+ * @returns {AutoSnapshotManager} The singleton instance
+ */
+export function getAutoSnapshotManager(toolManager = null) {
+    return AutoSnapshotManager.getInstance(toolManager);
 }
 
 export default AutoSnapshotManager;

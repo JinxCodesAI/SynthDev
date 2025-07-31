@@ -11,6 +11,7 @@ yarn-error.log*
 
 # Synth-dev internal
 .synthdev*
+examples/*
 
 # Logs
 logs

@@ -14,6 +14,7 @@ class AgentManager {
 
         this.activeAgents = new Map(); // agentId -> AgentProcess
         this.agentHierarchy = new Map(); // parentId -> Set<childId>
+        this.agentCounter = 0; // Counter for generating simple agent IDs
         this.logger = getLogger();
 
         AgentManager.instance = this;
@@ -24,6 +25,15 @@ class AgentManager {
             AgentManager.instance = new AgentManager();
         }
         return AgentManager.instance;
+    }
+
+    /**
+     * Generate a simple sequential agent ID
+     * @returns {string} Agent ID in format 'agent-N'
+     */
+    _generateAgentId() {
+        this.agentCounter++;
+        return `agent-${this.agentCounter}`;
     }
 
     /**
@@ -46,8 +56,12 @@ class AgentManager {
         // Get supervisor agent ID from context (null for main user)
         const supervisorAgentId = context?.currentAgentId || null;
 
+        // Generate simple agent ID
+        const agentId = this._generateAgentId();
+
         // Create new agent process
         const agent = new AgentProcess(
+            agentId,
             workerRoleName,
             taskPrompt,
             supervisorAgentId, // Use actual agent ID as parent
@@ -245,6 +259,10 @@ class AgentManager {
      */
     _validateSpawnPermission(supervisorRole, workerRoleName) {
         try {
+            // Allow 'user' to spawn any agentic role
+            if (supervisorRole === 'user') {
+                return SystemMessages.isAgentic(workerRoleName);
+            }
             return SystemMessages.canSpawnAgent(supervisorRole, workerRoleName);
         } catch (error) {
             this.logger.error(`Permission validation failed: ${error.message}`);
