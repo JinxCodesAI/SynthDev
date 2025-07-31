@@ -79,19 +79,30 @@ class AgentProcess {
                     app: null, // Agents don't have access to main app instance
                 };
 
+                // Create minimal console interface for agents (just logging, no UI)
+                const agentConsoleInterface = {
+                    showToolExecution: (toolName, args, role) => {
+                        // Already logged above, no need to duplicate
+                    },
+                    showToolResult: result => {
+                        this.logger.toolResult(result);
+                    },
+                    showToolCancelled: toolName => {
+                        this.logger.debug(`Agent ${this.agentId} tool cancelled: ${toolName}`);
+                    },
+                    promptForConfirmation: async () => {
+                        // Agents auto-approve all tools (no user interaction)
+                        return true;
+                    },
+                };
+
                 try {
                     const result = await this.toolManager.executeToolCall(
                         toolCall,
-                        null, // No console interface for agents
+                        agentConsoleInterface,
                         null, // No snapshot manager
                         toolContext
                     );
-
-                    // Log tool result for agents to match main app logging
-                    if (result && result.content) {
-                        const resultContent = JSON.parse(result.content);
-                        this.logger.toolResult(resultContent);
-                    }
 
                     return result;
                 } catch (error) {
