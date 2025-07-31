@@ -130,10 +130,15 @@ describe.sequential('Integration Debug Tests', () => {
 
         console.log('AutoSnapshotManager config:', autoManager.config);
         console.log('Initial snapshot enabled:', autoManager.config.initialSnapshot.enabled);
+        console.log('AutoSnapshotManager enabled:', autoManager.isEnabled());
 
-        // Force create initial snapshot
-        const result = await autoManager.initialSnapshotManager.createInitialSnapshot(testDir);
-        console.log('Initial snapshot result:', result);
+        if (autoManager.isEnabled() && autoManager.initialSnapshotManager) {
+            // Force create initial snapshot when enabled
+            const result = await autoManager.initialSnapshotManager.createInitialSnapshot(testDir);
+            console.log('Initial snapshot result:', result);
+        } else {
+            console.log('Auto-snapshot is disabled, skipping initial snapshot creation');
+        }
 
         // Check if it's in the store
         const snapshots = await autoManager.snapshotManager.listSnapshots();
