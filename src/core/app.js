@@ -102,8 +102,9 @@ export default class AICoderConsole {
         this.workflowStateMachine = null;
         this.commandHandler = null;
 
-        // State management for input blocking
+        // State management for input blocking and exit handling
         this.isProcessing = false;
+        this.isExiting = false;
     }
 
     /**
@@ -480,29 +481,116 @@ export default class AICoderConsole {
      * @private
      */
     setupSignalHandlers() {
-        // Handle SIGINT (Ctrl+C)
+        // Track signal handling state
+        this.signalReceived = false;
+        this.forceExitTimer = null;
+
+        // Handle SIGINT (Ctrl+C) - First attempt graceful, second attempt forced
         process.on('SIGINT', () => {
-            this.logger.info('\n🛑 Received SIGINT (Ctrl+C), shutting down gracefully...');
-            this.handleExit();
+            if (this.signalReceived) {
+                // Second Ctrl+C - force immediate exit
+                console.log('\n🚨 Force termination requested. Exiting immediately...');
+                process.exit(1);
+            }
+
+            this.signalReceived = true;
+            console.log(
+                '\n🛑 Received SIGINT (Ctrl+C). Press Ctrl+C again within 3 seconds to force exit...'
+            );
+
+            // Set up force exit timer
+            this.forceExitTimer = setTimeout(() => {
+                this.signalReceived = false;
+                this.forceExitTimer = null;
+            }, 3000);
+
+            // Interrupt processing if active
+            if (this.isProcessing) {
+                this.isProcessing = false;
+                this.consoleInterface.resumeInput();
+                console.log('🔄 Interrupted current processing...');
+            }
+
+            // Start graceful shutdown
+            this.handleExit().catch(error => {
+                console.error('❌ Error during graceful shutdown:', error.message);
+                process.exit(1);
+            });
         });
 
         // Handle SIGTERM (process termination)
         process.on('SIGTERM', () => {
-            this.logger.info('\n🛑 Received SIGTERM, shutting down gracefully...');
-            this.handleExit();
+            console.log('\n🛑 Received SIGTERM, shutting down gracefully...');
+            this.handleExit().catch(error => {
+                console.error('❌ Error during graceful shutdown:', error.message);
+                process.exit(1);
+            });
         });
+
+        // Windows-specific: Handle SIGBREAK (Ctrl+Break)
+        if (process.platform === 'win32') {
+            process.on('SIGBREAK', () => {
+                console.log('\n🛑 Received SIGBREAK (Ctrl+Break), shutting down gracefully...');
+                this.handleExit().catch(error => {
+                    console.error('❌ Error during graceful shutdown:', error.message);
+                    process.exit(1);
+                });
+            });
+        }
 
         // Handle uncaught exceptions
         process.on('uncaughtException', error => {
-            this.logger.error('💥 Uncaught exception:', error);
-            this.handleExit(1);
+            console.error('💥 Uncaught exception:', error);
+            this.handleExit(1).catch(() => {
+                process.exit(1);
+            });
         });
 
         // Handle unhandled promise rejections
         process.on('unhandledRejection', (reason, promise) => {
-            this.logger.error('💥 Unhandled promise rejection at:', promise, 'reason:', reason);
-            this.handleExit(1);
+            console.error('💥 Unhandled promise rejection at:', promise, 'reason:', reason);
+            this.handleExit(1).catch(() => {
+                process.exit(1);
+            });
         });
+
+        // Windows-specific: Handle console control events
+        if (process.platform === 'win32') {
+            // Handle Windows console control events
+            process.on('beforeExit', () => {
+                if (!this.signalReceived) {
+                    console.log('\n🔄 Process is about to exit...');
+                }
+            });
+
+            // Windows-specific: Handle console close event
+            process.on('exit', code => {
+                if (code !== 0 && !this.isExiting) {
+                    console.log(`\n🔄 Process exiting with code ${code}...`);
+                }
+            });
+
+            // Try to handle Windows console control events more aggressively
+            try {
+                // Set up a more aggressive signal handler for Windows
+                const originalEmit = process.emit;
+                process.emit = function (event, ...args) {
+                    if (event === 'SIGINT' || event === 'SIGTERM' || event === 'SIGBREAK') {
+                        // Force the signal to be handled immediately
+                        setImmediate(() => {
+                            originalEmit.call(process, event, ...args);
+                        });
+                        return true;
+                    }
+                    return originalEmit.call(process, event, ...args);
+                };
+            } catch (error) {
+                console.warn(
+                    '⚠️ Could not set up enhanced Windows signal handling:',
+                    error.message
+                );
+            }
+        }
     }
 
     /**
@@ -510,16 +598,50 @@ export default class AICoderConsole {
      * @param {number} exitCode - Exit code (default: 0)
      */
     async handleExit(exitCode = 0) {
+        // Prevent multiple exit attempts
+        if (this.isExiting) {
+            return;
+        }
+        this.isExiting = true;
+
+        // Clear any force exit timer
+        if (this.forceExitTimer) {
+            clearTimeout(this.forceExitTimer);
+            this.forceExitTimer = null;
+        }
+
         try {
+            // Set a maximum cleanup time to prevent hanging
+            const cleanupTimeout = setTimeout(() => {
+                console.log('\n⏰ Cleanup timeout reached. Forcing exit...');
+                process.exit(exitCode);
+            }, 5000); // 5 second timeout
+
+            // Stop processing if active
+            if (this.isProcessing) {
+                this.isProcessing = false;
+                if (this.consoleInterface) {
+                    this.consoleInterface.resumeInput();
+                }
+            }
+
             // Cleanup auto snapshot manager
             if (this.autoSnapshotManager) {
                 await this.autoSnapshotManager.cleanup();
             }
 
-            // Show goodbye message
-            this.consoleInterface.showGoodbye();
+            // Show goodbye message and close console interface
+            if (this.consoleInterface) {
+                this.consoleInterface.showGoodbye();
+                // Close the readline interface to release stdin
+                this.consoleInterface.close();
+            }
+
+            // Clear the cleanup timeout since we completed successfully
+            clearTimeout(cleanupTimeout);
         } catch (error) {
-            this.logger.error('❌ Error during exit cleanup:', error.message);
+            const errorMsg = error?.message || 'Unknown error';
+            console.error('❌ Error during exit cleanup:', errorMsg);
         } finally {
             // Ensure we exit even if cleanup fails
             process.exit(exitCode);
