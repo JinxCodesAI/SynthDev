@@ -101,30 +101,28 @@ class SystemMessages {
             const enabledAgents = roleConfig.enabled_agents;
             const agentDescriptions = enabledAgents
                 .map(agentRole => {
-                    // Smart role lookup: prefer agentic versions when current role is agentic
+                    // Smart role lookup: prefer roles with agent_description when available
                     let agentConfig = null;
-
-                    // Check if current role is agentic
-                    const currentRoleConfig = this.roles[role];
-                    const isCurrentRoleAgentic = currentRoleConfig?._group === 'agentic';
 
                     if (agentRole.includes('.')) {
                         // Group-prefixed role - direct lookup
                         agentConfig = this.roles[agentRole];
                     } else {
-                        // Simple role name - apply smart lookup
-                        if (isCurrentRoleAgentic) {
-                            // Current role is agentic, prefer agentic version of target role
-                            const agenticRoleKey = `agentic.${agentRole}`;
-                            if (this.roles[agenticRoleKey]) {
-                                agentConfig = this.roles[agenticRoleKey];
-                            } else {
-                                // Fall back to any version
-                                agentConfig = this.roles[agentRole];
+                        // Simple role name - try direct lookup first
+                        agentConfig = this.roles[agentRole];
+
+                        // If found but no description, try to find a better version
+                        if (agentConfig && !agentConfig.agent_description) {
+                            // Look for other versions of this role that have descriptions
+                            const allRoleKeys = Object.keys(this.roles);
+                            const alternativeKey = allRoleKeys.find(key => {
+                                const config = this.roles[key];
+                                return key.endsWith(`.${agentRole}`) && config.agent_description;
+                            });
+
+                            if (alternativeKey) {
+                                agentConfig = this.roles[alternativeKey];
                             }
-                        } else {
-                            // Current role is not agentic, use direct lookup
-                            agentConfig = this.roles[agentRole];
                         }
                     }
 
