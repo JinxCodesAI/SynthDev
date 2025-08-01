@@ -53,8 +53,7 @@ class AgentManager {
             );
         }
 
-        // Resolve the worker role name to get the actual role name
-        let actualWorkerRoleName = workerRoleName;
+        // Validate the worker role name but preserve the original group-prefixed name
         if (typeof SystemMessages.resolveRole === 'function') {
             const workerResolution = SystemMessages.resolveRole(workerRoleName);
             if (workerResolution && workerResolution.ambiguous) {
@@ -66,9 +65,8 @@ class AgentManager {
             if (workerResolution && !workerResolution.found) {
                 throw new Error(`Role '${workerRoleName}' not found`);
             }
-            if (workerResolution && workerResolution.found) {
-                actualWorkerRoleName = workerResolution.roleName;
-            }
+            // Don't change actualWorkerRoleName - preserve the original group-prefixed name
+            // The SystemMessages.getSystemMessage() method will handle the resolution
         }
 
         // Get supervisor agent ID from context (null for main user)
@@ -77,10 +75,10 @@ class AgentManager {
         // Generate simple agent ID
         const agentId = this._generateAgentId();
 
-        // Create new agent process with the resolved role name
+        // Create new agent process with the original role name (preserving group prefix)
         const agent = new AgentProcess(
             agentId,
-            actualWorkerRoleName,
+            workerRoleName, // Use original role name to preserve group prefix
             taskPrompt,
             supervisorAgentId, // Use actual agent ID as parent
             context.costsManager,

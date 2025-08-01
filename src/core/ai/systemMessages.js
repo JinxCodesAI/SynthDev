@@ -101,28 +101,28 @@ class SystemMessages {
             const enabledAgents = roleConfig.enabled_agents;
             const agentDescriptions = enabledAgents
                 .map(agentRole => {
-                    // Resolve the agent role to get the actual role configuration
-                    const resolution = SystemMessages.resolveRole(agentRole);
-                    let actualRoleName = agentRole;
-                    let agentConfig = null;
+                    // Try direct lookup first (handles both simple and group-prefixed roles)
+                    let agentConfig = this.roles[agentRole];
 
-                    if (resolution.found && !resolution.ambiguous) {
-                        actualRoleName = resolution.roleName;
-                        agentConfig = this.roles[actualRoleName];
-                    } else if (resolution.ambiguous) {
-                        // For ambiguous roles, try to find the config anyway
-                        agentConfig = this.roles[agentRole];
-                    } else {
-                        // Role not found, try direct lookup for backward compatibility
-                        agentConfig = this.roles[agentRole];
+                    if (!agentConfig) {
+                        // If direct lookup fails, try resolving the role
+                        const resolution = SystemMessages.resolveRole(agentRole);
+                        if (resolution.found && !resolution.ambiguous) {
+                            // Try to find the role config with the resolved information
+                            const fullRoleKey =
+                                resolution.group === 'global'
+                                    ? resolution.roleName
+                                    : `${resolution.group}.${resolution.roleName}`;
+                            agentConfig =
+                                this.roles[fullRoleKey] || this.roles[resolution.roleName];
+                        }
                     }
 
                     const description =
                         agentConfig?.agent_description || 'No description available';
 
-                    // Include group information in the description if role was group-prefixed
-                    const displayName = agentRole.includes('.') ? agentRole : actualRoleName;
-                    return `${displayName} - ${description}`;
+                    // Use the original role name for display
+                    return `${agentRole} - ${description}`;
                 })
                 .join('\n');
 
@@ -205,12 +205,56 @@ If there is nothing useful you can do, and there is nothing to report back just 
 
     /**
      * Get system message for a specific role
-     * @param {string} role - The role name (coder, reviewer, architect)
+     * @param {string} role - The role name (coder, reviewer, architect) or group-prefixed (agentic.architect)
      * @returns {string} The system message for the role
      */
     static getSystemMessage(role) {
         const instance = new SystemMessages();
-        const roleConfig = instance.roles[role];
+
+        // Handle null/undefined roles
+        if (!role || typeof role !== 'string') {
+            throw new Error(
+                `Unknown role: ${role}. Available roles: ${Object.keys(instance.roles).join(', ')}`
+            );
+        }
+
+        // Handle group-prefixed roles - try direct lookup first
+        let roleConfig = instance.roles[role];
+        let actualRoleName = role;
+        let roleGroup = null;
+
+        if (roleConfig) {
+            // Direct lookup succeeded
+            actualRoleName = roleConfig._originalName || role;
+            roleGroup = roleConfig._group;
+        } else if (role.includes('.')) {
+            // Group-prefixed role that wasn't found directly - this shouldn't happen with new structure
+            throw new Error(
+                `Unknown role: ${role}. Available roles: ${Object.keys(instance.roles).join(', ')}`
+            );
+        } else {
+            // Simple role name that wasn't found - might be ambiguous
+            const resolution = SystemMessages.resolveRole(role);
+            if (!resolution.found) {
+                if (resolution.ambiguous) {
+                    throw new Error(
+                        `Role '${role}' is ambiguous. Found in groups: ${resolution.availableGroups.join(', ')}. ` +
+                            `Please specify group explicitly (e.g., '${resolution.availableGroups[0]}.${resolution.roleName}')`
+                    );
+                } else {
+                    throw new Error(
+                        `Unknown role: ${role}. Available roles: ${Object.keys(instance.roles).join(', ')}`
+                    );
+                }
+            }
+
+            // This shouldn't happen with the new structure, but handle it anyway
+            actualRoleName = resolution.roleName;
+            roleGroup = resolution.group;
+            const fullRoleKey =
+                roleGroup === 'global' ? actualRoleName : `${roleGroup}.${actualRoleName}`;
+            roleConfig = instance.roles[fullRoleKey];
+        }
 
         if (!roleConfig) {
             throw new Error(
@@ -221,10 +265,18 @@ If there is nothing useful you can do, and there is nothing to report back just 
         // Build the complete system message
         let systemMessage = roleConfig.systemMessage;
 
-        // Add role coordination instructions
-        const roleCoordinationInfo = instance._generateRoleCoordinationInfo(role, roleConfig);
-        if (roleCoordinationInfo) {
-            systemMessage += `\n\n${roleCoordinationInfo}`;
+        // Add role coordination instructions - but only for agentic roles
+        const isAgenticRole =
+            roleGroup === 'agentic' ||
+            (roleGroup === null && SystemMessages.isAgentic(actualRoleName));
+        if (isAgenticRole) {
+            const roleCoordinationInfo = instance._generateRoleCoordinationInfo(
+                actualRoleName,
+                roleConfig
+            );
+            if (roleCoordinationInfo) {
+                systemMessage += `\n\n${roleCoordinationInfo}`;
+            }
         }
 
         // Append environment information to the system message
