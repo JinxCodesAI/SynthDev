@@ -10,6 +10,7 @@ import { join, resolve } from 'path';
 import ConfigManager from '../../../src/config/managers/configManager.js';
 import { safeWriteFile, fileExists } from '../../tools/common/fs_utils.js';
 import { getLogger } from '../../core/managers/logger.js';
+import { getInternalDataManager } from '../../core/managers/InternalDataManager.js';
 import AIAPIClient from '../../core/ai/aiAPIClient.js';
 import SystemMessages from '../../core/ai/systemMessages.js';
 
@@ -72,24 +73,30 @@ export class IndexCommand extends InteractiveCommand {
             context
         );
 
-        // Create .index directory if it doesn't exist
-        const indexDir = resolve('.index');
-        if (!existsSync(indexDir)) {
-            mkdirSync(indexDir, { recursive: true });
+        // Initialize internal data manager and get index file path
+        const internalDataManager = getInternalDataManager();
+        const initResult = internalDataManager.initialize();
+        if (!initResult.success) {
+            this.logger.error(`Failed to initialize internal directories: ${initResult.error}`);
+            return false;
         }
 
-        const indexFilePath = join(indexDir, 'codebase-index.json');
+        const indexFilePath = internalDataManager.getInternalPath('index', 'codebase-index.json');
 
         // Load existing index if available
         let existingIndex = {};
-        if (fileExists(indexFilePath)) {
-            try {
-                const existingContent = readFileSync(indexFilePath, 'utf8');
-                existingIndex = JSON.parse(existingContent);
-                this.logger.info('📂 Found existing index, will update changed files only');
-            } catch (_error) {
-                this.logger.warn('Could not load existing index, starting fresh');
-            }
+        const existingIndexResult = internalDataManager.readInternalFile(
+            'index',
+            'codebase-index.json',
+            { parseJson: true }
+        );
+        if (existingIndexResult.success) {
+            existingIndex = existingIndexResult.data || {};
+            this.logger.info('📂 Found existing index, will update changed files only');
+        } else if (existingIndexResult.error !== 'File not found') {
+            this.logger.warn(
+                `Could not load existing index: ${existingIndexResult.error}, starting fresh`
+            );
         }
 
         // Scan codebase
@@ -235,7 +242,12 @@ export class IndexCommand extends InteractiveCommand {
 
         // Save index to file
         this.logger.status('💾 Saving index...');
-        const saveResult = safeWriteFile(indexFilePath, JSON.stringify(index, null, 2));
+        const saveResult = internalDataManager.writeInternalFile(
+            'index',
+            'codebase-index.json',
+            index,
+            { stringifyJson: true }
+        );
         if (!saveResult.success) {
             this.logger.error(`Failed to save index file: ${saveResult.error}`);
             return true;

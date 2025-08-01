@@ -54,6 +54,6 @@ export default [
         },
     },
     {
-        ignores: ['node_modules/', 'logs/', '.index/', 'coverage/', 'dist/', '*.config.js'],
+        ignores: ['node_modules/', 'logs/', '.synthdev/', 'coverage/', 'dist/', '*.config.js'],
     },
 ];

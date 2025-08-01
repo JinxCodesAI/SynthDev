@@ -13,7 +13,7 @@ const defaultExclusionList = [
     '__pycache__',
     '.DS_Store',
     'Thumbs.db',
-    '.index',
+    '.synthdev',
 ];
 
 /**
