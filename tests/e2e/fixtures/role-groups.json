@@ -1,0 +1,127 @@
+{
+    "description": "Role configuration fixture with group structure for testing role resolution",
+    "groups": {
+        "global": {
+            "file_reader": {
+                "level": "fast",
+                "systemMessage": "You are a specialized file reading assistant.",
+                "includedTools": ["read_file", "list_directory", "exact_search"]
+            },
+            "coder": {
+                "level": "base",
+                "systemMessage": "You are an expert software developer.",
+                "excludedTools": ["get_time", "calculate"]
+            },
+            "reviewer": {
+                "level": "base",
+                "systemMessage": "You are a senior code reviewer.",
+                "excludedTools": ["get_time", "calculate", "edit_file", "write_file"]
+            },
+            "architect": {
+                "level": "smart",
+                "systemMessage": "You are a senior software architect.",
+                "excludedTools": []
+            }
+        },
+        "agentic": {
+            "pm": {
+                "level": "smart",
+                "agent_description": "responsible for coordinating projects, creates tasks and validates their completion",
+                "systemMessage": "You are a Project Manager responsible for coordinating software development projects.",
+                "enabled_agents": ["architect"],
+                "can_create_tasks_for": ["architect"],
+                "includedTools": ["read_file", "list_directory", "exact_search"]
+            },
+            "architect": {
+                "level": "smart",
+                "agent_description": "responsible for designing system architectures and creating implementation plans",
+                "systemMessage": "You are a software architect responsible for designing system architectures.",
+                "enabled_agents": ["developer"],
+                "can_create_tasks_for": ["developer"],
+                "includedTools": ["read_file", "list_directory", "exact_search", "explain_codebase"]
+            },
+            "developer": {
+                "level": "base",
+                "agent_description": "responsible for implementing features and solutions should be provided with granular tasks with good documentation",
+                "systemMessage": "You are a Senior Software Developer responsible for implementing features.",
+                "enabled_agents": ["test-runner", "git-manager"],
+                "can_create_tasks_for": [],
+                "includedTools": [
+                    "read_file",
+                    "write_file",
+                    "edit_file",
+                    "list_directory",
+                    "exact_search",
+                    "explain_codebase"
+                ]
+            },
+            "test-runner": {
+                "level": "base",
+                "agent_description": "responsible for running existing tests and creating new ones",
+                "systemMessage": "You are a Test Runner responsible for running and creating tests.",
+                "enabled_agents": [],
+                "can_create_tasks_for": [],
+                "includedTools": ["read_file", "list_directory", "exact_search", "execute_terminal"]
+            },
+            "git-manager": {
+                "level": "base",
+                "agent_description": "responsible for handling git operations like commits, branches, and merges",
+                "systemMessage": "You are a Git Manager responsible for version control operations.",
+                "enabled_agents": [],
+                "can_create_tasks_for": [],
+                "includedTools": ["read_file", "list_directory", "execute_terminal"]
+            }
+        },
+        "testing": {
+            "dude": {
+                "level": "fast",
+                "systemMessage": "You are a helpful assistant that can help with a wide range of tasks.",
+                "excludedTools": []
+            },
+            "customer": {
+                "level": "fast",
+                "systemMessage": "You are a customer at FreshMart grocery store.",
+                "includedTools": []
+            },
+            "grocery_worker": {
+                "level": "fast",
+                "systemMessage": "You are Sam, a helpful employee at FreshMart grocery store.",
+                "includedTools": []
+            }
+        },
+        "internal": {
+            "command_generator": {
+                "level": "fast",
+                "systemMessage": "You are a terminal command generation assistant.",
+                "excludedTools": ["edit_file", "write_file", "execute_terminal"]
+            },
+            "prompt_enhancer": {
+                "level": "fast",
+                "systemMessage": "You are a prompt enhancement assistant.",
+                "excludedTools": ["edit_file", "write_file", "execute_terminal"]
+            },
+            "file_summarizer": {
+                "level": "fast",
+                "systemMessage": "You are a specialized AI assistant for analyzing and summarizing individual files.",
+                "excludedTools": [
+                    "edit_file",
+                    "write_file",
+                    "delete_file",
+                    "list_directory",
+                    "exact_search",
+                    "read_file"
+                ]
+            },
+            "directory_summarizer": {
+                "level": "fast",
+                "systemMessage": "You are a specialized AI assistant for analyzing and summarizing directories.",
+                "excludedTools": ["edit_file", "write_file", "execute_terminal"]
+            },
+            "codebase_explainer": {
+                "level": "fast",
+                "systemMessage": "You are an expert software architect and developer assistant.",
+                "excludedTools": ["edit_file", "write_file", "execute_terminal"]
+            }
+        }
+    }
+}
