@@ -33,7 +33,7 @@ export class IndexingUtils {
                 '__pycache__',
                 '.DS_Store',
                 'Thumbs.db',
-                '.index',
+                '.synthdev',
             ],
         };
 

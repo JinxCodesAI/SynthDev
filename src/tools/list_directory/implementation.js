@@ -8,6 +8,7 @@ import { join, relative, extname, resolve } from 'path';
 import { scanDirectory } from '../common/fs_utils.js';
 import { FileBaseTool } from '../common/base-tool.js';
 import { getToolConfigManager } from '../../../src/config/managers/toolConfigManager.js';
+import { getInternalDataManager } from '../../core/managers/InternalDataManager.js';
 
 class ListDirectoryTool extends FileBaseTool {
     constructor() {
@@ -29,18 +30,22 @@ class ListDirectoryTool extends FileBaseTool {
     }
 
     /**
-     * Load and parse the .index/codebase-index.json file
+     * Load and parse the .synthdev/index/codebase-index.json file
      * @returns {Object|null} Parsed index data or null if not available
      */
     _loadIndexData() {
         try {
-            const indexPath = resolve('.index', 'codebase-index.json');
-            if (!existsSync(indexPath)) {
-                return null;
+            const internalDataManager = getInternalDataManager();
+            const result = internalDataManager.readInternalFile('index', 'codebase-index.json', {
+                parseJson: true,
+            });
+
+            if (result.success) {
+                return result.data;
             }
 
-            const indexContent = readFileSync(indexPath, 'utf8');
-            return JSON.parse(indexContent);
+            // Silently handle errors - index file may not exist or be corrupted
+            return null;
         } catch (error) {
             // Silently handle parsing errors - index file may be corrupted or incomplete
             return null;
@@ -89,7 +94,7 @@ class ListDirectoryTool extends FileBaseTool {
                 '__pycache__',
                 '.DS_Store',
                 'Thumbs.db',
-                '.index',
+                '.synthdev',
             ],
         } = params;
 

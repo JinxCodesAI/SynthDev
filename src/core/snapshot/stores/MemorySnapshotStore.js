@@ -4,6 +4,7 @@
  */
 
 import { getLogger } from '../../../core/managers/logger.js';
+import { getInternalDataManager } from '../../../core/managers/InternalDataManager.js';
 import { v4 as uuidv4 } from 'uuid';
 import { FileVersionTracker } from '../FileVersionTracker.js';
 
@@ -25,6 +26,12 @@ export class MemorySnapshotStore {
 
         // File version tracking for differential snapshots
         this.fileVersionTracker = new FileVersionTracker();
+
+        // Internal data manager for disk persistence
+        this.internalDataManager = getInternalDataManager();
+        if (this.config.persistToDisk) {
+            this.internalDataManager.initialize();
+        }
 
         // Statistics tracking
         this.stats = {
@@ -82,11 +89,35 @@ export class MemorySnapshotStore {
             this.stats.totalSnapshots++;
             this.stats.memoryUsage += memorySize;
 
+            // Persist to disk if configured
+            if (this.config.persistToDisk) {
+                try {
+                    const diskResult = this.internalDataManager.writeInternalFile(
+                        'snapshots',
+                        `${snapshotId}.json`,
+                        snapshotRecord,
+                        { stringifyJson: true }
+                    );
+                    if (!diskResult.success) {
+                        this.logger.warn('Failed to persist snapshot to disk', {
+                            snapshotId,
+                            error: diskResult.error,
+                        });
+                    }
+                } catch (diskError) {
+                    this.logger.warn('Error persisting snapshot to disk', {
+                        snapshotId,
+                        error: diskError.message,
+                    });
+                }
+            }
+
             this.logger.debug('Snapshot stored successfully', {
                 id: snapshotId,
                 description: snapshot.description,
                 memorySize,
                 totalMemory: this.stats.memoryUsage,
+                persistedToDisk: this.config.persistToDisk,
             });
 
             return snapshotId;

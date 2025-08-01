@@ -19,6 +19,7 @@ export class FileChangeDetector {
             excludePatterns: [
                 'node_modules',
                 '.git',
+                '.synthdev',
                 '*.log',
                 'tmp',
                 'temp',

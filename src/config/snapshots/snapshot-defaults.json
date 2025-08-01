@@ -25,6 +25,7 @@
             ".svn/**",
             ".hg/**",
             ".bzr/**",
+            ".synthdev/**",
             ".vscode/**",
             ".idea/**",
             "*.swp",

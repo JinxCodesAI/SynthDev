@@ -52,7 +52,8 @@
         "temporaryFiles": ["*.tmp", "*.temp", "*.log", "*.cache", "*.pid", "*.seed", "*.pid.lock"],
         "environmentFiles": [".env", ".env.*"],
         "testCoverage": ["coverage/**", ".nyc_output/**"],
-        "documentation": ["docs/_build/**", "site/**"]
+        "documentation": ["docs/_build/**", "site/**"],
+        "internalFiles": [".synthdev", ".synthdev/**"]
     },
     "languageSpecific": {
         "javascript": [
