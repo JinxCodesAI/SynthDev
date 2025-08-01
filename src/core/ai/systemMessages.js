@@ -251,7 +251,7 @@ If there is nothing useful you can do, and there is nothing to report back just 
             actualRoleName = roleConfig._originalName || role;
             roleGroup = roleConfig._group;
         } else if (role.includes('.')) {
-            // Group-prefixed role that wasn't found directly - this shouldn't happen with new structure
+            // Group-prefixed role that wasn't found directly
             throw new Error(
                 `Unknown role: ${role}. Available roles: ${Object.keys(instance.roles).join(', ')}`
             );
@@ -589,6 +589,7 @@ If there is nothing useful you can do, and there is nothing to report back just 
      */
     static resolveRole(roleSpec) {
         const instance = new SystemMessages();
+        instance._loadRolesConfig(); // Ensure roles and groups are loaded
 
         // Check if roleSpec contains a group prefix
         if (roleSpec.includes('.')) {
