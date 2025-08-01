@@ -1,5 +1,5 @@
 {
-    "template": "\n\nEnvironment Information:\n- Operating System: {os}\n- Current Working Directory: {cwd}\n- .index directory exists: {indexExists}\n- Current Date/Time: {currentDateTime}",
+    "template": "\n\nEnvironment Information:\n- Operating System: {os}\n- Current Working Directory: {cwd}\n- .synthdev directory exists: {indexExists}\n- Current Date/Time: {currentDateTime}",
     "variables": {
         "os": {
             "description": "Operating system platform",
@@ -10,8 +10,8 @@
             "source": "process.cwd()"
         },
         "indexExists": {
-            "description": "Whether .index directory exists",
-            "source": "existsSync('.index')",
+            "description": "Whether .synthdev directory exists",
+            "source": "existsSync('.synthdev')",
             "format": "Yes/No"
         },
         "currentDateTime": {

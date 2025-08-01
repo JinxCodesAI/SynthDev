@@ -142,7 +142,7 @@ describe.skip('Grocery Store Workflow E2E Test', () => {
                 pathStr.includes('defaults') ||
                 pathStr.includes('environment-template.json') ||
                 pathStr.includes('console-messages.json') ||
-                pathStr.includes('.index') || // For .index directory
+                pathStr.includes('.synthdev') || // For .synthdev directory
                 pathStr.includes('config-validation.json')
             );
         });

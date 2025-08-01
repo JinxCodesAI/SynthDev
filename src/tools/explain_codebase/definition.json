@@ -1,6 +1,6 @@
 {
     "name": "explain_codebase",
-    "description": "Provides AI-generated explanations in markdown format for natural language questions about the indexed codebase summaries from '.index/codebase-index.json'.",
+    "description": "Provides AI-generated explanations in markdown format for natural language questions about the indexed codebase summaries from '.synthdev/index/codebase-index.json'.",
     "auto_run": true,
 
     "category": "utility",

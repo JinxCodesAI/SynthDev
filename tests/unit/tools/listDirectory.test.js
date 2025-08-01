@@ -290,7 +290,7 @@ describe.sequential('ListDirectory Tool - Fixed Tests', () => {
     });
 
     describe('AI summaries functionality', () => {
-        const indexDir = join(process.cwd(), '.index');
+        const indexDir = join(process.cwd(), '.synthdev');
         const indexFile = join(indexDir, 'codebase-index.json');
 
         beforeEach(() => {
@@ -364,7 +364,7 @@ describe.sequential('ListDirectory Tool - Fixed Tests', () => {
                 },
             };
 
-            // Create .index directory and file
+            // Create .synthdev directory and file
             mkdirSync(indexDir, { recursive: true });
             writeFileSync(indexFile, JSON.stringify(mockIndexData, null, 2));
 
@@ -389,7 +389,7 @@ describe.sequential('ListDirectory Tool - Fixed Tests', () => {
         });
 
         it('should handle corrupted index file gracefully', async () => {
-            // Create .index directory with corrupted JSON
+            // Create .synthdev directory with corrupted JSON
             mkdirSync(indexDir, { recursive: true });
             writeFileSync(indexFile, '{ invalid json content');
 

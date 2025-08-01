@@ -11,7 +11,7 @@ export default defineConfig({
         coverage: {
             provider: 'v8',
             reporter: ['text', 'json', 'html'],
-            exclude: ['node_modules/', 'tests/', '*.config.js', 'logs/', '.index/', 'scripts/'],
+            exclude: ['node_modules/', 'tests/', '*.config.js', 'logs/', '.synthdev/', 'scripts/'],
             thresholds: {
                 global: {
                     branches: 40,

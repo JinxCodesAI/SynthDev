@@ -5,12 +5,13 @@ import AIAPIClient from '../../core/ai/aiAPIClient.js';
 import SystemMessages from '../../core/ai/systemMessages.js';
 import { CommandBaseTool } from '../common/base-tool.js';
 import { getLogger } from '../../core/managers/logger.js';
+import { getInternalDataManager } from '../../core/managers/InternalDataManager.js';
 
 class ExplainCodebaseTool extends CommandBaseTool {
     constructor() {
         super(
             'explain_codebase',
-            'Provides AI-generated explanations in markdown format for natural language questions about the indexed codebase summaries from ".index/codebase-index.json"'
+            'Provides AI-generated explanations in markdown format for natural language questions about the indexed codebase summaries from ".synthdev/index/codebase-index.json"'
         );
         this.requiredParams = ['question'];
         this.parameterTypes = {
@@ -23,9 +24,15 @@ class ExplainCodebaseTool extends CommandBaseTool {
      */
     _loadIndex() {
         try {
-            const indexPath = join(process.cwd(), '.index', 'codebase-index.json');
-            const content = readFileSync(indexPath, 'utf8');
-            return JSON.parse(content);
+            const internalDataManager = getInternalDataManager();
+            const result = internalDataManager.readInternalFile('index', 'codebase-index.json', {
+                parseJson: true,
+            });
+
+            if (result.success) {
+                return result.data;
+            }
+            return null;
         } catch (_error) {
             return null;
         }

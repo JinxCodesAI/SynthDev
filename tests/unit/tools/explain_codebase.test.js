@@ -81,7 +81,7 @@ describe.sequential('Explain Codebase Tool', () => {
             get: vi.fn().mockReturnValue('test-api-key'),
         });
 
-        mockJoin.mockReturnValue('.index/codebase-index.json');
+        mockJoin.mockReturnValue('.synthdev/index/codebase-index.json');
     });
 
     describe('Parameter Validation', () => {
