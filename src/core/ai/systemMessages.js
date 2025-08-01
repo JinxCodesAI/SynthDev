@@ -133,8 +133,6 @@ class SystemMessages {
             parts.push(`Your role is ${roleDisplayName} and you need to coordinate with other roles like: ${enabledAgents.join(', ')} to accomplish given task. Agents you can interact with:
 ${agentDescriptions}
 
-IMPORTANT: Start your work by calling read_knowledgebase to understand what information other agents have already discovered. Call update_knowledgebase whenever you learn something that may be relevant to other agents - this is crucial for effective coordination.
-
 Use get_agents to understand what agents are already available, but avoid calling it repeatedly.
 If agent you need is not available, use spawn_agent to initialize new agent that you need to do something for you. For existing agents use speak_to_agent to communicate with them.
 If there is nothing useful you can do, and there is nothing to report back just wait.`);
@@ -272,14 +270,7 @@ If there is nothing useful you can do, and there is nothing to report back just 
 
         // Automatically add agentic tools if enabled_agents is an array (even empty)
         if (Array.isArray(roleConfig.enabled_agents)) {
-            const agenticTools = [
-                'spawn_agent',
-                'speak_to_agent',
-                'get_agents',
-                'return_results',
-                'read_knowledgebase',
-                'update_knowledgebase',
-            ];
+            const agenticTools = ['spawn_agent', 'speak_to_agent', 'get_agents', 'return_results'];
             agenticTools.forEach(tool => {
                 // Add tool if not already included and not explicitly excluded
                 if (!includedTools.includes(tool) && !excludedTools.includes(tool)) {
