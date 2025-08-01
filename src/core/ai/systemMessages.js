@@ -148,8 +148,9 @@ class SystemMessages {
                 .join('\n');
 
             // Include current role's group in the message only if it's not in global group
-            const currentRoleGroup = SystemMessages.getRoleGroup(role);
-            const roleDisplayName = currentRoleGroup ?? 'global' + `.${role}`; // Keep simple for backward compatibility
+            const currentRoleGroup = roleConfig._group || 'global';
+            const roleDisplayName =
+                currentRoleGroup !== 'global' ? `${currentRoleGroup}.${role}` : role;
 
             parts.push(`Your role is ${roleDisplayName} and you need to coordinate with other roles like: ${enabledAgents.join(', ')} to accomplish given task. Agents you can interact with:
 ${agentDescriptions}

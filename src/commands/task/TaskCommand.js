@@ -62,14 +62,20 @@ export class TaskCommand extends BaseCommand {
                 const { consoleInterface } = context;
                 consoleInterface.showError(`Unknown subcommand: ${subcommand}`);
                 consoleInterface.showMessage('Use /task help to see available commands.');
-                return 'error';
+                return {
+                    success: false,
+                    error: `Unknown subcommand: ${subcommand}`,
+                };
             }
 
             return await handler(subArgs, context);
         } catch (error) {
             this.logger.error(error, 'Task command execution failed');
             context.consoleInterface.showError(`Command failed: ${error.message}`);
-            return 'error';
+            return {
+                success: false,
+                error: error.message,
+            };
         }
     }
 
@@ -91,14 +97,22 @@ export class TaskCommand extends BaseCommand {
 
             if (!result.success) {
                 consoleInterface.showError(`Failed to list tasks: ${result.error}`);
-                return 'error';
+                return {
+                    success: false,
+                    error: result.error,
+                };
             }
 
             // Display results
             if (result.task_count === 0) {
                 consoleInterface.showMessage('📝 No tasks found.');
                 consoleInterface.showMessage('💡 Use /task add to create your first task.');
-                return 'empty';
+                return {
+                    success: true,
+                    task_count: 0,
+                    tasks: [],
+                    message: 'No tasks found',
+                };
             }
 
             consoleInterface.showMessage(`\n📋 Task List (${result.task_count} tasks):`);
@@ -120,7 +134,10 @@ export class TaskCommand extends BaseCommand {
         } catch (error) {
             this.logger.error(error, 'Failed to list tasks');
             consoleInterface.showError(`Failed to list tasks: ${error.message}`);
-            return 'error';
+            return {
+                success: false,
+                error: error.message,
+            };
         }
     }
 
@@ -160,7 +177,11 @@ export class TaskCommand extends BaseCommand {
             if (!result.success) {
                 consoleInterface.showError(`Task not found: ${result.error}`);
                 consoleInterface.showMessage('💡 Use /task list to see available tasks.');
-                return 'error';
+                return {
+                    success: false,
+                    error: result.error,
+                    task_id: taskId,
+                };
             }
 
             const task = result.task;
@@ -214,7 +235,11 @@ export class TaskCommand extends BaseCommand {
         } catch (error) {
             this.logger.error(error, 'Failed to get task');
             consoleInterface.showError(`Failed to get task: ${error.message}`);
-            return 'error';
+            return {
+                success: false,
+                error: error.message,
+                task_id: taskId,
+            };
         }
     }
 
@@ -405,7 +430,8 @@ export class TaskCommand extends BaseCommand {
      * @returns {boolean} True if it looks like a task ID
      */
     isTaskId(str) {
-        // Check for UUID pattern (full or partial)
+        // Check for simple task ID pattern (task-1, task-2, etc.) or UUID pattern for backward compatibility
+        const simpleIdPattern = /^task-\d+$/i;
         const uuidPattern = /^[0-9a-f]{8}(-[0-9a-f]{4}){0,3}(-[0-9a-f]{12})?$/i;
         const shortIdPattern = /^[0-9a-f]{8,}$/i;
 
@@ -415,7 +441,7 @@ export class TaskCommand extends BaseCommand {
             return false;
         }
 
-        return uuidPattern.test(str) || shortIdPattern.test(str);
+        return simpleIdPattern.test(str) || uuidPattern.test(str) || shortIdPattern.test(str);
     }
 
     /**
