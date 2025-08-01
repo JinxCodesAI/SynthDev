@@ -1,3 +1,6 @@
+import { writeFileSync, existsSync, mkdirSync, appendFileSync } from 'fs';
+import { join, dirname } from 'path';
+
 /**
  * Centralized logging system with verbosity levels
  *
@@ -13,6 +16,59 @@ class Logger {
     constructor(verbosityLevel = 2) {
         this.verbosityLevel = verbosityLevel;
         this.httpRequests = [];
+        this.logFilePath = null;
+        this.fileLoggingEnabled = false;
+
+        // Initialize file logging if verbosity level is 5
+        if (verbosityLevel >= 5) {
+            this._initializeFileLogging();
+        }
+    }
+
+    /**
+     * Initialize file logging for verbosity level 5
+     * @private
+     */
+    _initializeFileLogging() {
+        try {
+            // Create .synthdev/logs directory if it doesn't exist
+            const logsDir = join(process.cwd(), '.synthdev', 'logs');
+            if (!existsSync(logsDir)) {
+                mkdirSync(logsDir, { recursive: true });
+            }
+
+            // Generate unique log file name with timestamp
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+            const logFileName = `synthdev-${timestamp}.log`;
+            this.logFilePath = join(logsDir, logFileName);
+
+            // Create initial log file with header
+            const header = `=== Synth-Dev Log Session Started ===\nTimestamp: ${new Date().toISOString()}\nVerbosity Level: ${this.verbosityLevel}\n${'='.repeat(50)}\n\n`;
+            writeFileSync(this.logFilePath, header, 'utf8');
+
+            this.fileLoggingEnabled = true;
+            console.log(`📝 File logging enabled: ${this.logFilePath}`);
+        } catch (error) {
+            console.error('❌ Failed to initialize file logging:', error.message);
+            this.fileLoggingEnabled = false;
+        }
+    }
+
+    /**
+     * Write message to log file
+     * @private
+     * @param {string} message - Message to write to file
+     */
+    _writeToFile(message) {
+        if (this.fileLoggingEnabled && this.logFilePath) {
+            try {
+                const timestamp = new Date().toISOString();
+                const logEntry = `[${timestamp}] ${message}\n`;
+                appendFileSync(this.logFilePath, logEntry, 'utf8');
+            } catch (error) {
+                console.error('❌ Failed to write to log file:', error.message);
+            }
+        }
     }
 
     /**
@@ -22,7 +78,18 @@ class Logger {
     setVerbosityLevel(level) {
         this.raw(`Setting verbosity level to:${level}`);
         if (level >= 0 && level <= 5) {
+            const oldLevel = this.verbosityLevel;
             this.verbosityLevel = level;
+
+            // Initialize file logging if switching to level 5
+            if (level >= 5 && oldLevel < 5 && !this.fileLoggingEnabled) {
+                this._initializeFileLogging();
+            }
+
+            // Log the level change to file if file logging is enabled
+            if (this.fileLoggingEnabled) {
+                this._writeToFile(`Verbosity level changed from ${oldLevel} to ${level}`);
+            }
         }
     }
 
@@ -42,6 +109,10 @@ class Logger {
     user(message, prefix = '🤖 Synth-Dev:') {
         if (this.verbosityLevel >= 0) {
             console.log(prefix, message);
+            // Log to file if verbosity is 5
+            if (this.verbosityLevel >= 5 && this.fileLoggingEnabled) {
+                this._writeToFile(`${prefix} ${message}`);
+            }
         }
     }
 
@@ -52,6 +123,10 @@ class Logger {
     status(message) {
         if (this.verbosityLevel >= 1) {
             console.log(message);
+            // Log to file if verbosity is 5
+            if (this.verbosityLevel >= 5 && this.fileLoggingEnabled) {
+                this._writeToFile(`STATUS: ${message}`);
+            }
         }
     }
 
@@ -66,6 +141,13 @@ class Logger {
             console.log(`🔧 Role: ${role} Executing tool: ${toolName}`);
             const compressedArgs = this._compressArguments(args);
             console.log('📝 Arguments:', compressedArgs);
+
+            // Log to file if verbosity is 5
+            if (this.verbosityLevel >= 5 && this.fileLoggingEnabled) {
+                this._writeToFile(
+                    `TOOL EXECUTION: Role: ${role} Executing tool: ${toolName}\nArguments: ${JSON.stringify(compressedArgs, null, 2)}`
+                );
+            }
         }
     }
 
@@ -79,6 +161,13 @@ class Logger {
         if (this.verbosityLevel >= 3) {
             console.log(`🔧 Role: ${role} Executing tool: ${toolName}`);
             console.log('📝 Arguments:', args);
+
+            // Log to file if verbosity is 5
+            if (this.verbosityLevel >= 5 && this.fileLoggingEnabled) {
+                this._writeToFile(
+                    `TOOL EXECUTION DETAILED: Role: ${role} Executing tool: ${toolName}\nArguments: ${JSON.stringify(args, null, 2)}`
+                );
+            }
         } else if (this.verbosityLevel === 2) {
             this.toolExecution(toolName, role, args);
         }
@@ -92,6 +181,11 @@ class Logger {
         if (this.verbosityLevel >= 4) {
             console.log('✅ Tool result:', result);
             console.log();
+
+            // Log to file if verbosity is 5
+            if (this.verbosityLevel >= 5 && this.fileLoggingEnabled) {
+                this._writeToFile(`TOOL RESULT: ${JSON.stringify(result, null, 2)}`);
+            }
         }
     }
 
@@ -105,14 +199,35 @@ class Logger {
     httpRequest(method, url, requestData, responseData = null) {
         if (this.verbosityLevel >= 5) {
             const timestamp = new Date().toISOString();
-            console.log(`\n🌐 HTTP ${method} Request [${timestamp}]`);
-            console.log(`📍 URL: ${url}`);
-            console.log('📤 Request:', JSON.stringify(requestData, null, 2));
+            const consoleOutput = [
+                `\n🌐 HTTP ${method} Request [${timestamp}]`,
+                `📍 URL: ${url}`,
+                `📤 Request: ${JSON.stringify(requestData, null, 2)}`,
+            ];
 
             if (responseData) {
-                console.log('📥 Response:', JSON.stringify(responseData, null, 2));
+                consoleOutput.push(`📥 Response: ${JSON.stringify(responseData, null, 2)}`);
             }
-            console.log('─'.repeat(80));
+            consoleOutput.push('─'.repeat(80));
+
+            // Output to console
+            consoleOutput.forEach(line => console.log(line));
+
+            // Also log to file if file logging is enabled
+            if (this.fileLoggingEnabled) {
+                const fileOutput = [
+                    `HTTP ${method} Request`,
+                    `URL: ${url}`,
+                    `Request: ${JSON.stringify(requestData, null, 2)}`,
+                ];
+
+                if (responseData) {
+                    fileOutput.push(`Response: ${JSON.stringify(responseData, null, 2)}`);
+                }
+                fileOutput.push('─'.repeat(80));
+
+                this._writeToFile(fileOutput.join('\n'));
+            }
         }
 
         // Store for potential later use
@@ -138,6 +253,15 @@ class Logger {
         if (error instanceof Error && error.response?.data) {
             console.error('Response data:', error.response.data);
         }
+
+        // Always log errors to file if file logging is enabled
+        if (this.fileLoggingEnabled) {
+            let errorDetails = `ERROR: ${prefix} ${message}`;
+            if (error instanceof Error && error.response?.data) {
+                errorDetails += `\nResponse data: ${JSON.stringify(error.response.data, null, 2)}`;
+            }
+            this._writeToFile(errorDetails);
+        }
     }
 
     /**
@@ -149,6 +273,11 @@ class Logger {
         if (this.verbosityLevel >= 1) {
             const prefix = context ? `⚠️ ${context}:` : '⚠️ Warning:';
             console.warn(prefix, message);
+
+            // Log to file if verbosity is 5
+            if (this.verbosityLevel >= 5 && this.fileLoggingEnabled) {
+                this._writeToFile(`WARNING: ${prefix} ${message}`);
+            }
         }
     }
 
@@ -163,6 +292,15 @@ class Logger {
             if (data !== null) {
                 console.log(data);
             }
+
+            // Log to file if verbosity is 5
+            if (this.verbosityLevel >= 5 && this.fileLoggingEnabled) {
+                let debugEntry = `DEBUG: ${message}`;
+                if (data !== null) {
+                    debugEntry += `\nData: ${JSON.stringify(data, null, 2)}`;
+                }
+                this._writeToFile(debugEntry);
+            }
         }
     }
 
@@ -173,6 +311,11 @@ class Logger {
     info(message) {
         if (this.verbosityLevel >= 2) {
             console.log(`ℹ️ ${message}`);
+
+            // Log to file if verbosity is 5
+            if (this.verbosityLevel >= 5 && this.fileLoggingEnabled) {
+                this._writeToFile(`INFO: ${message}`);
+            }
         }
     }
 
@@ -182,6 +325,33 @@ class Logger {
      */
     raw(...args) {
         console.log(...args);
+
+        // Log to file if verbosity is 5
+        if (this.verbosityLevel >= 5 && this.fileLoggingEnabled) {
+            const message = args
+                .map(arg => (typeof arg === 'object' ? JSON.stringify(arg, null, 2) : String(arg)))
+                .join(' ');
+            this._writeToFile(`RAW: ${message}`);
+        }
+    }
+
+    /**
+     * Close the log file and add session end marker
+     */
+    closeLogFile() {
+        if (this.fileLoggingEnabled && this.logFilePath) {
+            try {
+                // Check if file exists before trying to append
+                if (existsSync(this.logFilePath)) {
+                    const footer = `\n${'='.repeat(50)}\n=== Synth-Dev Log Session Ended ===\nTimestamp: ${new Date().toISOString()}\n${'='.repeat(50)}\n`;
+                    appendFileSync(this.logFilePath, footer, 'utf8');
+                }
+                this.fileLoggingEnabled = false;
+                this.logFilePath = null;
+            } catch (error) {
+                console.error('❌ Failed to close log file:', error.message);
+            }
+        }
     }
 
     /**
@@ -233,6 +403,22 @@ class Logger {
     clearHttpHistory() {
         this.httpRequests = [];
     }
+
+    /**
+     * Get the current log file path
+     * @returns {string|null} Current log file path or null if file logging is disabled
+     */
+    getLogFilePath() {
+        return this.fileLoggingEnabled ? this.logFilePath : null;
+    }
+
+    /**
+     * Check if file logging is enabled
+     * @returns {boolean} True if file logging is enabled
+     */
+    isFileLoggingEnabled() {
+        return this.fileLoggingEnabled;
+    }
 }
 
 // Create singleton instance
@@ -260,6 +446,9 @@ export function getLogger(verbosityLevel = null) {
  * Reset the logger instance (for testing)
  */
 export function resetLogger() {
+    if (loggerInstance) {
+        loggerInstance.closeLogFile();
+    }
     loggerInstance = null;
 }
 

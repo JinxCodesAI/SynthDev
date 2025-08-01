@@ -1,7 +1,7 @@
 // tests/unit/tools/edit_file.test.js
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { writeFileSync, unlinkSync, existsSync, readFileSync } from 'fs';
-import { join } from 'path';
+import { writeFileSync, unlinkSync, existsSync, readFileSync, mkdirSync } from 'fs';
+import { join, dirname } from 'path';
 import editFile from '../../../src/tools/edit_file/implementation.js';
 
 // Mock the logger specifically for this test
@@ -33,6 +33,13 @@ describe.sequential('Edit File Tool', () => {
 
     beforeEach(() => {
         vi.clearAllMocks();
+
+        // Ensure the test directory exists
+        const testFileDir = dirname(testFile);
+        if (!existsSync(testFileDir)) {
+            mkdirSync(testFileDir, { recursive: true });
+        }
+
         // Clean up any existing test file
         if (existsSync(testFile)) {
             unlinkSync(testFile);
