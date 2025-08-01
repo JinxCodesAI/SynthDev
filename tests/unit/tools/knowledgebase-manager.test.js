@@ -131,13 +131,14 @@ describe('KnowledgebaseManager', () => {
             expect(readResult.content).toBe('Line 1\nLine 3\nLine 4');
         });
 
-        it('should clean up whitespace-only lines', () => {
+        it('should clean up whitespace-only lines only where content was removed', () => {
             manager.update('override', 'Line 1\n   \nLine 3\n\t\nLine 5');
             const result = manager.update('remove', 'Line 3');
             expect(result.success).toBe(true);
 
             const readResult = manager.read();
-            expect(readResult.content).toBe('Line 1\nLine 5');
+            // Should remove the line that contained "Line 3" and became empty, but preserve other whitespace lines
+            expect(readResult.content).toBe('Line 1\n   \n\t\nLine 5');
         });
 
         it('should handle removing non-existent content gracefully', () => {
@@ -152,12 +153,27 @@ describe('KnowledgebaseManager', () => {
             expect(result.error).toContain('Cannot remove empty content');
         });
 
-        it('should remove trailing newlines after cleanup', () => {
+        it('should preserve existing newlines when removing content', () => {
             manager.update('override', 'Line 1\nLine 2\n\n\n');
             manager.update('remove', 'Line 2');
 
             const readResult = manager.read();
-            expect(readResult.content).toBe('Line 1');
+            // Should remove the line that contained "Line 2" and preserve empty lines that weren't affected
+            expect(readResult.content).toBe('Line 1\n\n\n');
+        });
+
+        it('should only remove lines that become empty after content removal', () => {
+            manager.update('override', 'Hello World\n  Hello  \nGoodbye World\n   \nStay');
+            const result = manager.update('remove', 'Hello');
+            expect(result.success).toBe(true);
+
+            const readResult = manager.read();
+            // First line: "Hello World" -> " World" (not empty, keep)
+            // Second line: "  Hello  " -> "    " (becomes whitespace only, remove)
+            // Third line: "Goodbye World" (unchanged, keep)
+            // Fourth line: "   " (unchanged, keep - wasn't affected by removal)
+            // Fifth line: "Stay" (unchanged, keep)
+            expect(readResult.content).toBe(' World\nGoodbye World\n   \nStay');
         });
     });
 

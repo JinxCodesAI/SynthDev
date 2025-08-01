@@ -90,19 +90,40 @@ class KnowledgebaseManager {
                         };
                     }
 
-                    // Remove the content
-                    this.knowledgebase = this.knowledgebase.replace(content, '');
+                    // Store original content to track which lines were affected
+                    const originalContent = this.knowledgebase;
+                    const originalLines = originalContent.split('\n');
 
-                    // Clean up whitespace-only lines
-                    this.knowledgebase = this.knowledgebase
-                        .split('\n')
-                        .filter(line => line.trim().length > 0)
-                        .join('\n');
+                    // 1) Replace all occurrences of content
+                    this.knowledgebase = this.knowledgebase.replace(
+                        new RegExp(this._escapeRegExp(content), 'g'),
+                        ''
+                    );
 
-                    // Ensure we don't end with trailing newlines unless content exists
-                    if (this.knowledgebase.length > 0) {
-                        this.knowledgebase = this.knowledgebase.replace(/\n+$/, '');
+                    // 2) Split into lines after replacement
+                    const linesAfterRemoval = this.knowledgebase.split('\n');
+                    const finalLines = [];
+
+                    // 3) Process each line to remove only those that became empty due to content removal
+                    for (let i = 0; i < linesAfterRemoval.length; i++) {
+                        const currentLine = linesAfterRemoval[i];
+
+                        // 4) If this line is now whitespace-only, check if it was affected by removal
+                        if (currentLine.trim().length === 0) {
+                            // Check if the corresponding original line contained the removed content
+                            const originalLine = i < originalLines.length ? originalLines[i] : '';
+
+                            // Only remove if the original line contained the content we removed
+                            if (originalLine.includes(content)) {
+                                continue; // Skip this line (remove it)
+                            }
+                        }
+
+                        finalLines.push(currentLine);
                     }
+
+                    // 5) Join everything back
+                    this.knowledgebase = finalLines.join('\n');
                     break;
             }
 
@@ -149,6 +170,15 @@ class KnowledgebaseManager {
             empty_lines: lines.length - nonEmptyLines.length,
             is_empty: this.knowledgebase.length === 0,
         };
+    }
+
+    /**
+     * Escape special regex characters in a string
+     * @param {string} string - String to escape
+     * @returns {string} Escaped string
+     */
+    _escapeRegExp(string) {
+        return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     }
 }
 
