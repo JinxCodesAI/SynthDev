@@ -16,6 +16,22 @@
                 "enabled_agents": [],
                 "can_create_tasks_for": []
             }
+        },
+        "group1": {
+            "role1": {
+                "level": "base",
+                "systemMessage": "You are GROUP1 role1. This message should be used when spawning group1.role1.",
+                "enabled_agents": ["group2.role1"],
+                "can_create_tasks_for": []
+            }
+        },
+        "group2": {
+            "role1": {
+                "level": "base",
+                "systemMessage": "You are GROUP2 role1. This message should be used when spawning group2.role1.",
+                "enabled_agents": [],
+                "can_create_tasks_for": []
+            }
         }
     }
 }

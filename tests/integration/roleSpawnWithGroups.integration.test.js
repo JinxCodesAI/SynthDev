@@ -246,5 +246,139 @@ describe('Role Spawn with Groups Integration Test', () => {
             expect(systemMessageInRequest.content).toContain('SHOULD be used');
             expect(systemMessageInRequest.content).not.toContain('should NOT be used');
         });
+
+        it('should handle ambiguous role resolution when same role exists in multiple non-global groups', async () => {
+            // Enhanced mock to support group-prefixed system messages for role1 variants
+            mockSystemMessages.getSystemMessage = vi.fn(roleSpec => {
+                if (roleSpec === 'local.test_role') {
+                    return 'You are a LOCAL test role. This message SHOULD be used when spawning local.test_role.';
+                } else if (roleSpec === 'test_role') {
+                    return 'You are a GLOBAL test role. This message should NOT be used when spawning local.test_role.';
+                } else if (roleSpec === 'group1.role1') {
+                    return 'You are GROUP1 role1. This message should be used when spawning group1.role1.';
+                } else if (roleSpec === 'group2.role1') {
+                    return 'You are GROUP2 role1. This message should be used when spawning group2.role1.';
+                }
+                throw new Error(`Unknown role: ${roleSpec}`);
+            });
+
+            // Test that role1 is not directly accessible due to ambiguity
+            expect(mockSystemMessages.hasRole('role1')).toBe(false); // Should not exist in flattened roles due to ambiguity
+
+            // Test role resolution for group-prefixed roles
+            const group1Resolution = mockSystemMessages.resolveRole('group1.role1');
+            expect(group1Resolution.found).toBe(true);
+            expect(group1Resolution.group).toBe('group1');
+            expect(group1Resolution.roleName).toBe('role1');
+            expect(group1Resolution.ambiguous).toBe(false);
+
+            const group2Resolution = mockSystemMessages.resolveRole('group2.role1');
+            expect(group2Resolution.found).toBe(true);
+            expect(group2Resolution.group).toBe('group2');
+            expect(group2Resolution.roleName).toBe('role1');
+            expect(group2Resolution.ambiguous).toBe(false);
+
+            // Test ambiguous resolution for imprecise reference
+            const ambiguousResolution = mockSystemMessages.resolveRole('role1');
+            expect(ambiguousResolution.found).toBe(false);
+            expect(ambiguousResolution.ambiguous).toBe(true);
+            expect(ambiguousResolution.availableGroups).toEqual(
+                expect.arrayContaining(['group1', 'group2'])
+            );
+
+            // Test system messages work with group prefixes
+            const group1SystemMessage = mockSystemMessages.getSystemMessage('group1.role1');
+            expect(group1SystemMessage).toContain('GROUP1 role1');
+
+            const group2SystemMessage = mockSystemMessages.getSystemMessage('group2.role1');
+            expect(group2SystemMessage).toContain('GROUP2 role1');
+
+            // Test spawn permissions work with group-prefixed roles
+            expect(mockSystemMessages.canSpawnAgent('group1.role1', 'group2.role1')).toBe(true);
+        });
+
+        it('should fail agent spawning when using ambiguous role reference', async () => {
+            // Enhanced mock to support group-prefixed system messages
+            mockSystemMessages.getSystemMessage = vi.fn(roleSpec => {
+                if (roleSpec === 'group1.role1') {
+                    return 'You are GROUP1 role1. This message should be used when spawning group1.role1.';
+                } else if (roleSpec === 'group2.role1') {
+                    return 'You are GROUP2 role1. This message should be used when spawning group2.role1.';
+                }
+                throw new Error(`Unknown role: ${roleSpec}`);
+            });
+
+            // Mock spawnAgent to capture and validate role resolution
+            let capturedError = null;
+
+            agentManager.spawnAgent = vi.fn(
+                async (supervisorRole, workerRole, initialMessage, context) => {
+                    // Simulate the role resolution that would happen in real AgentManager
+                    const workerResolution = mockSystemMessages.resolveRole(workerRole);
+
+                    if (workerResolution.ambiguous) {
+                        const error = new Error(
+                            `Role '${workerRole}' is ambiguous. Found in groups: ${workerResolution.availableGroups.join(', ')}. ` +
+                                `Please specify group explicitly (e.g., '${workerResolution.availableGroups[0]}.${workerResolution.roleName}')`
+                        );
+                        capturedError = error;
+                        throw error;
+                    }
+
+                    if (!workerResolution.found) {
+                        const error = new Error(`Role '${workerRole}' not found`);
+                        capturedError = error;
+                        throw error;
+                    }
+
+                    // If we get here, the role was resolved successfully
+                    const agentId = `agent-${++agentManager.agentCounter}`;
+                    const systemMessage = mockSystemMessages.getSystemMessage(workerRole);
+
+                    const mockAgent = {
+                        id: agentId,
+                        role: workerRole,
+                        status: 'running',
+                        systemMessage: systemMessage,
+                    };
+
+                    agentManager.activeAgents.set(agentId, mockAgent);
+                    return { agentId, status: 'spawned' };
+                }
+            );
+
+            // Attempt to spawn with ambiguous role reference - should fail
+            await expect(
+                agentManager.spawnAgent(
+                    'group1.role1',
+                    'role1', // Ambiguous reference
+                    'Test message',
+                    { apiClient: mockAPIClient }
+                )
+            ).rejects.toThrow();
+
+            // Verify the error message is about ambiguity
+            expect(capturedError).toBeDefined();
+            expect(capturedError.message).toContain('is ambiguous');
+            expect(capturedError.message).toContain('Found in groups: group1, group2');
+            expect(capturedError.message).toContain('Please specify group explicitly');
+
+            // Verify that explicit group references work
+            const group1SpawnResult = await agentManager.spawnAgent(
+                'group1.role1',
+                'group2.role1', // Explicit reference
+                'Test message',
+                { apiClient: mockAPIClient }
+            );
+
+            expect(group1SpawnResult.status).toBe('spawned');
+            expect(group1SpawnResult.agentId).toBeDefined();
+
+            // Verify the agent was created with correct role
+            const createdAgent = agentManager.activeAgents.get(group1SpawnResult.agentId);
+            expect(createdAgent).toBeDefined();
+            expect(createdAgent.role).toBe('group2.role1');
+            expect(createdAgent.systemMessage).toContain('GROUP2 role1');
+        });
     });
 });

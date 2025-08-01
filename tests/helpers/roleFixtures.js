@@ -58,6 +58,18 @@ export class RoleFixtures {
             roles = {};
 
             // Flatten roles for backward compatibility
+            // First, detect ambiguous roles (same name in multiple non-global groups)
+            const roleGroupMap = {}; // roleName -> [groupNames]
+
+            for (const [groupName, groupRoles] of Object.entries(fixture.groups)) {
+                for (const roleName of Object.keys(groupRoles)) {
+                    if (!roleGroupMap[roleName]) {
+                        roleGroupMap[roleName] = [];
+                    }
+                    roleGroupMap[roleName].push(groupName);
+                }
+            }
+
             // Process global group first to give it priority
             const groupOrder = [
                 'global',
@@ -71,12 +83,20 @@ export class RoleFixtures {
                 }
 
                 for (const [roleName, roleConfig] of Object.entries(groupRoles)) {
+                    // Check if this role is ambiguous (exists in multiple non-global groups)
+                    const groupsWithRole = roleGroupMap[roleName] || [];
+                    const nonGlobalGroups = groupsWithRole.filter(g => g !== 'global');
+                    const isAmbiguous = nonGlobalGroups.length > 1 && groupName !== 'global';
+
                     // Only add if not already present (global takes priority)
-                    if (!roles[roleName]) {
+                    // Skip ambiguous roles unless they're in global group
+                    if (!roles[roleName] && (!isAmbiguous || groupName === 'global')) {
                         roles[roleName] = {
                             ...roleConfig,
                             _group: groupName,
                             _source: `${groupName}.json`,
+                            _ambiguous: isAmbiguous && groupName !== 'global',
+                            _availableGroups: isAmbiguous ? nonGlobalGroups : undefined,
                         };
                     }
                 }
@@ -108,8 +128,22 @@ export class RoleFixtures {
                 return roles[roleName]?.level || 'base';
             }),
 
-            getEnabledAgents: vi.fn(roleName => {
-                return roles[roleName]?.enabled_agents || [];
+            getEnabledAgents: vi.fn(roleSpec => {
+                // Handle group-prefixed role specifications
+                if (roleSpec.includes('.')) {
+                    const [group, roleName] = roleSpec.split('.', 2);
+
+                    // Check if role exists in the specified group
+                    if (roleGroups[group] && roleGroups[group][roleName]) {
+                        const role = roleGroups[group][roleName];
+                        return role.enabled_agents || [];
+                    }
+
+                    return [];
+                } else {
+                    // Handle regular role name
+                    return roles[roleSpec]?.enabled_agents || [];
+                }
             }),
 
             canSpawnAgent: vi.fn((supervisorRole, workerRole) => {
@@ -176,7 +210,7 @@ export class RoleFixtures {
 
                     return { roleName, group, found: false, ambiguous: false };
                 } else {
-                    // No group specified, look in global first, then any group
+                    // No group specified, look in global first, then check for ambiguity
                     const globalRoles = MockSystemMessages.getRolesByGroup('global');
                     if (globalRoles.includes(roleSpec)) {
                         return {
@@ -187,35 +221,44 @@ export class RoleFixtures {
                         };
                     }
 
-                    // Check if role exists in any group
-                    if (roles[roleSpec]) {
-                        const group = MockSystemMessages.getRoleGroup(roleSpec);
-
-                        // Check for ambiguity: same role in multiple non-global groups
-                        const allGroups = Object.keys(roleGroups || {});
-                        const groupsWithRole = allGroups.filter(g => {
-                            if (g === 'global') {
-                                return false;
-                            } // Skip global as it's already checked
-                            const rolesInGroup = MockSystemMessages.getRolesByGroup(g);
-                            return rolesInGroup.includes(roleSpec);
-                        });
-
-                        if (groupsWithRole.length > 1) {
-                            // Ambiguous: role exists in multiple non-global groups
-                            return {
-                                roleName: roleSpec,
-                                group: null,
-                                found: false,
-                                ambiguous: true,
-                                availableGroups: groupsWithRole,
-                            };
+                    // Check for ambiguity: same role in multiple non-global groups
+                    const allGroups = Object.keys(roleGroups || {});
+                    const groupsWithRole = allGroups.filter(g => {
+                        if (g === 'global') {
+                            return false; // Skip global as it's already checked
                         }
+                        const rolesInGroup = MockSystemMessages.getRolesByGroup(g);
+                        return rolesInGroup.includes(roleSpec);
+                    });
 
-                        return { roleName: roleSpec, group, found: true, ambiguous: false };
+                    if (groupsWithRole.length > 1) {
+                        // Ambiguous: role exists in multiple non-global groups
+                        return {
+                            roleName: roleSpec,
+                            group: null,
+                            found: false,
+                            ambiguous: true,
+                            availableGroups: groupsWithRole,
+                        };
                     }
 
-                    return { roleName: roleSpec, group: 'global', found: false, ambiguous: false };
+                    // Check if role exists in any single non-global group
+                    if (groupsWithRole.length === 1) {
+                        return {
+                            roleName: roleSpec,
+                            group: groupsWithRole[0],
+                            found: true,
+                            ambiguous: false,
+                        };
+                    }
+
+                    // Role not found anywhere
+                    return {
+                        roleName: roleSpec,
+                        group: 'global',
+                        found: false,
+                        ambiguous: false,
+                    };
                 }
             }),
 
