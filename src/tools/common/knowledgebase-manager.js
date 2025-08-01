@@ -90,40 +90,52 @@ class KnowledgebaseManager {
                         };
                     }
 
-                    // Store original content to track which lines were affected
-                    const originalContent = this.knowledgebase;
-                    const originalLines = originalContent.split('\n');
+                    // Find all occurrences of the content to remove
+                    const contentRegex = new RegExp(this._escapeRegExp(content), 'g');
+                    let match;
+                    const replacements = [];
 
-                    // 1) Replace all occurrences of content
-                    this.knowledgebase = this.knowledgebase.replace(
-                        new RegExp(this._escapeRegExp(content), 'g'),
-                        ''
-                    );
+                    // Find all matches and determine what to replace them with
+                    while ((match = contentRegex.exec(this.knowledgebase)) !== null) {
+                        const startIndex = match.index;
+                        const endIndex = startIndex + content.length;
 
-                    // 2) Split into lines after replacement
-                    const linesAfterRemoval = this.knowledgebase.split('\n');
-                    const finalLines = [];
+                        // Check what's on the left and right of the content
+                        const leftChar = startIndex > 0 ? this.knowledgebase[startIndex - 1] : '';
+                        const rightChar =
+                            endIndex < this.knowledgebase.length
+                                ? this.knowledgebase[endIndex]
+                                : '';
 
-                    // 3) Process each line to remove only those that became empty due to content removal
-                    for (let i = 0; i < linesAfterRemoval.length; i++) {
-                        const currentLine = linesAfterRemoval[i];
-
-                        // 4) If this line is now whitespace-only, check if it was affected by removal
-                        if (currentLine.trim().length === 0) {
-                            // Check if the corresponding original line contained the removed content
-                            const originalLine = i < originalLines.length ? originalLines[i] : '';
-
-                            // Only remove if the original line contained the content we removed
-                            if (originalLine.includes(content)) {
-                                continue; // Skip this line (remove it)
-                            }
+                        // Determine replacement: add newline if neither side ends with whitespace
+                        let replacement = '';
+                        if (
+                            leftChar &&
+                            rightChar &&
+                            !this._isWhitespace(leftChar) &&
+                            !this._isWhitespace(rightChar)
+                        ) {
+                            replacement = '\n';
                         }
 
-                        finalLines.push(currentLine);
+                        replacements.push({
+                            start: startIndex,
+                            end: endIndex,
+                            replacement: replacement,
+                        });
+
+                        // Reset regex lastIndex to avoid infinite loop
+                        contentRegex.lastIndex = endIndex;
                     }
 
-                    // 5) Join everything back
-                    this.knowledgebase = finalLines.join('\n');
+                    // Apply replacements from right to left to maintain correct indices
+                    replacements.reverse();
+                    for (const repl of replacements) {
+                        this.knowledgebase =
+                            this.knowledgebase.substring(0, repl.start) +
+                            repl.replacement +
+                            this.knowledgebase.substring(repl.end);
+                    }
                     break;
             }
 
@@ -179,6 +191,15 @@ class KnowledgebaseManager {
      */
     _escapeRegExp(string) {
         return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    }
+
+    /**
+     * Check if a character is whitespace (space, tab, newline, etc.)
+     * @param {string} char - Character to check
+     * @returns {boolean} True if character is whitespace
+     */
+    _isWhitespace(char) {
+        return /\s/.test(char);
     }
 }
 
