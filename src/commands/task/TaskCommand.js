@@ -52,7 +52,6 @@ export class TaskCommand extends BaseCommand {
                 return await this.handleHelp(subArgs, context);
             }
 
-            // Check if it's a task ID (UUID-like pattern)
             if (this.isTaskId(subcommand)) {
                 return await this.handleGetTask(subcommand, context);
             }

@@ -32,8 +32,11 @@ class SpeakToAgentTool extends BaseTool {
                 throw new Error(`Agent ${agent_id} has failed and cannot process messages`);
             }
 
+            const currentAgentId = this.context?.currentAgentId || null;
+
+            const fullMessage = `speak_to_agent call from ${currentAgentId ?? 'user'} to ${agent_id} with message: ${message} `;
             // Send message (now asynchronous)
-            const response = await agentManager.sendMessageToAgent(agent_id, message);
+            const response = await agentManager.sendMessageToAgent(agent_id, fullMessage);
 
             return this.createSuccessResponse({
                 agent_id: agent_id,

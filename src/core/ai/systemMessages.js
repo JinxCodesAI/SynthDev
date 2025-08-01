@@ -154,12 +154,15 @@ class SystemMessages {
             parts.push(`Your role is ${roleDisplayName} and you need to coordinate with other roles like: ${enabledAgents.join(', ')} to accomplish given task. Agents you can interact with:
 ${agentDescriptions}
 
-IMPORTANT: Start your work by calling read_knowledgebase to understand what information other agents have already discovered. Share your knowledge frequently with other agents by calling update_knowledgebase whenever you learn something that may be relevant to other agents - this is crucial for effective coordination.
+IMPORTANT: Start your work by calling read_knowledgebase to understand what information other agents have already discovered. Share your knowledge frequently with other agents by calling update_knowledgebase whenever you learn something that may be relevant to other agents as soon as you've learned it - this is crucial for effective coordination.
 
 Use get_agents to understand what agents are already available.
 If agent you need is not available, use spawn_agent to initialize new agent that you need to do something for you. For existing agents use speak_to_agent to communicate with them.
 
-DO NOT MAKE SAME CALLS REPEATEDLY IF THERE IS NO NEW INFORMATION, if you are not sure what to do, end conversation.`);
+Allways create tasks for other agents BEFORE spawning agents to do the work. When mentioning task mention task id in your message. Agent will be able to pickup the task by calling get_task.
+If possible call update_knowledgebase before spawning agents to share information with them.
+
+DO NOT MAKE SAME CALLS REPEATEDLY IF THERE IS NO NEW INFORMATION, if you are not sure what to do, end conversation. You will be notified when new information is available.`);
         }
 
         // Add task creation instructions if can_create_tasks_for exists and is not empty

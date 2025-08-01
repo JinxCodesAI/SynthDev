@@ -20,6 +20,7 @@ import { randomUUID } from 'crypto';
 class TaskManager {
     constructor() {
         this.tasks = new Map(); // Map<string, Task>
+        this.task_counter = 1;
         this.validStatuses = ['not_started', 'in_progress', 'completed', 'cancelled'];
     }
 
@@ -47,7 +48,7 @@ class TaskManager {
             }
 
             // Generate ID for new tasks
-            const taskId = id || randomUUID();
+            const taskId = id || `task-${this.task_counter++}`;
             const isNewTask = !this.tasks.has(taskId);
 
             // Get existing task or create new one
