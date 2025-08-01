@@ -64,6 +64,7 @@ class AIAPIClient {
         this.onError = null;
         this.onContentDisplay = null;
         this.onMessagePush = null;
+        this.onMaxToolCallsExceeded = null;
 
         // Initialize logger
         this.logger = getLogger();
@@ -132,6 +133,7 @@ class AIAPIClient {
         onContentDisplay = null,
         onParseResponse = null,
         onMessagePush = null,
+        onMaxToolCallsExceeded = null,
     }) {
         this.onThinking = onThinking;
         this.onChainOfThought = onChainOfThought;
@@ -143,6 +145,7 @@ class AIAPIClient {
         this.onContentDisplay = onContentDisplay;
         this.onParseResponse = onParseResponse;
         this.onMessagePush = onMessagePush;
+        this.onMaxToolCallsExceeded = onMaxToolCallsExceeded;
     }
 
     setTools(tools) {
@@ -404,11 +407,10 @@ class AIAPIClient {
             if (message.content && this.onContentDisplay) {
                 this.onContentDisplay(message.content, this.role);
             }
-            await this._handleToolCalls(message);
+            const result = await this._handleToolCalls(message);
 
-            // Return the final message content after tool execution
-            const finalMessage = this.messages[this.messages.length - 1];
-            return finalMessage.content || '';
+            // Return the result from _handleToolCalls (could be early termination message)
+            return result;
         } else {
             let content = null;
             if (parsingToolCalls.length > 0) {
@@ -536,9 +538,24 @@ class AIAPIClient {
         while (currentMessage.tool_calls && currentMessage.tool_calls.length > 0) {
             // Check if we've exceeded the maximum number of tool calls
             if (this.toolCallCount + currentMessage.tool_calls.length > this.maxToolCalls) {
-                throw new Error(
-                    `Maximum number of tool calls (${this.maxToolCalls}) exceeded. This may indicate an infinite loop or overly complex task.`
-                );
+                if (this.onMaxToolCallsExceeded) {
+                    // Ask user for confirmation to continue
+                    const shouldContinue = await this.onMaxToolCallsExceeded(this.maxToolCalls);
+                    if (!shouldContinue) {
+                        // User chose not to continue, return current response
+                        return (
+                            currentMessage.content ||
+                            'Operation stopped due to maximum tool calls limit.'
+                        );
+                    }
+                    // User chose to continue, reset the limit check for this session
+                    // We don't reset toolCallCount to keep tracking total calls
+                } else {
+                    // Fallback to throwing error if no callback is set
+                    throw new Error(
+                        `Maximum number of tool calls (${this.maxToolCalls}) exceeded. This may indicate an infinite loop or overly complex task.`
+                    );
+                }
             }
 
             // Execute each tool call in the current message

@@ -1,6 +1,7 @@
 {
     "prompts": {
-        "confirmation": "❓ {prompt}\n   Type \"y\" or \"yes\" to proceed, anything else to cancel:"
+        "confirmation": "❓ {prompt}\n   Type \"y\" or \"yes\" to proceed, anything else to cancel:",
+        "max_tool_calls_exceeded": "⚠️  Maximum number of tool calls ({maxToolCalls}) exceeded.\n   This may indicate an infinite loop or overly complex task.\n   Do you want to continue with more tool calls?"
     },
     "status": {
         "thinking": "\n🧠 Synth-Dev is thinking...\n",

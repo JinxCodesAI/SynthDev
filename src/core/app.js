@@ -257,6 +257,20 @@ export default class AICoderConsole {
                 this.isProcessing = false; // Unblock input
                 this.consoleInterface.resumeInput();
             },
+
+            onMaxToolCallsExceeded: async maxToolCalls => {
+                // Pause input processing while waiting for user confirmation
+                this.consoleInterface.pauseInput();
+
+                try {
+                    const shouldContinue =
+                        await this.consoleInterface.promptForMaxToolCallsContinuation(maxToolCalls);
+                    return shouldContinue;
+                } finally {
+                    // Always resume input after confirmation
+                    this.consoleInterface.resumeInput();
+                }
+            },
         });
     }
 
