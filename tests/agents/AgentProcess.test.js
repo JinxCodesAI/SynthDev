@@ -80,7 +80,8 @@ describe('AgentProcess', () => {
             'parent-123',
             mockCostsManager,
             mockToolManager,
-            null // Mock agentManager
+            null, // Mock agentManager
+            null // Mock onMaxToolCallsExceeded callback
         );
     });
 
@@ -137,7 +138,8 @@ describe('AgentProcess', () => {
                 'parent-123',
                 mockCostsManager,
                 mockToolManager,
-                null // Mock agentManager
+                null, // Mock agentManager
+                null // Mock onMaxToolCallsExceeded callback
             );
 
             expect(mockAPIClient.setTools).toHaveBeenCalledWith(mockTools);
@@ -250,7 +252,8 @@ describe('AgentProcess', () => {
                 'parent',
                 mockCostsManager,
                 mockToolManager,
-                null // Mock agentManager
+                null, // Mock agentManager
+                null // Mock onMaxToolCallsExceeded callback
             );
 
             expect(AIAPIClient).toHaveBeenLastCalledWith(
@@ -271,7 +274,8 @@ describe('AgentProcess', () => {
                 'parent',
                 mockCostsManager,
                 mockToolManager,
-                null // Mock agentManager
+                null, // Mock agentManager
+                null // Mock onMaxToolCallsExceeded callback
             );
 
             expect(AIAPIClient).toHaveBeenLastCalledWith(
@@ -292,7 +296,8 @@ describe('AgentProcess', () => {
                 'parent',
                 mockCostsManager,
                 mockToolManager,
-                null // Mock agentManager
+                null, // Mock agentManager
+                null // Mock onMaxToolCallsExceeded callback
             );
             const agent2 = new AgentProcess(
                 'agent-5',
@@ -301,12 +306,79 @@ describe('AgentProcess', () => {
                 'parent',
                 mockCostsManager,
                 mockToolManager,
-                null // Mock agentManager
+                null, // Mock agentManager
+                null // Mock onMaxToolCallsExceeded callback
             );
 
             expect(agent1.agentId).not.toBe(agent2.agentId);
             expect(agent1.agentId).toBe('agent-4'); // Simple ID format
             expect(agent2.agentId).toBe('agent-5'); // Simple ID format
+        });
+    });
+
+    describe('max tool calls callback', () => {
+        it('should set onMaxToolCallsExceeded callback when provided', () => {
+            const mockCallback = vi.fn().mockResolvedValue(true);
+
+            const agentWithCallback = new AgentProcess(
+                'agent-callback',
+                'test_writer',
+                'Write tests',
+                'parent',
+                mockCostsManager,
+                mockToolManager,
+                null, // Mock agentManager
+                mockCallback // Mock onMaxToolCallsExceeded callback
+            );
+
+            expect(agentWithCallback.onMaxToolCallsExceeded).toBe(mockCallback);
+        });
+
+        it('should pass onMaxToolCallsExceeded callback to AIAPIClient when set', () => {
+            const mockCallback = vi.fn().mockResolvedValue(true);
+
+            new AgentProcess(
+                'agent-callback',
+                'test_writer',
+                'Write tests',
+                'parent',
+                mockCostsManager,
+                mockToolManager,
+                null, // Mock agentManager
+                mockCallback // Mock onMaxToolCallsExceeded callback
+            );
+
+            // Verify setCallbacks was called with the callback
+            expect(mockAPIClient.setCallbacks).toHaveBeenCalledWith(
+                expect.objectContaining({
+                    onMaxToolCallsExceeded: expect.any(Function),
+                })
+            );
+        });
+
+        it('should not set onMaxToolCallsExceeded callback when not provided', () => {
+            // Clear previous calls to get a clean slate for this test
+            mockAPIClient.setCallbacks.mockClear();
+
+            const agentWithoutCallback = new AgentProcess(
+                'agent-no-callback',
+                'test_writer',
+                'Write tests',
+                'parent',
+                mockCostsManager,
+                mockToolManager,
+                null, // Mock agentManager
+                null // No callback
+            );
+
+            expect(agentWithoutCallback.onMaxToolCallsExceeded).toBeNull();
+
+            // Verify setCallbacks was called with null callback (check the most recent call)
+            expect(mockAPIClient.setCallbacks).toHaveBeenLastCalledWith(
+                expect.objectContaining({
+                    onMaxToolCallsExceeded: null,
+                })
+            );
         });
     });
 });

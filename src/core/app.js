@@ -272,6 +272,21 @@ export default class AICoderConsole {
                 }
             },
         });
+
+        // Set the same max tool calls callback for agents
+        this.agentManager.setMaxToolCallsExceededCallback(async maxToolCalls => {
+            // Pause input processing while waiting for user confirmation
+            this.consoleInterface.pauseInput();
+
+            try {
+                const shouldContinue =
+                    await this.consoleInterface.promptForMaxToolCallsContinuation(maxToolCalls);
+                return shouldContinue;
+            } finally {
+                // Always resume input after confirmation
+                this.consoleInterface.resumeInput();
+            }
+        });
     }
 
     async start() {

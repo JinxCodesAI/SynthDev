@@ -16,6 +16,7 @@ class AgentManager {
         this.agentHierarchy = new Map(); // parentId -> Set<childId>
         this.agentCounter = 0; // Counter for generating simple agent IDs
         this.logger = getLogger();
+        this.onMaxToolCallsExceeded = null; // Callback for max tool calls exceeded
 
         AgentManager.instance = this;
     }
@@ -25,6 +26,14 @@ class AgentManager {
             AgentManager.instance = new AgentManager();
         }
         return AgentManager.instance;
+    }
+
+    /**
+     * Set the callback for handling max tool calls exceeded
+     * @param {Function} callback - Callback function that prompts user for confirmation
+     */
+    setMaxToolCallsExceededCallback(callback) {
+        this.onMaxToolCallsExceeded = callback;
     }
 
     /**
@@ -83,7 +92,8 @@ class AgentManager {
             supervisorAgentId, // Use actual agent ID as parent
             context.costsManager,
             context.toolManager,
-            this // Pass agentManager instance for tool access
+            this, // Pass agentManager instance for tool access
+            this.onMaxToolCallsExceeded // Pass max tool calls callback
         );
 
         // Register agent
