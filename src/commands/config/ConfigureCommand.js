@@ -425,6 +425,7 @@ export class ConfigureCommand extends InteractiveCommand {
 
         logger.raw('\n🔧 Maximum Tool Calls:');
         logger.raw('This limits how many tool calls can be made in a single request.');
+        logger.raw('When exceeded, you will be prompted to continue or stop.');
         logger.raw('Default is 50. Higher values allow more complex operations.');
 
         const input = await this.promptForInput('Max tool calls> ', context);

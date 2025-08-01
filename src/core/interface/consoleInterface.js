@@ -194,6 +194,13 @@ ${instructions}
         });
     }
 
+    async promptForMaxToolCallsContinuation(maxToolCalls) {
+        const prompt = this.uiConfig.getMessage('prompts.max_tool_calls_exceeded', {
+            maxToolCalls,
+        });
+        return await this.promptForConfirmation(prompt);
+    }
+
     showToolCancelled(toolName) {
         const message = this.uiConfig.getMessage('tools.cancelled', { toolName });
         this.logger.warn(message, '🚫');

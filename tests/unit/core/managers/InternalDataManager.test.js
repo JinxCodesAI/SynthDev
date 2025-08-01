@@ -4,7 +4,7 @@ import {
     getInternalDataManager,
 } from '../../../../src/core/managers/InternalDataManager.js';
 import { existsSync, mkdirSync, readFileSync, writeFileSync, readdirSync, statSync } from 'fs';
-import { join } from 'path';
+import { join, resolve } from 'path';
 
 // Mock fs module
 vi.mock('fs', () => ({
@@ -28,7 +28,7 @@ vi.mock('../../../../src/core/managers/logger.js', () => ({
 
 describe('InternalDataManager', () => {
     let internalDataManager;
-    const testBasePath = '/test/workspace';
+    const testBasePath = resolve('/test/workspace');
 
     beforeEach(() => {
         vi.clearAllMocks();

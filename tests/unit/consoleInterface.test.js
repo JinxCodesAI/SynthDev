@@ -594,6 +594,47 @@ describe('ConsoleInterface', () => {
         });
     });
 
+    describe('promptForMaxToolCallsContinuation', () => {
+        it('should prompt with max tool calls message and return confirmation result', async () => {
+            const maxToolCalls = 50;
+
+            // Mock the readline behavior
+            mockRl.on.mockImplementation((event, handler) => {
+                if (event === 'line') {
+                    // Simulate user typing "y"
+                    setTimeout(() => handler('y'), 0);
+                }
+            });
+
+            const result = await consoleInterface.promptForMaxToolCallsContinuation(maxToolCalls);
+
+            expect(result).toBe(true);
+            // Check that the max tool calls message was displayed
+            const expectedMessage = realConfigMessages.prompts.confirmation.replace(
+                '{prompt}',
+                realConfigMessages.prompts.max_tool_calls_exceeded.replace(
+                    '{maxToolCalls}',
+                    maxToolCalls
+                )
+            );
+            expect(mockLogger.user).toHaveBeenCalledWith(expectedMessage);
+        });
+
+        it('should return false when user declines to continue', async () => {
+            const maxToolCalls = 25;
+
+            mockRl.on.mockImplementation((event, handler) => {
+                if (event === 'line') {
+                    setTimeout(() => handler('n'), 0);
+                }
+            });
+
+            const result = await consoleInterface.promptForMaxToolCallsContinuation(maxToolCalls);
+
+            expect(result).toBe(false);
+        });
+    });
+
     describe('promptForInput', () => {
         it('should return user input', async () => {
             const prompt = 'Enter something: ';

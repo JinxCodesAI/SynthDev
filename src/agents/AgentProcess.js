@@ -7,7 +7,16 @@ import { getLogger } from '../core/managers/logger.js';
  * Represents a single, isolated agent instance with its own conversation context
  */
 class AgentProcess {
-    constructor(agentId, roleName, taskPrompt, parentId, costsManager, toolManager, agentManager) {
+    constructor(
+        agentId,
+        roleName,
+        taskPrompt,
+        parentId,
+        costsManager,
+        toolManager,
+        agentManager,
+        onMaxToolCallsExceeded = null
+    ) {
         this.agentId = agentId;
         this.roleName = roleName;
         this.taskPrompt = taskPrompt;
@@ -21,6 +30,7 @@ class AgentProcess {
         this.costsManager = costsManager;
         this.toolManager = toolManager;
         this.agentManager = agentManager;
+        this.onMaxToolCallsExceeded = onMaxToolCallsExceeded;
 
         // Create isolated AIAPIClient instance
         this._initializeAPIClient(costsManager, toolManager);
@@ -117,6 +127,16 @@ class AgentProcess {
             onError: error => {
                 this.logger.error(`Agent ${this.agentId} API error: ${error.message}`);
             },
+
+            onMaxToolCallsExceeded: this.onMaxToolCallsExceeded
+                ? async maxToolCalls => {
+                      this.logger.warn(
+                          `Agent ${this.agentId} exceeded max tool calls limit (${maxToolCalls}). ` +
+                              'Requesting user confirmation...'
+                      );
+                      return await this.onMaxToolCallsExceeded(maxToolCalls);
+                  }
+                : null,
         });
     }
 

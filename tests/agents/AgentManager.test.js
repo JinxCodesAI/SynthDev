@@ -249,4 +249,18 @@ describe('AgentManager', () => {
             expect(AgentManager.instance).toBeNull();
         });
     });
+
+    describe('max tool calls callback', () => {
+        it('should store callback when set', () => {
+            const mockCallback = vi.fn().mockResolvedValue(true);
+
+            agentManager.setMaxToolCallsExceededCallback(mockCallback);
+
+            expect(agentManager.onMaxToolCallsExceeded).toBe(mockCallback);
+        });
+
+        it('should initialize with null callback', () => {
+            expect(agentManager.onMaxToolCallsExceeded).toBeNull();
+        });
+    });
 });
