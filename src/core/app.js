@@ -680,6 +680,12 @@ export default class AICoderConsole {
                 await this.autoSnapshotManager.cleanup();
             }
 
+            // Close log file if file logging is enabled
+            if (this.logger && this.logger.isFileLoggingEnabled()) {
+                this.logger.closeLogFile();
+                console.log('📝 Log file closed successfully');
+            }
+
             // Show goodbye message and close console interface
             if (this.consoleInterface) {
                 this.consoleInterface.showGoodbye();

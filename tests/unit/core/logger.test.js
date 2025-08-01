@@ -1,6 +1,8 @@
 // tests/unit/core/logger.test.js
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { getLogger, resetLogger, initializeLogger } from '../../../src/core/managers/logger.js';
+import { existsSync, readFileSync, rmSync } from 'fs';
+import { join } from 'path';
 
 describe('Logger', () => {
     let logger;
@@ -177,6 +179,85 @@ describe('Logger', () => {
 
             logger = getLogger();
             expect(logger.getVerbosityLevel()).toBe(2);
+        });
+    });
+
+    describe('file logging', () => {
+        const testLogsDir = join(process.cwd(), '.synthdev', 'logs');
+
+        afterEach(() => {
+            // Clean up test log files
+            if (existsSync(testLogsDir)) {
+                try {
+                    rmSync(testLogsDir, { recursive: true, force: true });
+                } catch (error) {
+                    // Ignore cleanup errors in tests
+                }
+            }
+        });
+
+        it('should enable file logging when verbosity level is 5', () => {
+            logger = getLogger(5);
+
+            expect(logger.isFileLoggingEnabled()).toBe(true);
+            expect(logger.getLogFilePath()).toBeTruthy();
+            expect(existsSync(testLogsDir)).toBe(true);
+        });
+
+        it('should not enable file logging when verbosity level is less than 5', () => {
+            logger = getLogger(4);
+
+            expect(logger.isFileLoggingEnabled()).toBe(false);
+            expect(logger.getLogFilePath()).toBe(null);
+        });
+
+        it('should write messages to log file when verbosity is 5', () => {
+            logger = getLogger(5);
+
+            const testMessage = 'Test log message';
+            logger.info(testMessage);
+
+            const logFilePath = logger.getLogFilePath();
+            expect(existsSync(logFilePath)).toBe(true);
+
+            const logContent = readFileSync(logFilePath, 'utf8');
+            expect(logContent).toContain('INFO: Test log message');
+        });
+
+        it('should write HTTP requests to log file when verbosity is 5', () => {
+            logger = getLogger(5);
+
+            const testRequest = { test: 'data' };
+            const testResponse = { result: 'success' };
+            logger.httpRequest('POST', 'https://api.test.com', testRequest, testResponse);
+
+            const logFilePath = logger.getLogFilePath();
+            const logContent = readFileSync(logFilePath, 'utf8');
+
+            expect(logContent).toContain('HTTP POST Request');
+            expect(logContent).toContain('https://api.test.com');
+            expect(logContent).toContain('"test": "data"');
+            expect(logContent).toContain('"result": "success"');
+        });
+
+        it('should properly close log file', () => {
+            logger = getLogger(5);
+            const logFilePath = logger.getLogFilePath();
+
+            logger.closeLogFile();
+
+            expect(logger.isFileLoggingEnabled()).toBe(false);
+            const logContent = readFileSync(logFilePath, 'utf8');
+            expect(logContent).toContain('=== Synth-Dev Log Session Ended ===');
+        });
+
+        it('should enable file logging when switching to verbosity level 5', () => {
+            logger = getLogger(2);
+            expect(logger.isFileLoggingEnabled()).toBe(false);
+
+            logger.setVerbosityLevel(5);
+            expect(logger.isFileLoggingEnabled()).toBe(true);
+            expect(existsSync(testLogsDir)).toBe(true);
         });
     });
 });
