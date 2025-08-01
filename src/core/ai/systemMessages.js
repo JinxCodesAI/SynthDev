@@ -101,14 +101,36 @@ class SystemMessages {
             const enabledAgents = roleConfig.enabled_agents;
             const agentDescriptions = enabledAgents
                 .map(agentRole => {
-                    const agentConfig = this.roles[agentRole];
+                    // Resolve the agent role to get the actual role configuration
+                    const resolution = SystemMessages.resolveRole(agentRole);
+                    let actualRoleName = agentRole;
+                    let agentConfig = null;
+
+                    if (resolution.found && !resolution.ambiguous) {
+                        actualRoleName = resolution.roleName;
+                        agentConfig = this.roles[actualRoleName];
+                    } else if (resolution.ambiguous) {
+                        // For ambiguous roles, try to find the config anyway
+                        agentConfig = this.roles[agentRole];
+                    } else {
+                        // Role not found, try direct lookup for backward compatibility
+                        agentConfig = this.roles[agentRole];
+                    }
+
                     const description =
                         agentConfig?.agent_description || 'No description available';
-                    return `${agentRole} - ${description}`;
+
+                    // Include group information in the description if role was group-prefixed
+                    const displayName = agentRole.includes('.') ? agentRole : actualRoleName;
+                    return `${displayName} - ${description}`;
                 })
                 .join('\n');
 
-            parts.push(`Your role is ${role} and you need to coordinate with other roles like: ${enabledAgents.join(', ')} to accomplish given task. Agents you can interact with:
+            // Include current role's group in the message only if it's not in global group
+            const currentRoleGroup = SystemMessages.getRoleGroup(role);
+            const roleDisplayName = role; // Keep simple for backward compatibility
+
+            parts.push(`Your role is ${roleDisplayName} and you need to coordinate with other roles like: ${enabledAgents.join(', ')} to accomplish given task. Agents you can interact with:
 ${agentDescriptions}
 
 Use get_agents to understand what agents are already available, but avoid calling it repeatedly.
@@ -121,8 +143,18 @@ If there is nothing useful you can do, and there is nothing to report back just 
             Array.isArray(roleConfig.can_create_tasks_for) &&
             roleConfig.can_create_tasks_for.length > 0
         ) {
+            // Resolve role names to include group information where applicable
+            const taskRoles = roleConfig.can_create_tasks_for.map(taskRole => {
+                const resolution = SystemMessages.resolveRole(taskRole);
+                if (resolution.found && !resolution.ambiguous) {
+                    // Use original spec if group-prefixed, otherwise use resolved name
+                    return taskRole.includes('.') ? taskRole : resolution.roleName;
+                }
+                return taskRole; // Keep original if resolution failed
+            });
+
             parts.push(
-                `Create tasks for ${roleConfig.can_create_tasks_for.join(', ')} if role is more suitable to do the task than you.`
+                `Create tasks for ${taskRoles.join(', ')} if role is more suitable to do the task than you.`
             );
         }
 
@@ -476,7 +508,7 @@ If there is nothing useful you can do, and there is nothing to report back just 
     /**
      * Resolve a role name that might include a group prefix
      * @param {string} roleSpec - Role specification (e.g., 'coder' or 'testing.dude')
-     * @returns {Object} Object with {roleName, group, found}
+     * @returns {Object} Object with {roleName, group, found, ambiguous}
      */
     static resolveRole(roleSpec) {
         const instance = new SystemMessages();
@@ -488,24 +520,46 @@ If there is nothing useful you can do, and there is nothing to report back just 
             // Check if role exists in the specified group
             const rolesInGroup = SystemMessages.getRolesByGroup(group);
             if (rolesInGroup.includes(roleName)) {
-                return { roleName, group, found: true };
+                return { roleName, group, found: true, ambiguous: false };
             }
 
-            return { roleName, group, found: false };
+            return { roleName, group, found: false, ambiguous: false };
         } else {
             // No group specified, look in global first, then any group
             const globalRoles = SystemMessages.getRolesByGroup('global');
             if (globalRoles.includes(roleSpec)) {
-                return { roleName: roleSpec, group: 'global', found: true };
+                return { roleName: roleSpec, group: 'global', found: true, ambiguous: false };
             }
 
             // Check if role exists in any group
             if (instance.roles[roleSpec]) {
                 const group = SystemMessages.getRoleGroup(roleSpec);
-                return { roleName: roleSpec, group, found: true };
+
+                // Check for ambiguity: same role in multiple non-global groups
+                const allGroups = Object.keys(instance._roleGroups || {});
+                const groupsWithRole = allGroups.filter(g => {
+                    if (g === 'global') {
+                        return false;
+                    } // Skip global as it's already checked
+                    const rolesInGroup = SystemMessages.getRolesByGroup(g);
+                    return rolesInGroup.includes(roleSpec);
+                });
+
+                if (groupsWithRole.length > 1) {
+                    // Ambiguous: role exists in multiple non-global groups
+                    return {
+                        roleName: roleSpec,
+                        group: null,
+                        found: false,
+                        ambiguous: true,
+                        availableGroups: groupsWithRole,
+                    };
+                }
+
+                return { roleName: roleSpec, group, found: true, ambiguous: false };
             }
 
-            return { roleName: roleSpec, group: 'global', found: false };
+            return { roleName: roleSpec, group: 'global', found: false, ambiguous: false };
         }
     }
 
@@ -574,6 +628,34 @@ If there is nothing useful you can do, and there is nothing to report back just 
     }
 
     /**
+     * Resolve an array of role specifications to actual role names
+     * @param {string[]} roleSpecs - Array of role specifications (e.g., ['coder', 'testing.dude'])
+     * @returns {Object} Object with {resolved: string[], errors: string[]}
+     */
+    static resolveRoleArray(roleSpecs) {
+        const resolved = [];
+        const errors = [];
+
+        for (const roleSpec of roleSpecs) {
+            const resolution = SystemMessages.resolveRole(roleSpec);
+
+            if (resolution.ambiguous) {
+                errors.push(
+                    `Role '${roleSpec}' is ambiguous. Found in groups: ${resolution.availableGroups.join(', ')}. ` +
+                        `Please specify group explicitly (e.g., '${resolution.availableGroups[0]}.${roleSpec}')`
+                );
+            } else if (!resolution.found) {
+                errors.push(`Role '${roleSpec}' not found`);
+            } else {
+                // Use the original roleSpec if it was group-prefixed, otherwise use just the role name
+                resolved.push(roleSpec.includes('.') ? roleSpec : resolution.roleName);
+            }
+        }
+
+        return { resolved, errors };
+    }
+
+    /**
      * Get enabled agents for a specific role
      * @param {string} role - The role name
      * @returns {string[]} Array of role names this role can spawn
@@ -597,7 +679,37 @@ If there is nothing useful you can do, and there is nothing to report back just 
      */
     static canSpawnAgent(supervisorRole, workerRole) {
         const enabledAgents = SystemMessages.getEnabledAgents(supervisorRole);
-        return enabledAgents.includes(workerRole);
+
+        // Check direct match first
+        if (enabledAgents.includes(workerRole)) {
+            return true;
+        }
+
+        // Resolve the worker role to get its actual name and group
+        const workerResolution = SystemMessages.resolveRole(workerRole);
+        if (!workerResolution.found || workerResolution.ambiguous) {
+            return false;
+        }
+
+        // Check if any enabled agent matches the worker role
+        for (const enabledAgent of enabledAgents) {
+            // Direct match already checked above
+            if (enabledAgent === workerRole) {
+                continue;
+            }
+
+            const enabledResolution = SystemMessages.resolveRole(enabledAgent);
+            if (!enabledResolution.found || enabledResolution.ambiguous) {
+                continue;
+            }
+
+            // Check if the role names match (regardless of group specification)
+            if (enabledResolution.roleName === workerResolution.roleName) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
