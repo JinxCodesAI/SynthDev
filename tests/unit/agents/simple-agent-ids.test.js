@@ -39,6 +39,7 @@ vi.mock('../../../src/config/managers/configManager.js', () => ({
 vi.mock('../../../src/core/ai/aiAPIClient.js', () => ({
     default: vi.fn(() => ({
         setSystemMessage: vi.fn(),
+        setCallbacks: vi.fn(),
         setTools: vi.fn(),
         addMessage: vi.fn(),
         sendMessage: vi.fn(() => Promise.resolve('Test response')),

@@ -66,7 +66,8 @@ class AgentManager {
             taskPrompt,
             supervisorAgentId, // Use actual agent ID as parent
             context.costsManager,
-            context.toolManager
+            context.toolManager,
+            this // Pass agentManager instance for tool access
         );
 
         // Register agent

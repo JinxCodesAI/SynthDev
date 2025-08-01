@@ -33,6 +33,7 @@ describe('AgentProcess', () => {
         mockAPIClient = {
             setSystemMessage: vi.fn(),
             setTools: vi.fn(),
+            setCallbacks: vi.fn(),
             addMessage: vi.fn(),
             addUserMessage: vi.fn(),
             sendMessage: vi.fn().mockResolvedValue('Mock AI response'),
@@ -78,7 +79,8 @@ describe('AgentProcess', () => {
             'Write comprehensive tests',
             'parent-123',
             mockCostsManager,
-            mockToolManager
+            mockToolManager,
+            null // Mock agentManager
         );
     });
 
@@ -134,7 +136,8 @@ describe('AgentProcess', () => {
                 'Write comprehensive tests',
                 'parent-123',
                 mockCostsManager,
-                mockToolManager
+                mockToolManager,
+                null // Mock agentManager
             );
 
             expect(mockAPIClient.setTools).toHaveBeenCalledWith(mockTools);
@@ -246,7 +249,8 @@ describe('AgentProcess', () => {
                 'Complex task',
                 'parent',
                 mockCostsManager,
-                mockToolManager
+                mockToolManager,
+                null // Mock agentManager
             );
 
             expect(AIAPIClient).toHaveBeenLastCalledWith(
@@ -266,7 +270,8 @@ describe('AgentProcess', () => {
                 'Quick task',
                 'parent',
                 mockCostsManager,
-                mockToolManager
+                mockToolManager,
+                null // Mock agentManager
             );
 
             expect(AIAPIClient).toHaveBeenLastCalledWith(
@@ -286,7 +291,8 @@ describe('AgentProcess', () => {
                 'task1',
                 'parent',
                 mockCostsManager,
-                mockToolManager
+                mockToolManager,
+                null // Mock agentManager
             );
             const agent2 = new AgentProcess(
                 'agent-5',
@@ -294,7 +300,8 @@ describe('AgentProcess', () => {
                 'task2',
                 'parent',
                 mockCostsManager,
-                mockToolManager
+                mockToolManager,
+                null // Mock agentManager
             );
 
             expect(agent1.agentId).not.toBe(agent2.agentId);

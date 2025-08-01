@@ -7,7 +7,7 @@ import { getLogger } from '../core/managers/logger.js';
  * Represents a single, isolated agent instance with its own conversation context
  */
 class AgentProcess {
-    constructor(agentId, roleName, taskPrompt, parentId, costsManager, toolManager) {
+    constructor(agentId, roleName, taskPrompt, parentId, costsManager, toolManager, agentManager) {
         this.agentId = agentId;
         this.roleName = roleName;
         this.taskPrompt = taskPrompt;
@@ -16,6 +16,11 @@ class AgentProcess {
         this.createdAt = new Date();
         this.result = null;
         this.logger = getLogger();
+
+        // Store references for tool execution context
+        this.costsManager = costsManager;
+        this.toolManager = toolManager;
+        this.agentManager = agentManager;
 
         // Create isolated AIAPIClient instance
         this._initializeAPIClient(costsManager, toolManager);
@@ -49,9 +54,70 @@ class AgentProcess {
         // Set tools in API client
         this.apiClient.setTools(toolManager.getTools());
 
-        // Store references for tool execution context
-        this.costsManager = costsManager;
-        this.toolManager = toolManager;
+        // Set up callbacks for tool execution
+        this._setupAPIClientCallbacks();
+    }
+
+    /**
+     * Set up callbacks for AIAPIClient to handle tool execution
+     * @private
+     */
+    _setupAPIClientCallbacks() {
+        this.apiClient.setCallbacks({
+            onToolExecution: async toolCall => {
+                // Log tool execution for agents to match main app logging
+                const toolName = toolCall.function.name;
+                const toolArgs = JSON.parse(toolCall.function.arguments);
+                this.logger.toolExecutionDetailed(toolName, this.apiClient.role, toolArgs);
+
+                // Prepare context for tool execution
+                const toolContext = {
+                    currentRole: this.apiClient.role,
+                    currentAgentId: this.agentId,
+                    agentManager: this.agentManager, // Provide agentManager - permissions are handled by AgentManager itself
+                    costsManager: this.costsManager,
+                    toolManager: this.toolManager,
+                    app: null, // Agents don't have access to main app instance
+                };
+
+                // Create minimal console interface for agents (just logging, no UI)
+                const agentConsoleInterface = {
+                    showToolExecution: (toolName, args, role) => {
+                        // Already logged above, no need to duplicate
+                    },
+                    showToolResult: result => {
+                        this.logger.toolResult(result);
+                    },
+                    showToolCancelled: toolName => {
+                        this.logger.debug(`Agent ${this.agentId} tool cancelled: ${toolName}`);
+                    },
+                    promptForConfirmation: async () => {
+                        // Agents auto-approve all tools (no user interaction)
+                        return true;
+                    },
+                };
+
+                try {
+                    const result = await this.toolManager.executeToolCall(
+                        toolCall,
+                        agentConsoleInterface,
+                        null, // No snapshot manager
+                        toolContext
+                    );
+
+                    return result;
+                } catch (error) {
+                    this.logger.error(
+                        `Agent ${this.agentId} tool execution failed: ${error.message}`
+                    );
+                    throw error;
+                }
+            },
+
+            onError: error => {
+                this.logger.error(`Agent ${this.agentId} API error: ${error.message}`);
+            },
+        });
     }
 
     /**

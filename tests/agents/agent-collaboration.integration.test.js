@@ -10,6 +10,7 @@ import SystemMessages from '../../src/core/ai/systemMessages.js';
 vi.mock('../../src/core/ai/aiAPIClient.js', () => ({
     default: vi.fn().mockImplementation(() => ({
         setSystemMessage: vi.fn(),
+        setCallbacks: vi.fn(),
         addMessage: vi.fn(),
         addUserMessage: vi.fn(),
         sendMessage: vi.fn().mockResolvedValue('Mock agent response'),
@@ -47,6 +48,8 @@ describe.sequential('Agent Collaboration Integration', () => {
         // Create a mock API client that we can track
         mockAPIClient = {
             setSystemMessage: vi.fn(),
+            setCallbacks: vi.fn(),
+            setTools: vi.fn(),
             addMessage: vi.fn(),
             addUserMessage: vi.fn(),
             sendMessage: vi.fn().mockResolvedValue('Mock agent response'),
