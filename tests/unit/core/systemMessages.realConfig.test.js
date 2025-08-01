@@ -21,7 +21,7 @@ describe('SystemMessages - Real Configuration Loading', () => {
         });
 
         it('should load all agent descriptions from agentic roles correctly', () => {
-            const systemMessage = SystemMessages.getSystemMessage('architect');
+            const systemMessage = SystemMessages.getSystemMessage('agentic.architect');
 
             // The system message should contain the developer's description
             expect(systemMessage).toContain('developer - responsible for implementing features');
@@ -48,7 +48,7 @@ describe('SystemMessages - Real Configuration Loading', () => {
         });
 
         it('should handle architect role with developer coordination', () => {
-            const systemMessage = SystemMessages.getSystemMessage('architect');
+            const systemMessage = SystemMessages.getSystemMessage('agentic.architect');
 
             console.log('Architect System Message:', systemMessage);
 

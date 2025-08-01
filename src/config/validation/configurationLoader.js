@@ -325,7 +325,7 @@ class ConfigurationLoader {
                         }
                     }
 
-                    // Track role in group
+                    // Track role in group using original role name
                     if (!roleGroups[group]) {
                         roleGroups[group] = [];
                     }

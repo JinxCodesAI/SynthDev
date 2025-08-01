@@ -101,14 +101,37 @@ class SystemMessages {
             const enabledAgents = roleConfig.enabled_agents;
             const agentDescriptions = enabledAgents
                 .map(agentRole => {
-                    // Try direct lookup first (handles both simple and group-prefixed roles)
-                    let agentConfig = this.roles[agentRole];
+                    // Smart role lookup: prefer agentic versions when current role is agentic
+                    let agentConfig = null;
 
+                    // Check if current role is agentic
+                    const currentRoleConfig = this.roles[role];
+                    const isCurrentRoleAgentic = currentRoleConfig?._group === 'agentic';
+
+                    if (agentRole.includes('.')) {
+                        // Group-prefixed role - direct lookup
+                        agentConfig = this.roles[agentRole];
+                    } else {
+                        // Simple role name - apply smart lookup
+                        if (isCurrentRoleAgentic) {
+                            // Current role is agentic, prefer agentic version of target role
+                            const agenticRoleKey = `agentic.${agentRole}`;
+                            if (this.roles[agenticRoleKey]) {
+                                agentConfig = this.roles[agenticRoleKey];
+                            } else {
+                                // Fall back to any version
+                                agentConfig = this.roles[agentRole];
+                            }
+                        } else {
+                            // Current role is not agentic, use direct lookup
+                            agentConfig = this.roles[agentRole];
+                        }
+                    }
+
+                    // If still not found, try role resolution
                     if (!agentConfig) {
-                        // If direct lookup fails, try resolving the role
                         const resolution = SystemMessages.resolveRole(agentRole);
                         if (resolution.found && !resolution.ambiguous) {
-                            // Try to find the role config with the resolved information
                             const fullRoleKey =
                                 resolution.group === 'global'
                                     ? resolution.roleName
@@ -265,18 +288,13 @@ If there is nothing useful you can do, and there is nothing to report back just 
         // Build the complete system message
         let systemMessage = roleConfig.systemMessage;
 
-        // Add role coordination instructions - but only for agentic roles
-        const isAgenticRole =
-            roleGroup === 'agentic' ||
-            (roleGroup === null && SystemMessages.isAgentic(actualRoleName));
-        if (isAgenticRole) {
-            const roleCoordinationInfo = instance._generateRoleCoordinationInfo(
-                actualRoleName,
-                roleConfig
-            );
-            if (roleCoordinationInfo) {
-                systemMessage += `\n\n${roleCoordinationInfo}`;
-            }
+        // Add role coordination instructions for roles with enabled_agents or can_create_tasks_for
+        const roleCoordinationInfo = instance._generateRoleCoordinationInfo(
+            actualRoleName,
+            roleConfig
+        );
+        if (roleCoordinationInfo) {
+            systemMessage += `\n\n${roleCoordinationInfo}`;
         }
 
         // Append environment information to the system message
