@@ -58,13 +58,27 @@ export class RoleFixtures {
             roles = {};
 
             // Flatten roles for backward compatibility
-            for (const [groupName, groupRoles] of Object.entries(fixture.groups)) {
+            // Process global group first to give it priority
+            const groupOrder = [
+                'global',
+                ...Object.keys(fixture.groups).filter(g => g !== 'global'),
+            ];
+
+            for (const groupName of groupOrder) {
+                const groupRoles = fixture.groups[groupName];
+                if (!groupRoles) {
+                    continue;
+                }
+
                 for (const [roleName, roleConfig] of Object.entries(groupRoles)) {
-                    roles[roleName] = {
-                        ...roleConfig,
-                        _group: groupName,
-                        _source: `${groupName}.json`,
-                    };
+                    // Only add if not already present (global takes priority)
+                    if (!roles[roleName]) {
+                        roles[roleName] = {
+                            ...roleConfig,
+                            _group: groupName,
+                            _source: `${groupName}.json`,
+                        };
+                    }
                 }
             }
         } else {
@@ -228,12 +242,26 @@ export class RoleFixtures {
                 return { resolved, errors };
             }),
 
-            getSystemMessage: vi.fn(roleName => {
-                const role = roles[roleName];
-                if (!role) {
-                    throw new Error(`Unknown role: ${roleName}`);
+            getSystemMessage: vi.fn(roleSpec => {
+                // Handle group-prefixed role specifications
+                if (roleSpec.includes('.')) {
+                    const [group, roleName] = roleSpec.split('.', 2);
+
+                    // Check if role exists in the specified group
+                    if (roleGroups[group] && roleGroups[group][roleName]) {
+                        const role = roleGroups[group][roleName];
+                        return role.systemMessage || 'Default system message';
+                    }
+
+                    throw new Error(`Unknown role: ${roleSpec}`);
+                } else {
+                    // Handle regular role name
+                    const role = roles[roleSpec];
+                    if (!role) {
+                        throw new Error(`Unknown role: ${roleSpec}`);
+                    }
+                    return role.systemMessage || 'Default system message';
                 }
-                return role.systemMessage || 'Default system message';
             }),
         };
 

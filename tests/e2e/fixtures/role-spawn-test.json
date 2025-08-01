@@ -1,0 +1,21 @@
+{
+    "description": "Role fixture for testing group-prefixed role spawning with different system messages",
+    "groups": {
+        "global": {
+            "test_role": {
+                "level": "base",
+                "systemMessage": "You are a GLOBAL test role. This message should NOT be used when spawning local.test_role.",
+                "enabled_agents": ["local.test_role"],
+                "can_create_tasks_for": []
+            }
+        },
+        "local": {
+            "test_role": {
+                "level": "base",
+                "systemMessage": "You are a LOCAL test role. This message SHOULD be used when spawning local.test_role.",
+                "enabled_agents": [],
+                "can_create_tasks_for": []
+            }
+        }
+    }
+}
