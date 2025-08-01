@@ -157,7 +157,9 @@ If there is nothing useful you can do, and there is nothing to report back just 
         const os = platform();
         const cwd = process.cwd();
         const indexExists = existsSync('.index');
-        const currentDateTime = new Date().toLocaleString();
+        const today = new Date();
+        const options = { year: 'numeric', month: '2-digit', day: '2-digit' };
+        const currentDateTime = today.toLocaleDateString('en-GB', options);
 
         // Replace template variables
         this._environmentInfo = template.template

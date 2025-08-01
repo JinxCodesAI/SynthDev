@@ -107,21 +107,19 @@ class AgentManager {
             throw new Error(`Agent ${agentId} has failed and cannot process messages`);
         }
 
-        if (agent.status === 'running') {
-            throw new Error(`Agent ${agentId} is currently processing and should not be disturbed`);
-        }
-
         // Add message to agent's conversation history
         agent.addMessage({ role: 'user', content: message });
         this.logger.debug(
             `💬 Added following message: ${message} \n to agent ${agentId} conversation`
         );
 
-        // Set agent to running status before execution
-        agent.status = 'running';
+        if (agent.status !== 'running') {
+            // Set agent to running status before execution
+            agent.status = 'running';
 
-        // Execute agent asynchronously and handle status transitions
-        this._executeAgentAsync(agent);
+            // Execute agent asynchronously and handle status transitions
+            this._executeAgentAsync(agent);
+        }
 
         return {
             message_sent: true,

@@ -324,7 +324,7 @@ class AIAPIClient {
      * @returns {Promise<string>} Response content
      */
     async sendMessage() {
-        this.logger.debug('🔍 DEBUG: sendMessage called for role', this.role);
+        this.logger.debug('🔍 DEBUG: sendMessage called for role', this.role?.name);
         try {
             // Execute the common message processing logic without adding a new message
             return await this._processMessage();
@@ -342,7 +342,7 @@ class AIAPIClient {
      * @returns {Promise<string>} Response content
      */
     async _processMessage() {
-        this.logger.debug('🔍 DEBUG: _processMessage called for role', this.role);
+        this.logger.debug('🔍 DEBUG: _processMessage called for role', this.role?.name);
         // Reset tool call counter for new interaction
         this.toolCallCount = 0;
 
@@ -359,12 +359,14 @@ class AIAPIClient {
         const message = response.choices[0].message;
 
         // Handle reasoning content (model-specific)
-        if (message.reasoning_content) {
+        const reasoningContent = message.reasoning_content ?? message.reasoning_details;
+        if (reasoningContent) {
             if (this.onChainOfThought) {
-                this.onChainOfThought(message.reasoning_content);
+                this.onChainOfThought(reasoningContent);
             }
             // Clear reasoning content before storing (model-specific behavior)
-            message.reasoning_content = null;
+            delete message.reasoning_content;
+            delete message.reasoning_details;
         }
 
         const parsingTools = SystemMessages.getParsingTools(this.role).map(
@@ -461,8 +463,8 @@ class AIAPIClient {
         // Prepare API request
         const requestData = {
             model: this.model,
-            messages: this.messages,
             tools: this.tools.length > 0 ? this.tools : undefined,
+            messages: this.messages,
             max_completion_tokens: config.getMaxTokens(this.model),
         };
 
@@ -489,6 +491,7 @@ class AIAPIClient {
         this.lastAPICall.request = JSON.parse(JSON.stringify(requestData));
         this.lastAPICall.timestamp = new Date().toISOString();
 
+        this.logger.debug('🔍 DEBUG: Making API call .....');
         // Call OpenAI Compatible API
         const response = await this.client.chat.completions.create(requestData).catch(error => {
             this.logger.error(error, 'API call failed');
@@ -500,6 +503,7 @@ class AIAPIClient {
             );
             throw error;
         });
+        this.logger.debug('🔍 DEBUG: API call completed');
 
         // Store response data for review
         this.lastAPICall.response = JSON.parse(JSON.stringify(response));
@@ -544,6 +548,8 @@ class AIAPIClient {
                 if (this.onToolExecution) {
                     try {
                         const toolResult = await this.onToolExecution(toolCall);
+                        this.logger.debug('Tool call completed:', toolCall.function.name);
+                        this.logger.debug('Tool result:', toolResult);
                         this._pushMessage(toolResult);
                     } catch (error) {
                         // Add error result to conversation
@@ -553,6 +559,9 @@ class AIAPIClient {
                             content: `Error: ${error.message}`,
                         });
                     }
+                } else {
+                    this.logger.error('No tool execution handler defined');
+                    throw new Error('No tool execution handler defined');
                 }
             }
 
