@@ -185,7 +185,8 @@ describe('TaskCommand', () => {
             expect(mockContext.consoleInterface.showError).toHaveBeenCalledWith(
                 'Unknown subcommand: unknown'
             );
-            expect(result).toBe('error');
+            expect(result.success).toBe(false);
+            expect(result.error).toContain('Unknown subcommand');
         });
 
         it('should handle errors gracefully', async () => {
@@ -196,7 +197,8 @@ describe('TaskCommand', () => {
             expect(mockContext.consoleInterface.showError).toHaveBeenCalledWith(
                 expect.stringContaining('Failed to list tasks')
             );
-            expect(result).toBe('error');
+            expect(result.success).toBe(false);
+            expect(result.error).toContain('Tool error');
         });
     });
 
@@ -237,7 +239,8 @@ describe('TaskCommand', () => {
             expect(mockContext.consoleInterface.showMessage).toHaveBeenCalledWith(
                 '📝 No tasks found.'
             );
-            expect(result).toBe('empty');
+            expect(result.success).toBe(true);
+            expect(result.task_count).toBe(0);
         });
 
         it('should handle tool errors', async () => {
@@ -251,7 +254,8 @@ describe('TaskCommand', () => {
             expect(mockContext.consoleInterface.showError).toHaveBeenCalledWith(
                 'Failed to list tasks: Tool failed'
             );
-            expect(result).toBe('error');
+            expect(result.success).toBe(false);
+            expect(result.error).toContain('Tool failed');
         });
 
         it('should pass options to tool', async () => {
@@ -312,7 +316,8 @@ describe('TaskCommand', () => {
             expect(mockContext.consoleInterface.showError).toHaveBeenCalledWith(
                 'Task not found: Task with ID nonexistent not found'
             );
-            expect(result).toBe('error');
+            expect(result.success).toBe(false);
+            expect(result.error).toContain('Task with ID nonexistent not found');
         });
 
         it('should display parent chain', async () => {

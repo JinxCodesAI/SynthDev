@@ -116,6 +116,7 @@ describe('TaskCommand Integration', () => {
 
             // Step 4: Test /task [id] command
             vi.clearAllMocks();
+
             const taskDetailResult = await command.implementation(parentId, mockContext);
 
             expect(taskDetailResult.success).toBe(true);
@@ -144,7 +145,8 @@ describe('TaskCommand Integration', () => {
             // Test list command with no tasks
             const result = await command.implementation('list', mockContext);
 
-            expect(result).toBe('empty');
+            expect(result.success).toBe(true);
+            expect(result.task_count).toBe(0);
             expect(mockContext.consoleInterface.showMessage).toHaveBeenCalledWith(
                 '📝 No tasks found.'
             );
@@ -154,12 +156,10 @@ describe('TaskCommand Integration', () => {
         });
 
         it('should handle non-existent task ID gracefully', async () => {
-            const result = await command.implementation(
-                'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
-                mockContext
-            );
+            const result = await command.implementation('task-999', mockContext);
 
-            expect(result).toBe('error');
+            expect(result.success).toBe(false);
+            expect(result.error).toContain('not found');
             expect(mockContext.consoleInterface.showError).toHaveBeenCalledWith(
                 expect.stringContaining('Task not found')
             );
@@ -347,7 +347,8 @@ describe('TaskCommand Integration', () => {
         it('should route to subcommands correctly', async () => {
             // Test list subcommand
             let result = await command.implementation('list', mockContext);
-            expect(result).toBe('empty'); // No tasks created
+            expect(result.success).toBe(true);
+            expect(result.task_count).toBe(0); // No tasks created
 
             // Test placeholder subcommands
             result = await command.implementation('add', mockContext);

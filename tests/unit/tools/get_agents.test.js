@@ -38,7 +38,7 @@ describe('get_agents tool', () => {
 
         mockContext = {
             agentManager: {
-                listAgents: vi.fn().mockReturnValue(mockAgents),
+                listAllAgents: vi.fn().mockReturnValue(mockAgents),
             },
             currentRole: 'agentic_coder',
             currentAgentId: null, // Main user has no agent ID
@@ -60,7 +60,7 @@ describe('get_agents tool', () => {
                 context: mockContext,
             });
 
-            expect(mockContext.agentManager.listAgents).toHaveBeenCalledWith(null, {
+            expect(mockContext.agentManager.listAllAgents).toHaveBeenCalledWith({
                 include_completed: false,
             });
         });
@@ -70,7 +70,7 @@ describe('get_agents tool', () => {
                 context: mockContext,
             });
 
-            expect(mockContext.agentManager.listAgents).toHaveBeenCalledWith(null, {
+            expect(mockContext.agentManager.listAllAgents).toHaveBeenCalledWith({
                 include_completed: true,
             });
         });
@@ -133,7 +133,7 @@ describe('get_agents tool', () => {
 
         it('should filter statistics correctly for filtered results', async () => {
             // Mock returning only running agents
-            mockContext.agentManager.listAgents.mockReturnValue([mockAgents[0]]);
+            mockContext.agentManager.listAllAgents.mockReturnValue([mockAgents[0]]);
 
             const result = await get_agents({
                 include_completed: false,
@@ -150,7 +150,7 @@ describe('get_agents tool', () => {
 
     describe('empty results', () => {
         it('should handle no agents gracefully', async () => {
-            mockContext.agentManager.listAgents.mockReturnValue([]);
+            mockContext.agentManager.listAllAgents.mockReturnValue([]);
 
             const result = await get_agents({
                 context: mockContext,
@@ -168,7 +168,7 @@ describe('get_agents tool', () => {
 
     describe('error handling', () => {
         it('should handle AgentManager errors', async () => {
-            mockContext.agentManager.listAgents.mockImplementation(() => {
+            mockContext.agentManager.listAllAgents.mockImplementation(() => {
                 throw new Error('Database connection failed');
             });
 
@@ -181,7 +181,7 @@ describe('get_agents tool', () => {
         });
 
         it('should include error context in failure response', async () => {
-            mockContext.agentManager.listAgents.mockImplementation(() => {
+            mockContext.agentManager.listAllAgents.mockImplementation(() => {
                 throw new Error('Test error');
             });
 
@@ -196,17 +196,17 @@ describe('get_agents tool', () => {
     });
 
     describe('context handling', () => {
-        it('should use null when currentAgentId is missing', async () => {
+        it('should work regardless of currentAgentId', async () => {
             const contextWithoutAgentId = {
                 agentManager: mockContext.agentManager,
-                // currentAgentId is missing
+                // currentAgentId is missing - but get_agents should work regardless
             };
 
             await get_agents({
                 context: contextWithoutAgentId,
             });
 
-            expect(mockContext.agentManager.listAgents).toHaveBeenCalledWith(null, {
+            expect(mockContext.agentManager.listAllAgents).toHaveBeenCalledWith({
                 include_completed: true,
             });
         });

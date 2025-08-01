@@ -44,7 +44,7 @@ describe('Role Identification Bugs', () => {
 
             // The agentic architect should have coordination instructions
             expect(agenticArchitectMessage).toContain(
-                'Your role is architect and you need to coordinate'
+                'Your role is agentic.architect and you need to coordinate'
             );
             expect(agenticArchitectMessage).toContain(
                 'developer - responsible for implementing features'
@@ -63,7 +63,7 @@ describe('Role Identification Bugs', () => {
                 'You are a Software Architect focused on designing robust'
             );
             expect(agenticArchitectMessage).toContain(
-                'Your role is architect and you need to coordinate'
+                'Your role is agentic.architect and you need to coordinate'
             );
 
             // Test that spawning works (simplified test without complex mocking)
@@ -106,7 +106,7 @@ describe('Role Identification Bugs', () => {
 
             // Agentic architect SHOULD have coordination instructions
             expect(agenticArchitectMessage).toContain(
-                'Your role is architect and you need to coordinate'
+                'Your role is agentic.architect and you need to coordinate'
             );
             expect(agenticArchitectMessage).toContain(
                 'Use get_agents to understand what agents are already available'

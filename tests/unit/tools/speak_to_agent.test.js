@@ -78,7 +78,7 @@ describe('speak_to_agent tool', () => {
             expect(mockContext.agentManager.getAgentStatus).toHaveBeenCalledWith('agent-123');
             expect(mockContext.agentManager.sendMessageToAgent).toHaveBeenCalledWith(
                 'agent-123',
-                'Please focus on edge cases'
+                'speak_to_agent call from user to agent-123 with message: Please focus on edge cases '
             );
         });
 

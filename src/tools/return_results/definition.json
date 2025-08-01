@@ -1,6 +1,6 @@
 {
     "name": "return_results",
-    "description": "Signals task completion and returns structured results to supervisor agent",
+    "description": "Should be called to communicate to supervisor agent that task is completed and pass structured results back to their supervisor.",
     "auto_run": true,
     "version": "1.0.0",
     "tags": ["agents", "completion", "handoff"],

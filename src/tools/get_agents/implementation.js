@@ -2,7 +2,7 @@ import { BaseTool } from '../common/base-tool.js';
 
 class GetAgentsTool extends BaseTool {
     constructor() {
-        super('get_agents', 'Lists all agents spawned by the current agent');
+        super('get_agents', 'Lists all currently active agents in the system');
 
         this.requiredParams = [];
         this.parameterTypes = {
@@ -19,10 +19,8 @@ class GetAgentsTool extends BaseTool {
                 throw new Error('AgentManager not available in context');
             }
 
-            const currentAgentId = this.context?.currentAgentId || null;
-
-            // Get agents spawned by current supervisor (null for main user)
-            const agents = agentManager.listAgents(currentAgentId, { include_completed });
+            // Get all agents in the system regardless of supervisor
+            const agents = agentManager.listAllAgents({ include_completed });
 
             // Format agent information for response
             const agentList = agents.map(agent => ({

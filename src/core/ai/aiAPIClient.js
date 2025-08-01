@@ -52,7 +52,8 @@ class AIAPIClient {
 
         // Safety limits from config
         const config = ConfigManager.getInstance();
-        this.maxToolCalls = config.getConfig().global.maxToolCalls;
+        this.originalMaxToolCalls = config.getConfig().global.maxToolCalls;
+        this.maxToolCalls = this.originalMaxToolCalls;
         this.toolCallCount = 0;
 
         // Callbacks for UI interaction
@@ -466,6 +467,7 @@ class AIAPIClient {
         const requestData = {
             model: this.model,
             tools: this.tools.length > 0 ? this.tools : undefined,
+            tool_choice: 'auto',
             messages: this.messages,
             max_completion_tokens: config.getMaxTokens(this.model),
         };
@@ -548,8 +550,9 @@ class AIAPIClient {
                             'Operation stopped due to maximum tool calls limit.'
                         );
                     }
-                    // User chose to continue, reset the limit check for this session
-                    // We don't reset toolCallCount to keep tracking total calls
+                    // User chose to continue, increase the limit by the original max amount
+                    // This gives them another full batch of tool calls before next confirmation
+                    this.maxToolCalls += this.originalMaxToolCalls;
                 } else {
                     // Fallback to throwing error if no callback is set
                     throw new Error(

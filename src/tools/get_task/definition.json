@@ -14,7 +14,7 @@
                 "properties": {
                     "task_id": {
                         "type": "string",
-                        "description": "The unique ID (UUID) of the task to retrieve. Must be a valid existing task ID."
+                        "description": "Task ID of the task to retrieve. Must be a valid existing task ID."
                     },
                     "include_children": {
                         "type": "boolean",

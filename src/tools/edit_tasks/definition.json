@@ -20,7 +20,7 @@
                             "properties": {
                                 "id": {
                                     "type": "string",
-                                    "description": "Task ID (UUID). If provided and exists, the task will be updated. If not provided, a new task will be created with a generated ID."
+                                    "description": "Task ID. If provided and exists, the task will be updated. If not provided, a new task will be created with a generated ID."
                                 },
                                 "title": {
                                     "type": "string",

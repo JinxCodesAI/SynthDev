@@ -37,7 +37,7 @@ describe('SystemMessages - Real Configuration Loading', () => {
 
             // Should contain coordination info
             expect(systemMessage).toContain(
-                'Your role is pm and you need to coordinate with other roles'
+                'Your role is agentic.pm and you need to coordinate with other roles'
             );
             expect(systemMessage).toContain('architect');
 
@@ -54,7 +54,7 @@ describe('SystemMessages - Real Configuration Loading', () => {
 
             // Should contain coordination info
             expect(systemMessage).toContain(
-                'Your role is architect and you need to coordinate with other roles'
+                'Your role is agentic.architect and you need to coordinate with other roles'
             );
             expect(systemMessage).toContain('developer');
 
@@ -69,7 +69,7 @@ describe('SystemMessages - Real Configuration Loading', () => {
 
             // Should contain coordination info
             expect(systemMessage).toContain(
-                'Your role is developer and you need to coordinate with other roles'
+                'Your role is agentic.developer and you need to coordinate with other roles'
             );
             expect(systemMessage).toContain('test-runner');
             expect(systemMessage).toContain('git-manager');

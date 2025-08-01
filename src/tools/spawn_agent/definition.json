@@ -1,6 +1,6 @@
 {
     "name": "spawn_agent",
-    "description": "Spawns a new, specialized AI agent to perform a specific task in an isolated context",
+    "description": "Spawns a new, specialized AI agent to perform a specific task in an isolated context, when spawned agent will finish it will call return_results to pass results back to the parent agent.",
     "auto_run": true,
     "version": "1.0.0",
     "schema": {

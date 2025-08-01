@@ -1,6 +1,6 @@
 {
     "name": "update_knowledgebase",
-    "description": "Update the shared knowledgebase with new information",
+    "description": "Should be called by agents to share new knowledge agent has learned about task they are working on.",
     "auto_run": true,
     "version": "1.0.0",
     "tags": ["knowledgebase", "coordination", "agents", "shared-state"],
