@@ -53,16 +53,34 @@ class AgentManager {
             );
         }
 
+        // Resolve the worker role name to get the actual role name
+        let actualWorkerRoleName = workerRoleName;
+        if (typeof SystemMessages.resolveRole === 'function') {
+            const workerResolution = SystemMessages.resolveRole(workerRoleName);
+            if (workerResolution && workerResolution.ambiguous) {
+                throw new Error(
+                    `Role '${workerRoleName}' is ambiguous. Found in groups: ${workerResolution.availableGroups.join(', ')}. ` +
+                        `Please specify group explicitly (e.g., '${workerResolution.availableGroups[0]}.${workerResolution.roleName}')`
+                );
+            }
+            if (workerResolution && !workerResolution.found) {
+                throw new Error(`Role '${workerRoleName}' not found`);
+            }
+            if (workerResolution && workerResolution.found) {
+                actualWorkerRoleName = workerResolution.roleName;
+            }
+        }
+
         // Get supervisor agent ID from context (null for main user)
         const supervisorAgentId = context?.currentAgentId || null;
 
         // Generate simple agent ID
         const agentId = this._generateAgentId();
 
-        // Create new agent process
+        // Create new agent process with the resolved role name
         const agent = new AgentProcess(
             agentId,
-            workerRoleName,
+            actualWorkerRoleName,
             taskPrompt,
             supervisorAgentId, // Use actual agent ID as parent
             context.costsManager,
@@ -260,8 +278,30 @@ class AgentManager {
         try {
             // Allow 'user' to spawn any agentic role
             if (supervisorRole === 'user') {
-                return SystemMessages.isAgentic(workerRoleName);
+                // For backward compatibility, try resolveRole if it exists, otherwise use direct lookup
+                if (typeof SystemMessages.resolveRole === 'function') {
+                    const workerResolution = SystemMessages.resolveRole(workerRoleName);
+                    if (workerResolution && workerResolution.ambiguous) {
+                        throw new Error(
+                            `Role '${workerRoleName}' is ambiguous. Found in groups: ${workerResolution.availableGroups.join(', ')}. ` +
+                                `Please specify group explicitly (e.g., '${workerResolution.availableGroups[0]}.${workerResolution.roleName}')`
+                        );
+                    }
+                    if (workerResolution && !workerResolution.found) {
+                        throw new Error(`Role '${workerRoleName}' not found`);
+                    }
+                    const actualRoleName =
+                        workerResolution && workerResolution.found
+                            ? workerResolution.roleName
+                            : workerRoleName;
+                    return SystemMessages.isAgentic(actualRoleName);
+                } else {
+                    // Fallback for tests or when resolveRole is not available
+                    return SystemMessages.isAgentic(workerRoleName);
+                }
             }
+
+            // For agent supervisors, check spawn permissions
             return SystemMessages.canSpawnAgent(supervisorRole, workerRoleName);
         } catch (error) {
             this.logger.error(`Permission validation failed: ${error.message}`);
