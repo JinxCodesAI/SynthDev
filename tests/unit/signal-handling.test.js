@@ -13,6 +13,8 @@ vi.mock('../../src/core/managers/logger.js', () => ({
         warn: vi.fn(),
         user: vi.fn(),
         raw: vi.fn(),
+        isFileLoggingEnabled: vi.fn().mockReturnValue(false),
+        closeLogFile: vi.fn(),
     }),
 }));
 
