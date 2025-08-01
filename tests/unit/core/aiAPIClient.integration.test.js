@@ -548,6 +548,111 @@ describe('AIAPIClient Integration Tests', () => {
             expect(onToolExecution).toHaveBeenCalledTimes(3);
         });
 
+        it('should increase limit by original amount when user confirms continuation', async () => {
+            // Create a mock that will trigger multiple confirmations
+            const mockOpenAI = {
+                chat: {
+                    completions: {
+                        create: vi
+                            .fn()
+                            .mockResolvedValueOnce({
+                                choices: [
+                                    {
+                                        message: {
+                                            role: 'assistant',
+                                            content: null,
+                                            tool_calls: [
+                                                {
+                                                    id: 'call_1',
+                                                    type: 'function',
+                                                    function: {
+                                                        name: 'test_tool',
+                                                        arguments: '{}',
+                                                    },
+                                                },
+                                                {
+                                                    id: 'call_2',
+                                                    type: 'function',
+                                                    function: {
+                                                        name: 'test_tool',
+                                                        arguments: '{}',
+                                                    },
+                                                },
+                                            ],
+                                        },
+                                    },
+                                ],
+                            })
+                            .mockResolvedValueOnce({
+                                choices: [
+                                    {
+                                        message: {
+                                            role: 'assistant',
+                                            content: null,
+                                            tool_calls: [
+                                                {
+                                                    id: 'call_3',
+                                                    type: 'function',
+                                                    function: {
+                                                        name: 'test_tool',
+                                                        arguments: '{}',
+                                                    },
+                                                },
+                                            ],
+                                        },
+                                    },
+                                ],
+                            })
+                            .mockResolvedValueOnce({
+                                choices: [
+                                    {
+                                        message: {
+                                            role: 'assistant',
+                                            content: 'Final response',
+                                        },
+                                    },
+                                ],
+                            }),
+                    },
+                },
+            };
+
+            const { OpenAI } = await import('openai');
+            OpenAI.mockImplementation(() => mockOpenAI);
+
+            aiClient = new AIAPIClient(mockCostsManager, 'test-key');
+            aiClient.role = 'test-role';
+            aiClient.maxToolCalls = 2; // Set low limit to trigger confirmation
+            aiClient.originalMaxToolCalls = 2; // Store original value
+
+            const onToolExecution = vi.fn().mockResolvedValue({
+                role: 'tool',
+                tool_call_id: 'call_test',
+                content: 'Tool result',
+            });
+
+            const onMaxToolCallsExceeded = vi.fn().mockResolvedValue(true); // User always confirms
+            const onError = vi.fn();
+
+            aiClient.setCallbacks({ onToolExecution, onMaxToolCallsExceeded, onError });
+
+            const result = await aiClient.sendUserMessage('Test');
+
+            // Should have been called once when limit was first exceeded (after 2 calls)
+            expect(onMaxToolCallsExceeded).toHaveBeenCalledTimes(1);
+            expect(onMaxToolCallsExceeded).toHaveBeenCalledWith(2);
+
+            // After confirmation, limit should be increased to 4 (2 + 2)
+            // So the 3rd tool call should proceed without another confirmation
+            expect(result).toBe('Final response');
+
+            // All 3 tool executions should have completed
+            expect(onToolExecution).toHaveBeenCalledTimes(3);
+
+            // No errors should have occurred
+            expect(onError).not.toHaveBeenCalled();
+        });
+
         it('should handle reminder messages', async () => {
             const mockOpenAIWithTools = createMockOpenAIWithToolCalls();
             const { OpenAI } = await import('openai');
