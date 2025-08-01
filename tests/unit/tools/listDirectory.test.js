@@ -290,7 +290,7 @@ describe.sequential('ListDirectory Tool - Fixed Tests', () => {
     });
 
     describe('AI summaries functionality', () => {
-        const indexDir = join(process.cwd(), '.synthdev');
+        const indexDir = join(process.cwd(), '.synthdev', 'index');
         const indexFile = join(indexDir, 'codebase-index.json');
 
         beforeEach(() => {

@@ -156,7 +156,7 @@ If there is nothing useful you can do, and there is nothing to report back just 
         const template = this._loadEnvironmentTemplate();
         const os = platform();
         const cwd = process.cwd();
-        const indexExists = existsSync('.synthdev');
+        const indexExists = existsSync('.synthdev/index');
         const currentDateTime = new Date().toLocaleString();
 
         // Replace template variables
