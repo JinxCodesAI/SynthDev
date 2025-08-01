@@ -284,48 +284,48 @@ class ConfigurationLoader {
 
                 // Merge roles from this file
                 for (const [roleName, roleConfig] of Object.entries(fileRoles)) {
-                    if (mergedRoles[roleName]) {
+                    // Create the full role key (group.roleName for non-global, just roleName for global)
+                    const fullRoleKey = group === 'global' ? roleName : `${group}.${roleName}`;
+
+                    // Check if this exact role (with group) already exists
+                    if (mergedRoles[fullRoleKey]) {
                         this.logger.warn(
-                            `Role '${roleName}' from ${filePath} overwrites existing role definition`
+                            `Role '${fullRoleKey}' from ${filePath} overwrites existing role definition`
                         );
-
-                        // Preserve important fields from the original role if they're missing in the new one
-                        const existingRole = mergedRoles[roleName];
-                        const preservedFields = {};
-
-                        // Preserve agent_description if it exists in the original but not in the new role
-                        if (existingRole.agent_description && !roleConfig.agent_description) {
-                            preservedFields.agent_description = existingRole.agent_description;
-                        }
-
-                        // Preserve enabled_agents if it exists in the original but not in the new role
-                        if (existingRole.enabled_agents && !roleConfig.enabled_agents) {
-                            preservedFields.enabled_agents = existingRole.enabled_agents;
-                        }
-
-                        // Preserve can_create_tasks_for if it exists in the original but not in the new role
-                        if (existingRole.can_create_tasks_for && !roleConfig.can_create_tasks_for) {
-                            preservedFields.can_create_tasks_for =
-                                existingRole.can_create_tasks_for;
-                        }
-
-                        // Add group metadata to role config with preserved fields
-                        mergedRoles[roleName] = {
-                            ...preservedFields,
-                            ...roleConfig,
-                            _group: group,
-                            _source: jsonFile,
-                        };
-                    } else {
-                        // Add group metadata to role config
-                        mergedRoles[roleName] = {
-                            ...roleConfig,
-                            _group: group,
-                            _source: jsonFile,
-                        };
                     }
 
-                    // Track role in group
+                    // Add role with full key
+                    mergedRoles[fullRoleKey] = {
+                        ...roleConfig,
+                        _group: group,
+                        _source: jsonFile,
+                        _originalName: roleName, // Keep track of the original role name
+                    };
+
+                    // For backward compatibility, also add global roles with their simple names
+                    if (group === 'global') {
+                        // Global roles are also accessible by their simple name
+                        mergedRoles[roleName] = mergedRoles[fullRoleKey];
+                    } else {
+                        // For non-global roles, check if there's a naming conflict with global roles
+                        if (mergedRoles[roleName] && mergedRoles[roleName]._group === 'global') {
+                            // There's a global role with the same name - this is expected and OK
+                            // The global role remains accessible by simple name
+                            // The group role is only accessible by full name
+                        } else if (
+                            mergedRoles[roleName] &&
+                            mergedRoles[roleName]._group !== 'global'
+                        ) {
+                            // There's already a non-global role with this name - this creates ambiguity
+                            // Remove the simple name access to force group-prefixed access
+                            delete mergedRoles[roleName];
+                        } else {
+                            // No conflict, make this role accessible by simple name too
+                            mergedRoles[roleName] = mergedRoles[fullRoleKey];
+                        }
+                    }
+
+                    // Track role in group using original role name
                     if (!roleGroups[group]) {
                         roleGroups[group] = [];
                     }

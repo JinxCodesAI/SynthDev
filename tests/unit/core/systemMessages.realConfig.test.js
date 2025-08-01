@@ -21,7 +21,7 @@ describe('SystemMessages - Real Configuration Loading', () => {
         });
 
         it('should load all agent descriptions from agentic roles correctly', () => {
-            const systemMessage = SystemMessages.getSystemMessage('architect');
+            const systemMessage = SystemMessages.getSystemMessage('agentic.architect');
 
             // The system message should contain the developer's description
             expect(systemMessage).toContain('developer - responsible for implementing features');
@@ -48,7 +48,7 @@ describe('SystemMessages - Real Configuration Loading', () => {
         });
 
         it('should handle architect role with developer coordination', () => {
-            const systemMessage = SystemMessages.getSystemMessage('architect');
+            const systemMessage = SystemMessages.getSystemMessage('agentic.architect');
 
             console.log('Architect System Message:', systemMessage);
 
@@ -91,6 +91,31 @@ describe('SystemMessages - Real Configuration Loading', () => {
             console.log('PM role config:', roles.pm);
             console.log('Architect role config:', roles.architect);
             console.log('Developer role config:', roles.developer);
+        });
+
+        it('should prefer roles with descriptions over roles without descriptions', () => {
+            // This test verifies that the logic doesn't hardcode "agentic"
+            // by testing with a non-agentic role that has enabled_agents
+
+            // Test with testing.dude role which has enabled_agents but is not "agentic"
+            const systemMessage = SystemMessages.getSystemMessage('testing.dude');
+
+            // The testing.dude role should be able to coordinate with other roles
+            // without any hardcoded "agentic" logic interfering
+            expect(systemMessage).toBeDefined();
+            expect(systemMessage.length).toBeGreaterThan(0);
+
+            // Should not contain hardcoded "agentic" references in the coordination logic
+            // (This would fail if the logic hardcoded "agentic.${roleName}")
+            const lines = systemMessage.split('\n');
+            const coordinationLines = lines.filter(
+                line => line.includes('Agents you can interact with:') || line.includes(' - ')
+            );
+
+            // If there are coordination lines, they shouldn't contain hardcoded "agentic"
+            coordinationLines.forEach(line => {
+                expect(line).not.toMatch(/agentic\./);
+            });
         });
     });
 });

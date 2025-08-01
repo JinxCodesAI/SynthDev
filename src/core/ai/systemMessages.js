@@ -101,28 +101,49 @@ class SystemMessages {
             const enabledAgents = roleConfig.enabled_agents;
             const agentDescriptions = enabledAgents
                 .map(agentRole => {
-                    // Resolve the agent role to get the actual role configuration
-                    const resolution = SystemMessages.resolveRole(agentRole);
-                    let actualRoleName = agentRole;
+                    // Smart role lookup: prefer roles with agent_description when available
                     let agentConfig = null;
 
-                    if (resolution.found && !resolution.ambiguous) {
-                        actualRoleName = resolution.roleName;
-                        agentConfig = this.roles[actualRoleName];
-                    } else if (resolution.ambiguous) {
-                        // For ambiguous roles, try to find the config anyway
+                    if (agentRole.includes('.')) {
+                        // Group-prefixed role - direct lookup
                         agentConfig = this.roles[agentRole];
                     } else {
-                        // Role not found, try direct lookup for backward compatibility
+                        // Simple role name - try direct lookup first
                         agentConfig = this.roles[agentRole];
+
+                        // If found but no description, try to find a better version
+                        if (agentConfig && !agentConfig.agent_description) {
+                            // Look for other versions of this role that have descriptions
+                            const allRoleKeys = Object.keys(this.roles);
+                            const alternativeKey = allRoleKeys.find(key => {
+                                const config = this.roles[key];
+                                return key.endsWith(`.${agentRole}`) && config.agent_description;
+                            });
+
+                            if (alternativeKey) {
+                                agentConfig = this.roles[alternativeKey];
+                            }
+                        }
+                    }
+
+                    // If still not found, try role resolution
+                    if (!agentConfig) {
+                        const resolution = SystemMessages.resolveRole(agentRole);
+                        if (resolution.found && !resolution.ambiguous) {
+                            const fullRoleKey =
+                                resolution.group === 'global'
+                                    ? resolution.roleName
+                                    : `${resolution.group}.${resolution.roleName}`;
+                            agentConfig =
+                                this.roles[fullRoleKey] || this.roles[resolution.roleName];
+                        }
                     }
 
                     const description =
                         agentConfig?.agent_description || 'No description available';
 
-                    // Include group information in the description if role was group-prefixed
-                    const displayName = agentRole.includes('.') ? agentRole : actualRoleName;
-                    return `${displayName} - ${description}`;
+                    // Use the original role name for display
+                    return `${agentRole} - ${description}`;
                 })
                 .join('\n');
 
@@ -207,12 +228,56 @@ If there is nothing useful you can do, and there is nothing to report back just 
 
     /**
      * Get system message for a specific role
-     * @param {string} role - The role name (coder, reviewer, architect)
+     * @param {string} role - The role name (coder, reviewer, architect) or group-prefixed (agentic.architect)
      * @returns {string} The system message for the role
      */
     static getSystemMessage(role) {
         const instance = new SystemMessages();
-        const roleConfig = instance.roles[role];
+
+        // Handle null/undefined roles
+        if (!role || typeof role !== 'string') {
+            throw new Error(
+                `Unknown role: ${role}. Available roles: ${Object.keys(instance.roles).join(', ')}`
+            );
+        }
+
+        // Handle group-prefixed roles - try direct lookup first
+        let roleConfig = instance.roles[role];
+        let actualRoleName = role;
+        let roleGroup = null;
+
+        if (roleConfig) {
+            // Direct lookup succeeded
+            actualRoleName = roleConfig._originalName || role;
+            roleGroup = roleConfig._group;
+        } else if (role.includes('.')) {
+            // Group-prefixed role that wasn't found directly
+            throw new Error(
+                `Unknown role: ${role}. Available roles: ${Object.keys(instance.roles).join(', ')}`
+            );
+        } else {
+            // Simple role name that wasn't found - might be ambiguous
+            const resolution = SystemMessages.resolveRole(role);
+            if (!resolution.found) {
+                if (resolution.ambiguous) {
+                    throw new Error(
+                        `Role '${role}' is ambiguous. Found in groups: ${resolution.availableGroups.join(', ')}. ` +
+                            `Please specify group explicitly (e.g., '${resolution.availableGroups[0]}.${resolution.roleName}')`
+                    );
+                } else {
+                    throw new Error(
+                        `Unknown role: ${role}. Available roles: ${Object.keys(instance.roles).join(', ')}`
+                    );
+                }
+            }
+
+            // This shouldn't happen with the new structure, but handle it anyway
+            actualRoleName = resolution.roleName;
+            roleGroup = resolution.group;
+            const fullRoleKey =
+                roleGroup === 'global' ? actualRoleName : `${roleGroup}.${actualRoleName}`;
+            roleConfig = instance.roles[fullRoleKey];
+        }
 
         if (!roleConfig) {
             throw new Error(
@@ -223,8 +288,11 @@ If there is nothing useful you can do, and there is nothing to report back just 
         // Build the complete system message
         let systemMessage = roleConfig.systemMessage;
 
-        // Add role coordination instructions
-        const roleCoordinationInfo = instance._generateRoleCoordinationInfo(role, roleConfig);
+        // Add role coordination instructions for roles with enabled_agents or can_create_tasks_for
+        const roleCoordinationInfo = instance._generateRoleCoordinationInfo(
+            actualRoleName,
+            roleConfig
+        );
         if (roleCoordinationInfo) {
             systemMessage += `\n\n${roleCoordinationInfo}`;
         }
@@ -521,6 +589,7 @@ If there is nothing useful you can do, and there is nothing to report back just 
      */
     static resolveRole(roleSpec) {
         const instance = new SystemMessages();
+        instance._loadRolesConfig(); // Ensure roles and groups are loaded
 
         // Check if roleSpec contains a group prefix
         if (roleSpec.includes('.')) {

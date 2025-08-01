@@ -104,7 +104,11 @@ describe('Role Groups Integration Test', () => {
 
                 // Verify the role is actually in that group
                 const rolesInGroup = SystemMessages.getRolesByGroup(group);
-                expect(rolesInGroup).toContain(roleName);
+
+                // For group-prefixed roles (like 'agentic.pm'), check if the base name is in the group
+                // For simple roles (like 'coder'), check if the role itself is in the group
+                const baseRoleName = roleName.includes('.') ? roleName.split('.')[1] : roleName;
+                expect(rolesInGroup).toContain(baseRoleName);
             }
         });
 
