@@ -215,6 +215,25 @@ class AgentManager {
     }
 
     /**
+     * List all agents in the system regardless of supervisor
+     * @param {Object} options - Filtering options
+     * @returns {Array} Array of agent status objects
+     */
+    listAllAgents(options = {}) {
+        const { include_completed = true } = options;
+
+        const agents = [];
+        for (const agent of this.activeAgents.values()) {
+            const status = agent.getStatus();
+            if (include_completed || status.status !== 'completed') {
+                agents.push(status);
+            }
+        }
+
+        return agents;
+    }
+
+    /**
      * Handle agent completion and result storage
      * @param {string} workerId - Worker agent ID
      * @param {Object} result - Completion result

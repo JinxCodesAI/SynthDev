@@ -149,16 +149,17 @@ class SystemMessages {
 
             // Include current role's group in the message only if it's not in global group
             const currentRoleGroup = SystemMessages.getRoleGroup(role);
-            const roleDisplayName = role; // Keep simple for backward compatibility
+            const roleDisplayName = currentRoleGroup ?? 'global' + `.${role}`; // Keep simple for backward compatibility
 
             parts.push(`Your role is ${roleDisplayName} and you need to coordinate with other roles like: ${enabledAgents.join(', ')} to accomplish given task. Agents you can interact with:
 ${agentDescriptions}
 
-IMPORTANT: Start your work by calling read_knowledgebase to understand what information other agents have already discovered. Call update_knowledgebase whenever you learn something that may be relevant to other agents - this is crucial for effective coordination.
+IMPORTANT: Start your work by calling read_knowledgebase to understand what information other agents have already discovered. Share your knowledge frequently with other agents by calling update_knowledgebase whenever you learn something that may be relevant to other agents - this is crucial for effective coordination.
 
-Use get_agents to understand what agents are already available, but avoid calling it repeatedly.
+Use get_agents to understand what agents are already available.
 If agent you need is not available, use spawn_agent to initialize new agent that you need to do something for you. For existing agents use speak_to_agent to communicate with them.
-If there is nothing useful you can do, and there is nothing to report back just wait.`);
+
+DO NOT MAKE SAME CALLS REPEATEDLY IF THERE IS NO NEW INFORMATION, if you are not sure what to do, end conversation.`);
         }
 
         // Add task creation instructions if can_create_tasks_for exists and is not empty

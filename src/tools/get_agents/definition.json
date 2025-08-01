@@ -1,19 +1,19 @@
 {
     "name": "get_agents",
-    "description": "Lists all agents spawned by the current agent with their status and metadata",
+    "description": "Lists all agents that are currently working and can be spoken to",
     "auto_run": true,
     "version": "1.0.0",
     "schema": {
         "type": "function",
         "function": {
             "name": "get_agents",
-            "description": "Retrieves a comprehensive list of all worker agents spawned by the current agent, including their ID, role, current status, creation time, and task information.",
+            "description": "Retrieves a comprehensive list of all agents in the system including their ID, role, current status, creation time, and task information.",
             "parameters": {
                 "type": "object",
                 "properties": {
-                    "retrun_details": {
+                    "include_completed": {
                         "type": "boolean",
-                        "description": "Whether to include detailed list or not",
+                        "description": "Whether to include completed agents in the list",
                         "default": true
                     }
                 },
@@ -24,7 +24,7 @@
                 "properties": {
                     "agents": {
                         "type": "array",
-                        "description": "Array of agent objects spawned by current supervisor",
+                        "description": "Array of all agent objects in the system",
                         "items": {
                             "type": "object",
                             "properties": {

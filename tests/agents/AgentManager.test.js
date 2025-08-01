@@ -172,6 +172,50 @@ describe('AgentManager', () => {
         });
     });
 
+    describe('listAllAgents', () => {
+        let mockAgent1, mockAgent2;
+
+        beforeEach(() => {
+            mockAgent1 = {
+                getStatus: vi.fn().mockReturnValue({
+                    agentId: 'agent1',
+                    status: 'running',
+                }),
+            };
+            mockAgent2 = {
+                getStatus: vi.fn().mockReturnValue({
+                    agentId: 'agent2',
+                    status: 'completed',
+                }),
+            };
+
+            agentManager.activeAgents.set('agent1', mockAgent1);
+            agentManager.activeAgents.set('agent2', mockAgent2);
+        });
+
+        it('should return all agents in the system', () => {
+            const agents = agentManager.listAllAgents();
+
+            expect(agents).toHaveLength(2);
+            expect(agents[0].agentId).toBe('agent1');
+            expect(agents[1].agentId).toBe('agent2');
+        });
+
+        it('should filter out completed agents when requested', () => {
+            const agents = agentManager.listAllAgents({ include_completed: false });
+
+            expect(agents).toHaveLength(1);
+            expect(agents[0].agentId).toBe('agent1');
+            expect(agents[0].status).toBe('running');
+        });
+
+        it('should return empty array when no agents exist', () => {
+            agentManager.activeAgents.clear();
+            const agents = agentManager.listAllAgents();
+            expect(agents).toHaveLength(0);
+        });
+    });
+
     describe('reportResult', () => {
         let mockAgent;
 
