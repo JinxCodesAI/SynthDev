@@ -487,15 +487,19 @@ class AIAPIClient {
     }
 
     /**
-     * Ensures proper message ordering by moving tool messages directly after their corresponding assistant tool_calls
-     * Uses partial bubble sort to minimize changes to the message order
-     * @private
+     * Pure function that sorts messages to ensure tool responses come directly after their corresponding assistant tool_calls
+     * @param {Array} messages - Array of message objects to sort
+     * @returns {Array} - New array with properly ordered messages
+     * @static
      */
-    _ensureMessageOrdering() {
+    static sortMessagesForToolCalls(messages) {
+        // Create a copy to avoid mutating the original array
+        const sortedMessages = [...messages];
+
         // Find all tool messages that need to be repositioned
         const toolMessages = [];
-        for (let i = 0; i < this.messages.length; i++) {
-            const message = this.messages[i];
+        for (let i = 0; i < sortedMessages.length; i++) {
+            const message = sortedMessages[i];
             if (message.role === 'tool' && message.tool_call_id) {
                 toolMessages.push({ message, index: i });
             }
@@ -508,8 +512,8 @@ class AIAPIClient {
 
             // Find the assistant message with the matching tool_call_id
             let assistantIndex = -1;
-            for (let i = 0; i < this.messages.length; i++) {
-                const message = this.messages[i];
+            for (let i = 0; i < sortedMessages.length; i++) {
+                const message = sortedMessages[i];
                 if (message.role === 'assistant' && message.tool_calls) {
                     const hasMatchingToolCall = message.tool_calls.some(
                         call => call.id === toolCallId
@@ -523,7 +527,7 @@ class AIAPIClient {
 
             if (assistantIndex !== -1) {
                 // Find current position of the tool message
-                const currentToolIndex = this.messages.findIndex(
+                const currentToolIndex = sortedMessages.findIndex(
                     msg => msg.role === 'tool' && msg.tool_call_id === toolCallId
                 );
 
@@ -535,17 +539,17 @@ class AIAPIClient {
 
                     // Find all tool messages that should come before this one
                     // (those that belong to the same assistant message and have earlier tool_call positions)
-                    const assistantMessage = this.messages[assistantIndex];
+                    const assistantMessage = sortedMessages[assistantIndex];
                     const toolCallIds = assistantMessage.tool_calls.map(call => call.id);
                     const currentToolCallPosition = toolCallIds.indexOf(toolCallId);
 
                     // Count how many tool messages from the same assistant are already positioned correctly
                     for (
                         let i = assistantIndex + 1;
-                        i < currentToolIndex && i < this.messages.length;
+                        i < currentToolIndex && i < sortedMessages.length;
                         i++
                     ) {
-                        const msg = this.messages[i];
+                        const msg = sortedMessages[i];
                         if (msg.role === 'tool' && msg.tool_call_id) {
                             const msgToolCallPosition = toolCallIds.indexOf(msg.tool_call_id);
                             if (
@@ -559,16 +563,26 @@ class AIAPIClient {
 
                     // Move the tool message to the correct position if it's not already there
                     if (currentToolIndex !== targetIndex) {
-                        const toolMessage = this.messages.splice(currentToolIndex, 1)[0];
+                        const toolMessage = sortedMessages.splice(currentToolIndex, 1)[0];
                         // Adjust target index if we removed an element before it
                         if (currentToolIndex < targetIndex) {
                             targetIndex--;
                         }
-                        this.messages.splice(targetIndex, 0, toolMessage);
+                        sortedMessages.splice(targetIndex, 0, toolMessage);
                     }
                 }
             }
         }
+
+        return sortedMessages;
+    }
+
+    /**
+     * Ensures proper message ordering by applying the sorting function to this.messages
+     * @private
+     */
+    _ensureMessageOrdering() {
+        this.messages = AIAPIClient.sortMessagesForToolCalls(this.messages);
     }
 
     async _makeAPICall() {
