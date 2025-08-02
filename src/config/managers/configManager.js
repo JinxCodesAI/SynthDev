@@ -35,6 +35,7 @@ class ConfigManager {
         // Load application defaults
         this.configLoader = getConfigurationLoader();
         this.applicationDefaults = this._loadApplicationDefaults();
+        this.providersConfig = this._loadProvidersConfig();
 
         // Store command line provided options
         this.cliOptions = {
@@ -95,6 +96,15 @@ class ConfigManager {
      */
     _loadApplicationDefaults() {
         return this.configLoader.loadConfig('defaults/application.json', {}, true);
+    }
+
+    /**
+     * Load providers configuration from configuration file
+     * @private
+     * @returns {Object} Providers configuration
+     */
+    _loadProvidersConfig() {
+        return this.configLoader.loadConfig('defaults/providers.json', {}, true);
     }
 
     /**
@@ -350,11 +360,108 @@ class ConfigManager {
         return this.needsConfigurationWizard === true;
     }
 
+    /**
+     * Get maximum tokens for a model from providers configuration
+     * @param {string} model - Model name
+     * @returns {number} Maximum tokens
+     */
     getMaxTokens(model) {
+        const modelConfig = this._findModelConfig(model);
+        if (modelConfig && modelConfig.maxResponseSize) {
+            return modelConfig.maxResponseSize;
+        }
+
+        // Fallback to hardcoded values for backward compatibility
         if (model.indexOf('qwen3-235b-a22b') !== -1) {
             return 16000;
         }
         return 32000;
+    }
+
+    /**
+     * Find model configuration in providers.json
+     * @param {string} modelName - Model name to search for
+     * @returns {Object|null} Model configuration or null if not found
+     * @private
+     */
+    _findModelConfig(modelName) {
+        if (!this.providersConfig || !this.providersConfig.providers) {
+            return null;
+        }
+
+        for (const provider of this.providersConfig.providers) {
+            if (provider.models) {
+                const model = provider.models.find(m => m.name === modelName);
+                if (model) {
+                    return model;
+                }
+            }
+        }
+        return null;
+    }
+
+    /**
+     * Get model parameters with environment variable overrides
+     * @param {string} modelName - Model name
+     * @returns {Object} Model parameters
+     */
+    getModelParameters(modelName) {
+        const modelConfig = this._findModelConfig(modelName);
+        const defaultParams = modelConfig?.defaultParameters || {};
+
+        // Create base parameters from model defaults
+        const parameters = { ...defaultParams };
+
+        // Override with environment variables if present
+        const envTemp = process.env.SYNTHDEV_TEMPERATURE;
+        if (envTemp !== undefined) {
+            const temp = parseFloat(envTemp);
+            if (!isNaN(temp) && temp >= 0 && temp <= 2) {
+                parameters.temperature = temp;
+            }
+        }
+
+        const envTopP = process.env.SYNTHDEV_TOP_P;
+        if (envTopP !== undefined) {
+            const topP = parseFloat(envTopP);
+            if (!isNaN(topP) && topP > 0 && topP <= 1) {
+                parameters.top_p = topP;
+            }
+        }
+
+        const envTopK = process.env.SYNTHDEV_TOP_K;
+        if (envTopK !== undefined) {
+            const topK = parseInt(envTopK);
+            if (!isNaN(topK) && topK >= 1) {
+                parameters.top_k = topK;
+            }
+        }
+
+        const envFreqPenalty = process.env.SYNTHDEV_FREQUENCY_PENALTY;
+        if (envFreqPenalty !== undefined) {
+            const freqPenalty = parseFloat(envFreqPenalty);
+            if (!isNaN(freqPenalty) && freqPenalty >= -2 && freqPenalty <= 2) {
+                parameters.frequency_penalty = freqPenalty;
+            }
+        }
+
+        const envPresencePenalty = process.env.SYNTHDEV_PRESENCE_PENALTY;
+        if (envPresencePenalty !== undefined) {
+            const presencePenalty = parseFloat(envPresencePenalty);
+            if (!isNaN(presencePenalty) && presencePenalty >= -2 && presencePenalty <= 2) {
+                parameters.presence_penalty = presencePenalty;
+            }
+        }
+
+        const envRepetitionPenalty = process.env.SYNTHDEV_REPETITION_PENALTY;
+        if (envRepetitionPenalty !== undefined) {
+            const repetitionPenalty = parseFloat(envRepetitionPenalty);
+            if (!isNaN(repetitionPenalty) && repetitionPenalty > 0 && repetitionPenalty <= 2) {
+                parameters.repetition_penalty = repetitionPenalty;
+            }
+        }
+
+        return parameters;
     }
     getModel(model) {
         if (model === 'base') {
@@ -396,6 +503,7 @@ class ConfigManager {
 
         // Reload application defaults to ensure they are fresh
         this.applicationDefaults = this._loadApplicationDefaults();
+        this.providersConfig = this._loadProvidersConfig();
 
         this.config = this._loadConfiguration();
         this.isValidated = false;

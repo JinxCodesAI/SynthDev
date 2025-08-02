@@ -598,6 +598,7 @@ class AIAPIClient {
             tool_choice: 'auto',
             messages: this.messages,
             max_completion_tokens: config.getMaxTokens(this.model),
+            ...config.getModelParameters(this.model),
         };
 
         // Add tool_choice for parsing-only tools to force them to be called
