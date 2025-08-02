@@ -50,37 +50,51 @@ class ExecuteTerminalTool extends CommandBaseTool {
      */
     async _executeWithShell(command, shellConfig) {
         return new Promise(resolve => {
-                const args = [...shellConfig.flags, command];
+            const args = [...shellConfig.flags, command];
 
-                this.logger.debug(`Spawning: ${shellConfig.executable} ${args.join(' ')}`);
+            this.logger.debug(`Spawning: ${shellConfig.executable} ${args.join(' ')}`);
 
-                const childProcess = spawn(shellConfig.executable, args, {
-                    stdio: ['pipe', 'pipe', 'pipe'],
-                    shell: false, // We're explicitly specifying the shell
-                });
+            const childProcess = spawn(shellConfig.executable, args, {
+                stdio: ['pipe', 'pipe', 'pipe'],
+                shell: false, // We're explicitly specifying the shell
+            });
 
-                let stdout = '';
-                let stderr = '';
+            let stdout = '';
+            let stderr = '';
 
-                childProcess.stdout.on('data', data => {
-                    stdout += data.toString();
+            childProcess.stdout.on('data', data => {
+                stdout += data.toString();
+            });
 
-                // Set a timeout to prevent hanging commands
-                const timeout = setTimeout(() => {
-                    childProcess.kill('SIGTERM');
-                    resolve(
-                        this.createCommandResponse(
-                            false,
-                            stdout,
-                            stderr,
-                            'Command timed out after 30 seconds'
-                        )
-                    );
-                }, 30000);
+            childProcess.stderr.on('data', data => {
+                stderr += data.toString();
+            });
 
-                childProcess.on('close', () => {
-                    clearTimeout(timeout);
-                });
+            childProcess.on('close', code => {
+                const success = code === 0;
+                const errorMessage = success ? null : `Command exited with code ${code}`;
+                resolve(this.createCommandResponse(success, stdout, stderr, errorMessage));
+            });
+
+            childProcess.on('error', error => {
+                resolve(this.createCommandResponse(false, stdout, stderr, error.message));
+            });
+
+            // Set a timeout to prevent hanging commands
+            const timeout = setTimeout(() => {
+                childProcess.kill('SIGTERM');
+                resolve(
+                    this.createCommandResponse(
+                        false,
+                        stdout,
+                        stderr,
+                        'Command timed out after 30 seconds'
+                    )
+                );
+            }, 30000);
+
+            childProcess.on('close', () => {
+                clearTimeout(timeout);
             });
         });
     }
@@ -98,20 +112,15 @@ class ExecuteTerminalTool extends CommandBaseTool {
                 if (error) {
                     resolve(this.createCommandResponse(false, stdout, stderr, error.message));
                 } else {
-                    const errorMessage = `Command exited with code ${code}`;
-                    resolve(this.createCommandResponse(false, stdout, stderr, errorMessage));
+                    resolve(this.createCommandResponse(true, stdout, stderr));
                 }
-            });
-
-            // Handle process errors
-            child.on('error', error => {
-                resolve(this.createCommandResponse(false, stdout, stderr, error.message));
             });
         });
     }
 }
 
 // Create and export the tool instance
+const executeTerminalTool = new ExecuteTerminalTool();
 
 export default async function executeTerminal(params) {
     return await executeTerminalTool.execute(params);
