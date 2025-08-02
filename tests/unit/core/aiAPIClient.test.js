@@ -1019,4 +1019,314 @@ describe('AIAPIClient', () => {
             );
         });
     });
+
+    describe('multicall expansion', () => {
+        let mockToolManager;
+        let clientWithToolManager;
+
+        beforeEach(() => {
+            mockToolManager = {
+                executeToolCall: vi.fn(),
+                getTools: vi.fn(() => []),
+            };
+
+            clientWithToolManager = new AIAPIClient(
+                mockCostsManager,
+                'test-api-key',
+                'https://api.openai.com/v1',
+                'test-model',
+                mockToolManager
+            );
+        });
+
+        it('should expand multicall tools into individual tool calls', async () => {
+            const originalMessage = {
+                role: 'assistant',
+                content: 'I will use multiple tools',
+                tool_calls: [
+                    {
+                        id: 'call_multicall_123',
+                        type: 'function',
+                        function: {
+                            name: 'multicall',
+                            arguments: JSON.stringify({
+                                tool_calls: [
+                                    {
+                                        function_name: 'read_file',
+                                        arguments: JSON.stringify({ path: '/test/file.txt' }),
+                                    },
+                                    {
+                                        function_name: 'write_file',
+                                        arguments: JSON.stringify({
+                                            path: '/test/output.txt',
+                                            content: 'test',
+                                        }),
+                                    },
+                                ],
+                            }),
+                        },
+                    },
+                ],
+            };
+
+            // Mock multicall tool execution result
+            const multicallResult = {
+                role: 'tool',
+                tool_call_id: 'call_multicall_123',
+                content: JSON.stringify({
+                    success: true,
+                    expanded_tool_calls: [
+                        {
+                            id: 'call_read_123',
+                            type: 'function',
+                            function: {
+                                name: 'read_file',
+                                arguments: '{"path": "/test/file.txt"}',
+                            },
+                        },
+                        {
+                            id: 'call_write_456',
+                            type: 'function',
+                            function: {
+                                name: 'write_file',
+                                arguments: '{"path": "/test/output.txt", "content": "test"}',
+                            },
+                        },
+                    ],
+                }),
+            };
+
+            mockToolManager.executeToolCall.mockResolvedValueOnce(multicallResult);
+
+            const expandedMessage =
+                await clientWithToolManager._expandMulticallTools(originalMessage);
+
+            expect(expandedMessage.tool_calls).toHaveLength(2);
+            expect(expandedMessage.tool_calls[0]).toEqual({
+                id: 'call_read_123',
+                type: 'function',
+                function: {
+                    name: 'read_file',
+                    arguments: '{"path": "/test/file.txt"}',
+                },
+            });
+            expect(expandedMessage.tool_calls[1]).toEqual({
+                id: 'call_write_456',
+                type: 'function',
+                function: {
+                    name: 'write_file',
+                    arguments: '{"path": "/test/output.txt", "content": "test"}',
+                },
+            });
+
+            // Verify multicall tool was executed
+            expect(mockToolManager.executeToolCall).toHaveBeenCalledWith(
+                originalMessage.tool_calls[0],
+                expect.any(Object),
+                null,
+                expect.any(Object)
+            );
+        });
+
+        it('should preserve non-multicall tools alongside expanded multicall tools', async () => {
+            const originalMessage = {
+                role: 'assistant',
+                content: 'I will use multiple tools',
+                tool_calls: [
+                    {
+                        id: 'call_regular_123',
+                        type: 'function',
+                        function: {
+                            name: 'regular_tool',
+                            arguments: '{"param": "value"}',
+                        },
+                    },
+                    {
+                        id: 'call_multicall_456',
+                        type: 'function',
+                        function: {
+                            name: 'multicall',
+                            arguments: JSON.stringify({
+                                tool_calls: [
+                                    {
+                                        function_name: 'expanded_tool',
+                                        arguments: JSON.stringify({ test: 'data' }),
+                                    },
+                                ],
+                            }),
+                        },
+                    },
+                ],
+            };
+
+            // Mock multicall tool execution result
+            const multicallResult = {
+                role: 'tool',
+                tool_call_id: 'call_multicall_456',
+                content: JSON.stringify({
+                    success: true,
+                    expanded_tool_calls: [
+                        {
+                            id: 'call_expanded_789',
+                            type: 'function',
+                            function: {
+                                name: 'expanded_tool',
+                                arguments: '{"test": "data"}',
+                            },
+                        },
+                    ],
+                }),
+            };
+
+            mockToolManager.executeToolCall.mockResolvedValueOnce(multicallResult);
+
+            const expandedMessage =
+                await clientWithToolManager._expandMulticallTools(originalMessage);
+
+            expect(expandedMessage.tool_calls).toHaveLength(2);
+
+            // Should have the regular tool first
+            expect(expandedMessage.tool_calls[0]).toEqual({
+                id: 'call_regular_123',
+                type: 'function',
+                function: {
+                    name: 'regular_tool',
+                    arguments: '{"param": "value"}',
+                },
+            });
+
+            // Should have the expanded tool second
+            expect(expandedMessage.tool_calls[1]).toEqual({
+                id: 'call_expanded_789',
+                type: 'function',
+                function: {
+                    name: 'expanded_tool',
+                    arguments: '{"test": "data"}',
+                },
+            });
+        });
+
+        it('should handle multicall expansion errors gracefully', async () => {
+            const originalMessage = {
+                role: 'assistant',
+                content: 'I will use a multicall tool',
+                tool_calls: [
+                    {
+                        id: 'call_multicall_123',
+                        type: 'function',
+                        function: {
+                            name: 'multicall',
+                            arguments: JSON.stringify({
+                                tool_calls: [
+                                    {
+                                        function_name: 'test_tool',
+                                        arguments: JSON.stringify({ param: 'value' }),
+                                    },
+                                ],
+                            }),
+                        },
+                    },
+                ],
+            };
+
+            // Mock multicall tool execution failure
+            mockToolManager.executeToolCall.mockRejectedValueOnce(
+                new Error('Multicall execution failed')
+            );
+
+            const expandedMessage =
+                await clientWithToolManager._expandMulticallTools(originalMessage);
+
+            // Should keep the original multicall tool when expansion fails
+            expect(expandedMessage.tool_calls).toHaveLength(1);
+            expect(expandedMessage.tool_calls[0]).toEqual(originalMessage.tool_calls[0]);
+
+            expect(mockLogger.error).toHaveBeenCalledWith(
+                expect.stringContaining('Failed to expand multicall tool')
+            );
+        });
+
+        it('should handle invalid multicall results gracefully', async () => {
+            const originalMessage = {
+                role: 'assistant',
+                content: 'I will use a multicall tool',
+                tool_calls: [
+                    {
+                        id: 'call_multicall_123',
+                        type: 'function',
+                        function: {
+                            name: 'multicall',
+                            arguments: JSON.stringify({
+                                tool_calls: [
+                                    {
+                                        function_name: 'test_tool',
+                                        arguments: JSON.stringify({ param: 'value' }),
+                                    },
+                                ],
+                            }),
+                        },
+                    },
+                ],
+            };
+
+            // Mock multicall tool execution with invalid result
+            const invalidResult = {
+                role: 'tool',
+                tool_call_id: 'call_multicall_123',
+                content: JSON.stringify({
+                    success: false,
+                    error: 'Invalid tool call format',
+                }),
+            };
+
+            mockToolManager.executeToolCall.mockResolvedValueOnce(invalidResult);
+
+            const expandedMessage =
+                await clientWithToolManager._expandMulticallTools(originalMessage);
+
+            // Should keep the original multicall tool when result is invalid
+            expect(expandedMessage.tool_calls).toHaveLength(1);
+            expect(expandedMessage.tool_calls[0]).toEqual(originalMessage.tool_calls[0]);
+
+            expect(mockLogger.error).toHaveBeenCalledWith(
+                expect.stringContaining('Failed to expand multicall tool')
+            );
+        });
+
+        it('should return original message when no multicall tools are present', async () => {
+            const originalMessage = {
+                role: 'assistant',
+                content: 'I will use regular tools',
+                tool_calls: [
+                    {
+                        id: 'call_regular_123',
+                        type: 'function',
+                        function: {
+                            name: 'regular_tool',
+                            arguments: '{"param": "value"}',
+                        },
+                    },
+                ],
+            };
+
+            const expandedMessage =
+                await clientWithToolManager._expandMulticallTools(originalMessage);
+
+            expect(expandedMessage).toBe(originalMessage); // Should be the same object
+            expect(mockToolManager.executeToolCall).not.toHaveBeenCalled();
+        });
+
+        it('should return original message when no tool calls are present', async () => {
+            const originalMessage = {
+                role: 'assistant',
+                content: 'I will respond without tools',
+            };
+
+            const expandedMessage =
+                await clientWithToolManager._expandMulticallTools(originalMessage);
+
+            expect(expandedMessage).toBe(originalMessage); // Should be the same object
+            expect(mockToolManager.executeToolCall).not.toHaveBeenCalled();
+        });
+    });
 });

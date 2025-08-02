@@ -556,11 +556,146 @@ class AIAPIClient {
         return response;
     }
 
-    async _handleToolCalls(message) {
-        // Add the initial assistant message with tool calls to conversation
-        this._pushMessage(message);
+    /**
+     * Expand multicall tools into individual tool calls in the message
+     * @param {Object} message - The assistant message containing tool calls
+     * @returns {Promise<Object>} Modified message with expanded tool calls
+     * @private
+     */
+    async _expandMulticallTools(message) {
+        if (!message.tool_calls || message.tool_calls.length === 0) {
+            return message;
+        }
 
-        let currentMessage = message;
+        // Check for multicall tools
+        const multicallTools = message.tool_calls.filter(
+            call => call.function.name === 'multicall'
+        );
+        const nonMulticallTools = message.tool_calls.filter(
+            call => call.function.name !== 'multicall'
+        );
+
+        if (multicallTools.length === 0) {
+            // No multicall tools, return original message
+            return message;
+        }
+
+        this.logger.debug(`Found ${multicallTools.length} multicall tool(s) to expand`);
+
+        // Process each multicall tool
+        const expandedToolCalls = [...nonMulticallTools]; // Keep non-multicall tools as-is
+
+        for (const multicallTool of multicallTools) {
+            try {
+                // Execute the multicall tool to get expanded tool calls
+                const multicallResult = await this._executeMulticallTool(multicallTool);
+
+                if (
+                    multicallResult &&
+                    multicallResult.expanded_tool_calls &&
+                    Array.isArray(multicallResult.expanded_tool_calls)
+                ) {
+                    // Validate that expanded tool calls have proper format
+                    const validExpandedCalls = multicallResult.expanded_tool_calls.filter(call => {
+                        const isValid = call && call.id && call.function && call.function.name;
+                        if (!isValid) {
+                            this.logger.warn('Invalid expanded tool call format:', call);
+                        }
+                        return isValid;
+                    });
+
+                    if (validExpandedCalls.length > 0) {
+                        expandedToolCalls.push(...validExpandedCalls);
+                        this.logger.debug(
+                            `Expanded multicall into ${validExpandedCalls.length} individual tool calls`
+                        );
+
+                        // Log details of expansion for debugging
+                        this.logger.debug('Multicall expansion details:', {
+                            original_multicall_id: multicallTool.id,
+                            expanded_calls: validExpandedCalls.map(call => ({
+                                id: call.id,
+                                function_name: call.function.name,
+                            })),
+                        });
+                    } else {
+                        this.logger.warn(
+                            'No valid expanded tool calls found, keeping original multicall'
+                        );
+                        expandedToolCalls.push(multicallTool);
+                    }
+                } else {
+                    this.logger.warn(
+                        'Multicall tool did not return valid expanded_tool_calls array'
+                    );
+                    // Keep the original multicall tool if expansion failed
+                    expandedToolCalls.push(multicallTool);
+                }
+            } catch (error) {
+                this.logger.error(
+                    `Failed to expand multicall tool (ID: ${multicallTool.id}): ${error.message}`
+                );
+                this.logger.debug('Multicall expansion error details:', {
+                    error_stack: error.stack,
+                    original_multicall: multicallTool,
+                });
+                // Keep the original multicall tool if expansion failed
+                expandedToolCalls.push(multicallTool);
+            }
+        }
+
+        // Return modified message with expanded tool calls
+        return {
+            ...message,
+            tool_calls: expandedToolCalls,
+        };
+    }
+
+    /**
+     * Execute a multicall tool to get expanded tool calls
+     * @param {Object} multicallTool - The multicall tool call object
+     * @returns {Promise<Object>} Result containing expanded_tool_calls
+     * @private
+     */
+    async _executeMulticallTool(multicallTool) {
+        if (!this.onToolExecution) {
+            throw new Error('No tool execution handler available for multicall expansion');
+        }
+
+        try {
+            // Execute the multicall tool
+            const toolResult = await this.onToolExecution(multicallTool);
+
+            // Parse the result to get expanded tool calls
+            let parsedResult;
+            try {
+                parsedResult = JSON.parse(toolResult.content);
+            } catch (parseError) {
+                throw new Error(`Failed to parse multicall result: ${parseError.message}`);
+            }
+
+            if (!parsedResult.success) {
+                throw new Error(
+                    `Multicall execution failed: ${parsedResult.error || 'Unknown error'}`
+                );
+            }
+
+            // Return the parsed result which should contain expanded_tool_calls
+            return parsedResult;
+        } catch (error) {
+            this.logger.error(`Multicall tool execution failed: ${error.message}`);
+            throw error;
+        }
+    }
+
+    async _handleToolCalls(message) {
+        // Check for multicall tools before adding message to conversation
+        const expandedMessage = await this._expandMulticallTools(message);
+
+        // Add the (potentially expanded) assistant message with tool calls to conversation
+        this._pushMessage(expandedMessage);
+
+        let currentMessage = expandedMessage;
 
         // Continue processing tool calls until we get a final response without tool calls
         while (currentMessage.tool_calls && currentMessage.tool_calls.length > 0) {
