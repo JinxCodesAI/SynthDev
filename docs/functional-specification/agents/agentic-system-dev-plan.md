@@ -621,7 +621,14 @@ class SpeakToAgentTool extends BaseTool {
             // Validate agent exists and is accessible
             const agentStatus = agentManager.getAgentStatus(agent_id);
             if (!agentStatus) {
-                throw new Error(`Agent with ID ${agent_id} not found`);
+                return this.createErrorResponse(
+                    `Failed to send message to agent, Reason : Agent with ID ${agent_id} not found use get_agents to list all agents or spawn_agent to create new agent`,
+                    {
+                        agent_id,
+                        message,
+                        error: error.stack,
+                    }
+                );
             }
 
             // Note: Completed agents can still receive messages for corrections or follow-up tasks

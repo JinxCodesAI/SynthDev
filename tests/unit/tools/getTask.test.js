@@ -165,7 +165,14 @@ describe('Get Tasks Tool', () => {
 
         it('should include status display information', async () => {
             const createResult = await editTasks({
-                tasks: [{ title: 'Test Task', status: 'completed', target_role: 'developer' }],
+                tasks: [
+                    {
+                        title: 'Test Task',
+                        status: 'completed',
+                        target_role: 'developer',
+                        results: 'Task completed successfully',
+                    },
+                ],
             });
             const taskId = createResult.processed_tasks[0].task.id;
 
@@ -209,6 +216,7 @@ describe('Get Tasks Tool', () => {
                         parent: parentId,
                         status: 'completed',
                         target_role: 'developer',
+                        results: 'Child task completed successfully',
                     },
                     {
                         title: 'Child 2',
@@ -296,7 +304,14 @@ describe('Get Tasks Tool', () => {
         it('should include parent chain for nested task', async () => {
             // Create grandparent -> parent -> child structure
             const grandparentResult = await editTasks({
-                tasks: [{ title: 'Grandparent', status: 'completed', target_role: 'manager' }],
+                tasks: [
+                    {
+                        title: 'Grandparent',
+                        status: 'completed',
+                        target_role: 'manager',
+                        results: 'Grandparent task completed successfully',
+                    },
+                ],
             });
             const grandparentId = grandparentResult.processed_tasks[0].task.id;
 

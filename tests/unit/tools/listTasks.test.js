@@ -59,7 +59,12 @@ describe('List Tasks Tool', () => {
             await editTasks({
                 tasks: [
                     { title: 'Task 1', status: 'not_started', target_role: 'developer' },
-                    { title: 'Task 2', status: 'completed', target_role: 'tester' },
+                    {
+                        title: 'Task 2',
+                        status: 'completed',
+                        target_role: 'tester',
+                        results: 'Task completed successfully',
+                    },
                     { title: 'Task 3', status: 'in_progress', target_role: 'reviewer' },
                 ],
             });
@@ -132,7 +137,12 @@ describe('List Tasks Tool', () => {
                 tasks: [
                     { title: 'Not Started Task', status: 'not_started', target_role: 'developer' },
                     { title: 'In Progress Task', status: 'in_progress', target_role: 'tester' },
-                    { title: 'Completed Task', status: 'completed', target_role: 'reviewer' },
+                    {
+                        title: 'Completed Task',
+                        status: 'completed',
+                        target_role: 'reviewer',
+                        results: 'Task completed successfully',
+                    },
                     { title: 'Cancelled Task', status: 'cancelled', target_role: 'manager' },
                 ],
             });
@@ -184,7 +194,14 @@ describe('List Tasks Tool', () => {
             // Clear tasks and create only one type
             taskManager.clearAllTasks();
             await editTasks({
-                tasks: [{ title: 'Only Task', status: 'completed', target_role: 'developer' }],
+                tasks: [
+                    {
+                        title: 'Only Task',
+                        status: 'completed',
+                        target_role: 'developer',
+                        results: 'Task completed successfully',
+                    },
+                ],
             });
 
             const result = await listTasks({ status_filter: 'in_progress' });
@@ -276,7 +293,12 @@ describe('List Tasks Tool', () => {
                 tasks: [
                     { title: 'Not Started', status: 'not_started', target_role: 'developer' },
                     { title: 'In Progress', status: 'in_progress', target_role: 'tester' },
-                    { title: 'Completed', status: 'completed', target_role: 'reviewer' },
+                    {
+                        title: 'Completed',
+                        status: 'completed',
+                        target_role: 'reviewer',
+                        results: 'Task completed successfully',
+                    },
                     { title: 'Cancelled', status: 'cancelled', target_role: 'manager' },
                 ],
             });

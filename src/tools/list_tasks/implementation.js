@@ -61,6 +61,7 @@ class ListTasksTool extends BaseTool {
                 if (format === 'detailed') {
                     baseTask.description = task.description;
                     baseTask.parent = task.parent;
+                    baseTask.results = task.results;
                     baseTask.display = `${task.indent}[${this.getStatusSymbol(task.status)}] ${task.title}`;
                     if (task.description) {
                         baseTask.display += ` - ${task.description}`;
@@ -71,6 +72,9 @@ class ListTasksTool extends BaseTool {
                     }
                     if (task.parent) {
                         baseTask.display += ` (Parent: ${task.parent.substring(0, 8)}...)`;
+                    }
+                    if (task.results) {
+                        baseTask.display += ` (Results: ${task.results.substring(0, 50)}${task.results.length > 50 ? '...' : ''})`;
                     }
                 }
 
