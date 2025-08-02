@@ -85,6 +85,9 @@ class AgentManager {
         const agentId = this._generateAgentId();
 
         // Create new agent process with the original role name (preserving group prefix)
+        // Pass console interface for agents with parent 'user' (supervisorAgentId is null)
+        const consoleInterface = supervisorAgentId === null ? context.app?.consoleInterface : null;
+
         const agent = new AgentProcess(
             agentId,
             workerRoleName, // Use original role name to preserve group prefix
@@ -93,7 +96,8 @@ class AgentManager {
             context.costsManager,
             context.toolManager,
             this, // Pass agentManager instance for tool access
-            this.onMaxToolCallsExceeded // Pass max tool calls callback
+            this.onMaxToolCallsExceeded, // Pass max tool calls callback
+            consoleInterface // Pass console interface for user-spawned agents
         );
 
         // Register agent
@@ -262,8 +266,27 @@ class AgentManager {
      */
     async _notifyParentOfCompletion(childAgentId, result) {
         const childAgent = this.activeAgents.get(childAgentId);
-        if (!childAgent || !childAgent.parentId) {
-            return; // No parent to notify (main user spawned this agent)
+        if (!childAgent) {
+            return;
+        }
+
+        if (!childAgent.parentId) {
+            // No parent to notify (main user spawned this agent) - display completion in console
+            if (childAgent.consoleInterface) {
+                const completionMessage = `🎯 Agent ${childAgent.roleName} (${childAgentId}) has completed its task with ${result.status} status.
+
+📋 Summary: ${result.summary}
+
+${result.artifacts?.length ? `📁 Modified files:\n${result.artifacts.map(a => `  • ${a.file_path}: ${a.description}`).join('\n')}\n` : ''}${result.known_issues?.length ? `⚠️  Known issues:\n${result.known_issues.map(issue => `  • ${issue}`).join('\n')}\n` : ''}You can use speak_to_agent tool to request clarifications or additional work from this agent.`;
+
+                childAgent.consoleInterface.showMessage(completionMessage);
+                childAgent.consoleInterface.newLine();
+            }
+
+            this.logger.info(
+                `Agent ${childAgentId} completed task for user with status: ${result.status}`
+            );
+            return;
         }
 
         const parentAgent = this.activeAgents.get(childAgent.parentId);
@@ -275,18 +298,14 @@ class AgentManager {
         }
 
         // Format result message for parent
-        const resultMessage = {
-            role: 'user',
-            content: `Agent ${childAgent.roleName} (${childAgentId}) has completed its task with ${result.status} status.
+        const resultMessage = `Agent ${childAgent.roleName} (${childAgentId}) has completed its task with ${result.status} status.
 
 ${result.summary}
 
 ${result.artifacts?.length ? `Modified files:\n${result.artifacts.map(a => `- ${a.file_path}: ${a.description}`).join('\n')}\n` : ''}
 ${result.known_issues?.length ? `Known issues:\n${result.known_issues.map(issue => `- ${issue}`).join('\n')}\n` : ''}
 
-You can use task related tools and speak_to_agent tool to request clarifications or additional work from this agent.`,
-        };
-
+You can use task related tools and speak_to_agent tool to request clarifications or additional work from this agent.`;
         // Add message to parent's conversation
         parentAgent.sendUserMessage(resultMessage);
 

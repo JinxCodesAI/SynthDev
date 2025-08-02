@@ -683,6 +683,7 @@ class AIAPIClient {
         // Call OpenAI Compatible API
         const response = await this.client.chat.completions.create(requestData).catch(error => {
             this.logger.error(error, 'API call failed');
+            this.logger.debug('API call failed:', requestData);
             this.logger.httpRequest(
                 'POST',
                 `${this.client.baseURL}/chat/completions`,
