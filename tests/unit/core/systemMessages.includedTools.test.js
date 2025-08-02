@@ -8,7 +8,7 @@ vi.mock('../../../src/config/validation/configurationLoader.js', () => ({
             if (path === 'roles/roles.json') {
                 return {
                     test_included_only: {
-                        includedTools: ['read_file', 'write_file', '*search*'],
+                        includedTools: ['read_files', 'write_file', '*search*'],
                     },
                     test_excluded_only: {
                         excludedTools: ['get_time', 'calculate'],
@@ -23,7 +23,7 @@ vi.mock('../../../src/config/validation/configurationLoader.js', () => ({
                         excludedTools: [],
                     },
                     test_mutual_exclusion: {
-                        includedTools: ['read_file'],
+                        includedTools: ['read_files'],
                         excludedTools: ['write_file'],
                     },
                     test_included_patterns: {
@@ -47,7 +47,7 @@ vi.mock('../../../src/config/validation/configurationLoader.js', () => ({
             if (dirPath === 'roles') {
                 return {
                     test_included_only: {
-                        includedTools: ['read_file', 'write_file', '*search*'],
+                        includedTools: ['read_files', 'write_file', '*search*'],
                     },
                     test_excluded_only: {
                         excludedTools: ['get_time', 'calculate'],
@@ -62,7 +62,7 @@ vi.mock('../../../src/config/validation/configurationLoader.js', () => ({
                         excludedTools: [],
                     },
                     test_mutual_exclusion: {
-                        includedTools: ['read_file'],
+                        includedTools: ['read_files'],
                         excludedTools: ['write_file'],
                     },
                     test_included_patterns: {
@@ -85,7 +85,7 @@ describe('SystemMessages - includedTools functionality', () => {
     describe('getIncludedTools', () => {
         it('should return includedTools array when present', () => {
             const tools = SystemMessages.getIncludedTools('test_included_only');
-            expect(tools).toEqual(['read_file', 'write_file', '*search*']);
+            expect(tools).toEqual(['read_files', 'write_file', '*search*']);
         });
 
         it('should return empty array when includedTools not present', () => {
@@ -148,7 +148,9 @@ describe('SystemMessages - includedTools functionality', () => {
     describe('isToolIncluded', () => {
         describe('with includedTools', () => {
             it('should include tools that match exact patterns', () => {
-                expect(SystemMessages.isToolIncluded('test_included_only', 'read_file')).toBe(true);
+                expect(SystemMessages.isToolIncluded('test_included_only', 'read_files')).toBe(
+                    true
+                );
                 expect(SystemMessages.isToolIncluded('test_included_only', 'write_file')).toBe(
                     true
                 );
@@ -200,7 +202,9 @@ describe('SystemMessages - includedTools functionality', () => {
 
         describe('with excludedTools', () => {
             it('should include tools that are not excluded', () => {
-                expect(SystemMessages.isToolIncluded('test_excluded_only', 'read_file')).toBe(true);
+                expect(SystemMessages.isToolIncluded('test_excluded_only', 'read_files')).toBe(
+                    true
+                );
                 expect(SystemMessages.isToolIncluded('test_excluded_only', 'write_file')).toBe(
                     true
                 );
@@ -219,7 +223,7 @@ describe('SystemMessages - includedTools functionality', () => {
 
         describe('with neither includedTools nor excludedTools', () => {
             it('should exclude all tools by default', () => {
-                expect(SystemMessages.isToolIncluded('test_neither', 'read_file')).toBe(false);
+                expect(SystemMessages.isToolIncluded('test_neither', 'read_files')).toBe(false);
                 expect(SystemMessages.isToolIncluded('test_neither', 'write_file')).toBe(false);
                 expect(SystemMessages.isToolIncluded('test_neither', 'get_time')).toBe(false);
                 expect(SystemMessages.isToolIncluded('test_neither', 'calculate')).toBe(false);
@@ -228,7 +232,7 @@ describe('SystemMessages - includedTools functionality', () => {
 
         describe('with empty arrays', () => {
             it('should exclude all tools when includedTools is empty', () => {
-                expect(SystemMessages.isToolIncluded('test_empty_included', 'read_file')).toBe(
+                expect(SystemMessages.isToolIncluded('test_empty_included', 'read_files')).toBe(
                     false
                 );
                 expect(SystemMessages.isToolIncluded('test_empty_included', 'write_file')).toBe(
@@ -237,7 +241,7 @@ describe('SystemMessages - includedTools functionality', () => {
             });
 
             it('should include all tools when excludedTools is empty', () => {
-                expect(SystemMessages.isToolIncluded('test_empty_excluded', 'read_file')).toBe(
+                expect(SystemMessages.isToolIncluded('test_empty_excluded', 'read_files')).toBe(
                     true
                 );
                 expect(SystemMessages.isToolIncluded('test_empty_excluded', 'write_file')).toBe(
@@ -249,7 +253,7 @@ describe('SystemMessages - includedTools functionality', () => {
 
         it('should throw error for mutual exclusion', () => {
             expect(() => {
-                SystemMessages.isToolIncluded('test_mutual_exclusion', 'read_file');
+                SystemMessages.isToolIncluded('test_mutual_exclusion', 'read_files');
             }).toThrow(
                 "Role 'test_mutual_exclusion' cannot have both 'includedTools' and 'excludedTools' properties. They are mutually exclusive."
             );
@@ -258,13 +262,13 @@ describe('SystemMessages - includedTools functionality', () => {
 
     describe('isToolExcluded (deprecated)', () => {
         it('should return opposite of isToolIncluded', () => {
-            expect(SystemMessages.isToolExcluded('test_included_only', 'read_file')).toBe(false);
+            expect(SystemMessages.isToolExcluded('test_included_only', 'read_files')).toBe(false);
             expect(SystemMessages.isToolExcluded('test_included_only', 'get_time')).toBe(true);
 
-            expect(SystemMessages.isToolExcluded('test_excluded_only', 'read_file')).toBe(false);
+            expect(SystemMessages.isToolExcluded('test_excluded_only', 'read_files')).toBe(false);
             expect(SystemMessages.isToolExcluded('test_excluded_only', 'get_time')).toBe(true);
 
-            expect(SystemMessages.isToolExcluded('test_neither', 'read_file')).toBe(true);
+            expect(SystemMessages.isToolExcluded('test_neither', 'read_files')).toBe(true);
         });
     });
 });

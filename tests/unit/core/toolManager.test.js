@@ -74,10 +74,10 @@ describe('ToolManager', () => {
 
     describe('getToolsByCategory', () => {
         it('should return tools in specified category', () => {
-            toolManager.toolCategories.set('file', ['read_file', 'write_file']);
+            toolManager.toolCategories.set('file', ['read_files', 'write_file']);
             toolManager.toolCategories.set('utility', ['get_time']);
 
-            expect(toolManager.getToolsByCategory('file')).toEqual(['read_file', 'write_file']);
+            expect(toolManager.getToolsByCategory('file')).toEqual(['read_files', 'write_file']);
             expect(toolManager.getToolsByCategory('utility')).toEqual(['get_time']);
         });
 
@@ -88,7 +88,7 @@ describe('ToolManager', () => {
 
     describe('getCategories', () => {
         it('should return all category names', () => {
-            toolManager.toolCategories.set('file', ['read_file']);
+            toolManager.toolCategories.set('file', ['read_files']);
             toolManager.toolCategories.set('utility', ['get_time']);
 
             const categories = toolManager.getCategories();

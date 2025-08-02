@@ -18,61 +18,61 @@ vi.mock('../../../src/config/validation/configurationLoader.js', () => ({
                     // Role with enabled_agents array (empty) - should get agentic tools
                     test_agentic_empty: {
                         enabled_agents: [],
-                        includedTools: ['read_file'],
+                        includedTools: ['read_files'],
                     },
                     // Role with enabled_agents array (non-empty) - should get agentic tools
                     test_agentic_nonempty: {
                         enabled_agents: ['developer'],
-                        includedTools: ['read_file'],
+                        includedTools: ['read_files'],
                     },
                     // Role with can_create_tasks_for array (non-empty) - should get task tools
                     test_task_tools: {
                         can_create_tasks_for: ['developer'],
-                        includedTools: ['read_file'],
+                        includedTools: ['read_files'],
                     },
                     // Role with both agentic and task capabilities
                     test_both: {
                         enabled_agents: ['developer'],
                         can_create_tasks_for: ['developer'],
-                        includedTools: ['read_file'],
+                        includedTools: ['read_files'],
                     },
                     // Role with no agentic or task capabilities
                     test_none: {
-                        includedTools: ['read_file'],
+                        includedTools: ['read_files'],
                     },
                     // Role with enabled_agents but not array (should not get agentic tools)
                     test_not_array: {
                         enabled_agents: 'developer',
-                        includedTools: ['read_file'],
+                        includedTools: ['read_files'],
                     },
                     // Role with empty can_create_tasks_for (should not get task tools)
                     test_empty_tasks: {
                         can_create_tasks_for: [],
-                        includedTools: ['read_file'],
+                        includedTools: ['read_files'],
                     },
                     // Role with agentic tools explicitly excluded
                     test_agentic_excluded: {
                         enabled_agents: ['developer'],
-                        includedTools: ['read_file'],
+                        includedTools: ['read_files'],
                         excludedTools: ['spawn_agent'],
                     },
                     // Role with task tools explicitly excluded
                     test_task_excluded: {
                         can_create_tasks_for: ['developer'],
-                        includedTools: ['read_file'],
+                        includedTools: ['read_files'],
                         excludedTools: ['list_tasks'],
                     },
                     // Role with agentic tools already included manually
                     test_agentic_manual: {
                         enabled_agents: ['developer'],
-                        includedTools: ['read_file', 'spawn_agent', 'speak_to_agent'],
+                        includedTools: ['read_files', 'spawn_agent', 'speak_to_agent'],
                     },
                     // Role for system message testing
                     test_system_message: {
                         systemMessage: 'Base system message.',
                         enabled_agents: ['developer', 'tester'],
                         can_create_tasks_for: ['developer'],
-                        includedTools: ['read_file'],
+                        includedTools: ['read_files'],
                         agent_description: 'test role for system message enhancement',
                     },
                     // Developer role for system message testing
@@ -91,7 +91,7 @@ vi.mock('../../../src/config/validation/configurationLoader.js', () => ({
                     test_missing_description: {
                         systemMessage: 'Role without description.',
                         enabled_agents: ['no_description_role'],
-                        includedTools: ['read_file'],
+                        includedTools: ['read_files'],
                     },
                     // Role without agent_description
                     no_description_role: {
@@ -121,8 +121,8 @@ describe('SystemMessages - Automatic Tool Inclusion', () => {
             expect(tools).toContain('get_agents');
             expect(tools).toContain('return_results');
             expect(tools).toContain('list_tasks');
-            expect(tools).toContain('get_task');
-            expect(tools).toContain('read_file'); // original tool
+            expect(tools).toContain('get_tasks');
+            expect(tools).toContain('read_files'); // original tool
         });
 
         it('should add agentic tools when enabled_agents is non-empty array', () => {
@@ -132,8 +132,8 @@ describe('SystemMessages - Automatic Tool Inclusion', () => {
             expect(tools).toContain('get_agents');
             expect(tools).toContain('return_results');
             expect(tools).toContain('list_tasks');
-            expect(tools).toContain('get_task');
-            expect(tools).toContain('read_file'); // original tool
+            expect(tools).toContain('get_tasks');
+            expect(tools).toContain('read_files'); // original tool
         });
 
         it('should not add agentic tools when enabled_agents is not an array', () => {
@@ -143,8 +143,8 @@ describe('SystemMessages - Automatic Tool Inclusion', () => {
             expect(tools).not.toContain('get_agents');
             expect(tools).not.toContain('return_results');
             expect(tools).not.toContain('list_tasks');
-            expect(tools).not.toContain('get_task');
-            expect(tools).toContain('read_file'); // original tool
+            expect(tools).not.toContain('get_tasks');
+            expect(tools).toContain('read_files'); // original tool
         });
 
         it('should not add agentic tools when enabled_agents is not present', () => {
@@ -152,7 +152,7 @@ describe('SystemMessages - Automatic Tool Inclusion', () => {
             expect(tools).not.toContain('spawn_agent');
             expect(tools).not.toContain('speak_to_agent');
             expect(tools).not.toContain('get_agents');
-            expect(tools).toContain('read_file'); // original tool
+            expect(tools).toContain('read_files'); // original tool
         });
 
         it('should not add excluded agentic tools', () => {
@@ -160,7 +160,7 @@ describe('SystemMessages - Automatic Tool Inclusion', () => {
             expect(tools).not.toContain('spawn_agent'); // explicitly excluded
             expect(tools).toContain('speak_to_agent'); // not excluded
             expect(tools).toContain('get_agents'); // not excluded
-            expect(tools).toContain('read_file'); // original tool
+            expect(tools).toContain('read_files'); // original tool
         });
 
         it('should not duplicate manually included agentic tools', () => {
@@ -179,32 +179,32 @@ describe('SystemMessages - Automatic Tool Inclusion', () => {
             const tools = SystemMessages.getIncludedTools('test_task_tools');
             expect(tools).toContain('list_tasks');
             expect(tools).toContain('edit_tasks');
-            expect(tools).toContain('get_task');
-            expect(tools).toContain('read_file'); // original tool
+            expect(tools).toContain('get_tasks');
+            expect(tools).toContain('read_files'); // original tool
         });
 
         it('should not add task tools when can_create_tasks_for is empty array', () => {
             const tools = SystemMessages.getIncludedTools('test_empty_tasks');
             expect(tools).not.toContain('list_tasks');
             expect(tools).not.toContain('edit_tasks');
-            expect(tools).not.toContain('get_task');
-            expect(tools).toContain('read_file'); // original tool
+            expect(tools).not.toContain('get_tasks');
+            expect(tools).toContain('read_files'); // original tool
         });
 
         it('should not add task tools when can_create_tasks_for is not present', () => {
             const tools = SystemMessages.getIncludedTools('test_none');
             expect(tools).not.toContain('list_tasks');
             expect(tools).not.toContain('edit_tasks');
-            expect(tools).not.toContain('get_task');
-            expect(tools).toContain('read_file'); // original tool
+            expect(tools).not.toContain('get_tasks');
+            expect(tools).toContain('read_files'); // original tool
         });
 
         it('should not add excluded task tools', () => {
             const tools = SystemMessages.getIncludedTools('test_task_excluded');
             expect(tools).not.toContain('list_tasks'); // explicitly excluded
             expect(tools).toContain('edit_tasks'); // not excluded
-            expect(tools).toContain('get_task'); // not excluded
-            expect(tools).toContain('read_file'); // original tool
+            expect(tools).toContain('get_tasks'); // not excluded
+            expect(tools).toContain('read_files'); // original tool
         });
     });
 
@@ -220,10 +220,10 @@ describe('SystemMessages - Automatic Tool Inclusion', () => {
             // Task tools
             expect(tools).toContain('list_tasks');
             expect(tools).toContain('edit_tasks');
-            expect(tools).toContain('get_task');
+            expect(tools).toContain('get_tasks');
 
             // Original tool
-            expect(tools).toContain('read_file');
+            expect(tools).toContain('read_files');
         });
     });
 
@@ -271,7 +271,7 @@ describe('SystemMessages - Automatic Tool Inclusion', () => {
             const systemMessage = SystemMessages.getSystemMessage('test_system_message');
 
             expect(systemMessage).toContain(
-                'Use list_tasks, get_task to validate if there are any tasks you should start working on'
+                'Use list_tasks, get_tasks to validate if there are any tasks you should start working on'
             );
         });
 

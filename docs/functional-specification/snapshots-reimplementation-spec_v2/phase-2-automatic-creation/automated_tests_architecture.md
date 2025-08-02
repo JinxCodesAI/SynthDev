@@ -591,13 +591,13 @@ describe('Error Handling E2E Tests', () => {
 {
     "file_reading": [
         {
-            "toolName": "read_file",
+            "toolName": "read_files",
             "args": {
                 "path": "src/config.js"
             }
         },
         {
-            "toolName": "read_file",
+            "toolName": "read_files",
             "args": {
                 "path": "package.json"
             }

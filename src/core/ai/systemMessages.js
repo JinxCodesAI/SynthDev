@@ -164,7 +164,7 @@ IMPORTANT: Act autonomusly and do not ask user for clarification from the user, 
 Use get_agents to understand what agents are already available.
 If agent you need is not available, use spawn_agent to initialize new agent that you need to do something for you. For existing agents use speak_to_agent to communicate with them.
 
-Allways create tasks for other agents BEFORE spawning agents to do the work. When mentioning task mention task id in your message. Agent will be able to pickup the task by calling get_task.
+Allways create tasks for other agents BEFORE spawning agents to do the work. When mentioning task mention task id in your message. Agent will be able to pickup the task by calling get_tasks.
 If possible call update_knowledgebase before spawning agents to share information with them.
 
 DO NOT MAKE SAME CALLS REPEATEDLY IF THERE IS NO NEW INFORMATION, if you are not sure what to do, end conversation. You will be notified when new information is available.`);
@@ -193,7 +193,7 @@ DO NOT MAKE SAME CALLS REPEATEDLY IF THERE IS NO NEW INFORMATION, if you are not
         // Add task management instructions if enabled_agents exists (agents might have tasks)
         if (Array.isArray(roleConfig.enabled_agents)) {
             parts.push(
-                'Use list_tasks, get_task to validate if there are any tasks you should start working on.'
+                'Use list_tasks, get_tasks to validate if there are any tasks you should start working on.'
             );
         }
 
@@ -370,7 +370,7 @@ DO NOT MAKE SAME CALLS REPEATEDLY IF THERE IS NO NEW INFORMATION, if you are not
             Array.isArray(roleConfig.can_create_tasks_for) &&
             roleConfig.can_create_tasks_for.length > 0
         ) {
-            const taskManagementTools = ['list_tasks', 'edit_tasks', 'get_task'];
+            const taskManagementTools = ['list_tasks', 'edit_tasks', 'get_tasks'];
             taskManagementTools.forEach(tool => {
                 // Add tool if not already included and not explicitly excluded
                 if (!includedTools.includes(tool) && !excludedTools.includes(tool)) {
@@ -381,7 +381,7 @@ DO NOT MAKE SAME CALLS REPEATEDLY IF THERE IS NO NEW INFORMATION, if you are not
 
         // Automatically add task viewing tools if enabled_agents is an array (agents might have tasks assigned)
         if (Array.isArray(roleConfig.enabled_agents)) {
-            const taskViewingTools = ['list_tasks', 'get_task'];
+            const taskViewingTools = ['list_tasks', 'get_tasks'];
             taskViewingTools.forEach(tool => {
                 // Add tool if not already included and not explicitly excluded
                 if (!includedTools.includes(tool) && !excludedTools.includes(tool)) {
@@ -423,7 +423,7 @@ DO NOT MAKE SAME CALLS REPEATEDLY IF THERE IS NO NEW INFORMATION, if you are not
      * Check if a tool matches an exclusion pattern
      * Supports:
      * - Exact string matching (backward compatibility)
-     * - Wildcard patterns using * (e.g., "*file" matches "read_file", "write_file")
+     * - Wildcard patterns using * (e.g., "*file" matches "read_files", "write_file")
      * - Regular expression patterns enclosed in forward slashes (e.g., "/^(read|write)_/")
      * @private
      * @param {string} toolName - The tool name to check

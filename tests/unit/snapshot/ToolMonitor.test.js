@@ -58,7 +58,7 @@ describe.sequential('ToolMonitor', () => {
         });
 
         it('should return false for read_file tool', () => {
-            const result = toolMonitor.shouldCreateSnapshot('read_file');
+            const result = toolMonitor.shouldCreateSnapshot('read_files');
             expect(result).toBe(false);
         });
 
@@ -95,7 +95,7 @@ describe.sequential('ToolMonitor', () => {
     describe('modifiesFiles', () => {
         it('should return boolean for known tools', () => {
             expect(toolMonitor.modifiesFiles('write_file')).toBe(true);
-            expect(toolMonitor.modifiesFiles('read_file')).toBe(false);
+            expect(toolMonitor.modifiesFiles('read_files')).toBe(false);
         });
 
         it('should return "conditional" for conditional tools', () => {
@@ -281,7 +281,7 @@ describe.sequential('ToolMonitor', () => {
 
             expect(stats.modifyingTools).toContain('write_file');
             expect(stats.modifyingTools).toContain('edit_file');
-            expect(stats.readOnlyTools).toContain('read_file');
+            expect(stats.readOnlyTools).toContain('read_files');
             expect(stats.readOnlyTools).toContain('list_directory');
             expect(stats.conditionalTools).toContain('execute_terminal');
         });

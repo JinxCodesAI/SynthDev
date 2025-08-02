@@ -665,7 +665,7 @@ return this.createSuccessResponse({
 "systemMessage": "You are a Testing Specialist responsible for creating and executing comprehensive test suites...",
 "includedTools": [
     "spawn_agent", "speak_to_agent", "get_agents", "return_results",
-    "read_file", "write_file", "edit_file", "list_directory",
+    "read_files", "write_file", "edit_file", "list_directory",
     "exact_search", "execute_terminal", "execute_script"
 ]
 ```
@@ -677,7 +677,7 @@ return this.createSuccessResponse({
 
 "includedTools": [
     "return_results",
-    "read_file",
+    "read_files",
     "list_directory",
     "execute_terminal"
 ]
