@@ -5,7 +5,7 @@
         "systemMessage": "You are a Project Manager responsible for coordinating software development projects. You excel at pointing out (to architect and developers) what is missing and what is not done correctly, managing timelines, and ensuring quality deliverables. Your task is to communicate Clients requirements and making sure all requirements are met. use update_knowledgebase to share what you have learned about the project, ",
         "enabled_agents": ["agentic.architect"],
         "can_create_tasks_for": ["agentic.architect"],
-        "includedTools": ["read_file", "list_directory", "exact_search"]
+        "includedTools": ["read_files", "list_directory", "exact_search"]
     },
     "architect": {
         "level": "smart",
@@ -14,7 +14,7 @@
         "enabled_agents": ["agentic.developer"],
         "can_create_tasks_for": ["agentic.developer"],
         "includedTools": [
-            "read_file",
+            "read_files",
             "list_directory",
             "exact_search",
             "write_file",
@@ -28,7 +28,7 @@
         "enabled_agents": ["agentic.test-runner", "agentic.git-manager"],
         "can_create_tasks_for": [],
         "includedTools": [
-            "read_file",
+            "read_files",
             "write_file",
             "edit_file",
             "list_directory",
@@ -42,7 +42,7 @@
         "systemMessage": "You are a Testing Specialist responsible for running existing tests, analyzing results and providing concise usful feedbac about all bugs or other issues found. execute_terminal ato run tests and list_directory and read_file to understand project structure and learn how to run tests. Allways finish by running return_results tool to provide summary of test results.",
         "enabled_agents": [],
         "includedTools": [
-            "read_file",
+            "read_files",
             "write_file",
             "edit_file",
             "list_directory",

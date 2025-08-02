@@ -18,7 +18,7 @@ SynthDev's tool system provides AI agents with controlled access to system funct
 
 ### File Operations
 
-#### read_file
+#### read_files
 
 Read file contents with encoding support and size limits.
 
@@ -37,7 +37,7 @@ Read file contents with encoding support and size limits.
 
 ```javascript
 {
-    "tool_name": "read_file",
+    "tool_name": "read_files",
     "parameters": {
         "file_path": "src/app.js",
         "encoding": "utf8"
@@ -467,7 +467,7 @@ Tools can be filtered based on AI roles:
 {
     "role_name": {
         "excludedTools": ["execute_terminal", "write_file"],
-        "includedTools": ["read_file", "exact_search"]
+        "includedTools": ["read_files", "exact_search"]
     }
 }
 ```
@@ -595,7 +595,7 @@ Customize tool messages in `src/config/tools/tool-messages.json`:
 
 ```json
 {
-    "read_file": {
+    "read_files": {
         "success": "File read successfully",
         "error": "Failed to read file"
     }

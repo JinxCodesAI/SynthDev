@@ -889,7 +889,7 @@ describe('AIAPIClient', () => {
 
         it('should work with pattern matching exclusions', () => {
             const tools = [
-                { function: { name: 'read_file' } },
+                { function: { name: 'read_files' } },
                 { function: { name: 'write_file' } },
                 { function: { name: 'edit_file' } },
                 { function: { name: 'execute_command' } },
@@ -907,8 +907,12 @@ describe('AIAPIClient', () => {
 
             aiClient._applyToolFiltering();
 
-            expect(aiClient.tools).toHaveLength(2);
-            expect(aiClient.tools.map(t => t.function.name)).toEqual(['get_time', 'calculate']);
+            expect(aiClient.tools).toHaveLength(3);
+            expect(aiClient.tools.map(t => t.function.name)).toEqual([
+                'read_files',
+                'get_time',
+                'calculate',
+            ]);
         });
     });
 
@@ -1052,7 +1056,7 @@ describe('AIAPIClient', () => {
                             arguments: JSON.stringify({
                                 tool_calls: [
                                     {
-                                        function_name: 'read_file',
+                                        function_name: 'read_files',
                                         arguments: JSON.stringify({ path: '/test/file.txt' }),
                                     },
                                     {
@@ -1080,7 +1084,7 @@ describe('AIAPIClient', () => {
                             id: 'call_read_123',
                             type: 'function',
                             function: {
-                                name: 'read_file',
+                                name: 'read_files',
                                 arguments: '{"path": "/test/file.txt"}',
                             },
                         },
@@ -1106,7 +1110,7 @@ describe('AIAPIClient', () => {
                 id: 'call_read_123',
                 type: 'function',
                 function: {
-                    name: 'read_file',
+                    name: 'read_files',
                     arguments: '{"path": "/test/file.txt"}',
                 },
             });

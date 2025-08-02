@@ -5,7 +5,7 @@
             "file_reader": {
                 "level": "fast",
                 "systemMessage": "You are a specialized file reading assistant.",
-                "includedTools": ["read_file", "list_directory", "exact_search"]
+                "includedTools": ["read_files", "list_directory", "exact_search"]
             },
             "coder": {
                 "level": "base",
@@ -30,7 +30,7 @@
                 "systemMessage": "You are a Project Manager responsible for coordinating software development projects.",
                 "enabled_agents": ["architect"],
                 "can_create_tasks_for": ["architect"],
-                "includedTools": ["read_file", "list_directory", "exact_search"]
+                "includedTools": ["read_files", "list_directory", "exact_search"]
             },
             "architect": {
                 "level": "smart",
@@ -38,7 +38,12 @@
                 "systemMessage": "You are a software architect responsible for designing system architectures.",
                 "enabled_agents": ["developer"],
                 "can_create_tasks_for": ["developer"],
-                "includedTools": ["read_file", "list_directory", "exact_search", "explain_codebase"]
+                "includedTools": [
+                    "read_files",
+                    "list_directory",
+                    "exact_search",
+                    "explain_codebase"
+                ]
             },
             "developer": {
                 "level": "base",
@@ -47,7 +52,7 @@
                 "enabled_agents": ["test-runner", "git-manager"],
                 "can_create_tasks_for": [],
                 "includedTools": [
-                    "read_file",
+                    "read_files",
                     "write_file",
                     "edit_file",
                     "list_directory",
@@ -61,7 +66,12 @@
                 "systemMessage": "You are a Test Runner responsible for running and creating tests.",
                 "enabled_agents": [],
                 "can_create_tasks_for": [],
-                "includedTools": ["read_file", "list_directory", "exact_search", "execute_terminal"]
+                "includedTools": [
+                    "read_files",
+                    "list_directory",
+                    "exact_search",
+                    "execute_terminal"
+                ]
             },
             "git-manager": {
                 "level": "base",
@@ -69,7 +79,7 @@
                 "systemMessage": "You are a Git Manager responsible for version control operations.",
                 "enabled_agents": [],
                 "can_create_tasks_for": [],
-                "includedTools": ["read_file", "list_directory", "execute_terminal"]
+                "includedTools": ["read_files", "list_directory", "execute_terminal"]
             }
         },
         "testing": {
@@ -109,7 +119,7 @@
                     "delete_file",
                     "list_directory",
                     "exact_search",
-                    "read_file"
+                    "read_files"
                 ]
             },
             "directory_summarizer": {

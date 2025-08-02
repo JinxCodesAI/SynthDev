@@ -168,7 +168,7 @@ describe.sequential('AutoSnapshotManager Integration', () => {
 
             expect(toolMonitor.shouldCreateSnapshot('write_file')).toBe(true);
             expect(toolMonitor.shouldCreateSnapshot('edit_file')).toBe(true);
-            expect(toolMonitor.shouldCreateSnapshot('read_file')).toBe(false);
+            expect(toolMonitor.shouldCreateSnapshot('read_files')).toBe(false);
             expect(toolMonitor.shouldCreateSnapshot('list_directory')).toBe(false);
         });
 
@@ -260,7 +260,7 @@ describe.sequential('AutoSnapshotManager Integration', () => {
             snapshotTrigger.snapshotManager.createSnapshot = mockCreateSnapshot;
 
             // Process trigger for read-only tool
-            const result = await snapshotTrigger.processTrigger('read_file', {
+            const result = await snapshotTrigger.processTrigger('read_files', {
                 file_path: 'test.js',
             });
 

@@ -34,7 +34,7 @@ describe('ToolsCommand', () => {
                     {
                         type: 'function',
                         function: {
-                            name: 'read_file',
+                            name: 'read_files',
                             description: 'Read contents of a file',
                             parameters: {
                                 type: 'object',
@@ -100,7 +100,7 @@ describe('ToolsCommand', () => {
 
             // Should call getTools and getToolDefinition
             expect(mockContext.toolManager.getTools).toHaveBeenCalled();
-            expect(mockContext.toolManager.getToolDefinition).toHaveBeenCalledWith('read_file');
+            expect(mockContext.toolManager.getToolDefinition).toHaveBeenCalledWith('read_files');
             expect(mockContext.toolManager.getToolDefinition).toHaveBeenCalledWith('write_file');
 
             // Should display tools header
@@ -109,7 +109,7 @@ describe('ToolsCommand', () => {
 
             // Should display tool information
             expect(mockLogger.info).toHaveBeenCalledWith(
-                expect.stringContaining('📍 read_file 🟢 Auto-run')
+                expect.stringContaining('📍 read_files 🟢 Auto-run')
             );
             expect(mockLogger.info).toHaveBeenCalledWith(
                 expect.stringContaining('Description: Read contents of a file')

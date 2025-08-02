@@ -457,9 +457,9 @@ describe('FileChangeDetector', () => {
                 },
             };
 
-            detector.warnAboutUnexpectedChanges('read_file', false, actualChanges);
+            detector.warnAboutUnexpectedChanges('read_files', false, actualChanges);
             expect(mockLogger.warn).toHaveBeenCalledWith(
-                'Tool read_file made unexpected file changes',
+                'Tool read_files made unexpected file changes',
                 expect.objectContaining({
                     changeCount: 2,
                     modifiedFiles: ['file1.js'],
@@ -484,7 +484,7 @@ describe('FileChangeDetector', () => {
             detector.config.warnOnUnexpectedChanges = false;
             const actualChanges = { hasChanges: true, changeCount: 1, changes: {} };
 
-            detector.warnAboutUnexpectedChanges('read_file', false, actualChanges);
+            detector.warnAboutUnexpectedChanges('read_files', false, actualChanges);
             expect(mockLogger.warn).not.toHaveBeenCalled();
         });
     });

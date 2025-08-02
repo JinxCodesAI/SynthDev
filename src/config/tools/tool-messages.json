@@ -26,7 +26,7 @@
         "operation_completed": "Operation completed successfully"
     },
     "tool_descriptions": {
-        "read_file": "Read the contents of a file from the file system using a relative path",
+        "read_files": "Read the contents of a file from the file system using a relative path",
         "write_file": "Write content to a file in the file system using a relative path",
         "edit_file": "Edit content of a file by replacing text between two unique boundary strings",
         "list_directory": "List files and directories in a specified path",

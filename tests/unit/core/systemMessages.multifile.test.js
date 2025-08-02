@@ -44,7 +44,7 @@ vi.mock('../../../src/config/validation/configurationLoader.js', () => ({
                         qa_specialist: {
                             level: 'base',
                             systemMessage: 'You are a QA specialist',
-                            includedTools: ['read_file', 'list_directory', 'exact_search'],
+                            includedTools: ['read_files', 'list_directory', 'exact_search'],
                             _group: 'global',
                             _source: 'test-roles.json',
                         },
@@ -58,7 +58,7 @@ vi.mock('../../../src/config/validation/configurationLoader.js', () => ({
                         file_reader: {
                             level: 'fast',
                             systemMessage: 'You are a file reader',
-                            includedTools: ['read_file', 'list_directory', 'exact_search'],
+                            includedTools: ['read_files', 'list_directory', 'exact_search'],
                             _group: 'testing',
                             _source: 'reader.testing.json',
                         },
@@ -115,7 +115,7 @@ describe('SystemMessages - Multi-file Role Loading', () => {
 
         it('should correctly handle includedTools from different files', () => {
             expect(SystemMessages.getIncludedTools('file_reader')).toEqual([
-                'read_file',
+                'read_files',
                 'list_directory',
                 'exact_search',
             ]);
@@ -174,13 +174,13 @@ describe('SystemMessages - Multi-file Role Loading', () => {
 
     describe('Tool filtering with multi-file roles', () => {
         it('should correctly filter tools for roles with includedTools', () => {
-            expect(SystemMessages.isToolIncluded('file_reader', 'read_file')).toBe(true);
+            expect(SystemMessages.isToolIncluded('file_reader', 'read_files')).toBe(true);
             expect(SystemMessages.isToolIncluded('file_reader', 'write_file')).toBe(false);
         });
 
         it('should correctly filter tools for roles with excludedTools', () => {
             expect(SystemMessages.isToolExcluded('coder', 'get_time')).toBe(true);
-            expect(SystemMessages.isToolExcluded('coder', 'read_file')).toBe(false);
+            expect(SystemMessages.isToolExcluded('coder', 'read_files')).toBe(false);
         });
     });
 });

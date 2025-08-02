@@ -192,7 +192,7 @@ SynthDev features specialized AI personas with different model tiers and tool ac
 
 - **prompt_enhancer** (fast): Improves prompts with few-shot examples, analysis tools only
 - **command_generator** (fast): Converts natural language to terminal commands, no tools
-- **file_reader** (fast): Limited to read_file, list_directory, exact_search only
+- **file_reader** (fast): Limited to read_files, list_directory, exact_search only
 - **dude** (fast): General-purpose assistant with all tools available
 
 #### Role Features
@@ -210,7 +210,7 @@ Comprehensive tool categories with security and validation:
 
 #### File Operations
 
-- **read_file**: Read file contents with encoding support and size limits
+- **read_files**: Read file contents with encoding support and size limits
 - **write_file**: Create/overwrite files with validation
 - **edit_file**: Modify files with line-based editing and safety checks
 - **list_directory**: Directory listing with filtering and depth control
@@ -397,7 +397,7 @@ src/
 │   ├── explain_codebase/   # AI-powered codebase analysis
 │   ├── get_time/           # Time and date utilities
 │   ├── list_directory/     # Directory listing
-│   ├── read_file/          # File reading with encoding support
+│   ├── read_files/         # File reading with encoding support
 │   └── write_file/         # File writing with validation
 ├── workflow/               # Multi-agent workflow system
 │   ├── WorkflowStateMachine.js # Main workflow orchestrator

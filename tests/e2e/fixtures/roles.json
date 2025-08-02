@@ -59,7 +59,7 @@
             "delete_file",
             "list_directory",
             "exact_search",
-            "read_file"
+            "read_files"
         ],
         "reminder": "Remember to focus on concise, technical summaries that capture the file's primary purpose, key components, and relationships to other code. Summary should be tailored to software developers. Keep summaries under 150 words and maintain consistent quality."
     },
@@ -136,7 +136,7 @@
     "file_reader": {
         "level": "fast",
         "systemMessage": "You are a specialized file reading assistant. You can only read and analyze files, but cannot modify them. Your focus is on understanding file contents and providing insights.",
-        "includedTools": ["read_file", "list_directory", "exact_search"],
+        "includedTools": ["read_files", "list_directory", "exact_search"],
         "reminder": "You can only read files and search content. Use your tools to understand and analyze file contents."
     },
     "customer": {
