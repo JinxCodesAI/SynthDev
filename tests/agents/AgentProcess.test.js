@@ -124,7 +124,8 @@ describe('AgentProcess', () => {
             );
             expect(mockAPIClient.addMessage).toHaveBeenCalledWith({
                 role: 'user',
-                content: 'Write comprehensive tests',
+                content:
+                    'You had been spawned to perform following task:\n\n Write comprehensive tests\n\n, please start working on it. use return_results tool when you are done. Pay attention to your system message and task prompt. ',
             });
         });
 

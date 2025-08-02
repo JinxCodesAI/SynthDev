@@ -419,7 +419,8 @@ describe.sequential('Agent Collaboration Integration', () => {
         // Verify initial task prompt was added to conversation (not sent immediately)
         expect(apiClientInstance.addMessage).toHaveBeenCalledWith({
             role: 'user',
-            content: 'Write comprehensive unit tests for the user authentication module',
+            content:
+                'You had been spawned to perform following task:\n\n Write comprehensive unit tests for the user authentication module\n\n, please start working on it. use return_results tool when you are done. Pay attention to your system message and task prompt. ',
         });
 
         // Verify that the agent was executed (sendMessage should have been called)

@@ -32,6 +32,10 @@ class AgentProcess {
         this.agentManager = agentManager;
         this.onMaxToolCallsExceeded = onMaxToolCallsExceeded;
 
+        // Message queuing system
+        this.messageQueue = [];
+        this.isProcessingQueue = false;
+
         // Create isolated AIAPIClient instance
         this._initializeAPIClient(costsManager, toolManager);
 
@@ -154,7 +158,10 @@ class AgentProcess {
 
         // Add initial task prompt as user message to conversation history
         // Note: We use addMessage instead of sendUserMessage to avoid immediate execution
-        this.apiClient.addMessage({ role: 'user', content: this.taskPrompt });
+
+        const message = `You had been spawned to perform following task:\n\n ${this.taskPrompt}\n\n, please start working on it. use return_results tool when you are done. Pay attention to your system message and task prompt. `;
+
+        this.apiClient.addMessage({ role: 'user', content: message });
         this.logger.debug(
             `💬 Added initial task prompt to agent ${this.agentId} conversation: ${this.taskPrompt}`
         );
@@ -166,6 +173,118 @@ class AgentProcess {
      */
     addMessage(message) {
         this.apiClient.addMessage(message);
+    }
+
+    /**
+     * Queue a message for processing when the API client becomes ready
+     * @param {string} message - The message to queue
+     * @private
+     */
+    _queueMessage(message) {
+        this.messageQueue.push(message);
+        this.logger.debug(
+            `Agent ${this.agentId} queued message. Queue length: ${this.messageQueue.length}`
+        );
+
+        // Start processing queue if not already processing
+        if (!this.isProcessingQueue) {
+            this._processMessageQueue();
+        }
+    }
+
+    /**
+     * Process queued messages when API client becomes ready
+     * @private
+     */
+    async _processMessageQueue() {
+        if (this.isProcessingQueue || this.messageQueue.length === 0) {
+            return;
+        }
+
+        this.isProcessingQueue = true;
+        this.logger.debug(
+            `Agent ${this.agentId} starting queue processing. Queue length: ${this.messageQueue.length}`
+        );
+
+        while (this.messageQueue.length > 0) {
+            // Wait for API client to be ready
+            await this._waitForAPIClientReady();
+
+            // Get the next message from queue
+            const message = this.messageQueue.shift();
+
+            this.logger.debug(`Agent ${this.agentId} processing queued message: "${message}"`);
+
+            try {
+                // Process the message (don't await to avoid blocking queue processing)
+                this.apiClient.sendUserMessage(message).catch(error => {
+                    this.logger.error(
+                        `Agent ${this.agentId} failed to process queued message: ${error.message}`
+                    );
+                });
+
+                // Small delay to prevent overwhelming the API
+                await new Promise(resolve => setTimeout(resolve, 100));
+            } catch (error) {
+                this.logger.error(
+                    `Agent ${this.agentId} error processing queued message: ${error.message}`
+                );
+            }
+        }
+
+        this.isProcessingQueue = false;
+        this.logger.debug(`Agent ${this.agentId} finished queue processing`);
+    }
+
+    /**
+     * Wait for API client to be ready to accept new requests
+     * @private
+     */
+    async _waitForAPIClientReady() {
+        const maxWaitTime = 30000; // 30 seconds max wait
+        const checkInterval = 100; // Check every 100ms
+        const startTime = Date.now();
+
+        while (!this.apiClient.canAcceptNewRequest()) {
+            if (Date.now() - startTime > maxWaitTime) {
+                this.logger.warn(
+                    `Agent ${this.agentId} timed out waiting for API client to be ready`
+                );
+                break;
+            }
+
+            await new Promise(resolve => setTimeout(resolve, checkInterval));
+        }
+    }
+
+    /**
+     * Send a user message to the agent, using appropriate method based on current processing state
+     * @param {string} message - The message to send
+     * @returns {Promise<string>|void} Response if sent immediately, void if queued
+     */
+    sendUserMessage(message) {
+        const processingState = this.apiClient.getProcessingState();
+
+        // Log the decision for debugging
+        this.logger.debug(
+            `Agent ${this.agentId} sendUserMessage: state=${processingState}, ` +
+                `canAcceptNewRequest=${this.apiClient.canAcceptNewRequest()}`
+        );
+
+        if (this.apiClient.canAcceptNewRequest()) {
+            // State is IDLE - safe to force a new request
+            this.logger.debug(
+                `Agent ${this.agentId} forcing new request (state: ${processingState})`
+            );
+            return this.apiClient.sendUserMessage(message);
+        } else {
+            // State is PREPARING, API_CALLING, PROCESSING_TOOLS, or FINALIZING
+            // Queue the message for processing when API client becomes ready
+            this.logger.debug(
+                `Agent ${this.agentId} queuing message for later processing (state: ${processingState})`
+            );
+            this._queueMessage(message);
+        }
     }
 
     /**

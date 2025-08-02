@@ -9,6 +9,17 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 /**
+ * Processing states for AIAPIClient
+ */
+const ProcessingState = {
+    IDLE: 'idle', // Ready for new requests
+    PREPARING: 'preparing', // About to make API call (brief transition state)
+    API_CALLING: 'api_calling', // Currently making API call
+    PROCESSING_TOOLS: 'processing_tools', // Executing tools after API response
+    FINALIZING: 'finalizing', // Processing final response (brief transition state)
+};
+
+/**
  * Handles all OpenAI Compatible API communication and conversation state
  */
 class AIAPIClient {
@@ -33,6 +44,7 @@ class AIAPIClient {
             baseURL: baseURL,
         });
         this.baseModel = model;
+        this._processingState = ProcessingState.IDLE;
 
         // Current active client and model (will be switched based on role level)
         this.client = this.baseClient;
@@ -92,6 +104,37 @@ class AIAPIClient {
 
         // Initialize additional model configurations
         this._initializeModelConfigs();
+    }
+
+    isReady() {
+        return this._processingState === ProcessingState.IDLE;
+    }
+
+    /**
+     * Check if the client can accept a new request (more permissive than isReady)
+     * @returns {boolean} True if can accept new request
+     */
+    canAcceptNewRequest() {
+        return this._processingState === ProcessingState.IDLE;
+    }
+
+    /**
+     * Get current processing state
+     * @returns {string} Current processing state
+     */
+    getProcessingState() {
+        return this._processingState;
+    }
+
+    /**
+     * Set processing state with logging
+     * @param {string} newState - New processing state
+     * @private
+     */
+    _setProcessingState(newState) {
+        const oldState = this._processingState;
+        this._processingState = newState;
+        this.logger.debug(`🔄 Processing state changed: ${oldState} → ${newState}`);
     }
 
     /**
@@ -373,6 +416,10 @@ class AIAPIClient {
      */
     async _processMessage() {
         this.logger.debug('🔍 DEBUG: _processMessage called for role', this.role?.name);
+
+        // Set state to preparing
+        this._setProcessingState(ProcessingState.PREPARING);
+
         // Reset tool call counter for new interaction
         this.toolCallCount = 0;
 
@@ -437,6 +484,7 @@ class AIAPIClient {
             const result = await this._handleToolCalls(message);
 
             // Return the result from _handleToolCalls (could be early termination message)
+            // Note: _handleToolCalls already sets state to IDLE when complete
             return result;
         } else {
             let content = null;
@@ -470,6 +518,12 @@ class AIAPIClient {
             } else {
                 this.logger.debug('🔍 DEBUG: No onResponse callback defined for parsing tools');
             }
+
+            // Set state to finalizing before returning
+            this._setProcessingState(ProcessingState.FINALIZING);
+
+            // Set state back to idle when processing is complete
+            this._setProcessingState(ProcessingState.IDLE);
             return content || '';
         }
     }
@@ -588,6 +642,7 @@ class AIAPIClient {
     async _makeAPICall() {
         const config = ConfigManager.getInstance();
 
+        this._setProcessingState(ProcessingState.API_CALLING);
         // Ensure proper message ordering before API call
         this._ensureMessageOrdering();
 
@@ -634,8 +689,10 @@ class AIAPIClient {
                 requestData,
                 error
             );
+            this._setProcessingState(ProcessingState.IDLE);
             throw error;
         });
+        // Note: Don't set to IDLE here - let the calling method manage state transitions
         this.logger.debug('🔍 DEBUG: API call completed');
 
         // Store response data for review
@@ -799,6 +856,7 @@ class AIAPIClient {
         this._pushMessage(expandedMessage);
 
         let currentMessage = expandedMessage;
+        this._setProcessingState(ProcessingState.PROCESSING_TOOLS);
 
         // Continue processing tool calls until we get a final response without tool calls
         while (currentMessage.tool_calls && currentMessage.tool_calls.length > 0) {
@@ -818,6 +876,7 @@ class AIAPIClient {
                     // This gives them another full batch of tool calls before next confirmation
                     this.maxToolCalls += this.originalMaxToolCalls;
                 } else {
+                    this._setProcessingState(ProcessingState.IDLE);
                     // Fallback to throwing error if no callback is set
                     throw new Error(
                         `Maximum number of tool calls (${this.maxToolCalls}) exceeded. This may indicate an infinite loop or overly complex task.`
@@ -847,6 +906,7 @@ class AIAPIClient {
                     this.logger.error(
                         'No tool execution handler defined and no toolManager provided'
                     );
+                    this._setProcessingState(ProcessingState.IDLE);
                     throw new Error(
                         'No tool execution handler defined. ' +
                             'Either set onToolExecution callback or provide toolManager in constructor.'
@@ -876,6 +936,7 @@ class AIAPIClient {
 
             // Get next response after tool execution
             const nextResponse = await this._makeAPICall();
+            // State will be managed by the calling method
             const nextMessage = nextResponse.choices[0].message;
 
             // Handle reasoning content for intermediate responses
@@ -905,6 +966,12 @@ class AIAPIClient {
                 this.onResponse({ choices: [{ message: currentMessage }] }, this.role);
             }
         }
+
+        // Set state to finalizing before returning
+        this._setProcessingState(ProcessingState.FINALIZING);
+
+        // Set state back to idle when processing is complete
+        this._setProcessingState(ProcessingState.IDLE);
 
         // Return the final message content
         return currentMessage.content || '';

@@ -283,11 +283,11 @@ class AgentManager {
                 `Summary: ${result.summary}\n` +
                 `Artifacts: ${result.artifacts?.length || 0} files\n` +
                 `Known Issues: ${result.known_issues?.length || 0}\n\n` +
-                'Full result details available via get_agents tool.',
+                'Use task related tools and speak_to_agent tool to communicate with agent if you need clarifications or want him to do additional work.',
         };
 
         // Add message to parent's conversation
-        parentAgent.addMessage(resultMessage);
+        parentAgent.sendUserMessage(resultMessage);
 
         this.logger.info(
             `Notified parent agent ${childAgent.parentId} of child ${childAgentId} completion`
