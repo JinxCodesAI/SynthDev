@@ -12,11 +12,20 @@ const __dirname = dirname(__filename);
  * Handles all OpenAI Compatible API communication and conversation state
  */
 class AIAPIClient {
+    /**
+     * Creates a new AIAPIClient instance
+     * @param {Object} costsManager - Cost management instance
+     * @param {string} apiKey - API key for OpenAI-compatible service
+     * @param {string} baseURL - Base URL for API service
+     * @param {string} model - Model name to use
+     * @param {Object|null} toolManager - Optional tool manager for default tool execution
+     */
     constructor(
         costsManager,
         apiKey,
         baseURL = 'https://api.openai.com/v1',
-        model = 'gpt-4.1-mini'
+        model = 'gpt-4.1-mini',
+        toolManager = null
     ) {
         // Store initial configuration as base model
         this.baseClient = new OpenAI({
@@ -69,6 +78,17 @@ class AIAPIClient {
 
         // Initialize logger
         this.logger = getLogger();
+
+        // Store toolManager reference and set up default tool execution if provided
+        this.toolManager = toolManager;
+        if (toolManager) {
+            this.onToolExecution = this._defaultToolExecutionHandler.bind(this);
+            this.logger.debug(`AIAPIClient initialized with toolManager for role: ${this.role}`);
+        } else {
+            this.logger.debug(
+                'AIAPIClient initialized without toolManager - tools will require manual callback setup'
+            );
+        }
 
         // Initialize additional model configurations
         this._initializeModelConfigs();
@@ -139,7 +159,13 @@ class AIAPIClient {
         this.onThinking = onThinking;
         this.onChainOfThought = onChainOfThought;
         this.onFinalChainOfThought = onFinalChainOfThought;
-        this.onToolExecution = onToolExecution;
+
+        // Only override default tool execution handler if explicitly provided
+        if (onToolExecution !== null) {
+            this.onToolExecution = onToolExecution;
+        }
+        // If onToolExecution is null and we have a default, keep the default
+
         this.onResponse = onResponse;
         this.onError = onError;
         this.onReminder = onReminder;
@@ -580,8 +606,13 @@ class AIAPIClient {
                         });
                     }
                 } else {
-                    this.logger.error('No tool execution handler defined');
-                    throw new Error('No tool execution handler defined');
+                    this.logger.error(
+                        'No tool execution handler defined and no toolManager provided'
+                    );
+                    throw new Error(
+                        'No tool execution handler defined. ' +
+                            'Either set onToolExecution callback or provide toolManager in constructor.'
+                    );
                 }
             }
 
@@ -718,6 +749,57 @@ class AIAPIClient {
         this.messages.push(message);
         if (this.onMessagePush) {
             this.onMessagePush(message);
+        }
+    }
+
+    /**
+     * Default tool execution handler when toolManager is provided
+     * @param {Object} toolCall - Tool call object from AI response
+     * @returns {Promise<Object>} Tool execution result
+     * @private
+     */
+    async _defaultToolExecutionHandler(toolCall) {
+        if (!this.toolManager) {
+            throw new Error('No tool manager available for tool execution');
+        }
+
+        // Prepare standardized tool context
+        const toolContext = {
+            currentRole: this.role,
+            currentAgentId: null, // Default for non-agent contexts
+            agentManager: null, // Default for non-agent contexts
+            costsManager: this.costsManager,
+            toolManager: this.toolManager,
+            app: null, // Default for non-main-app contexts
+        };
+
+        // Create minimal console interface for non-interactive contexts
+        const consoleInterface = {
+            showToolExecution: (toolName, args, role) => {
+                this.logger.toolExecutionDetailed(toolName, role, args);
+            },
+            showToolResult: result => {
+                this.logger.toolResult(result);
+            },
+            showToolCancelled: toolName => {
+                this.logger.debug(`Tool cancelled: ${toolName}`);
+            },
+            promptForConfirmation: async () => {
+                // Auto-approve for non-interactive contexts
+                return true;
+            },
+        };
+
+        try {
+            return await this.toolManager.executeToolCall(
+                toolCall,
+                consoleInterface,
+                null, // No snapshot manager
+                toolContext
+            );
+        } catch (error) {
+            this.logger.error(`Tool execution failed: ${error.message}`);
+            throw error;
         }
     }
 }

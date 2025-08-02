@@ -58,7 +58,8 @@ class AgentProcess {
             costsManager,
             modelConfig.apiKey,
             modelConfig.baseUrl,
-            modelConfig.model || modelConfig.baseModel
+            modelConfig.model || modelConfig.baseModel,
+            toolManager
         );
 
         // Set tools in API client

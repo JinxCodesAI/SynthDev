@@ -35,7 +35,8 @@ class CommandGenerator {
                 this.costsManager,
                 modelConfig.apiKey,
                 modelConfig.baseUrl,
-                modelConfig.model || modelConfig.baseModel
+                modelConfig.model || modelConfig.baseModel,
+                this.toolManager
             );
 
             // Set the command_generator role using SystemMessages

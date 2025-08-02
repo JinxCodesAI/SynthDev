@@ -101,7 +101,8 @@ describe('AgentProcess', () => {
                 mockCostsManager,
                 'mock-api-key',
                 'https://mock-api.com',
-                'gpt-4.1-mini'
+                'gpt-4.1-mini',
+                mockToolManager
             );
         });
 
@@ -260,7 +261,8 @@ describe('AgentProcess', () => {
                 mockCostsManager,
                 'mock-api-key',
                 'https://mock-api.com',
-                'smart'
+                'smart',
+                mockToolManager
             );
         });
 
@@ -282,7 +284,8 @@ describe('AgentProcess', () => {
                 mockCostsManager,
                 'mock-api-key',
                 'https://mock-api.com',
-                'fast'
+                'fast',
+                mockToolManager
             );
         });
     });

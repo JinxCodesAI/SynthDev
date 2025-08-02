@@ -47,7 +47,8 @@ class PromptEnhancer {
                 this.costsManager,
                 modelConfig.apiKey,
                 modelConfig.baseUrl,
-                modelConfig.model || modelConfig.baseModel
+                modelConfig.model || modelConfig.baseModel,
+                this.toolManager
             );
 
             // Set tools in AI client (role-specific tools will be added automatically)

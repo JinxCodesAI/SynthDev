@@ -11,6 +11,7 @@ vi.mock('fs', () => ({
     writeFileSync: vi.fn(),
     unlinkSync: vi.fn(),
     existsSync: vi.fn(),
+    readFileSync: vi.fn(),
 }));
 
 vi.mock('openai', () => ({
@@ -136,6 +137,28 @@ describe.sequential('Execute Script Tool', () => {
         });
 
         mockFs.existsSync.mockReturnValue(false);
+
+        // Mock readFileSync for pricing data loading
+        mockFs.readFileSync.mockImplementation(filePath => {
+            if (filePath.includes('providers.json')) {
+                return JSON.stringify({
+                    providers: [
+                        {
+                            name: 'test-provider',
+                            models: [
+                                {
+                                    name: 'test-model',
+                                    inputPricePerMillionTokens: 0.001,
+                                    outputPricePerMillionTokens: 0.002,
+                                    cachedPricePerMillionTokens: 0.0005,
+                                },
+                            ],
+                        },
+                    ],
+                });
+            }
+            return '';
+        });
     });
 
     describe('Parameter Validation', () => {
