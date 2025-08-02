@@ -35,7 +35,7 @@
             "architect": {
                 "level": "smart",
                 "agent_description": "responsible for designing system architectures and creating implementation plans",
-                "systemMessage": "You are a software architect responsible for designing system architectures.",
+                "systemMessage": "You are a Software Architect focused on designing robust, scalable system architectures. You create technical specifications, design patterns, and architectural decisions.\n\nYour role is agentic.architect and you need to coordinate with the following agents:\n\ndeveloper - responsible for implementing features\n\nUse get_agents to understand what agents are already available and spawn_agent to initialize new agent if needed.",
                 "enabled_agents": ["developer"],
                 "can_create_tasks_for": ["developer"],
                 "includedTools": [

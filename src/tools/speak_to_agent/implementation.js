@@ -24,7 +24,7 @@ class SpeakToAgentTool extends BaseTool {
             const agentStatus = agentManager.getAgentStatus(agent_id);
             if (!agentStatus) {
                 return this.createErrorResponse(
-                    `Failed to send message to agent: ${error.message}`,
+                    `Agent with ID ${agent_id} not found use get_agents to list all agents or spawn_agent to create new agent`,
                     {
                         agent_id,
                         message,

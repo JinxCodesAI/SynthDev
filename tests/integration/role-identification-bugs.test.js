@@ -1,11 +1,15 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import SystemMessages from '../../src/core/ai/systemMessages.js';
+import { createMockSystemMessages, RoleFixtures } from '../helpers/roleFixtures.js';
 import AgentManager from '../../src/agents/AgentManager.js';
 
 describe('Role Identification Bugs', () => {
+    let SystemMessages;
     let agentManager;
 
     beforeEach(() => {
+        // Create mock SystemMessages with role fixtures
+        SystemMessages = createMockSystemMessages(RoleFixtures.FIXTURES.ROLE_GROUPS);
+
         // Get fresh instances
         agentManager = AgentManager.getInstance();
 
@@ -64,13 +68,6 @@ describe('Role Identification Bugs', () => {
                 'Your role is agentic.architect and you need to coordinate'
             );
 
-            // Test that spawning works (simplified test without complex mocking)
-            const mockContext = {
-                costsManager: { trackUsage: vi.fn() },
-                toolManager: { getTools: vi.fn().mockReturnValue([]) },
-                currentAgentId: null,
-            };
-
             // Test that the spawn validation passes
             expect(() => {
                 // This should not throw an error
@@ -115,8 +112,7 @@ describe('Role Identification Bugs', () => {
     describe('Bug 3: Role overwrite warning but wrong role selected', () => {
         it('should correctly identify which role config is being used', () => {
             // Get both role configs
-            const systemMessages = new SystemMessages();
-            const roles = systemMessages.roles;
+            const roles = SystemMessages.roles;
 
             // Both architect roles should exist
             expect(roles['architect']).toBeDefined();
