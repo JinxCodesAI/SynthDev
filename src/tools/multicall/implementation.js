@@ -200,7 +200,7 @@ class MulticallTool extends BaseTool {
      */
     _createConsoleInterface(toolName) {
         return {
-            showToolExecution: (name, args, role) => {
+            showToolExecution: (name, args) => {
                 this.logger.debug(`[Multicall] Executing ${name} with args:`, args);
             },
             showToolResult: result => {

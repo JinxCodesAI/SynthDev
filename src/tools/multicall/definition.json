@@ -1,6 +1,6 @@
 {
     "name": "multicall",
-    "description": "Execute multiple tool calls in a single operation. Use this tool when you want to do series of simple read-only operations like, ",
+    "description": "Execute multiple tool calls in a single operation. Use this tool when you want to do series of simple read-only operations like, list_tasks, list_directory, ",
     "auto_run": true,
     "version": "1.0.0",
     "schema": {
