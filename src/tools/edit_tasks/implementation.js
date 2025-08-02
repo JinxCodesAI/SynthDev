@@ -5,6 +5,7 @@
 
 import { BaseTool } from '../common/base-tool.js';
 import taskManager from '../common/task-manager.js';
+import SystemMessages from '../../core/ai/systemMessages.js';
 
 class EditTasksTool extends BaseTool {
     constructor() {
@@ -217,7 +218,68 @@ class EditTasksTool extends BaseTool {
             };
         }
 
+        // Validate target_role permissions for new tasks
+        if (isNewTask && target_role) {
+            const validationError = this.validateTargetRolePermissions(
+                target_role,
+                index,
+                taskData
+            );
+            if (validationError) {
+                return validationError;
+            }
+        }
+
         return null;
+    }
+
+    /**
+     * Validate that the current role can create tasks for the specified target_role
+     * @param {string} target_role - The target role for the task
+     * @param {number} index - Index in the tasks array
+     * @param {Object} taskData - Task data being validated
+     * @returns {Object|null} Error object if validation fails, null if valid
+     */
+    validateTargetRolePermissions(target_role, index, taskData) {
+        // Get current role from context
+        const currentRole = this.context?.currentRole;
+
+        if (!currentRole) {
+            // If no current role is available, allow the operation (for backward compatibility)
+            return null;
+        }
+
+        // Skip validation for 'user' role (users can create tasks for any role)
+        if (currentRole === 'user') {
+            return null;
+        }
+
+        try {
+            // Get the roles that the current role can create tasks for
+            const canCreateTasksFor = SystemMessages.getCanCreateTasksFor(currentRole);
+            const enabledAgents = SystemMessages.getEnabledAgents(currentRole);
+
+            // Check if target_role is in the can_create_tasks_for list
+            if (!canCreateTasksFor.includes(target_role)) {
+                return {
+                    index,
+                    error:
+                        `Role '${currentRole}' is not authorized to create tasks for '${target_role}'. ` +
+                        `This role can create tasks for: [${canCreateTasksFor.join(', ')}]. ` +
+                        `This role can communicate with: [${enabledAgents.join(', ')}]. ` +
+                        'Please assign the task to an authorized role or communicate with an available agent.',
+                    taskData,
+                };
+            }
+
+            return null;
+        } catch (error) {
+            // If there's an error getting role configuration, log it but don't block the operation
+            console.warn(
+                `Warning: Could not validate target_role permissions for role '${currentRole}': ${error.message}`
+            );
+            return null;
+        }
     }
 
     /**

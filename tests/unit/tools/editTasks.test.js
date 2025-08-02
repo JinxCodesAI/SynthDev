@@ -14,8 +14,17 @@ vi.mock('../../../src/core/managers/logger.js', () => ({
     }),
 }));
 
+// Mock SystemMessages
+vi.mock('../../../src/core/ai/systemMessages.js', () => ({
+    default: {
+        getCanCreateTasksFor: vi.fn(),
+        getEnabledAgents: vi.fn(),
+    },
+}));
+
 import editTasks from '../../../src/tools/edit_tasks/implementation.js';
 import taskManager from '../../../src/tools/common/task-manager.js';
+import SystemMessages from '../../../src/core/ai/systemMessages.js';
 
 describe('Edit Tasks Tool', () => {
     beforeEach(() => {
@@ -614,6 +623,140 @@ describe('Edit Tasks Tool', () => {
             expect(result.success).toBe(false);
             expect(result.error).toContain('Some tasks could not be processed');
             expect(result.errors[0].error).toContain('Task results must be a string');
+        });
+    });
+
+    describe('Target Role Permission Validation', () => {
+        beforeEach(() => {
+            // Reset mocks before each test
+            vi.clearAllMocks();
+        });
+
+        it('should allow task creation when user role creates tasks', async () => {
+            const result = await editTasks({
+                tasks: [
+                    {
+                        title: 'Test Task',
+                        target_role: 'developer',
+                    },
+                ],
+                context: { currentRole: 'user' },
+            });
+
+            expect(result.success).toBe(true);
+            expect(result.processed_tasks[0].task.target_role).toBe('developer');
+        });
+
+        it('should allow task creation when no context is provided (backward compatibility)', async () => {
+            const result = await editTasks({
+                tasks: [
+                    {
+                        title: 'Test Task',
+                        target_role: 'developer',
+                    },
+                ],
+            });
+
+            expect(result.success).toBe(true);
+            expect(result.processed_tasks[0].task.target_role).toBe('developer');
+        });
+
+        it('should allow task creation when role has permission', async () => {
+            SystemMessages.getCanCreateTasksFor.mockReturnValue(['developer', 'tester']);
+            SystemMessages.getEnabledAgents.mockReturnValue(['architect']);
+
+            const result = await editTasks({
+                tasks: [
+                    {
+                        title: 'Test Task',
+                        target_role: 'developer',
+                    },
+                ],
+                context: { currentRole: 'pm' },
+            });
+
+            expect(result.success).toBe(true);
+            expect(result.processed_tasks[0].task.target_role).toBe('developer');
+            expect(SystemMessages.getCanCreateTasksFor).toHaveBeenCalledWith('pm');
+        });
+
+        it('should reject task creation when role lacks permission', async () => {
+            SystemMessages.getCanCreateTasksFor.mockReturnValue(['tester']);
+            SystemMessages.getEnabledAgents.mockReturnValue(['architect']);
+
+            const result = await editTasks({
+                tasks: [
+                    {
+                        title: 'Test Task',
+                        target_role: 'developer',
+                    },
+                ],
+                context: { currentRole: 'pm' },
+            });
+
+            expect(result.success).toBe(false);
+            expect(result.error).toContain('Some tasks could not be processed');
+            expect(result.errors[0].error).toContain(
+                "Role 'pm' is not authorized to create tasks for 'developer'"
+            );
+            expect(result.errors[0].error).toContain('This role can create tasks for: [tester]');
+            expect(result.errors[0].error).toContain('This role can communicate with: [architect]');
+            expect(SystemMessages.getCanCreateTasksFor).toHaveBeenCalledWith('pm');
+            expect(SystemMessages.getEnabledAgents).toHaveBeenCalledWith('pm');
+        });
+
+        it('should handle SystemMessages errors gracefully', async () => {
+            SystemMessages.getCanCreateTasksFor.mockImplementation(() => {
+                throw new Error('Role configuration error');
+            });
+
+            const result = await editTasks({
+                tasks: [
+                    {
+                        title: 'Test Task',
+                        target_role: 'developer',
+                    },
+                ],
+                context: { currentRole: 'pm' },
+            });
+
+            // Should succeed despite the error (graceful fallback)
+            expect(result.success).toBe(true);
+            expect(result.processed_tasks[0].task.target_role).toBe('developer');
+        });
+
+        it('should only validate permissions for new tasks, not updates', async () => {
+            SystemMessages.getCanCreateTasksFor.mockReturnValue(['tester']);
+            SystemMessages.getEnabledAgents.mockReturnValue(['architect']);
+
+            // First create a task
+            const createResult = await editTasks({
+                tasks: [
+                    {
+                        title: 'Test Task',
+                        target_role: 'developer',
+                    },
+                ],
+                context: { currentRole: 'user' }, // User can create any task
+            });
+            expect(createResult.success).toBe(true);
+            const taskId = createResult.processed_tasks[0].task.id;
+
+            // Now try to update it with a role that doesn't have permission
+            const updateResult = await editTasks({
+                tasks: [
+                    {
+                        id: taskId,
+                        title: 'Updated Task',
+                    },
+                ],
+                context: { currentRole: 'pm' }, // PM can't create tasks for developer, but can update existing ones
+            });
+
+            expect(updateResult.success).toBe(true);
+            expect(updateResult.processed_tasks[0].task.title).toBe('Updated Task');
+            // SystemMessages should not be called for updates
+            expect(SystemMessages.getCanCreateTasksFor).not.toHaveBeenCalled();
         });
     });
 });
