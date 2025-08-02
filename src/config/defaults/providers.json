@@ -9,7 +9,13 @@
                     "maxResponseSize": 32000,
                     "inputPricePerMillionTokens": 0.3,
                     "outputPricePerMillionTokens": 0.5,
-                    "cachedPricePerMillionTokens": 0.075
+                    "cachedPricePerMillionTokens": 0.075,
+                    "defaultParameters": {
+                        "temperature": 0.7,
+                        "top_p": 0.9,
+                        "frequency_penalty": 0,
+                        "presence_penalty": 0
+                    }
                 }
             ],
             "baseUrl": "https://api.x.ai/v1"
@@ -23,7 +29,13 @@
                     "maxResponseSize": 32000,
                     "inputPricePerMillionTokens": 0.4,
                     "outputPricePerMillionTokens": 1.6,
-                    "cachedPricePerMillionTokens": 0.1
+                    "cachedPricePerMillionTokens": 0.1,
+                    "defaultParameters": {
+                        "temperature": 0.7,
+                        "top_p": 0.9,
+                        "frequency_penalty": 0,
+                        "presence_penalty": 0
+                    }
                 },
                 {
                     "name": "gpt-4.1-nano",
@@ -31,7 +43,13 @@
                     "maxResponseSize": 32000,
                     "inputPricePerMillionTokens": 0.1,
                     "outputPricePerMillionTokens": 0.4,
-                    "cachedPricePerMillionTokens": 0.025
+                    "cachedPricePerMillionTokens": 0.025,
+                    "defaultParameters": {
+                        "temperature": 0.7,
+                        "top_p": 0.9,
+                        "frequency_penalty": 0,
+                        "presence_penalty": 0
+                    }
                 },
                 {
                     "name": "gpt-4.1",
@@ -39,7 +57,13 @@
                     "maxResponseSize": 32000,
                     "inputPricePerMillionTokens": 2.0,
                     "outputPricePerMillionTokens": 8.0,
-                    "cachedPricePerMillionTokens": 0.5
+                    "cachedPricePerMillionTokens": 0.5,
+                    "defaultParameters": {
+                        "temperature": 0.7,
+                        "top_p": 0.9,
+                        "frequency_penalty": 0,
+                        "presence_penalty": 0
+                    }
                 },
                 {
                     "name": "o4-mini",
@@ -48,7 +72,13 @@
                     "inputPricePerMillionTokens": 1.1,
                     "outputPricePerMillionTokens": 4.4,
                     "cachedPricePerMillionTokens": 0.275,
-                    "reasoning": true
+                    "reasoning": true,
+                    "defaultParameters": {
+                        "temperature": 0.7,
+                        "top_p": 0.9,
+                        "frequency_penalty": 0,
+                        "presence_penalty": 0
+                    }
                 },
                 {
                     "name": "gpt-4o",
@@ -57,7 +87,13 @@
                     "inputPricePerMillionTokens": 2.5,
                     "outputPricePerMillionTokens": 10,
                     "cachedPricePerMillionTokens": 1.25,
-                    "reasoning": false
+                    "reasoning": false,
+                    "defaultParameters": {
+                        "temperature": 0.7,
+                        "top_p": 0.9,
+                        "frequency_penalty": 0,
+                        "presence_penalty": 0
+                    }
                 },
                 {
                     "name": "gpt-4o-mini",
@@ -66,7 +102,13 @@
                     "inputPricePerMillionTokens": 0.4,
                     "outputPricePerMillionTokens": 1.6,
                     "cachedPricePerMillionTokens": 0.1,
-                    "reasoning": false
+                    "reasoning": false,
+                    "defaultParameters": {
+                        "temperature": 0.7,
+                        "top_p": 0.9,
+                        "frequency_penalty": 0,
+                        "presence_penalty": 0
+                    }
                 }
             ],
             "baseUrl": "https://api.openai.com/v1"
@@ -80,7 +122,14 @@
                     "maxResponseSize": 32000,
                     "inputPricePerMillionTokens": 0.3,
                     "outputPricePerMillionTokens": 2.5,
-                    "cachedPricePerMillionTokens": 0.0875
+                    "cachedPricePerMillionTokens": 0.0875,
+                    "defaultParameters": {
+                        "temperature": 0.7,
+                        "top_p": 0.9,
+                        "top_k": 40,
+                        "frequency_penalty": 0,
+                        "presence_penalty": 0
+                    }
                 },
                 {
                     "name": "gemini-2.5-pro",
@@ -88,7 +137,14 @@
                     "maxResponseSize": 32000,
                     "inputPricePerMillionTokens": 1.25,
                     "outputPricePerMillionTokens": 10,
-                    "cachedPricePerMillionTokens": 0.3125
+                    "cachedPricePerMillionTokens": 0.3125,
+                    "defaultParameters": {
+                        "temperature": 0.7,
+                        "top_p": 0.9,
+                        "top_k": 40,
+                        "frequency_penalty": 0,
+                        "presence_penalty": 0
+                    }
                 },
                 {
                     "name": "gemini-2.5-flash-lite-preview-06-17",
@@ -96,7 +152,14 @@
                     "maxResponseSize": 64000,
                     "inputPricePerMillionTokens": 0.1,
                     "outputPricePerMillionTokens": 0.4,
-                    "cachedPricePerMillionTokens": 0.025
+                    "cachedPricePerMillionTokens": 0.025,
+                    "defaultParameters": {
+                        "temperature": 0.7,
+                        "top_p": 0.9,
+                        "top_k": 40,
+                        "frequency_penalty": 0,
+                        "presence_penalty": 0
+                    }
                 }
             ],
             "baseUrl": "https://generativelanguage.googleapis.com/v1beta/openai/"
@@ -110,7 +173,14 @@
                     "maxResponseSize": 64000,
                     "inputPricePerMillionTokens": 0.1,
                     "outputPricePerMillionTokens": 0.4,
-                    "cachedPricePerMillionTokens": 0.025
+                    "cachedPricePerMillionTokens": 0.025,
+                    "defaultParameters": {
+                        "temperature": 0.7,
+                        "top_p": 0.9,
+                        "top_k": 40,
+                        "frequency_penalty": 0,
+                        "presence_penalty": 0
+                    }
                 },
                 {
                     "name": "google/gemini-2.5-flash",
@@ -118,7 +188,14 @@
                     "maxResponseSize": 32000,
                     "inputPricePerMillionTokens": 0.3,
                     "outputPricePerMillionTokens": 2.5,
-                    "cachedPricePerMillionTokens": 0.0875
+                    "cachedPricePerMillionTokens": 0.0875,
+                    "defaultParameters": {
+                        "temperature": 0.7,
+                        "top_p": 0.9,
+                        "top_k": 40,
+                        "frequency_penalty": 0,
+                        "presence_penalty": 0
+                    }
                 },
                 {
                     "name": "google/gemini-2.5-pro",
@@ -126,7 +203,14 @@
                     "maxResponseSize": 32000,
                     "inputPricePerMillionTokens": 1.25,
                     "outputPricePerMillionTokens": 10,
-                    "cachedPricePerMillionTokens": 0.3125
+                    "cachedPricePerMillionTokens": 0.3125,
+                    "defaultParameters": {
+                        "temperature": 0.7,
+                        "top_p": 0.9,
+                        "top_k": 40,
+                        "frequency_penalty": 0,
+                        "presence_penalty": 0
+                    }
                 },
                 {
                     "name": "deepseek/deepseek-r1-0528",
@@ -134,7 +218,14 @@
                     "maxResponseSize": 32000,
                     "inputPricePerMillionTokens": 0.1,
                     "outputPricePerMillionTokens": 0.4,
-                    "cachedPricePerMillionTokens": 0.025
+                    "cachedPricePerMillionTokens": 0.025,
+                    "defaultParameters": {
+                        "temperature": 0.7,
+                        "top_p": 0.9,
+                        "top_k": 40,
+                        "frequency_penalty": 0,
+                        "presence_penalty": 0
+                    }
                 },
                 {
                     "name": "deepseek/deepseek-chat-v3-0324",
@@ -142,7 +233,14 @@
                     "maxResponseSize": 32000,
                     "inputPricePerMillionTokens": 0.1,
                     "outputPricePerMillionTokens": 0.4,
-                    "cachedPricePerMillionTokens": 0.025
+                    "cachedPricePerMillionTokens": 0.025,
+                    "defaultParameters": {
+                        "temperature": 0.7,
+                        "top_p": 0.9,
+                        "top_k": 40,
+                        "frequency_penalty": 0,
+                        "presence_penalty": 0
+                    }
                 },
                 {
                     "name": "anthropic/claude-sonnet-4",
@@ -150,7 +248,14 @@
                     "maxResponseSize": 32000,
                     "inputPricePerMillionTokens": 0.1,
                     "outputPricePerMillionTokens": 0.4,
-                    "cachedPricePerMillionTokens": 0.025
+                    "cachedPricePerMillionTokens": 0.025,
+                    "defaultParameters": {
+                        "temperature": 0.7,
+                        "top_p": 0.9,
+                        "top_k": 40,
+                        "frequency_penalty": 0,
+                        "presence_penalty": 0
+                    }
                 },
                 {
                     "name": "anthropic/claude-4-opus-20250522",
@@ -158,7 +263,14 @@
                     "maxResponseSize": 32000,
                     "inputPricePerMillionTokens": 0.1,
                     "outputPricePerMillionTokens": 0.4,
-                    "cachedPricePerMillionTokens": 0.025
+                    "cachedPricePerMillionTokens": 0.025,
+                    "defaultParameters": {
+                        "temperature": 0.7,
+                        "top_p": 0.9,
+                        "top_k": 40,
+                        "frequency_penalty": 0,
+                        "presence_penalty": 0
+                    }
                 },
                 {
                     "name": "anthropic/claude-3.5-haiku",
@@ -166,7 +278,14 @@
                     "maxResponseSize": 32000,
                     "inputPricePerMillionTokens": 0.1,
                     "outputPricePerMillionTokens": 0.4,
-                    "cachedPricePerMillionTokens": 0.025
+                    "cachedPricePerMillionTokens": 0.025,
+                    "defaultParameters": {
+                        "temperature": 0.7,
+                        "top_p": 0.9,
+                        "top_k": 40,
+                        "frequency_penalty": 0,
+                        "presence_penalty": 0
+                    }
                 }
             ],
             "baseUrl": "https://openrouter.ai/api/v1"
@@ -180,7 +299,11 @@
                     "maxResponseSize": 64000,
                     "inputPricePerMillionTokens": 3,
                     "outputPricePerMillionTokens": 15,
-                    "cachedPricePerMillionTokens": 0.75
+                    "cachedPricePerMillionTokens": 0.75,
+                    "defaultParameters": {
+                        "temperature": 0.7,
+                        "top_p": 0.9
+                    }
                 },
                 {
                     "name": "claude-opus-4-20250514",
@@ -188,7 +311,11 @@
                     "maxResponseSize": 32000,
                     "inputPricePerMillionTokens": 15,
                     "outputPricePerMillionTokens": 75,
-                    "cachedPricePerMillionTokens": 3.75
+                    "cachedPricePerMillionTokens": 3.75,
+                    "defaultParameters": {
+                        "temperature": 0.7,
+                        "top_p": 0.9
+                    }
                 },
                 {
                     "name": "claude-3-5-haiku-20241022",
@@ -196,7 +323,11 @@
                     "maxResponseSize": 32000,
                     "inputPricePerMillionTokens": 0.8,
                     "outputPricePerMillionTokens": 4,
-                    "cachedPricePerMillionTokens": 0.2
+                    "cachedPricePerMillionTokens": 0.2,
+                    "defaultParameters": {
+                        "temperature": 0.7,
+                        "top_p": 0.9
+                    }
                 }
             ],
             "baseUrl": "https://api.anthropic.com/v1/"

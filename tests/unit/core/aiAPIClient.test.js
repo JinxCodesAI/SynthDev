@@ -62,6 +62,7 @@ describe('AIAPIClient', () => {
             hasSmartModelConfig: vi.fn().mockReturnValue(false),
             hasFastModelConfig: vi.fn().mockReturnValue(false),
             getMaxTokens: vi.fn().mockReturnValue(4000),
+            getModelParameters: vi.fn().mockReturnValue({}),
         };
 
         mockSystemMessages = {

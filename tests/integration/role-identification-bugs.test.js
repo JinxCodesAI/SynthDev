@@ -1,10 +1,8 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import SystemMessages from '../../src/core/ai/systemMessages.js';
 import AgentManager from '../../src/agents/AgentManager.js';
-import AgentProcess from '../../src/agents/AgentProcess.js';
 
 describe('Role Identification Bugs', () => {
-    let originalSystemMessages;
     let agentManager;
 
     beforeEach(() => {

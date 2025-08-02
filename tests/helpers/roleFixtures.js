@@ -306,6 +306,72 @@ export class RoleFixtures {
                     return role.systemMessage || 'Default system message';
                 }
             }),
+
+            getExamples: vi.fn(roleSpec => {
+                // Handle group-prefixed role specifications
+                if (roleSpec.includes('.')) {
+                    const [group, roleName] = roleSpec.split('.', 2);
+
+                    // Check if role exists in the specified group
+                    if (roleGroups[group] && roleGroups[group][roleName]) {
+                        const role = roleGroups[group][roleName];
+                        return role.examples || [];
+                    }
+
+                    throw new Error(`Unknown role: ${roleSpec}`);
+                } else {
+                    // Handle regular role name
+                    const role = roles[roleSpec];
+                    if (!role) {
+                        throw new Error(`Unknown role: ${roleSpec}`);
+                    }
+                    return role.examples || [];
+                }
+            }),
+
+            getExcludedTools: vi.fn(roleSpec => {
+                const role = roles[roleSpec];
+                if (!role) {
+                    throw new Error(`Unknown role: ${roleSpec}`);
+                }
+                return role.excludedTools || [];
+            }),
+
+            getIncludedTools: vi.fn(roleSpec => {
+                const role = roles[roleSpec];
+                if (!role) {
+                    throw new Error(`Unknown role: ${roleSpec}`);
+                }
+                return role.includedTools || [];
+            }),
+
+            getParsingTools: vi.fn(roleSpec => {
+                const role = roles[roleSpec];
+                if (!role) {
+                    throw new Error(`Unknown role: ${roleSpec}`);
+                }
+                return role.parsingTools || [];
+            }),
+
+            getReminder: vi.fn(roleSpec => {
+                const role = roles[roleSpec];
+                if (!role) {
+                    throw new Error(`Unknown role: ${roleSpec}`);
+                }
+                return role.reminder || null;
+            }),
+
+            getAvailableRoles: vi.fn(() => {
+                return Object.keys(roles);
+            }),
+
+            getCanCreateTasksFor: vi.fn(roleSpec => {
+                const role = roles[roleSpec];
+                if (!role) {
+                    throw new Error(`Unknown role: ${roleSpec}`);
+                }
+                return role.can_create_tasks_for || [];
+            }),
         };
 
         return MockSystemMessages;
