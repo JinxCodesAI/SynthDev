@@ -22,11 +22,9 @@ tests/
 │   ├── config/            # Configuration tests
 │   ├── core/              # Core component tests
 │   ├── tools/             # Tool tests
-│   └── workflow/          # Workflow component tests
 ├── integration/           # Integration tests
 │   ├── command-tool/      # Command-tool integration
 │   ├── config-loading/    # Configuration loading
-│   └── workflow-execution/ # Workflow execution
 ├── e2e/                   # End-to-end tests
 │   ├── grocery-store-workflow.test.js # Complete workflow tests
 │   └── user-scenarios/    # User scenario tests
@@ -274,62 +272,7 @@ describe('Configuration Loading Integration', () => {
 
 ## End-to-End Testing
 
-### Workflow Testing
-
-```javascript
-// tests/e2e/grocery-store-workflow.test.js
-import { setupServer } from 'msw/node';
-import { http, HttpResponse } from 'msw';
-import WorkflowCommand from '../../src/commands/workflow/WorkflowCommand.js';
-import { createMockContext } from '../helpers/testUtils.js';
-
-const server = setupServer(
-    http.post('*/chat/completions', ({ request }) => {
-        return HttpResponse.json({
-            choices: [
-                {
-                    message: {
-                        content: 'Hello! How can I help you today?',
-                        role: 'assistant',
-                    },
-                },
-            ],
-        });
-    })
-);
-
-describe('Grocery Store Workflow E2E', () => {
-    beforeAll(() => server.listen());
-    afterEach(() => server.resetHandlers());
-    afterAll(() => server.close());
-
-    test('should execute complete workflow', async () => {
-        const command = new WorkflowCommand();
-        const mockContext = createMockContext();
-
-        const result = await command.execute(['grocery_store_test'], mockContext);
-
-        expect(result.success).toBe(true);
-        expect(result.data.final_result).toBeDefined();
-    }, 30000); // Extended timeout for workflow execution
-
-    test('should handle workflow errors gracefully', async () => {
-        server.use(
-            http.post('*/chat/completions', () => {
-                return HttpResponse.json({ error: 'API Error' }, { status: 500 });
-            })
-        );
-
-        const command = new WorkflowCommand();
-        const mockContext = createMockContext();
-
-        const result = await command.execute(['grocery_store_test'], mockContext);
-
-        expect(result.success).toBe(false);
-        expect(result.error).toContain('API Error');
-    });
-});
-```
+TODO: Add end-to-end tests methodology here
 
 ## Mock System
 

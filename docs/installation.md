@@ -444,7 +444,6 @@ df -h
 - **Configuration**: See [Configuration.md](Configuration.md)
 - **Architecture**: See [Architecture.md](Architecture.md)
 - **Tools**: See [Tools.md](Tools.md)
-- **Workflows**: See [Workflows.md](Workflows.md)
 
 ### Support Channels
 

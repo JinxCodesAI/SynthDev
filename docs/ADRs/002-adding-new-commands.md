@@ -33,7 +33,6 @@ src/commands/
 ├── system/                 # System commands
 ├── terminal/               # Terminal integration commands
 ├── utils/                  # Utility commands
-└── workflow/               # Workflow execution commands
 ```
 
 ### Command Implementation

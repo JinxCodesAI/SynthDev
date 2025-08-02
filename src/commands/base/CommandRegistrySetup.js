@@ -18,8 +18,6 @@ import RolesCommand from '../role/RolesCommand.js';
 
 import IndexCommand from '../indexing/IndexCommand.js';
 import CmdCommand from '../terminal/CmdCommand.js';
-import WorkflowsCommand from '../workflow/WorkflowsCommand.js';
-import WorkflowCommand from '../workflow/WorkflowCommand.js';
 import { ConfigureCommand } from '../config/ConfigureCommand.js';
 import SnapshotsCommand from '../snapshots/SnapshotsCommand.js';
 import TaskCommand from '../task/TaskCommand.js';
@@ -64,10 +62,6 @@ export function createCommandRegistry() {
 
         // Task management
         registry.register(new TaskCommand());
-
-        // Workflow commands
-        // registry.register(new WorkflowsCommand());
-        // registry.register(new WorkflowCommand());
 
         logger.debug(`✅ Registered ${registry.getAllCommands().length} commands successfully`);
     } catch (error) {
