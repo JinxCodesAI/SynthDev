@@ -277,13 +277,14 @@ class AgentManager {
         // Format result message for parent
         const resultMessage = {
             role: 'user',
-            content:
-                `Agent ${childAgent.roleName} (${childAgentId}) has completed its task.\n\n` +
-                `Status: ${result.status}\n` +
-                `Summary: ${result.summary}\n` +
-                `Artifacts: ${result.artifacts?.length || 0} files\n` +
-                `Known Issues: ${result.known_issues?.length || 0}\n\n` +
-                'Use task related tools and speak_to_agent tool to communicate with agent if you need clarifications or want him to do additional work.',
+            content: `Agent ${childAgent.roleName} (${childAgentId}) has completed its task with ${result.status} status.
+
+${result.summary}
+
+${result.artifacts?.length ? `Modified files:\n${result.artifacts.map(a => `- ${a.file_path}: ${a.description}`).join('\n')}\n` : ''}
+${result.known_issues?.length ? `Known issues:\n${result.known_issues.map(issue => `- ${issue}`).join('\n')}\n` : ''}
+
+You can use task related tools and speak_to_agent tool to request clarifications or additional work from this agent.`,
         };
 
         // Add message to parent's conversation
