@@ -616,7 +616,3 @@ Configure safety patterns in `src/config/tools/safety-patterns.json`:
     ]
 }
 ```
-
----
-
-_For role-based tool access control, see the Configuration guide. For workflow-specific tool usage, see the Workflows guide._

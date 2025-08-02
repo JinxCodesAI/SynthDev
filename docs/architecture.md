@@ -126,7 +126,6 @@ The main application orchestrator that:
 - **Snapshot Commands**: State management
 - **System Commands**: Application control
 - **Terminal Commands**: Command execution and generation
-- **Workflow Commands**: Multi-agent workflow execution
 
 ### Tool System (`src/tools/`)
 
@@ -183,48 +182,8 @@ The main application orchestrator that:
 #### Multi-File Support
 
 - **Role Definitions**: Organized across multiple JSON files
-- **Workflow Configurations**: Separate files with script directories
 - **Tool Configurations**: Individual tool settings
 - **UI Customization**: Configurable interface messages
-
-### Workflow System (`src/workflow/`)
-
-#### Core Components
-
-**WorkflowStateMachine** - Main orchestrator:
-
-- Agent lifecycle management
-- State transitions
-- Context synchronization
-- Execution tracking
-
-**WorkflowAgent** - Individual AI agents:
-
-- Role-specific configuration
-- API client management
-- Tool filtering
-- Parsing tool responses
-
-**WorkflowContext** - Shared conversation context:
-
-- Role-based message mapping
-- Message length management
-- Context isolation
-
-**WorkflowConfig** - Configuration validation:
-
-- Script module management
-- State validation
-- Agent setup
-
-#### Features
-
-- **Multi-Agent Orchestration**: Multiple AI agents with different roles
-- **State Machine Execution**: Structured workflow with defined states
-- **Shared Context Management**: Role-based message mapping
-- **Custom Script Integration**: JavaScript functions for workflow logic
-- **Parsing Tools**: Structured output for decision-making
-- **Execution Tracking**: Detailed logging and state history
 
 ## Data Flow
 
@@ -244,12 +203,6 @@ Command → AIAPIClient → External API → Response Processing → Tool Execut
 
 ```
 Tool Request → ToolManager → Tool Validation → Tool Implementation → Response
-```
-
-### 4. Workflow Execution Flow
-
-```
-Workflow Request → WorkflowStateMachine → Agent Execution → State Transition → Result
 ```
 
 ## Security Architecture
@@ -339,13 +292,6 @@ tests/
 2. Implement required methods
 3. Register in command system
 4. Add help documentation
-
-### Adding New Workflows
-
-1. Create workflow configuration JSON
-2. Implement custom script functions
-3. Define agents and contexts
-4. Test with mock HTTP responses
 
 ### Adding New Roles
 

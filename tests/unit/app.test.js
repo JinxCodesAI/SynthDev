@@ -5,7 +5,6 @@ import ConfigManager from '../../src/config/managers/configManager.js';
 import AIAPIClient from '../../src/core/ai/aiAPIClient.js';
 import CommandHandler from '../../src/core/interface/commandHandler.js';
 import ConsoleInterface from '../../src/core/interface/consoleInterface.js';
-import WorkflowStateMachine from '../../src/workflow/WorkflowStateMachine.js';
 
 // Mock dependencies
 vi.mock('../../src/config/managers/configManager.js');
@@ -21,7 +20,6 @@ vi.mock('../../src/core/managers/logger.js', () => ({
 }));
 vi.mock('../../src/core/interface/commandHandler.js');
 vi.mock('../../src/core/interface/consoleInterface.js');
-vi.mock('../../src/workflow/WorkflowStateMachine.js');
 vi.mock('../../src/core/ai/promptEnhancer.js', () => ({
     default: vi.fn(() => ({
         isEnabled: vi.fn(() => false),
@@ -69,7 +67,6 @@ describe('AICoderConsole - Input Routing', () => {
     let mockAIAPIClientInstance;
     let mockCommandHandlerInstance;
     let mockConsoleInterfaceInstance;
-    let mockWorkflowStateMachineInstance;
 
     beforeEach(() => {
         vi.clearAllMocks();
@@ -123,14 +120,6 @@ describe('AICoderConsole - Input Routing', () => {
         };
         ConsoleInterface.mockImplementation(() => mockConsoleInterfaceInstance);
 
-        // Mock WorkflowStateMachine constructor and instance methods
-        mockWorkflowStateMachineInstance = {
-            loadWorkflowConfigs: vi.fn(),
-            start: vi.fn(),
-            handleUserInput: vi.fn(),
-        };
-        WorkflowStateMachine.mockImplementation(() => mockWorkflowStateMachineInstance);
-
         app = new AICoderConsole(mockConfigManagerInstance);
         app._initializeAPIComponents(); // Manually initialize components for testing handleInput
     });
@@ -143,7 +132,6 @@ describe('AICoderConsole - Input Routing', () => {
         expect(mockCommandHandlerInstance.handleCommand).toHaveBeenCalledWith('/testcommand');
         expect(mockConsoleInterfaceInstance.prompt).toHaveBeenCalled();
         expect(mockAIAPIClientInstance.sendUserMessage).not.toHaveBeenCalled();
-        expect(mockWorkflowStateMachineInstance.handleUserInput).not.toHaveBeenCalled();
     });
 
     it.skip('should route non-command input to AIAPIClient in role: mode', async () => {
@@ -156,7 +144,6 @@ describe('AICoderConsole - Input Routing', () => {
 
         expect(mockCommandHandlerInstance.handleCommand).toHaveBeenCalledWith('hello AI');
         expect(mockAIAPIClientInstance.sendUserMessage).toHaveBeenCalledWith('hello AI');
-        expect(mockWorkflowStateMachineInstance.handleUserInput).not.toHaveBeenCalled();
         expect(mockConsoleInterfaceInstance.prompt).not.toHaveBeenCalled(); // Prompt is called by APIClient callback
     });
 
@@ -165,14 +152,11 @@ describe('AICoderConsole - Input Routing', () => {
             ui: { currentMode: 'workflow:test_workflow' },
             models: { base: { model: 'gpt-4-mini', baseUrl: 'url', apiKey: 'key' } },
         });
-        app.activeWorkflow = mockWorkflowStateMachineInstance; // Set active workflow
 
         await app.handleInput('hello workflow');
 
         expect(mockCommandHandlerInstance.handleCommand).toHaveBeenCalledWith('hello workflow');
-        expect(mockWorkflowStateMachineInstance.handleUserInput).toHaveBeenCalledWith(
-            'hello workflow'
-        );
+
         expect(mockAIAPIClientInstance.sendUserMessage).not.toHaveBeenCalled();
         expect(mockConsoleInterfaceInstance.prompt).not.toHaveBeenCalled(); // Prompt is called by workflow
     });
@@ -183,7 +167,6 @@ describe('AICoderConsole - Input Routing', () => {
         expect(mockConsoleInterfaceInstance.prompt).toHaveBeenCalled();
         expect(mockCommandHandlerInstance.handleCommand).not.toHaveBeenCalled();
         expect(mockAIAPIClientInstance.sendUserMessage).not.toHaveBeenCalled();
-        expect(mockWorkflowStateMachineInstance.handleUserInput).not.toHaveBeenCalled();
     });
 
     it.skip('should log error for unknown mode', async () => {
@@ -197,7 +180,6 @@ describe('AICoderConsole - Input Routing', () => {
         expect(app.logger.error).toHaveBeenCalledWith('Unknown application mode: unknown:mode');
         expect(mockConsoleInterfaceInstance.prompt).toHaveBeenCalled();
         expect(mockAIAPIClientInstance.sendUserMessage).not.toHaveBeenCalled();
-        expect(mockWorkflowStateMachineInstance.handleUserInput).not.toHaveBeenCalled();
     });
 
     it.skip('should warn if workflow mode is active but no active workflow instance found', async () => {
@@ -209,10 +191,6 @@ describe('AICoderConsole - Input Routing', () => {
 
         await app.handleInput('hello workflow');
 
-        expect(app.logger.warn).toHaveBeenCalledWith(
-            'Workflow mode is active but no active workflow instance found.'
-        );
         expect(mockConsoleInterfaceInstance.prompt).toHaveBeenCalled();
-        expect(mockWorkflowStateMachineInstance.handleUserInput).not.toHaveBeenCalled();
     });
 });

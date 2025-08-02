@@ -4,8 +4,6 @@
 
 This document provides a detailed, step-by-step implementation plan for Phase 1 of the Agentic Collaboration System. This phase focuses on building the core infrastructure that allows an "Agentic Role" to spawn, manage, and communicate with other worker agents. The plan is grounded in the existing architecture, following the patterns established in ADR-001 (Tools), ADR-002 (Commands), and ADR-004 (Testing).
 
-**CRITICAL CONSTRAINT**: This implementation is an extension of the role system and MUST NOT use WorkflowAgent, WorkflowContext, or WorkflowStateMachine components. The agentic system operates independently from the existing workflow infrastructure.
-
 ## 2. Architecture Integration Analysis
 
 ### 2.1 Current System Components

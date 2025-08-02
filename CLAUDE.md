@@ -27,12 +27,6 @@ SynthDev is a Node.js-based AI coding assistant designed to explore agentic capa
 - **Security**: Path validation, AI safety assessment, role-based access control
 - **Categories**: File operations, search & analysis, code execution, utilities
 
-### Multi-Agent Workflows (`src/workflow/`)
-
-- **StateMachine**: `WorkflowStateMachine.js` orchestrates multi-agent execution
-- **Agents**: Individual AI agents with role-specific configurations
-- **Context**: Shared conversation context with role-based message mapping
-
 ### Configuration System (`src/config/`)
 
 - **Multi-layered**: Built-in defaults → config files → environment variables → CLI args
@@ -186,14 +180,6 @@ tests/
 - AI safety assessment for script execution
 - Role-based tool access control with pattern matching
 - No sensitive information in code or commits
-
-## Multi-Agent Workflow Development
-
-- Workflows defined in JSON format under `src/config/workflows/`
-- Custom JavaScript functions for workflow logic
-- State machine execution with defined states and transitions
-- Shared context management between agents
-- Example workflow: `grocery_store_test` demonstrates multi-agent interaction
 
 ## Original Development Guidelines (Preserved)
 

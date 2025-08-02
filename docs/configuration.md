@@ -132,10 +132,6 @@ src/config/
 │   ├── auto-snapshot-defaults.json # Phase 2 automatic snapshot settings
 │   ├── file-filters.json      # File filtering patterns
 │   └── snapshot-messages.json # User interface messages for snapshots
-└── workflows/                   # Workflow configurations
-    ├── my_workflow.json        # Workflow configuration
-    └── my_workflow/            # Workflow scripts directory
-        └── script.js           # Custom JavaScript functions
 ```
 
 ### AI Roles Configuration
@@ -195,105 +191,6 @@ Edit any JSON file in `src/config/roles/` to customize AI behavior:
     "execute_*",           // Wildcard: matches any tool starting with "execute_"
     "/^dangerous_/i"       // Regex: case-insensitive match
 ]
-```
-
-### Multi-Agent Workflows Configuration
-
-Configure complex multi-agent workflows in `src/config/workflows/`:
-
-#### Workflow Structure
-
-```
-src/config/workflows/
-├── my_workflow.json          # Workflow configuration
-└── my_workflow/              # Workflow scripts directory
-    └── script.js             # Custom JavaScript functions
-```
-
-#### Basic Workflow Configuration
-
-Create `src/config/workflows/example_workflow.json`:
-
-```json
-{
-    "workflow_name": "example_workflow",
-    "description": "Example multi-agent workflow",
-    "input": {
-        "name": "user_request",
-        "type": "string",
-        "description": "User's initial request"
-    },
-    "output": {
-        "name": "final_result",
-        "type": "string",
-        "description": "Final workflow result"
-    },
-    "variables": {
-        "max_iterations": 5
-    },
-    "contexts": [
-        {
-            "name": "shared_context",
-            "starting_messages": [],
-            "max_length": 30000
-        }
-    ],
-    "agents": [
-        {
-            "agent_role": "coder",
-            "context": "shared_context",
-            "role": "assistant"
-        },
-        {
-            "agent_role": "reviewer",
-            "context": "shared_context",
-            "role": "user"
-        }
-    ],
-    "states": [
-        {
-            "name": "start",
-            "agent": "coder",
-            "pre_handler": "setupRequest",
-            "post_handler": "captureResponse",
-            "transition_handler": "moveToReview"
-        },
-        {
-            "name": "stop",
-            "input": "common_data.final_result"
-        }
-    ]
-}
-```
-
-#### Workflow Script Functions
-
-Create `src/config/workflows/example_workflow/script.js`:
-
-```javascript
-export default {
-    // Pre-handler: Setup before API call
-    setupRequest() {
-        const context = this.workflow_contexts.get('shared_context');
-        context.addMessage({
-            role: 'user',
-            content: this.input,
-        });
-    },
-
-    // Post-handler: Process API response
-    captureResponse() {
-        const responseContent = this.last_response?.choices?.[0]?.message?.content;
-        if (responseContent) {
-            this.common_data.coder_response = responseContent;
-        }
-    },
-
-    // Transition-handler: Decide next state
-    moveToReview() {
-        return 'review_state';
-    },
-};
 ```
 
 ### UI Customization
@@ -538,5 +435,3 @@ Configuration error: SYNTHDEV_MAX_TOOL_CALLS must be between 1 and 200
 **Solution**: Set `SYNTHDEV_MAX_TOOL_CALLS` to a value between 1-200
 
 ---
-
-_For role-specific configuration, see the AI Roles section. For workflow configuration, see the Multi-Agent Workflows section._

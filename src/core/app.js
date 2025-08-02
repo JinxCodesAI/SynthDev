@@ -68,7 +68,6 @@ import ConsoleInterface from './interface/consoleInterface.js';
 import costsManager from './managers/costsManager.js';
 
 import PromptEnhancer from './ai/promptEnhancer.js';
-import WorkflowStateMachine from '../workflow/WorkflowStateMachine.js';
 import { initializeLogger, getLogger } from './managers/logger.js';
 import GitUtils from '../utils/GitUtils.js';
 import { AutoSnapshotManager } from './snapshot/AutoSnapshotManager.js';
@@ -126,12 +125,6 @@ export default class AICoderConsole {
         );
 
         this.promptEnhancer = new PromptEnhancer(this.costsManager, this.toolManager);
-        this.workflowStateMachine = new WorkflowStateMachine(
-            this.config,
-            this.toolManager,
-            this.consoleInterface,
-            this.costsManager
-        );
 
         // Initialize AgentManager
         this.agentManager = AgentManager.getInstance();
@@ -172,11 +165,6 @@ export default class AICoderConsole {
             SystemMessages.getSystemMessage(defaultRole),
             defaultRole
         );
-
-        // Reload workflow configs if workflow command is available
-        if (this.commandHandler.commandRegistry.getCommand('workflow')) {
-            await this.workflowStateMachine.loadWorkflowConfigs();
-        }
     }
 
     _setupAPIClientCallbacks() {
@@ -340,10 +328,6 @@ export default class AICoderConsole {
             SystemMessages.getSystemMessage(defaultRole),
             defaultRole
         );
-
-        if (this.commandHandler.commandRegistry.getCommand('workflow')) {
-            await this.workflowStateMachine.loadWorkflowConfigs();
-        }
 
         // Set up signal handlers for graceful shutdown
         this.setupSignalHandlers();

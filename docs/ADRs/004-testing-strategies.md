@@ -32,7 +32,6 @@ tests/
 │   ├── commands/               # Command unit tests
 │   ├── core/                   # Core component tests
 │   ├── tools/                  # Tool unit tests
-│   └── workflow/               # Workflow unit tests
 ├── integration/                # Integration tests
 │   ├── command-integration.test.js
 │   ├── tool-integration.test.js
@@ -321,42 +320,9 @@ describe('Tool Manager Integration', () => {
 });
 ```
 
-### Workflow Integration Tests
+### Agents Integration Tests
 
-```javascript
-import { describe, it, expect, beforeEach } from 'vitest';
-import WorkflowStateMachine from '../../src/workflow/WorkflowStateMachine.js';
-
-describe('Workflow Integration', () => {
-    let stateMachine;
-
-    beforeEach(() => {
-        stateMachine = new WorkflowStateMachine();
-    });
-
-    it('should load and execute simple workflow', async () => {
-        await stateMachine.loadWorkflow('./tests/fixtures/simple-workflow.json');
-
-        const result = await stateMachine.executeWorkflow({
-            user_input: 'test input',
-        });
-
-        expect(result.success).toBe(true);
-        expect(result.workflow_name).toBe('simple_test');
-    });
-
-    it('should handle workflow errors gracefully', async () => {
-        await stateMachine.loadWorkflow('./tests/fixtures/error-workflow.json');
-
-        const result = await stateMachine.executeWorkflow({
-            invalid_input: 'test',
-        });
-
-        expect(result.success).toBe(false);
-        expect(result.error).toBeDefined();
-    });
-});
-```
+TODO: Describe tests for agent spawning, communication, and tool execution
 
 ## End-to-End Testing Patterns
 
@@ -430,59 +396,6 @@ describe('End-to-End Application Tests', () => {
 
             setTimeout(() => reject(new Error('Test timeout')), 10000);
         });
-    });
-});
-```
-
-### Workflow E2E Tests
-
-```javascript
-import { describe, it, expect, beforeEach } from 'vitest';
-import { readFileSync } from 'fs';
-import WorkflowStateMachine from '../../src/workflow/WorkflowStateMachine.js';
-
-describe('Workflow E2E Tests', () => {
-    let stateMachine;
-    let mockHttpResponses;
-
-    beforeEach(() => {
-        // Load mock HTTP responses from logs
-        mockHttpResponses = JSON.parse(
-            readFileSync('./tests/e2e/fixtures/workflow-responses.json', 'utf8')
-        );
-
-        // Mock HTTP client
-        vi.mock('openai', () => ({
-            OpenAI: vi.fn().mockImplementation(() => ({
-                chat: {
-                    completions: {
-                        create: vi.fn().mockImplementation(request => {
-                            // Find matching mock response
-                            const response = mockHttpResponses.find(
-                                r =>
-                                    r.request.model === request.model &&
-                                    r.request.messages.length === request.messages.length
-                            );
-                            return Promise.resolve(response.response);
-                        }),
-                    },
-                },
-            })),
-        }));
-
-        stateMachine = new WorkflowStateMachine();
-    });
-
-    it('should execute grocery store workflow with exact responses', async () => {
-        await stateMachine.loadWorkflow('./tests/e2e/fixtures/grocery-store-workflow.json');
-
-        const result = await stateMachine.executeWorkflow({
-            shopping_list: 'milk, bread, eggs',
-        });
-
-        expect(result.success).toBe(true);
-        expect(result.output).toContain('Shopping Summary');
-        expect(result.states_visited).toEqual(['start', 'analyze', 'summarize', 'stop']);
     });
 });
 ```

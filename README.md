@@ -18,7 +18,6 @@ SynthDev is an AI-powered development assistant that provides:
 - **🎭 AI Role System**: Specialized AI personas with role-specific behaviors and few-shot prompting
 - **🔧 Extensible Architecture**: Easy to add new tools and commands
 - **📊 Advanced Features**: Automatic & manual snapshots, codebase indexing, prompt enhancement, and cost tracking
-- **🔄 Multi-Agent Workflows**: Complex workflows where different AI personas collaborate
 
 ## Quick Start
 
@@ -237,36 +236,6 @@ Comprehensive tool categories with security and validation:
 - **Tool Filtering**: Role-based access control with pattern matching
 - **Snapshot System**: Differential snapshots with checksum-based deduplication before file-modifying operations
 
-### Multi-Agent Workflows
-
-Execute complex multi-agent workflows with state management:
-
-```bash
-# List available workflows
-/workflows
-
-# Execute workflow
-/workflow grocery_store_test
-```
-
-#### Workflow Features
-
-- **🤖 Multi-Agent Orchestration**: Multiple AI agents with different roles working together
-- **🔄 State Machine Execution**: Structured workflow execution with defined states and transitions
-- **💬 Shared Context Management**: Agents share conversation context with role-based message mapping
-- **📝 Custom Script Integration**: JavaScript functions for complex workflow logic
-- **🎯 Parsing Tools**: Structured output handling for decision-making
-- **📊 Execution Tracking**: Detailed logging and state history
-
-#### Example: Grocery Store Workflow
-
-A complete multi-agent simulation demonstrating:
-
-- Customer-worker interaction with decision-making
-- Context sharing between agents
-- Structured output with parsing tools
-- State transitions based on customer satisfaction
-
 ### Codebase Intelligence
 
 Index your codebase for AI-powered understanding:
@@ -375,7 +344,6 @@ src/
 │   ├── tools/              # Tool configurations
 │   ├── ui/                 # UI configurations
 │   ├── snapshots/          # Snapshot system configuration
-│   └── workflows/          # Workflow configurations
 ├── commands/               # Command system
 │   ├── base/               # Base command classes
 │   ├── config/             # Configuration commands
@@ -386,7 +354,6 @@ src/
 │   ├── system/             # System commands
 │   ├── terminal/           # Terminal commands
 │   ├── utils/              # Command utilities
-│   └── workflow/           # Workflow commands
 ├── tools/                  # Tool implementations
 │   ├── common/             # Base tool classes and utilities
 │   ├── calculate/          # Mathematical calculations
@@ -399,11 +366,6 @@ src/
 │   ├── list_directory/     # Directory listing
 │   ├── read_files/         # File reading with encoding support
 │   └── write_file/         # File writing with validation
-├── workflow/               # Multi-agent workflow system
-│   ├── WorkflowStateMachine.js # Main workflow orchestrator
-│   ├── WorkflowAgent.js        # Individual AI agent instances
-│   ├── WorkflowContext.js      # Shared conversation context
-│   └── WorkflowConfig.js       # Configuration validation
 └── utils/                  # Utility functions
     └── GitUtils.js         # Git integration utilities
 
@@ -428,7 +390,6 @@ This documentation is organized into comprehensive guides:
 ### Feature Guides
 
 - **[Tools Reference](docs/Tools.md)**: Complete tool documentation with examples and security features
-- **[Multi-Agent Workflows](docs/workflows.md)**: Creating and executing complex multi-agent workflows
 - **[Testing Guide](docs/Testing.md)**: Testing strategies, best practices, and coverage goals
 
 ### Development Resources

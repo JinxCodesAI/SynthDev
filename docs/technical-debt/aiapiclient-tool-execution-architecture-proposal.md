@@ -105,7 +105,6 @@ Add runtime validation to ensure critical callbacks are set before tool executio
 ### Phase 1: Immediate Fix (Current PR)
 
 - ✅ Fix `AgentProcess.js` callback setup
-- ⚠️ Fix `WorkflowAgent.js` callback setup (if it uses tools)
 
 ### Phase 2: Architecture Improvement
 
