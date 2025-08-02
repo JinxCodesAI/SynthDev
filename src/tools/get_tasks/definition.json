@@ -1,0 +1,41 @@
+{
+    "name": "get_tasks",
+    "description": "Get detailed information about one or more tasks by their IDs from the in-memory task management system",
+    "auto_run": true,
+    "version": "2.0.0",
+    "tags": ["tasks", "management", "details", "batch", "multiple"],
+    "schema": {
+        "type": "function",
+        "function": {
+            "name": "get_tasks",
+            "description": "Retrieve detailed information about one or more tasks by their IDs. Accepts either a single task ID string or an array of task IDs. Returns all task properties including title, description, parent relationship, status, target role, and additional metadata like children count and hierarchy level.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "task_ids": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "Array of task IDs to retrieve. Each must be a valid existing task ID. Can contain a single element for retrieving one task.",
+                        "minItems": 1
+                    },
+                    "include_children": {
+                        "type": "boolean",
+                        "description": "Whether to include information about child tasks. If true, returns a list of direct children with their basic information.",
+                        "default": false
+                    },
+                    "include_parent_chain": {
+                        "type": "boolean",
+                        "description": "Whether to include the full parent chain from root to this task. If true, returns an array of parent tasks from root to immediate parent.",
+                        "default": false
+                    }
+                },
+                "required": ["task_ids"]
+            },
+            "response_format": {
+                "description": "Returns a JSON object with 'success' (boolean), 'timestamp' (ISO string), 'tool_name' (string), and 'tasks' (array of detailed task objects or single task object for single input). Each task object includes id, title, description, parent, status, target_role, and optional children/parent_chain arrays based on parameters. For batch operations, includes 'total_requested', 'total_found', and 'not_found' arrays. Error responses include 'error' field with detailed error message."
+            }
+        }
+    }
+}

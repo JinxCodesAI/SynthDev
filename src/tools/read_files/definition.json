@@ -1,0 +1,47 @@
+{
+    "name": "read_files",
+    "description": "Read the contents of one or more files from the file system using relative paths",
+    "auto_run": true,
+
+    "category": "file",
+    "version": "3.0.0",
+    "tags": ["file", "read", "filesystem", "io", "batch", "multiple"],
+    "schema": {
+        "type": "function",
+        "function": {
+            "name": "read_files",
+            "description": "A comprehensive file reading utility that safely reads the complete contents of one or more text-based files from the file system using relative paths. Accepts either a single file path string or an array of file paths. Supports various file types including text files (.txt), configuration files (.json, .yaml, .xml), code files (.js, .py, .html, .css), documentation (.md, .rst), and log files. Provides detailed error handling for common file access issues like missing files, permission errors, or encoding problems. Returns the raw file content as a string while maintaining original formatting, line breaks, and character encoding. Includes file metadata such as size and modification time for additional context.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "file_paths": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        },
+                        "description": "Array of relative paths to files, starting from the current working directory. Can contain a single element for reading one file. Supports forward slashes (/) and backslashes (\\) as path separators for cross-platform compatibility. Paths must be relative and cannot access files outside the project directory for security. Examples: ['config.json'] (root file), ['src/main.js'] (file in subdirectory), ['docs/readme.md'] (nested path), ['../parent-file.txt'] (parent directory). Supports Unicode filenames and paths with spaces.",
+                        "minItems": 1
+                    },
+                    "encoding": {
+                        "type": "string",
+                        "description": "Character encoding to use when reading the file. Common options: 'utf8' for standard text files with Unicode support, 'ascii' for basic ASCII text, 'base64' for binary file representation, 'hex' for hexadecimal representation. Default 'utf8' handles most text files correctly including those with special characters, emojis, and international characters.",
+                        "enum": ["utf8", "ascii", "base64", "hex", "latin1"],
+                        "default": "utf8"
+                    },
+                    "start_line": {
+                        "type": "integer",
+                        "description": "Optional. The line number to start reading from the file (inclusive, 1-based). If omitted, reading starts from the beginning of the file. Use only when you know where the relevant content starts."
+                    },
+                    "end_line": {
+                        "type": "integer",
+                        "description": "Optional. The line number to stop reading from the file (inclusive, 1-based). If omitted, reading continues to the end of the file. Use only when you know where the relevant content ends."
+                    }
+                },
+                "required": ["file_paths"]
+            },
+            "response_format": {
+                "description": "Returns a JSON object with 'success' (boolean), 'timestamp' (ISO string), 'tool_name' (string), and 'files' (array of file objects or single file object for single input). Each file object includes 'file_path' (requested path), 'content' (complete file contents as string), 'size' (file size in bytes), 'encoding' (encoding used), and 'modified' (last modification timestamp). For batch operations, includes 'total_requested', 'total_read', and 'failed' arrays. Error responses include 'error' field with detailed message and 'success: false'."
+            }
+        }
+    }
+}

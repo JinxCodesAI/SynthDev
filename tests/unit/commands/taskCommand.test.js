@@ -23,14 +23,14 @@ vi.mock('../../../src/tools/list_tasks/implementation.js', () => ({
     default: vi.fn(),
 }));
 
-vi.mock('../../../src/tools/get_task/implementation.js', () => ({
+vi.mock('../../../src/tools/get_tasks/implementation.js', () => ({
     default: vi.fn(),
 }));
 
 import { TaskCommand } from '../../../src/commands/task/TaskCommand.js';
 import editTasks from '../../../src/tools/edit_tasks/implementation.js';
 import listTasks from '../../../src/tools/list_tasks/implementation.js';
-import getTask from '../../../src/tools/get_task/implementation.js';
+import getTasks from '../../../src/tools/get_tasks/implementation.js';
 
 describe('TaskCommand', () => {
     let command;
@@ -156,7 +156,7 @@ describe('TaskCommand', () => {
         });
 
         it('should handle task ID lookup', async () => {
-            getTask.mockResolvedValue({
+            getTasks.mockResolvedValue({
                 success: true,
                 task: {
                     id: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
@@ -169,8 +169,8 @@ describe('TaskCommand', () => {
 
             const result = await command.implementation('a1b2c3d4', mockContext);
 
-            expect(getTask).toHaveBeenCalledWith({
-                task_id: 'a1b2c3d4',
+            expect(getTasks).toHaveBeenCalledWith({
+                task_ids: ['a1b2c3d4'],
                 include_children: true,
                 include_parent_chain: true,
             });
@@ -287,15 +287,15 @@ describe('TaskCommand', () => {
                 children: [],
             };
 
-            getTask.mockResolvedValue({
+            getTasks.mockResolvedValue({
                 success: true,
                 task: mockTask,
             });
 
             const result = await command.handleGetTask('a1b2c3d4', mockContext);
 
-            expect(getTask).toHaveBeenCalledWith({
-                task_id: 'a1b2c3d4',
+            expect(getTasks).toHaveBeenCalledWith({
+                task_ids: ['a1b2c3d4'],
                 include_children: true,
                 include_parent_chain: true,
             });
@@ -306,7 +306,7 @@ describe('TaskCommand', () => {
         });
 
         it('should handle task not found', async () => {
-            getTask.mockResolvedValue({
+            getTasks.mockResolvedValue({
                 success: false,
                 error: 'Task with ID nonexistent not found',
             });
@@ -333,7 +333,7 @@ describe('TaskCommand', () => {
                 has_children: false,
             };
 
-            getTask.mockResolvedValue({
+            getTasks.mockResolvedValue({
                 success: true,
                 task: mockTask,
             });
@@ -358,7 +358,7 @@ describe('TaskCommand', () => {
                 has_children: true,
             };
 
-            getTask.mockResolvedValue({
+            getTasks.mockResolvedValue({
                 success: true,
                 task: mockTask,
             });

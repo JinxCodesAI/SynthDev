@@ -78,22 +78,35 @@ export class BaseTool {
         for (const [param, expectedType] of Object.entries(typeMap)) {
             if (params[param] !== undefined) {
                 let isValid = false;
+                const actualType = Array.isArray(params[param]) ? 'array' : typeof params[param];
 
-                if (expectedType === 'array') {
-                    isValid = Array.isArray(params[param]);
+                // Handle array of expected types (e.g., ['string', 'array'])
+                if (Array.isArray(expectedType)) {
+                    isValid = expectedType.some(type => {
+                        if (type === 'array') {
+                            return Array.isArray(params[param]);
+                        } else {
+                            return typeof params[param] === type;
+                        }
+                    });
                 } else {
-                    isValid = typeof params[param] === expectedType;
+                    // Handle single expected type
+                    if (expectedType === 'array') {
+                        isValid = Array.isArray(params[param]);
+                    } else {
+                        isValid = typeof params[param] === expectedType;
+                    }
                 }
 
                 if (!isValid) {
-                    const actualType = Array.isArray(params[param])
-                        ? 'array'
-                        : typeof params[param];
                     const toolConfig = getToolConfigManager();
+                    const expectedTypeStr = Array.isArray(expectedType)
+                        ? expectedType.join(' or ')
+                        : expectedType;
                     return this.createErrorResponse(
                         toolConfig.getValidationMessage('invalid_parameter_type', {
                             parameter: param,
-                            expected: expectedType,
+                            expected: expectedTypeStr,
                             actual: actualType,
                         }),
                         {

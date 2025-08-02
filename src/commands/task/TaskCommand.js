@@ -7,7 +7,7 @@ import { BaseCommand } from '../base/BaseCommand.js';
 import { getLogger } from '../../core/managers/logger.js';
 import editTasks from '../../tools/edit_tasks/implementation.js';
 import listTasks from '../../tools/list_tasks/implementation.js';
-import getTask from '../../tools/get_task/implementation.js';
+import getTasks from '../../tools/get_tasks/implementation.js';
 
 export class TaskCommand extends BaseCommand {
     constructor() {
@@ -152,8 +152,8 @@ export class TaskCommand extends BaseCommand {
 
         try {
             // First try exact match
-            let result = await getTask({
-                task_id: taskId,
+            let result = await getTasks({
+                task_ids: [taskId],
                 include_children: true,
                 include_parent_chain: true,
             });
@@ -165,8 +165,8 @@ export class TaskCommand extends BaseCommand {
                     const matchingTask = listResult.tasks.find(task => task.id.startsWith(taskId));
 
                     if (matchingTask) {
-                        result = await getTask({
-                            task_id: matchingTask.id,
+                        result = await getTasks({
+                            task_ids: [matchingTask.id],
                             include_children: true,
                             include_parent_chain: true,
                         });
