@@ -93,7 +93,12 @@ describe('Edit Tasks Tool', () => {
             const result = await editTasks({
                 tasks: [
                     { title: 'Task 1', target_role: 'developer' },
-                    { title: 'Task 2', status: 'completed', target_role: 'tester' },
+                    {
+                        title: 'Task 2',
+                        status: 'completed',
+                        target_role: 'tester',
+                        results: 'Task completed successfully',
+                    },
                 ],
             });
 
@@ -417,6 +422,7 @@ describe('Edit Tasks Tool', () => {
                         title: 'Test Task',
                         target_role: 'developer',
                         status: 'completed',
+                        results: 'Task completed successfully',
                     },
                 ],
             });
@@ -518,6 +524,96 @@ describe('Edit Tasks Tool', () => {
             expect(result).toHaveProperty('error');
             expect(result).toHaveProperty('errors');
             expect(result.success).toBe(false);
+        });
+    });
+
+    describe('Results Field Validation', () => {
+        it('should require results field when setting status to completed', async () => {
+            const result = await editTasks({
+                tasks: [
+                    {
+                        title: 'Test Task',
+                        target_role: 'developer',
+                        status: 'completed',
+                        // Missing results field
+                    },
+                ],
+            });
+
+            expect(result.success).toBe(false);
+            expect(result.error).toContain('Some tasks could not be processed');
+            expect(result.errors[0].error).toContain(
+                'results field is required when setting task status to completed'
+            );
+        });
+
+        it('should reject empty results field when setting status to completed', async () => {
+            const result = await editTasks({
+                tasks: [
+                    {
+                        title: 'Test Task',
+                        target_role: 'developer',
+                        status: 'completed',
+                        results: '',
+                    },
+                ],
+            });
+
+            expect(result.success).toBe(false);
+            expect(result.error).toContain('Some tasks could not be processed');
+            expect(result.errors[0].error).toContain(
+                'results field is required when setting task status to completed'
+            );
+        });
+
+        it('should accept valid results field when setting status to completed', async () => {
+            const result = await editTasks({
+                tasks: [
+                    {
+                        title: 'Test Task',
+                        target_role: 'developer',
+                        status: 'completed',
+                        results: 'Task completed successfully with all requirements met',
+                    },
+                ],
+            });
+
+            expect(result.success).toBe(true);
+            expect(result.processed_tasks[0].task.results).toBe(
+                'Task completed successfully with all requirements met'
+            );
+        });
+
+        it('should allow results field for non-completed tasks (optional)', async () => {
+            const result = await editTasks({
+                tasks: [
+                    {
+                        title: 'Test Task',
+                        target_role: 'developer',
+                        status: 'in_progress',
+                        results: 'Partial progress made',
+                    },
+                ],
+            });
+
+            expect(result.success).toBe(true);
+            expect(result.processed_tasks[0].task.results).toBe('Partial progress made');
+        });
+
+        it('should reject non-string results field', async () => {
+            const result = await editTasks({
+                tasks: [
+                    {
+                        title: 'Test Task',
+                        target_role: 'developer',
+                        results: 123, // Invalid type
+                    },
+                ],
+            });
+
+            expect(result.success).toBe(false);
+            expect(result.error).toContain('Some tasks could not be processed');
+            expect(result.errors[0].error).toContain('Task results must be a string');
         });
     });
 });

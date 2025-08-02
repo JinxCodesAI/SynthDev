@@ -82,6 +82,7 @@ describe('TaskCommand Integration', () => {
                         parent: parentId,
                         status: 'completed',
                         target_role: 'developer',
+                        results: 'Child task completed successfully',
                     },
                     {
                         title: 'Child Task 2',
@@ -208,7 +209,14 @@ describe('TaskCommand Integration', () => {
         it('should show parent chain and children in task details', async () => {
             // Create hierarchy
             const grandparentResult = await editTasks({
-                tasks: [{ title: 'Grandparent Task', status: 'completed', target_role: 'manager' }],
+                tasks: [
+                    {
+                        title: 'Grandparent Task',
+                        status: 'completed',
+                        target_role: 'manager',
+                        results: 'Grandparent task completed successfully',
+                    },
+                ],
             });
             const grandparentId = grandparentResult.processed_tasks[0].task.id;
 
@@ -237,6 +245,7 @@ describe('TaskCommand Integration', () => {
                         parent: parentId,
                         status: 'completed',
                         target_role: 'tester',
+                        results: 'Child task 2 completed successfully',
                     },
                 ],
             });
@@ -271,7 +280,12 @@ describe('TaskCommand Integration', () => {
                 tasks: [
                     { title: 'Not Started Task', status: 'not_started', target_role: 'developer' },
                     { title: 'In Progress Task', status: 'in_progress', target_role: 'tester' },
-                    { title: 'Completed Task', status: 'completed', target_role: 'reviewer' },
+                    {
+                        title: 'Completed Task',
+                        status: 'completed',
+                        target_role: 'reviewer',
+                        results: 'Task completed successfully',
+                    },
                     { title: 'Cancelled Task', status: 'cancelled', target_role: 'manager' },
                 ],
             });
@@ -297,7 +311,12 @@ describe('TaskCommand Integration', () => {
                 tasks: [
                     { title: 'Not Started', status: 'not_started', target_role: 'developer' },
                     { title: 'In Progress', status: 'in_progress', target_role: 'tester' },
-                    { title: 'Completed', status: 'completed', target_role: 'reviewer' },
+                    {
+                        title: 'Completed',
+                        status: 'completed',
+                        target_role: 'reviewer',
+                        results: 'Task completed successfully',
+                    },
                     { title: 'Cancelled', status: 'cancelled', target_role: 'manager' },
                 ],
             });

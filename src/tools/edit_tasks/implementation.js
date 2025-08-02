@@ -92,10 +92,18 @@ class EditTasksTool extends BaseTool {
      * @returns {Object|null} Error object if validation fails, null if valid
      */
     validateTaskData(taskData, index) {
-        const { id, title, description, parent, status, target_role } = taskData;
+        const { id, title, description, parent, status, target_role, results } = taskData;
 
         // Check for unknown fields
-        const allowedFields = ['id', 'title', 'description', 'parent', 'status', 'target_role'];
+        const allowedFields = [
+            'id',
+            'title',
+            'description',
+            'parent',
+            'status',
+            'target_role',
+            'results',
+        ];
         const providedFields = Object.keys(taskData);
         const unknownFields = providedFields.filter(field => !allowedFields.includes(field));
 
@@ -156,6 +164,14 @@ class EditTasksTool extends BaseTool {
             };
         }
 
+        if (results !== undefined && typeof results !== 'string') {
+            return {
+                index,
+                error: 'Task results must be a string',
+                taskData,
+            };
+        }
+
         // Validate status values
         const validStatuses = ['not_started', 'in_progress', 'completed', 'cancelled'];
         if (status !== undefined && !validStatuses.includes(status)) {
@@ -168,7 +184,6 @@ class EditTasksTool extends BaseTool {
 
         // Validate target_role requirements based on task status and whether it's a new task
         const isNewTask = !id || !taskManager.getTask(id).success;
-        const isInProgressOrCompleted = status === 'in_progress' || status === 'completed';
 
         if (isNewTask && !target_role) {
             return {
@@ -191,6 +206,15 @@ class EditTasksTool extends BaseTool {
                     };
                 }
             }
+        }
+
+        // Validate results requirements - required when changing status to completed
+        if (status === 'completed' && (!results || results.trim() === '')) {
+            return {
+                index,
+                error: 'results field is required when setting task status to completed',
+                taskData,
+            };
         }
 
         return null;
