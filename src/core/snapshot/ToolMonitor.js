@@ -32,7 +32,7 @@ export class ToolMonitor {
             execute_script: { modifiesFiles: 'conditional', fileTargets: [] },
 
             // Read-only tools
-            read_file: { modifiesFiles: false, fileTargets: ['file_path'] },
+            read_files: { modifiesFiles: false, fileTargets: ['file_path'] },
             list_directory: { modifiesFiles: false, fileTargets: ['path'] },
             exact_search: { modifiesFiles: false, fileTargets: ['path'] },
             explain_codebase: { modifiesFiles: false, fileTargets: [] },

@@ -115,7 +115,7 @@ describe.sequential('SnapshotTrigger', () => {
         it('should return null when tool should not create snapshot', async () => {
             mockToolMonitor.shouldCreateSnapshot.mockReturnValue(false);
 
-            const result = await trigger.processTrigger('read_file', { file_path: 'test.js' });
+            const result = await trigger.processTrigger('read_files', { file_path: 'test.js' });
 
             expect(result).toBeNull();
             expect(mockSnapshotManager.createSnapshot).not.toHaveBeenCalled();
@@ -175,7 +175,7 @@ describe.sequential('SnapshotTrigger', () => {
         it('should return false when tool should not create snapshot', () => {
             mockToolMonitor.shouldCreateSnapshot.mockReturnValue(false);
 
-            const result = trigger._shouldTriggerSnapshot('read_file', {}, {});
+            const result = trigger._shouldTriggerSnapshot('read_files', {}, {});
             expect(result).toBe(false);
         });
 

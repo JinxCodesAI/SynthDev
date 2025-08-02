@@ -252,7 +252,7 @@ class ToolExecutionHooks {
             "edit_file": {
                 "modifiesFiles": true
             },
-            "read_file": {
+            "read_files": {
                 "modifiesFiles": false
             },
             "execute_script": {

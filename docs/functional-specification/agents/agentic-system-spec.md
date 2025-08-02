@@ -43,12 +43,12 @@ An `enabled_agents` property in `roles.json` would turn the `coder` into a super
         "level": "base",
         "systemMessage": "You are a coder...",
         "enabled_agents": ["test_writer", "reviewer"],
-        "tools": ["read_file", "write_file", "..."]
+        "tools": ["read_files", "write_file", "..."]
     },
     "test_writer": {
         "level": "base",
         "systemMessage": "You are a test writer...",
-        "tools": ["read_file", "write_file", "execute_terminal"]
+        "tools": ["read_files", "write_file", "execute_terminal"]
     }
 }
 ```

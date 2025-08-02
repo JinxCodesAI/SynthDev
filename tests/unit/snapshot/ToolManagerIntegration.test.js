@@ -219,7 +219,7 @@ describe('ToolManagerIntegration', () => {
             const executionId = 'test-execution-123';
 
             await integration.beforeToolExecution(
-                'read_file',
+                'read_files',
                 { file_path: 'test.js' },
                 { executionId }
             );

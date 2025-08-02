@@ -435,10 +435,10 @@ Before submitting a new tool:
 
 See existing tools for reference:
 
-- `src/tools/read_file/` - File reading with FileBaseTool base class
+- `src/tools/read_files/` - File reading with FileBaseTool base class
 - `src/tools/calculate/` - Simple utility tool with BaseTool
 - `src/tools/list_tasks/` - Task management tool with parameter validation
-- `src/tools/get_task/` - Single entity retrieval with detailed responses
+- `src/tools/get_tasks/` - Single entity retrieval with detailed responses
 - `src/tools/execute_script/` - Complex tool with safety checks and CommandBaseTool
 
 ---

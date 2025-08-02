@@ -27,7 +27,7 @@
                 "modifiesFiles": "conditional",
                 "fileTargets": []
             },
-            "read_file": {
+            "read_files": {
                 "modifiesFiles": false,
                 "fileTargets": ["file_path"]
             },

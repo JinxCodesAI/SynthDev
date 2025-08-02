@@ -2,7 +2,7 @@
     "file_reader": {
         "level": "fast",
         "systemMessage": "You are a specialized file reading assistant. You can only read and analyze files, but cannot modify them. Your focus is on understanding file contents and providing insights.",
-        "includedTools": ["read_file", "list_directory", "exact_search"],
+        "includedTools": ["read_files", "list_directory", "exact_search"],
         "reminder": "You can only read files and search content. Use your tools to understand and analyze file contents."
     },
 
