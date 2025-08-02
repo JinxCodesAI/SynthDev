@@ -486,8 +486,96 @@ class AIAPIClient {
         this._pushMessage(message);
     }
 
+    /**
+     * Ensures proper message ordering by moving tool messages directly after their corresponding assistant tool_calls
+     * Uses partial bubble sort to minimize changes to the message order
+     * @private
+     */
+    _ensureMessageOrdering() {
+        // Find all tool messages that need to be repositioned
+        const toolMessages = [];
+        for (let i = 0; i < this.messages.length; i++) {
+            const message = this.messages[i];
+            if (message.role === 'tool' && message.tool_call_id) {
+                toolMessages.push({ message, index: i });
+            }
+        }
+
+        // For each tool message, find its corresponding assistant message with tool_calls
+        // and move the tool message to be directly after it
+        for (const toolMsg of toolMessages) {
+            const toolCallId = toolMsg.message.tool_call_id;
+
+            // Find the assistant message with the matching tool_call_id
+            let assistantIndex = -1;
+            for (let i = 0; i < this.messages.length; i++) {
+                const message = this.messages[i];
+                if (message.role === 'assistant' && message.tool_calls) {
+                    const hasMatchingToolCall = message.tool_calls.some(
+                        call => call.id === toolCallId
+                    );
+                    if (hasMatchingToolCall) {
+                        assistantIndex = i;
+                        break;
+                    }
+                }
+            }
+
+            if (assistantIndex !== -1) {
+                // Find current position of the tool message
+                const currentToolIndex = this.messages.findIndex(
+                    msg => msg.role === 'tool' && msg.tool_call_id === toolCallId
+                );
+
+                if (currentToolIndex !== -1) {
+                    // Calculate where the tool message should be placed
+                    // It should be after the assistant message and after any other tool messages
+                    // that belong to the same assistant message
+                    let targetIndex = assistantIndex + 1;
+
+                    // Find all tool messages that should come before this one
+                    // (those that belong to the same assistant message and have earlier tool_call positions)
+                    const assistantMessage = this.messages[assistantIndex];
+                    const toolCallIds = assistantMessage.tool_calls.map(call => call.id);
+                    const currentToolCallPosition = toolCallIds.indexOf(toolCallId);
+
+                    // Count how many tool messages from the same assistant are already positioned correctly
+                    for (
+                        let i = assistantIndex + 1;
+                        i < currentToolIndex && i < this.messages.length;
+                        i++
+                    ) {
+                        const msg = this.messages[i];
+                        if (msg.role === 'tool' && msg.tool_call_id) {
+                            const msgToolCallPosition = toolCallIds.indexOf(msg.tool_call_id);
+                            if (
+                                msgToolCallPosition !== -1 &&
+                                msgToolCallPosition < currentToolCallPosition
+                            ) {
+                                targetIndex = i + 1;
+                            }
+                        }
+                    }
+
+                    // Move the tool message to the correct position if it's not already there
+                    if (currentToolIndex !== targetIndex) {
+                        const toolMessage = this.messages.splice(currentToolIndex, 1)[0];
+                        // Adjust target index if we removed an element before it
+                        if (currentToolIndex < targetIndex) {
+                            targetIndex--;
+                        }
+                        this.messages.splice(targetIndex, 0, toolMessage);
+                    }
+                }
+            }
+        }
+    }
+
     async _makeAPICall() {
         const config = ConfigManager.getInstance();
+
+        // Ensure proper message ordering before API call
+        this._ensureMessageOrdering();
 
         // Prepare API request
         const requestData = {
