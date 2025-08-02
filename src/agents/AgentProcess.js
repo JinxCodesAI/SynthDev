@@ -15,7 +15,8 @@ class AgentProcess {
         costsManager,
         toolManager,
         agentManager,
-        onMaxToolCallsExceeded = null
+        onMaxToolCallsExceeded = null,
+        consoleInterface = null
     ) {
         this.agentId = agentId;
         this.roleName = roleName;
@@ -31,6 +32,7 @@ class AgentProcess {
         this.toolManager = toolManager;
         this.agentManager = agentManager;
         this.onMaxToolCallsExceeded = onMaxToolCallsExceeded;
+        this.consoleInterface = consoleInterface; // For agents with parent 'user' to display messages
 
         // Message queuing system
         this.messageQueue = [];
@@ -78,7 +80,7 @@ class AgentProcess {
      * @private
      */
     _setupAPIClientCallbacks() {
-        this.apiClient.setCallbacks({
+        const callbacks = {
             onToolExecution: async toolCall => {
                 // Log tool execution for agents to match main app logging
                 const toolName = toolCall.function.name;
@@ -97,7 +99,7 @@ class AgentProcess {
 
                 // Create minimal console interface for agents (just logging, no UI)
                 const agentConsoleInterface = {
-                    showToolExecution: (toolName, args, role) => {
+                    showToolExecution: (_toolName, _args, _role) => {
                         // Already logged above, no need to duplicate
                     },
                     showToolResult: result => {
@@ -142,7 +144,38 @@ class AgentProcess {
                       return await this.onMaxToolCallsExceeded(maxToolCalls);
                   }
                 : null,
-        });
+        };
+
+        // Add console display callbacks for agents with parent 'user' (no parent)
+        if (!this.parentId && this.consoleInterface) {
+            callbacks.onContentDisplay = (content, role = null) => {
+                if (content) {
+                    this.consoleInterface.showMessage(
+                        content,
+                        role ? `🤖 ${role}:` : `🤖 ${this.roleName} (${this.agentId}):`
+                    );
+                    this.consoleInterface.newLine();
+                }
+            };
+
+            callbacks.onResponse = (response, role = null) => {
+                const content =
+                    response &&
+                    response.choices &&
+                    response.choices[0] &&
+                    response.choices[0].message &&
+                    response.choices[0].message.content;
+                if (content) {
+                    this.consoleInterface.showMessage(
+                        content,
+                        role ? `🤖 ${role}:` : `🤖 ${this.roleName} (${this.agentId}):`
+                    );
+                    this.consoleInterface.newLine();
+                }
+            };
+        }
+
+        this.apiClient.setCallbacks(callbacks);
     }
 
     /**
