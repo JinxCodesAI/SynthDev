@@ -238,14 +238,14 @@ describe.sequential('Automatic Snapshot Integration', () => {
                 showToolCancelled: vi.fn(),
             };
 
-            // Execute read_file tool
+            // Execute read_files tool
             const result = await toolManager.executeToolCall(
                 {
                     id: 'test-call-2',
                     function: {
-                        name: 'read_file',
+                        name: 'read_files',
                         arguments: JSON.stringify({
-                            file_path: 'README.md',
+                            file_paths: ['README.md'],
                         }),
                     },
                 },

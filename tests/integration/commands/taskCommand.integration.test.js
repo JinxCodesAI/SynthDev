@@ -17,7 +17,7 @@ vi.mock('../../../src/core/managers/logger.js', () => ({
 import { TaskCommand } from '../../../src/commands/task/TaskCommand.js';
 import editTasks from '../../../src/tools/edit_tasks/implementation.js';
 import listTasks from '../../../src/tools/list_tasks/implementation.js';
-import getTask from '../../../src/tools/get_task/implementation.js';
+import getTasks from '../../../src/tools/get_tasks/implementation.js';
 import taskManager from '../../../src/tools/common/task-manager.js';
 
 describe('TaskCommand Integration', () => {
@@ -44,8 +44,8 @@ describe('TaskCommand Integration', () => {
                             return await editTasks(params);
                         case 'list_tasks':
                             return await listTasks(params);
-                        case 'get_task':
-                            return await getTask(params);
+                        case 'get_tasks':
+                            return await getTasks(params);
                         default:
                             throw new Error(`Unknown tool: ${toolName}`);
                     }

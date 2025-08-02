@@ -155,7 +155,11 @@ class SystemMessages {
             parts.push(`Your role is ${roleDisplayName} and you need to coordinate with other roles like: ${enabledAgents.join(', ')} to accomplish given task. Agents you can interact with:
 ${agentDescriptions}
 
+IMPORTANT: You work in multi-agent system. Each agent has his own conversation history with limited overlap. Mind you may find tasks, notes, files, you have never created. This is expected, you are expected to pick tasks related to your role and continue working on them. You can also create new tasks for other agents to work on as well.
+
 IMPORTANT: Start your work by calling read_knowledgebase to understand what information other agents have already discovered. Share your knowledge frequently with other agents by calling update_knowledgebase whenever you learn something that may be relevant to other agents as soon as you've learned it - this is crucial for effective coordination.
+
+IMPORTANT: Act autonomusly and do not ask user for clarification from the user, if you need more information, create a task for agent that can provide it or call speak_to_agent to ask for clarification.
 
 Use get_agents to understand what agents are already available.
 If agent you need is not available, use spawn_agent to initialize new agent that you need to do something for you. For existing agents use speak_to_agent to communicate with them.
