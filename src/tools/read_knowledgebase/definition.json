@@ -1,6 +1,6 @@
 {
     "name": "read_knowledgebase",
-    "description": "Read the current content of the shared knowledgebase",
+    "description": "Use the tool to learn what other agents have discovered and documented in the shared knowledgebase.",
     "auto_run": true,
     "version": "1.0.0",
     "tags": ["knowledgebase", "coordination", "agents", "shared-state"],
