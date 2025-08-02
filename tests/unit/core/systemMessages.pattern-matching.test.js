@@ -12,13 +12,17 @@ vi.mock('../../../src/config/validation/configurationLoader.js', () => ({
                         excludedTools: ['get_time', 'calculate'],
                     },
                     test_wildcard: {
-                        excludedTools: ['*file', 'test_*', '*_tool'],
+                        excludedTools: ['*file*', 'test_*', '*_tool'],
                     },
                     test_regex: {
-                        excludedTools: ['/^execute_/', '/terminal$/i', '/^(read|write)_file$/'],
+                        excludedTools: [
+                            '/^execute_/',
+                            '/terminal$/i',
+                            '/^(read_files|write_file)$/',
+                        ],
                     },
                     test_mixed: {
-                        excludedTools: ['get_time', '*file', '/^execute_/', '/terminal$/i'],
+                        excludedTools: ['get_time', '*file*', '/^execute_/', '/terminal$/i'],
                     },
                     test_invalid: {
                         excludedTools: ['/[invalid/', '*'],
@@ -44,13 +48,17 @@ vi.mock('../../../src/config/validation/configurationLoader.js', () => ({
                         excludedTools: ['get_time', 'calculate'],
                     },
                     test_wildcard: {
-                        excludedTools: ['*file', 'test_*', '*_tool'],
+                        excludedTools: ['*file*', 'test_*', '*_tool'],
                     },
                     test_regex: {
-                        excludedTools: ['/^execute_/', '/terminal$/i', '/^(read|write)_file$/'],
+                        excludedTools: [
+                            '/^execute_/',
+                            '/terminal$/i',
+                            '/^(read_files|write_file)$/',
+                        ],
                     },
                     test_mixed: {
-                        excludedTools: ['get_time', '*file', '/^execute_/', '/terminal$/i'],
+                        excludedTools: ['get_time', '*file*', '/^execute_/', '/terminal$/i'],
                     },
                     test_invalid: {
                         excludedTools: ['/[invalid/', '*'],
@@ -95,9 +103,10 @@ describe('SystemMessages Pattern Matching', () => {
 
         describe('wildcard patterns', () => {
             it('should match wildcard patterns at the end', () => {
-                expect(SystemMessages._matchesExclusionPattern('read_file', '*file')).toBe(true);
+                expect(SystemMessages._matchesExclusionPattern('read_files', '*files')).toBe(true);
                 expect(SystemMessages._matchesExclusionPattern('write_file', '*file')).toBe(true);
                 expect(SystemMessages._matchesExclusionPattern('edit_file', '*file')).toBe(true);
+                expect(SystemMessages._matchesExclusionPattern('read_files', '*file*')).toBe(true);
                 expect(SystemMessages._matchesExclusionPattern('file_reader', '*file')).toBe(false);
             });
 
@@ -196,7 +205,7 @@ describe('SystemMessages Pattern Matching', () => {
         });
 
         it('should work with wildcard patterns', () => {
-            expect(SystemMessages.isToolExcluded('test_wildcard', 'read_file')).toBe(true);
+            expect(SystemMessages.isToolExcluded('test_wildcard', 'read_files')).toBe(true);
             expect(SystemMessages.isToolExcluded('test_wildcard', 'write_file')).toBe(true);
             expect(SystemMessages.isToolExcluded('test_wildcard', 'test_helper')).toBe(true);
             expect(SystemMessages.isToolExcluded('test_wildcard', 'data_tool')).toBe(true);
@@ -207,14 +216,14 @@ describe('SystemMessages Pattern Matching', () => {
             expect(SystemMessages.isToolExcluded('test_regex', 'execute_command')).toBe(true);
             expect(SystemMessages.isToolExcluded('test_regex', 'run_terminal')).toBe(true);
             expect(SystemMessages.isToolExcluded('test_regex', 'RUN_TERMINAL')).toBe(true); // case insensitive
-            expect(SystemMessages.isToolExcluded('test_regex', 'read_file')).toBe(true);
+            expect(SystemMessages.isToolExcluded('test_regex', 'read_files')).toBe(true);
             expect(SystemMessages.isToolExcluded('test_regex', 'write_file')).toBe(true);
             expect(SystemMessages.isToolExcluded('test_regex', 'edit_file')).toBe(false);
         });
 
         it('should work with mixed patterns', () => {
             expect(SystemMessages.isToolExcluded('test_mixed', 'get_time')).toBe(true); // exact
-            expect(SystemMessages.isToolExcluded('test_mixed', 'read_file')).toBe(true); // wildcard
+            expect(SystemMessages.isToolExcluded('test_mixed', 'read_files')).toBe(true); // wildcard
             expect(SystemMessages.isToolExcluded('test_mixed', 'execute_command')).toBe(true); // regex
             expect(SystemMessages.isToolExcluded('test_mixed', 'run_terminal')).toBe(true); // regex case insensitive
             expect(SystemMessages.isToolExcluded('test_mixed', 'other_tool')).toBe(false);
