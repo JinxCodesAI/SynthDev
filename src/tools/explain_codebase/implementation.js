@@ -136,7 +136,8 @@ Question: ${question}
                 this.costsManager,
                 modelConfig.apiKey,
                 modelConfig.baseUrl,
-                modelConfig.model || modelConfig.baseModel
+                modelConfig.model || modelConfig.baseModel,
+                this.toolManager
             );
 
             // Set the codebase_explainer role

@@ -45,7 +45,8 @@ class ExecuteScriptTool extends CommandBaseTool {
                 this.costsManager,
                 modelConfig.apiKey,
                 modelConfig.baseUrl,
-                modelConfig.model || modelConfig.baseModel
+                modelConfig.model || modelConfig.baseModel,
+                this.toolManager
             );
 
             // Create detailed safety assessment prompt from configuration

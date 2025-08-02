@@ -121,7 +121,8 @@ export default class AICoderConsole {
             this.costsManager,
             baseModel.apiKey,
             baseModel.baseUrl,
-            baseModel.baseModel
+            baseModel.baseModel,
+            this.toolManager
         );
 
         this.promptEnhancer = new PromptEnhancer(this.costsManager, this.toolManager);

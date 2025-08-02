@@ -136,6 +136,37 @@ describe('AIAPIClient', () => {
             expect(aiClient.onError).toBeNull();
             expect(aiClient.onContentDisplay).toBeNull();
         });
+
+        it('should initialize with toolManager when provided', () => {
+            const mockToolManager = {
+                executeToolCall: vi.fn(),
+                getTools: vi.fn(() => []),
+            };
+
+            const clientWithToolManager = new AIAPIClient(
+                mockCostsManager,
+                'test-api-key',
+                'https://api.openai.com/v1',
+                'test-model',
+                mockToolManager
+            );
+
+            expect(clientWithToolManager.toolManager).toBe(mockToolManager);
+            expect(clientWithToolManager.onToolExecution).toBeDefined();
+            expect(typeof clientWithToolManager.onToolExecution).toBe('function');
+        });
+
+        it('should not set default tool execution handler without toolManager', () => {
+            const clientWithoutToolManager = new AIAPIClient(
+                mockCostsManager,
+                'test-api-key',
+                'https://api.openai.com/v1',
+                'test-model'
+            );
+
+            expect(clientWithoutToolManager.toolManager).toBeNull();
+            expect(clientWithoutToolManager.onToolExecution).toBeNull();
+        });
     });
 
     describe('setCallbacks', () => {
@@ -176,6 +207,57 @@ describe('AIAPIClient', () => {
             expect(aiClient.onChainOfThought).toBeNull();
             expect(aiClient.onToolExecution).toBeNull();
             expect(aiClient.onContentDisplay).toBeNull();
+        });
+
+        it('should preserve default tool execution handler when onToolExecution is null', () => {
+            const mockToolManager = {
+                executeToolCall: vi.fn(),
+                getTools: vi.fn(() => []),
+            };
+
+            const clientWithToolManager = new AIAPIClient(
+                mockCostsManager,
+                'test-api-key',
+                'https://api.openai.com/v1',
+                'test-model',
+                mockToolManager
+            );
+
+            const originalHandler = clientWithToolManager.onToolExecution;
+            expect(originalHandler).toBeDefined();
+
+            // Setting callbacks with onToolExecution as null should preserve default
+            clientWithToolManager.setCallbacks({
+                onResponse: vi.fn(),
+                onToolExecution: null,
+            });
+
+            expect(clientWithToolManager.onToolExecution).toBe(originalHandler);
+        });
+
+        it('should override default tool execution handler when onToolExecution is provided', () => {
+            const mockToolManager = {
+                executeToolCall: vi.fn(),
+                getTools: vi.fn(() => []),
+            };
+
+            const clientWithToolManager = new AIAPIClient(
+                mockCostsManager,
+                'test-api-key',
+                'https://api.openai.com/v1',
+                'test-model',
+                mockToolManager
+            );
+
+            const originalHandler = clientWithToolManager.onToolExecution;
+            const customHandler = vi.fn();
+
+            clientWithToolManager.setCallbacks({
+                onToolExecution: customHandler,
+            });
+
+            expect(clientWithToolManager.onToolExecution).toBe(customHandler);
+            expect(clientWithToolManager.onToolExecution).not.toBe(originalHandler);
         });
     });
 
@@ -827,6 +909,114 @@ describe('AIAPIClient', () => {
 
             expect(aiClient.tools).toHaveLength(2);
             expect(aiClient.tools.map(t => t.function.name)).toEqual(['get_time', 'calculate']);
+        });
+    });
+
+    describe('default tool execution handler', () => {
+        it('should execute tools through toolManager when default handler is used', async () => {
+            const mockToolManager = {
+                executeToolCall: vi.fn().mockResolvedValue({
+                    role: 'tool',
+                    tool_call_id: 'call_123',
+                    content: 'Tool executed successfully',
+                }),
+                getTools: vi.fn(() => []),
+            };
+
+            const clientWithToolManager = new AIAPIClient(
+                mockCostsManager,
+                'test-api-key',
+                'https://api.openai.com/v1',
+                'test-model',
+                mockToolManager
+            );
+
+            const mockToolCall = {
+                id: 'call_123',
+                function: {
+                    name: 'test_tool',
+                    arguments: '{"arg1": "value1"}',
+                },
+            };
+
+            const result = await clientWithToolManager._defaultToolExecutionHandler(mockToolCall);
+
+            expect(mockToolManager.executeToolCall).toHaveBeenCalledWith(
+                mockToolCall,
+                expect.objectContaining({
+                    showToolExecution: expect.any(Function),
+                    showToolResult: expect.any(Function),
+                    showToolCancelled: expect.any(Function),
+                    promptForConfirmation: expect.any(Function),
+                }),
+                null, // No snapshot manager
+                expect.objectContaining({
+                    currentRole: null,
+                    currentAgentId: null,
+                    agentManager: null,
+                    costsManager: mockCostsManager,
+                    toolManager: mockToolManager,
+                    app: null,
+                })
+            );
+
+            expect(result).toEqual({
+                role: 'tool',
+                tool_call_id: 'call_123',
+                content: 'Tool executed successfully',
+            });
+        });
+
+        it('should throw error when no toolManager is available', async () => {
+            const clientWithoutToolManager = new AIAPIClient(
+                mockCostsManager,
+                'test-api-key',
+                'https://api.openai.com/v1',
+                'test-model'
+            );
+
+            const mockToolCall = {
+                id: 'call_123',
+                function: {
+                    name: 'test_tool',
+                    arguments: '{"arg1": "value1"}',
+                },
+            };
+
+            await expect(
+                clientWithoutToolManager._defaultToolExecutionHandler(mockToolCall)
+            ).rejects.toThrow('No tool manager available for tool execution');
+        });
+
+        it('should handle tool execution errors gracefully', async () => {
+            const mockToolManager = {
+                executeToolCall: vi.fn().mockRejectedValue(new Error('Tool execution failed')),
+                getTools: vi.fn(() => []),
+            };
+
+            const clientWithToolManager = new AIAPIClient(
+                mockCostsManager,
+                'test-api-key',
+                'https://api.openai.com/v1',
+                'test-model',
+                mockToolManager
+            );
+
+            const mockToolCall = {
+                id: 'call_123',
+                function: {
+                    name: 'test_tool',
+                    arguments: '{"arg1": "value1"}',
+                },
+            };
+
+            await expect(
+                clientWithToolManager._defaultToolExecutionHandler(mockToolCall)
+            ).rejects.toThrow('Tool execution failed');
+
+            expect(mockLogger.error).toHaveBeenCalledWith(
+                'Tool execution failed: Tool execution failed'
+            );
         });
     });
 });

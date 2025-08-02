@@ -352,7 +352,8 @@ export class IndexCommand extends InteractiveCommand {
                 costsManager,
                 modelConfig.apiKey,
                 modelConfig.baseURL,
-                modelConfig.model || modelConfig.baseModel
+                modelConfig.model || modelConfig.baseModel,
+                null // No toolManager needed for file summarization
             );
             await fileSummarizerClient.setSystemMessage(
                 SystemMessages.getSystemMessage('file_summarizer'),
@@ -438,7 +439,8 @@ export class IndexCommand extends InteractiveCommand {
                 costsManager,
                 modelConfig.apiKey,
                 modelConfig.baseURL,
-                modelConfig.model || modelConfig.baseModel
+                modelConfig.model || modelConfig.baseModel,
+                null // No toolManager needed for directory summarization
             );
             await directorySummarizerClient.setSystemMessage(
                 SystemMessages.getSystemMessage('directory_summarizer'),
