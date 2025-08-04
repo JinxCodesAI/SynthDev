@@ -56,21 +56,30 @@ export class RolesCommand extends BaseCommand {
 
         availableGroups.forEach(group => {
             const roles = SystemMessages.getRolesByGroup(group);
-            const groupIcon = group === 'global' ? '🌍' : 
-                             group === 'agentic' ? '🤖' : 
-                             group === 'testing' ? '🧪' : 
-                             group === 'internal' ? '⚙️' : '📁';
-            
-            logger.info(`${groupIcon} ${group} (${roles.length} role${roles.length !== 1 ? 's' : ''})`);
-            
-            const rolesList = roles.map(role => {
-                const isCurrentRole = role === currentRole;
-                const level = SystemMessages.getLevel(role);
-                const levelIcon = level === 'smart' ? '🧠' : level === 'fast' ? '⚡' : '🔧';
-                const roleIcon = isCurrentRole ? '👑' : levelIcon;
-                return `${roleIcon} ${role}`;
-            }).join(', ');
-            
+            const groupIcon =
+                group === 'global'
+                    ? '🌍'
+                    : group === 'agentic'
+                      ? '🤖'
+                      : group === 'testing'
+                        ? '🧪'
+                        : group === 'internal'
+                          ? '⚙️'
+                          : '📁';
+
+            const roleText = roles.length === 1 ? 'role' : 'roles';
+            logger.info(`${groupIcon} ${group} (${roles.length} ${roleText})`);
+
+            const rolesList = roles
+                .map(role => {
+                    const isCurrentRole = role === currentRole;
+                    const level = SystemMessages.getLevel(role);
+                    const levelIcon = level === 'smart' ? '🧠' : level === 'fast' ? '⚡' : '🔧';
+                    const roleIcon = isCurrentRole ? '👑' : levelIcon;
+                    return `${roleIcon} ${role}`;
+                })
+                .join(', ');
+
             logger.info(`   ${rolesList}`);
             logger.raw();
         });
@@ -89,7 +98,7 @@ export class RolesCommand extends BaseCommand {
      */
     _showGroupRoles(groupFilter, apiClient, logger) {
         const roles = SystemMessages.getRolesByGroup(groupFilter);
-        
+
         if (roles.length === 0) {
             const availableGroups = SystemMessages.getAvailableGroups();
             logger.error(`No roles found in group '${groupFilter}'`);
@@ -99,12 +108,19 @@ export class RolesCommand extends BaseCommand {
         }
 
         const currentRole = apiClient.getCurrentRole();
-        const groupIcon = groupFilter === 'global' ? '🌍' : 
-                         groupFilter === 'agentic' ? '🤖' : 
-                         groupFilter === 'testing' ? '🧪' : 
-                         groupFilter === 'internal' ? '⚙️' : '📁';
+        const groupIcon =
+            groupFilter === 'global'
+                ? '🌍'
+                : groupFilter === 'agentic'
+                  ? '🤖'
+                  : groupFilter === 'testing'
+                    ? '🧪'
+                    : groupFilter === 'internal'
+                      ? '⚙️'
+                      : '📁';
 
-        logger.user(`${groupIcon} ${groupFilter} Group Roles (${roles.length} role${roles.length !== 1 ? 's' : '}):`);
+        const roleText = roles.length === 1 ? 'role' : 'roles';
+        logger.user(`${groupIcon} ${groupFilter} Group Roles (${roles.length} ${roleText}):`);
         logger.user('─'.repeat(50));
 
         roles.forEach(role => {
@@ -124,13 +140,16 @@ export class RolesCommand extends BaseCommand {
 
             const reminder = SystemMessages.getReminder(role);
             if (reminder) {
-                const reminderPreview = reminder.length > 80 ? `${reminder.substring(0, 80)}...` : reminder;
+                const reminderPreview =
+                    reminder.length > 80 ? `${reminder.substring(0, 80)}...` : reminder;
                 logger.info(`   💭 Reminder: ${reminderPreview}`);
             }
 
             const excludedTools = SystemMessages.getExcludedTools(role);
             if (excludedTools.length > 0) {
-                logger.info(`   🚫 Excludes: ${excludedTools.slice(0, 3).join(', ')}${excludedTools.length > 3 ? '...' : ''}`);
+                logger.info(
+                    `   🚫 Excludes: ${excludedTools.slice(0, 3).join(', ')}${excludedTools.length > 3 ? '...' : ''}`
+                );
             }
             logger.raw();
         });
@@ -173,13 +192,16 @@ export class RolesCommand extends BaseCommand {
 
             const reminder = SystemMessages.getReminder(role);
             if (reminder) {
-                const reminderPreview = reminder.length > 80 ? `${reminder.substring(0, 80)}...` : reminder;
+                const reminderPreview =
+                    reminder.length > 80 ? `${reminder.substring(0, 80)}...` : reminder;
                 logger.info(`   💭 Reminder: ${reminderPreview}`);
             }
 
             const excludedTools = SystemMessages.getExcludedTools(role);
             if (excludedTools.length > 0) {
-                logger.info(`   🚫 Excludes: ${excludedTools.slice(0, 3).join(', ')}${excludedTools.length > 3 ? '...' : ''}`);
+                logger.info(
+                    `   🚫 Excludes: ${excludedTools.slice(0, 3).join(', ')}${excludedTools.length > 3 ? '...' : ''}`
+                );
             }
             logger.raw();
         });
