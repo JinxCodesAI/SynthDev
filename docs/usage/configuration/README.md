@@ -22,11 +22,11 @@ SynthDev uses a layered configuration system with clear priority order:
 ## Configuration Aspects
 
 ### 🤖 [AI Providers](./providers.md)
-Configure AI model providers, API endpoints, and model-specific settings:
-- OpenAI, Anthropic, Google, XAI, OpenRouter support
+Configure AI model providers and API endpoints:
+- Set environment variables for providers
 - Multi-model setup (base, smart, fast models)
-- Provider-specific parameters and pricing
 - Custom provider configuration
+- Local model endpoints
 
 ### 🎭 [AI Roles](./roles.md)
 Define AI behavior, personalities, and capabilities:

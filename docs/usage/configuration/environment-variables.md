@@ -89,49 +89,9 @@ Control how much information SynthDev displays:
 
 **Recommendation**: Use level 2 for normal use, level 3+ for troubleshooting.
 
-## Provider Examples
+## Provider Configuration
 
-### OpenAI
-```env
-SYNTHDEV_API_KEY=sk-your-openai-key
-SYNTHDEV_BASE_MODEL=gpt-4.1-mini
-SYNTHDEV_BASE_URL=https://api.openai.com/v1
-```
-
-### Anthropic Claude
-```env
-SYNTHDEV_API_KEY=sk-ant-your-anthropic-key
-SYNTHDEV_BASE_MODEL=claude-sonnet-4-20250514
-SYNTHDEV_BASE_URL=https://api.anthropic.com/v1
-```
-
-### Google AI
-```env
-SYNTHDEV_API_KEY=your-google-ai-key
-SYNTHDEV_BASE_MODEL=gemini-2.5-flash
-SYNTHDEV_BASE_URL=https://generativelanguage.googleapis.com/v1beta/openai/
-```
-
-### XAI (Grok)
-```env
-SYNTHDEV_API_KEY=your-xai-key
-SYNTHDEV_BASE_MODEL=grok-3-mini-beta
-SYNTHDEV_BASE_URL=https://api.x.ai/v1
-```
-
-### OpenRouter
-```env
-SYNTHDEV_API_KEY=your-openrouter-key
-SYNTHDEV_BASE_MODEL=google/gemini-2.5-flash
-SYNTHDEV_BASE_URL=https://openrouter.ai/api/v1
-```
-
-### Local/Custom Provider
-```env
-SYNTHDEV_API_KEY=your-local-key
-SYNTHDEV_BASE_MODEL=your-model-name
-SYNTHDEV_BASE_URL=http://localhost:8080/v1
-```
+See [AI Providers Configuration](./providers.md) for detailed provider setup instructions.
 
 ## Environment-Specific Configurations
 
