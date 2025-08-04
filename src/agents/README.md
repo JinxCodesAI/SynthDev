@@ -45,11 +45,11 @@ Use `spawn_agent` tool to create new worker agents for specific tasks.
 
 ### Despawning Agents
 
-Use `despawn_agent` tool to clean up completed or failed agents:
+Use `despawn_agent` tool to clean up completed, failed, or inactive agents:
 
 - Only the parent agent can despawn its children
-- Only `completed` or `failed` agents can be despawned
-- Agents with active children cannot be despawned
+- Only `completed`, `failed`, or `inactive` agents can be despawned
+- Agents with running children cannot be despawned
 - Frees up system resources and removes agent from tracking
 
 ## Usage

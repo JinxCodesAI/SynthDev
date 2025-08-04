@@ -390,23 +390,20 @@ You can use task related tools and speak_to_agent tool to request clarifications
             );
         }
 
-        // Check agent status - only allow despawning completed or failed agents
-        if (agent.status === 'running' || agent.status === 'inactive') {
+        // Check agent status - only allow despawning completed, failed, or inactive agents
+        if (agent.status === 'running') {
             throw new Error(
                 `Cannot despawn agent ${agentId} with status '${agent.status}'. ` +
-                    "Only 'completed' or 'failed' agents can be despawned."
+                    "Only 'completed', 'failed', or 'inactive' agents can be despawned."
             );
         }
 
-        // Check if agent has any active children
+        // Check if agent has any active children (only running agents are considered active)
         const childIds = this.agentHierarchy.get(agentId) || new Set();
         const activeChildren = [];
         for (const childId of childIds) {
             const childAgent = this.activeAgents.get(childId);
-            if (
-                childAgent &&
-                (childAgent.status === 'running' || childAgent.status === 'inactive')
-            ) {
+            if (childAgent && childAgent.status === 'running') {
                 activeChildren.push(childId);
             }
         }

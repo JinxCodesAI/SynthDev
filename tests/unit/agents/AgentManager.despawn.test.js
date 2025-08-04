@@ -72,6 +72,15 @@ describe('AgentManager.despawnAgent', () => {
             expect(result.status).toBe('failed');
         });
 
+        it('should despawn inactive agent successfully', async () => {
+            mockAgent2.status = 'inactive';
+
+            const result = await agentManager.despawnAgent('agent-1', 'agent-2');
+
+            expect(result.success).toBe(true);
+            expect(result.status).toBe('inactive');
+        });
+
         it('should handle user despawning root agent', async () => {
             mockAgent1.status = 'completed';
             // Make sure agent-1 has no active children by completing agent-3
@@ -134,14 +143,6 @@ describe('AgentManager.despawnAgent', () => {
                 "Cannot despawn agent agent-2 with status 'running'"
             );
         });
-
-        it('should throw error for inactive agent', async () => {
-            mockAgent2.status = 'inactive';
-
-            await expect(agentManager.despawnAgent('agent-1', 'agent-2')).rejects.toThrow(
-                "Cannot despawn agent agent-2 with status 'inactive'"
-            );
-        });
     });
 
     describe('active children validation', () => {
@@ -161,8 +162,8 @@ describe('AgentManager.despawnAgent', () => {
             );
         });
 
-        it('should throw error when agent has inactive children', async () => {
-            // Add a child to agent-2
+        it('should allow despawn when agent has only inactive children', async () => {
+            // Add an inactive child to agent-2
             const mockAgent4 = {
                 agentId: 'agent-4',
                 roleName: 'developer',
@@ -172,13 +173,13 @@ describe('AgentManager.despawnAgent', () => {
             agentManager.activeAgents.set('agent-4', mockAgent4);
             agentManager.agentHierarchy.set('agent-2', new Set(['agent-4']));
 
-            await expect(agentManager.despawnAgent('agent-1', 'agent-2')).rejects.toThrow(
-                'Cannot despawn agent agent-2 because it has active children: agent-4'
-            );
+            const result = await agentManager.despawnAgent('agent-1', 'agent-2');
+
+            expect(result.success).toBe(true);
         });
 
-        it('should allow despawn when all children are completed or failed', async () => {
-            // Add completed and failed children to agent-2
+        it('should allow despawn when all children are completed, failed, or inactive', async () => {
+            // Add completed, failed, and inactive children to agent-2
             const mockAgent4 = {
                 agentId: 'agent-4',
                 roleName: 'developer',
@@ -191,9 +192,16 @@ describe('AgentManager.despawnAgent', () => {
                 status: 'failed',
                 parentId: 'agent-2',
             };
+            const mockAgent6 = {
+                agentId: 'agent-6',
+                roleName: 'reviewer',
+                status: 'inactive',
+                parentId: 'agent-2',
+            };
             agentManager.activeAgents.set('agent-4', mockAgent4);
             agentManager.activeAgents.set('agent-5', mockAgent5);
-            agentManager.agentHierarchy.set('agent-2', new Set(['agent-4', 'agent-5']));
+            agentManager.activeAgents.set('agent-6', mockAgent6);
+            agentManager.agentHierarchy.set('agent-2', new Set(['agent-4', 'agent-5', 'agent-6']));
 
             const result = await agentManager.despawnAgent('agent-1', 'agent-2');
 
@@ -201,7 +209,7 @@ describe('AgentManager.despawnAgent', () => {
         });
 
         it('should handle multiple active children in error message', async () => {
-            // Add multiple active children to agent-2
+            // Add multiple running children to agent-2 (only running children are considered active)
             const mockAgent4 = {
                 agentId: 'agent-4',
                 roleName: 'developer',
@@ -211,7 +219,7 @@ describe('AgentManager.despawnAgent', () => {
             const mockAgent5 = {
                 agentId: 'agent-5',
                 roleName: 'tester',
-                status: 'inactive',
+                status: 'running',
                 parentId: 'agent-2',
             };
             agentManager.activeAgents.set('agent-4', mockAgent4);

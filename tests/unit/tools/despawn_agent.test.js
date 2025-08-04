@@ -172,7 +172,7 @@ describe('despawn_agent tool', () => {
             expect(result.error).toContain('not the parent');
         });
 
-        it('should handle invalid status error', async () => {
+        it('should handle invalid status error for running agents', async () => {
             mockAgentManager.despawnAgent.mockRejectedValue(
                 new Error("Cannot despawn agent agent-2 with status 'running'")
             );
