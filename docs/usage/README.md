@@ -47,23 +47,7 @@ cp config.example.env .env
 npm start
 ```
 
-#### Option 2: Docker Installation (Recommended)
-
-```bash
-# Initial setup
-./docker-run.sh setup  # Linux/macOS
-./docker-run.bat setup # Windows
-
-# Configure .env file with your API keys
-
-# Run from SynthDev directory
-./docker-run.sh run
-
-# Run from any project directory
-./docker-run.sh run --path "/path/to/your/project"
-```
-
-#### Option 3: Global Installation
+#### Option 2: Global Installation
 
 ```bash
 # Install globally from the cloned repository
