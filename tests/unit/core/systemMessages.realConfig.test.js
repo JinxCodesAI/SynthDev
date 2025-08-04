@@ -63,7 +63,7 @@ describe('SystemMessages - Real Configuration Loading', () => {
         });
 
         it('should handle developer role with test-runner and git-manager coordination', () => {
-            const systemMessage = SystemMessages.getSystemMessage('developer');
+            const systemMessage = SystemMessages.getSystemMessage('agentic.developer');
 
             console.log('Developer System Message:', systemMessage);
 
