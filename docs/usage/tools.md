@@ -308,7 +308,8 @@ Mathematical calculations and expressions with advanced functions.
 - Precision limits
 
 **Supported Functions:**
-- Basic arithmetic: +, -, *, /, %
+
+- Basic arithmetic: +, -, \*, /, %
 - Trigonometry: sin, cos, tan, asin, acos, atan
 - Logarithms: log, log10, log2
 - Powers: pow, sqrt, cbrt
@@ -588,10 +589,10 @@ Used by worker agents to formally complete tasks and return results to superviso
 **Parameters:**
 
 - `result` (required): Structured result object with:
-  - `status` (required): 'success', 'failure', or 'partial'
-  - `summary` (required): Detailed work summary
-  - `artifacts` (required): Array of file changes with descriptions
-  - `known_issues` (required): Array of remaining issues
+    - `status` (required): 'success', 'failure', or 'partial'
+    - `summary` (required): Detailed work summary
+    - `artifacts` (required): Array of file changes with descriptions
+    - `known_issues` (required): Array of remaining issues
 
 **Features:**
 
@@ -628,8 +629,8 @@ Executes multiple tool calls in a single operation for efficiency.
 **Parameters:**
 
 - `tool_calls` (required): Array of tool call objects with:
-  - `function_name` (required): Name of tool to call
-  - `arguments` (required): JSON string of parameters
+    - `function_name` (required): Name of tool to call
+    - `arguments` (required): JSON string of parameters
 
 **Features:**
 

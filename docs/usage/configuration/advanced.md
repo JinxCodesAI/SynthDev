@@ -5,6 +5,7 @@ This guide covers advanced configuration techniques, programmatic access to the 
 ## ConfigManager API
 
 ### Basic Usage
+
 ```javascript
 import ConfigManager from './src/config/managers/configManager.js';
 
@@ -20,6 +21,7 @@ const globalSettings = config.getConfig().global;
 ```
 
 ### Model Configuration Access
+
 ```javascript
 // Check model availability
 if (config.hasSmartModelConfig()) {
@@ -31,7 +33,7 @@ if (config.hasSmartModelConfig()) {
 const models = {
     base: config.getModel('base'),
     smart: config.hasSmartModelConfig() ? config.getModel('smart') : null,
-    fast: config.hasFastModelConfig() ? config.getModel('fast') : null
+    fast: config.hasFastModelConfig() ? config.getModel('fast') : null,
 };
 
 // Access provider information
@@ -39,6 +41,7 @@ const providers = config.getProvidersConfig();
 ```
 
 ### Configuration Reloading
+
 ```javascript
 // Reload all configurations
 await config.reloadConfiguration();
@@ -52,6 +55,7 @@ loader.clearCache(); // Clear all cached configs
 ## Configuration Managers
 
 ### ToolConfigManager
+
 ```javascript
 import { getToolConfigManager } from './src/config/managers/toolConfigManager.js';
 
@@ -70,6 +74,7 @@ const isScriptSafe = await toolConfig.validateScript(scriptContent);
 ```
 
 ### UIConfigManager
+
 ```javascript
 import { getUIConfigManager } from './src/config/managers/uiConfigManager.js';
 
@@ -88,6 +93,7 @@ const startupMessages = uiConfig.getStartupMessages();
 ```
 
 ### SnapshotConfigManager
+
 ```javascript
 import { getSnapshotConfigManager } from './src/config/managers/snapshotConfigManager.js';
 
@@ -105,6 +111,7 @@ const exclusionPatterns = snapshotConfig.getExclusionPatterns();
 ## Custom Configuration Loading
 
 ### ConfigurationLoader API
+
 ```javascript
 import { getConfigurationLoader } from './src/config/validation/configurationLoader.js';
 
@@ -116,7 +123,7 @@ const customConfig = loader.loadConfig('custom/my-config.json', defaultValues, t
 // Load multiple configurations
 const configs = loader.loadConfigs([
     { path: 'custom/config1.json', required: true },
-    { path: 'custom/config2.json', default: {}, required: false }
+    { path: 'custom/config2.json', default: {}, required: false },
 ]);
 
 // Scan for configuration files
@@ -129,6 +136,7 @@ if (loader.configExists('custom/optional-config.json')) {
 ```
 
 ### Role Loading
+
 ```javascript
 // Load roles from custom directory
 const roleData = loader.loadRolesFromDirectory('custom-roles');
@@ -142,6 +150,7 @@ const globalRoles = roleGroups['global'];
 ## Custom Validation
 
 ### Configuration Validation
+
 ```javascript
 import { getConfigurationValidator } from './src/config/validation/configurationValidator.js';
 
@@ -157,15 +166,16 @@ if (!validationResult.valid) {
 const customRules = {
     type: 'object',
     properties: {
-        customField: { type: 'string', minLength: 1 }
+        customField: { type: 'string', minLength: 1 },
     },
-    required: ['customField']
+    required: ['customField'],
 };
 
 const result = validator.validateAgainstSchema(data, customRules);
 ```
 
 ### Schema Extension
+
 ```javascript
 // Extend validation schema
 const extendedSchema = {
@@ -174,20 +184,20 @@ const extendedSchema = {
         ...baseSchema.properties,
         customProperty: {
             type: 'string',
-            enum: ['option1', 'option2', 'option3']
-        }
-    }
+            enum: ['option1', 'option2', 'option3'],
+        },
+    },
 };
 ```
 
 ## Environment Integration
 
 ### Custom Environment Variables
+
 ```javascript
 // Access environment with fallbacks
-const customSetting = process.env.SYNTHDEV_CUSTOM_SETTING || 
-                     config.getConfig().custom?.setting || 
-                     'default_value';
+const customSetting =
+    process.env.SYNTHDEV_CUSTOM_SETTING || config.getConfig().custom?.setting || 'default_value';
 
 // Validate custom environment variables
 const requiredEnvVars = ['CUSTOM_API_KEY', 'CUSTOM_ENDPOINT'];
@@ -199,11 +209,13 @@ if (missingVars.length > 0) {
 ```
 
 ### Dynamic Configuration
+
 ```javascript
 // Load configuration based on environment
-const envConfig = process.env.NODE_ENV === 'production' 
-    ? loader.loadConfig('environments/production.json')
-    : loader.loadConfig('environments/development.json');
+const envConfig =
+    process.env.NODE_ENV === 'production'
+        ? loader.loadConfig('environments/production.json')
+        : loader.loadConfig('environments/development.json');
 
 // Merge with base configuration
 const finalConfig = {
@@ -212,14 +224,15 @@ const finalConfig = {
     // Environment-specific overrides
     logging: {
         ...baseConfig.logging,
-        level: process.env.NODE_ENV === 'production' ? 'warn' : 'debug'
-    }
+        level: process.env.NODE_ENV === 'production' ? 'warn' : 'debug',
+    },
 };
 ```
 
 ## Plugin System Integration
 
 ### Configuration Plugins
+
 ```javascript
 class ConfigurationPlugin {
     constructor(name, options = {}) {
@@ -237,7 +250,7 @@ class ConfigurationPlugin {
     getDefaults() {
         return {
             enabled: true,
-            settings: {}
+            settings: {},
         };
     }
 
@@ -254,6 +267,7 @@ const pluginConfig = myPlugin.loadConfig();
 ```
 
 ### Dynamic Tool Registration
+
 ```javascript
 // Register custom tools with configuration
 class CustomToolRegistry {
@@ -267,7 +281,7 @@ class CustomToolRegistry {
         const toolConfig = {
             ...this.getDefaultToolConfig(),
             ...config,
-            ...this.loadToolConfig(name)
+            ...this.loadToolConfig(name),
         };
 
         // Validate tool configuration
@@ -276,7 +290,7 @@ class CustomToolRegistry {
         // Register tool
         this.tools.set(name, {
             class: toolClass,
-            config: toolConfig
+            config: toolConfig,
         });
     }
 
@@ -294,6 +308,7 @@ class CustomToolRegistry {
 ## Performance Optimization
 
 ### Configuration Caching
+
 ```javascript
 class ConfigurationCache {
     constructor() {
@@ -304,7 +319,7 @@ class ConfigurationCache {
 
     get(key, loader, ttl = this.defaultTTL) {
         const now = Date.now();
-        
+
         // Check if cached and not expired
         if (this.cache.has(key) && this.ttl.get(key) > now) {
             return this.cache.get(key);
@@ -314,7 +329,7 @@ class ConfigurationCache {
         const config = loader();
         this.cache.set(key, config);
         this.ttl.set(key, now + ttl);
-        
+
         return config;
     }
 
@@ -331,12 +346,11 @@ class ConfigurationCache {
 
 // Usage
 const configCache = new ConfigurationCache();
-const cachedConfig = configCache.get('roles', () => 
-    loader.loadRolesFromDirectory('roles')
-);
+const cachedConfig = configCache.get('roles', () => loader.loadRolesFromDirectory('roles'));
 ```
 
 ### Lazy Loading
+
 ```javascript
 class LazyConfigurationManager {
     constructor() {
@@ -362,9 +376,7 @@ class LazyConfigurationManager {
 
 // Usage
 const lazyConfig = new LazyConfigurationManager();
-lazyConfig.registerLoader('heavy-config', () => 
-    loader.loadConfig('heavy/expensive-config.json')
-);
+lazyConfig.registerLoader('heavy-config', () => loader.loadConfig('heavy/expensive-config.json'));
 
 // Config is only loaded when first accessed
 const heavyConfig = lazyConfig.getConfig('heavy-config');
@@ -373,6 +385,7 @@ const heavyConfig = lazyConfig.getConfig('heavy-config');
 ## Configuration Monitoring
 
 ### Change Detection
+
 ```javascript
 import { watch } from 'fs';
 
@@ -395,7 +408,7 @@ class ConfigurationWatcher {
 
     watchConfigDirectory() {
         const configDir = loader.getConfigDir();
-        this.watchFile(configDir, async (changedPath) => {
+        this.watchFile(configDir, async changedPath => {
             // Reload configuration
             await this.configManager.reloadConfiguration();
             console.log('Configuration reloaded due to file change');
@@ -412,13 +425,14 @@ class ConfigurationWatcher {
 ```
 
 ### Configuration Metrics
+
 ```javascript
 class ConfigurationMetrics {
     constructor() {
         this.metrics = {
             loadTimes: new Map(),
             accessCounts: new Map(),
-            errorCounts: new Map()
+            errorCounts: new Map(),
         };
     }
 
@@ -443,7 +457,7 @@ class ConfigurationMetrics {
         return {
             averageLoadTimes: this.calculateAverageLoadTimes(),
             mostAccessedConfigs: this.getMostAccessed(),
-            errorRates: this.calculateErrorRates()
+            errorRates: this.calculateErrorRates(),
         };
     }
 }
@@ -452,6 +466,7 @@ class ConfigurationMetrics {
 ## Testing Configuration
 
 ### Configuration Testing
+
 ```javascript
 import { jest } from '@jest/globals';
 
@@ -464,7 +479,7 @@ describe('Configuration System', () => {
         mockLoader = {
             loadConfig: jest.fn(),
             loadRolesFromDirectory: jest.fn(),
-            configExists: jest.fn()
+            configExists: jest.fn(),
         };
 
         configManager = new ConfigManager({}, mockLoader);
@@ -472,12 +487,12 @@ describe('Configuration System', () => {
 
     test('should load base configuration', async () => {
         mockLoader.loadConfig.mockReturnValue({
-            models: { base: { model: 'test-model' } }
+            models: { base: { model: 'test-model' } },
         });
 
         await configManager.initialize();
         const baseModel = configManager.getModel('base');
-        
+
         expect(baseModel.model).toBe('test-model');
     });
 
@@ -492,6 +507,7 @@ describe('Configuration System', () => {
 ```
 
 ### Integration Testing
+
 ```javascript
 describe('Configuration Integration', () => {
     test('should load real configuration files', async () => {
@@ -505,8 +521,10 @@ describe('Configuration Integration', () => {
 
     test('should validate configuration schemas', () => {
         const validator = getConfigurationValidator();
-        const testConfig = { /* test configuration */ };
-        
+        const testConfig = {
+            /* test configuration */
+        };
+
         const result = validator.validateConfig(testConfig, 'roles');
         expect(result.valid).toBe(true);
     });
@@ -516,6 +534,7 @@ describe('Configuration Integration', () => {
 ## Best Practices
 
 ### Configuration Architecture
+
 1. **Separation of concerns**: Keep different configuration aspects in separate files
 2. **Layered approach**: Use environment variables for deployment-specific settings
 3. **Validation**: Always validate configurations on load
@@ -523,12 +542,14 @@ describe('Configuration Integration', () => {
 5. **Monitoring**: Track configuration usage and performance
 
 ### Error Handling
+
 1. **Graceful degradation**: Provide sensible defaults when configurations are missing
 2. **Clear error messages**: Make configuration errors easy to understand and fix
 3. **Validation feedback**: Provide specific validation error messages
 4. **Recovery mechanisms**: Allow configuration reload without restart
 
 ### Performance
+
 1. **Lazy loading**: Only load configurations when needed
 2. **Caching strategies**: Cache frequently accessed configurations
 3. **Change detection**: Only reload when configurations actually change

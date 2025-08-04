@@ -5,6 +5,7 @@ This guide helps you diagnose and resolve common configuration issues in SynthDe
 ## Quick Diagnostics
 
 ### Check Configuration Status
+
 ```bash
 # Enable verbose logging to see configuration loading
 SYNTHDEV_VERBOSITY_LEVEL=3 synthdev
@@ -20,6 +21,7 @@ jq . src/config/defaults/application.json
 ```
 
 ### Environment Variable Check
+
 ```bash
 # Check if required variables are set
 echo $SYNTHDEV_API_KEY
@@ -35,9 +37,11 @@ env | grep SYNTHDEV
 ### API Key and Authentication
 
 #### Missing API Key
+
 **Error**: `Configuration error: SYNTHDEV_API_KEY is required`
 
 **Solution**:
+
 ```bash
 # Add API key to .env file
 echo "SYNTHDEV_API_KEY=your_api_key_here" >> .env
@@ -47,9 +51,11 @@ export SYNTHDEV_API_KEY=your_api_key_here
 ```
 
 #### Invalid API Key Format
+
 **Error**: `Authentication failed: Invalid API key format`
 
 **Solutions**:
+
 - **OpenAI**: Keys start with `sk-`
 - **Anthropic**: Keys start with `sk-ant-`
 - **Google**: Keys are typically 39 characters
@@ -61,9 +67,11 @@ echo $SYNTHDEV_API_KEY | head -c 10
 ```
 
 #### API Key Permissions
+
 **Error**: `403 Forbidden` or `Insufficient permissions`
 
 **Solutions**:
+
 1. Verify API key has correct permissions
 2. Check billing status and usage limits
 3. Ensure key is for the correct organization
@@ -72,9 +80,11 @@ echo $SYNTHDEV_API_KEY | head -c 10
 ### Model Configuration
 
 #### Invalid Model Name
+
 **Error**: `Model not found: invalid-model-name`
 
 **Solution**:
+
 ```bash
 # Check available models in providers.json
 jq '.providers[].models[].name' src/config/defaults/providers.json
@@ -86,9 +96,11 @@ jq '.providers[].models[].name' src/config/defaults/providers.json
 ```
 
 #### URL Format Issues
+
 **Error**: `Invalid SYNTHDEV_BASE_URL format`
 
 **Solution**:
+
 ```bash
 # Ensure URL includes protocol
 SYNTHDEV_BASE_URL=https://api.openai.com/v1  # ✅ Correct
@@ -104,9 +116,11 @@ SYNTHDEV_BASE_URL=api.openai.com/v1          # ❌ Missing protocol
 ### Configuration File Issues
 
 #### Missing Configuration Files
+
 **Error**: `Failed to load required configuration: file not found`
 
 **Solution**:
+
 ```bash
 # Check if all required files exist
 find src/config -name "*.json" -type f
@@ -119,9 +133,11 @@ cp src/config/examples/roles.json src/config/roles/
 ```
 
 #### JSON Syntax Errors
+
 **Error**: `Unexpected token in JSON at position X`
 
 **Solution**:
+
 ```bash
 # Validate JSON syntax
 jq . src/config/roles/core.json
@@ -138,9 +154,11 @@ jq . src/config/roles/core.json
 ```
 
 #### File Permissions
+
 **Error**: `EACCES: permission denied`
 
 **Solution**:
+
 ```bash
 # Fix file permissions
 chmod 644 src/config/**/*.json
@@ -153,9 +171,11 @@ ls -la src/config/
 ### Role Configuration Issues
 
 #### Role Not Found
+
 **Error**: `Role 'my-role' not found`
 
 **Solutions**:
+
 1. Check role name spelling
 2. Verify role file is in correct location
 3. Check JSON syntax in role file
@@ -169,26 +189,30 @@ jq 'keys' src/config/roles/core.json
 ```
 
 #### Tool Access Issues
+
 **Error**: `Tool 'execute_script' not available for role 'restricted-role'`
 
 **Solution**:
+
 ```json
 // Check role configuration
 {
-  "restricted-role": {
-    "excludedTools": ["execute_script"],  // Remove this line
-    // or use includedTools instead
-    "includedTools": ["read_file", "write_file", "execute_script"]
-  }
+    "restricted-role": {
+        "excludedTools": ["execute_script"], // Remove this line
+        // or use includedTools instead
+        "includedTools": ["read_file", "write_file", "execute_script"]
+    }
 }
 ```
 
 ### Environment Variable Issues
 
 #### Tool Call Limit Errors
+
 **Error**: `SYNTHDEV_MAX_TOOL_CALLS must be between 1 and 200`
 
 **Solution**:
+
 ```bash
 # Set valid value
 export SYNTHDEV_MAX_TOOL_CALLS=50
@@ -198,9 +222,11 @@ echo "SYNTHDEV_MAX_TOOL_CALLS=50" >> .env
 ```
 
 #### Verbosity Level Issues
+
 **Error**: `Invalid verbosity level: X`
 
 **Solution**:
+
 ```bash
 # Valid range is 0-5
 export SYNTHDEV_VERBOSITY_LEVEL=2
@@ -217,38 +243,43 @@ export SYNTHDEV_VERBOSITY_LEVEL=2
 ### Snapshot Configuration Issues
 
 #### Memory Limit Exceeded
+
 **Error**: `Snapshot memory limit exceeded`
 
 **Solution**:
+
 ```json
 // Increase memory limit in snapshot-defaults.json
 {
-  "storage": {
-    "maxMemoryMB": 200,  // Increase from 100
-    "maxSnapshots": 30   // Or reduce snapshot count
-  }
+    "storage": {
+        "maxMemoryMB": 200, // Increase from 100
+        "maxSnapshots": 30 // Or reduce snapshot count
+    }
 }
 ```
 
 #### File Filtering Issues
+
 **Error**: `No files included in snapshot`
 
 **Solution**:
+
 ```json
 // Check exclusion patterns in file-filters.json
 {
-  "customExclusions": [
-    // Remove overly broad patterns
-    // "**/*"  // This would exclude everything!
-    "node_modules/**",
-    ".git/**"
-  ]
+    "customExclusions": [
+        // Remove overly broad patterns
+        // "**/*"  // This would exclude everything!
+        "node_modules/**",
+        ".git/**"
+    ]
 }
 ```
 
 ### Provider-Specific Issues
 
 #### OpenAI Issues
+
 ```bash
 # Check OpenAI status
 curl -H "Authorization: Bearer $SYNTHDEV_API_KEY" \
@@ -261,6 +292,7 @@ curl -H "Authorization: Bearer $SYNTHDEV_API_KEY" \
 ```
 
 #### Anthropic Issues
+
 ```bash
 # Check Anthropic API
 curl -H "x-api-key: $SYNTHDEV_API_KEY" \
@@ -273,6 +305,7 @@ curl -H "x-api-key: $SYNTHDEV_API_KEY" \
 ```
 
 #### Google AI Issues
+
 ```bash
 # Check Google AI API
 curl -H "Authorization: Bearer $SYNTHDEV_API_KEY" \
@@ -286,6 +319,7 @@ curl -H "Authorization: Bearer $SYNTHDEV_API_KEY" \
 ## Debug Techniques
 
 ### Enable Debug Logging
+
 ```bash
 # Maximum verbosity
 export SYNTHDEV_VERBOSITY_LEVEL=5
@@ -296,6 +330,7 @@ synthdev --verbose
 ```
 
 ### Configuration Validation
+
 ```javascript
 // Test configuration loading
 node -e "
@@ -311,6 +346,7 @@ config.initialize().then(() => {
 ```
 
 ### Check File Loading
+
 ```bash
 # Check which configuration files are being loaded
 grep -r "Loaded.*from" logs/ | grep config
@@ -322,9 +358,11 @@ grep -r "Failed to load" logs/ | grep config
 ## Performance Issues
 
 ### Slow Startup
+
 **Symptoms**: SynthDev takes long time to start
 
 **Solutions**:
+
 1. Reduce number of role files
 2. Simplify complex role configurations
 3. Check file system performance
@@ -339,9 +377,11 @@ strace -e trace=openat synthdev 2>&1 | grep config
 ```
 
 ### Memory Usage
+
 **Symptoms**: High memory consumption
 
 **Solutions**:
+
 1. Reduce snapshot memory limits
 2. Limit role configuration size
 3. Clear configuration cache periodically
@@ -349,16 +389,17 @@ strace -e trace=openat synthdev 2>&1 | grep config
 ```json
 // Optimize memory usage
 {
-  "storage": {
-    "maxMemoryMB": 50,
-    "maxSnapshots": 20
-  }
+    "storage": {
+        "maxMemoryMB": 50,
+        "maxSnapshots": 20
+    }
 }
 ```
 
 ## Recovery Procedures
 
 ### Reset to Defaults
+
 ```bash
 # Backup current configuration
 cp -r src/config src/config.backup
@@ -370,6 +411,7 @@ git checkout HEAD -- src/config/
 ```
 
 ### Minimal Configuration
+
 ```bash
 # Create minimal .env for testing
 cat > .env.minimal << EOF
@@ -386,6 +428,7 @@ synthdev --help
 ```
 
 ### Configuration Validation Script
+
 ```bash
 #!/bin/bash
 # validate-config.sh
@@ -404,7 +447,7 @@ for file in src/config/defaults/application.json src/config/roles/core.json; do
     echo "❌ Missing: $file"
     exit 1
   fi
-  
+
   if ! jq . "$file" > /dev/null 2>&1; then
     echo "❌ Invalid JSON: $file"
     exit 1
@@ -417,6 +460,7 @@ echo "✅ Configuration validation passed"
 ## Getting Help
 
 ### Log Analysis
+
 ```bash
 # Check recent errors
 tail -n 100 logs/synthdev.log | grep -i error
@@ -429,6 +473,7 @@ grep -i "api\|http" logs/synthdev.log
 ```
 
 ### System Information
+
 ```bash
 # Gather system info for support
 echo "SynthDev Version: $(synthdev --version)"
@@ -439,6 +484,7 @@ find src/config -name "*.json" -exec wc -l {} \;
 ```
 
 ### Community Resources
+
 - Check GitHub issues for similar problems
 - Review documentation for recent changes
 - Join community discussions for help
@@ -447,6 +493,7 @@ find src/config -name "*.json" -exec wc -l {} \;
 ## Prevention
 
 ### Best Practices
+
 1. **Version control**: Keep configuration files in git
 2. **Validation**: Test configuration changes in development
 3. **Backups**: Regular backups of working configurations
@@ -454,6 +501,7 @@ find src/config -name "*.json" -exec wc -l {} \;
 5. **Documentation**: Document custom configurations
 
 ### Regular Maintenance
+
 ```bash
 # Weekly configuration health check
 ./scripts/validate-config.sh

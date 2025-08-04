@@ -22,14 +22,18 @@ SynthDev uses a layered configuration system with clear priority order:
 ## Configuration Aspects
 
 ### 🤖 [AI Providers](./providers.md)
+
 Configure AI model providers, API endpoints, and model-specific settings:
+
 - OpenAI, Anthropic, Google, XAI, OpenRouter support
 - Multi-model setup (base, smart, fast models)
 - Provider-specific parameters and pricing
 - Custom provider configuration
 
 ### 🎭 [AI Roles](./roles.md)
+
 Define AI behavior, personalities, and capabilities:
+
 - System messages and instructions
 - Tool access control per role
 - Multi-file role organization
@@ -37,7 +41,9 @@ Define AI behavior, personalities, and capabilities:
 - Role groups and hierarchies
 
 ### 📸 [Snapshots](./snapshots.md)
+
 Configure the advanced snapshot system:
+
 - Manual and automatic snapshot creation
 - File filtering and exclusion patterns
 - Storage and memory management
@@ -45,7 +51,9 @@ Configure the advanced snapshot system:
 - Performance optimization
 
 ### 🛠️ [Tools and Safety](./tools.md)
+
 Control tool behavior and security:
+
 - Tool safety patterns and validation
 - Execution limits and timeouts
 - Security pattern matching
@@ -53,7 +61,9 @@ Control tool behavior and security:
 - AI safety checks
 
 ### 🎨 [User Interface](./ui.md)
+
 Customize the console interface:
+
 - Startup messages and banners
 - Command prompts and feedback
 - Color schemes and formatting
@@ -61,7 +71,9 @@ Customize the console interface:
 - Status indicators
 
 ### ⚙️ [Environment Variables](./environment-variables.md)
+
 Configure core system settings:
+
 - API keys and endpoints
 - Global behavior settings
 - Verbosity and debugging
@@ -69,7 +81,9 @@ Configure core system settings:
 - Development options
 
 ### 🔧 [Advanced Configuration](./advanced.md)
+
 Deep customization options:
+
 - ConfigManager API usage
 - Custom configuration loading
 - Validation and error handling
@@ -77,7 +91,9 @@ Deep customization options:
 - Integration patterns
 
 ### 🔍 [Troubleshooting](./troubleshooting.md)
+
 Common configuration issues and solutions:
+
 - API key problems
 - Model configuration errors
 - File permission issues
@@ -117,7 +133,9 @@ src/config/
 ## Key Features
 
 ### 🔄 **Hot Reloading**
+
 Most configuration changes can be applied without restarting:
+
 ```javascript
 // Reload specific configuration
 ConfigurationLoader.reloadConfig('roles/my-roles.json');
@@ -127,21 +145,27 @@ await configManager.reloadConfiguration();
 ```
 
 ### 🎯 **Multi-File Support**
+
 Organize configurations across multiple files:
+
 - Roles can be split across multiple JSON files
 - Automatic discovery and merging
 - Group-based organization
 - Backward compatibility maintained
 
 ### ✅ **Validation**
+
 All configurations are validated on startup:
+
 - Schema validation for all config files
 - Type checking and required fields
 - Clear error messages for issues
 - Fallback to safe defaults when possible
 
 ### 🚀 **Performance**
+
 Optimized for production use:
+
 - Configuration caching
 - Lazy loading of optional configs
 - Memory-efficient storage
