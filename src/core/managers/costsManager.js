@@ -1,6 +1,8 @@
 class CostsManager {
     constructor() {
         this.modelCosts = {}; // Use an object to store costs per model
+        this.app = null; // Reference to the main app instance for tool access
+        this.sessionId = 'main-session'; // Default session ID for agent management
     }
 
     addUsage(model, usage) {
@@ -37,6 +39,10 @@ class CostsManager {
     getTotalCosts() {
         // This method will be used later to format and return the costs
         return this.modelCosts;
+    }
+
+    setApp(app) {
+        this.app = app;
     }
 }
 

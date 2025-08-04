@@ -1,0 +1,35 @@
+{
+    "name": "speak_to_agent",
+    "description": "Sends a message to a previously spawned AI agent and receives its response. Enables communication with agents created using spawn_agent.",
+    "auto_run": true,
+    "requires_backup": false,
+    "backup_resource_path_property_name": "",
+    "category": "utility",
+    "version": "1.0.0",
+    "author": "SynthDev Team",
+    "tags": ["agent", "communication", "message", "multi-agent", "delegation"],
+    "schema": {
+        "type": "function",
+        "function": {
+            "name": "speak_to_agent",
+            "description": "Sends a message to a spawned AI agent and returns its response. Use this to communicate with agents that were created using the spawn_agent tool. The agent will process the message according to its role and capabilities, and provide a response based on its specialized knowledge and available tools. This enables delegation of specific tasks to specialized agents.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "agent_id": {
+                        "type": "string",
+                        "description": "The unique identifier of the agent to send the message to. This is the agent_id returned when the agent was spawned using spawn_agent tool."
+                    },
+                    "message": {
+                        "type": "string",
+                        "description": "The message to send to the agent. Be clear and specific about what you want the agent to do. The agent will respond according to its role and capabilities. Examples: 'Please review this code for security issues', 'Write unit tests for the user authentication module', 'Analyze the performance of this algorithm'."
+                    }
+                },
+                "required": ["agent_id", "message"]
+            },
+            "response_format": {
+                "description": "Returns JSON object with 'success' (boolean), 'timestamp' (ISO string), 'tool_name' (string). On success: 'agent_id' (ID of the agent that responded), 'message_sent' (the message that was sent), 'agent_response' (the agent's response to the message), 'response_timestamp' (when the agent responded). On failure: 'error' (string describing the issue). Common errors include: agent not found, agent not accessible, or communication failure."
+            }
+        }
+    }
+}

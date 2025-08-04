@@ -1,0 +1,36 @@
+{
+    "name": "despawn_agent",
+    "description": "Removes a previously spawned AI agent when its task is completed. Can only be called by the same agent that originally spawned the target agent.",
+    "auto_run": false,
+    "requires_backup": false,
+    "backup_resource_path_property_name": "",
+    "category": "utility",
+    "version": "1.0.0",
+    "author": "SynthDev Team",
+    "tags": ["agent", "despawn", "cleanup", "multi-agent", "lifecycle"],
+    "schema": {
+        "type": "function",
+        "function": {
+            "name": "despawn_agent",
+            "description": "Removes a spawned AI agent and cleans up its resources. This tool can only be used by the same agent that originally spawned the target agent, providing security and preventing unauthorized agent termination. Use this when an agent has completed its assigned task and is no longer needed. The agent's conversation context and all associated resources will be cleaned up. This is the complementary operation to spawn_agent and should be used responsibly to manage system resources.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "agent_id": {
+                        "type": "string",
+                        "description": "The unique identifier of the agent to despawn. This is the agent_id returned when the agent was originally spawned using the spawn_agent tool. Only the agent that spawned this agent can despawn it."
+                    },
+                    "reason": {
+                        "type": "string",
+                        "description": "Optional reason for despawning the agent. This helps with logging and tracking why the agent was removed. Examples: 'Task completed successfully', 'Agent no longer needed', 'Switching to different approach'.",
+                        "default": "Task completed"
+                    }
+                },
+                "required": ["agent_id"]
+            },
+            "response_format": {
+                "description": "Returns JSON object with 'success' (boolean), 'timestamp' (ISO string), 'tool_name' (string). On success: 'agent_id' (ID of the despawned agent), 'agent_role' (role of the despawned agent), 'despawned_at' (timestamp when agent was removed), 'reason' (reason for despawning). On failure: 'error' (string describing the issue). Common errors include: agent not found, access denied (only parent can despawn), or agent already despawned."
+            }
+        }
+    }
+}

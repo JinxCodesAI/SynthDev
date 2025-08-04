@@ -69,6 +69,7 @@ import costsManager from './managers/costsManager.js';
 import SnapshotManager from './managers/snapshotManager.js';
 import PromptEnhancer from './ai/promptEnhancer.js';
 import WorkflowStateMachine from '../workflow/WorkflowStateMachine.js';
+import AgentManager from './managers/agentManager.js';
 import { initializeLogger, getLogger } from './managers/logger.js';
 import GitUtils from '../utils/GitUtils.js';
 
@@ -96,6 +97,7 @@ class AICoderConsole {
         this.promptEnhancer = null;
         this.workflowStateMachine = null;
         this.commandHandler = null;
+        this.agentManager = null;
 
         // State management for input blocking
         this.isProcessing = false;
@@ -119,6 +121,12 @@ class AICoderConsole {
         );
 
         this.promptEnhancer = new PromptEnhancer(this.costsManager, this.toolManager);
+        this.agentManager = new AgentManager(
+            this.config,
+            this.toolManager,
+            this.snapshotManager,
+            this.costsManager
+        );
         this.workflowStateMachine = new WorkflowStateMachine(
             this.config,
             this.toolManager,
@@ -134,6 +142,9 @@ class AICoderConsole {
             this.snapshotManager,
             this
         );
+
+        // Set app reference in costsManager for tool access to AgentManager
+        this.costsManager.setApp(this);
 
         this._setupAPIClientCallbacks();
     }

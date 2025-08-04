@@ -1,0 +1,40 @@
+{
+    "name": "spawn_agent",
+    "description": "Spawns a new AI agent with a specific role that can work independently on tasks. The spawned agent will have its own context and can be communicated with separately.",
+    "auto_run": false,
+    "requires_backup": false,
+    "backup_resource_path_property_name": "",
+    "category": "utility",
+    "version": "1.0.0",
+    "author": "SynthDev Team",
+    "tags": ["agent", "spawn", "ai", "delegation", "multi-agent"],
+    "schema": {
+        "type": "function",
+        "function": {
+            "name": "spawn_agent",
+            "description": "Creates a new AI agent instance with the specified role. The spawned agent operates independently with its own conversation context and can be assigned specific tasks. Only the spawning agent can later despawn this agent using the despawn_agent tool. Use this when you need to delegate work to a specialized agent or when parallel processing of different tasks is beneficial. The spawned agent will have access to tools based on its role configuration.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "agent_role": {
+                        "type": "string",
+                        "description": "The role/type of agent to spawn. This determines the agent's capabilities, system message, and available tools. Examples: 'coder', 'reviewer', 'tester', 'analyst', 'writer'. The role must exist in the system's role configuration. Use /roles command to see available roles."
+                    },
+                    "task_description": {
+                        "type": "string",
+                        "description": "A clear description of the task or purpose for this agent. This helps track why the agent was created and what it should accomplish. Examples: 'Review code for security issues', 'Write unit tests for the user service', 'Analyze performance bottlenecks'."
+                    },
+                    "context_name": {
+                        "type": "string",
+                        "description": "Optional custom name for the agent's conversation context. If not provided, a unique context will be automatically created. Use this when you want multiple agents to share the same conversation context.",
+                        "default": null
+                    }
+                },
+                "required": ["agent_role", "task_description"]
+            },
+            "response_format": {
+                "description": "Returns JSON object with 'success' (boolean), 'timestamp' (ISO string), 'tool_name' (string). On success: 'agent_id' (unique identifier for the spawned agent), 'agent_role' (confirmed role), 'context_name' (name of the agent's context), 'created_at' (creation timestamp), 'task_description' (the assigned task). On failure: 'error' (string describing the issue). The agent_id is required for later communication with the agent using speak_to_agent tool or for despawning using despawn_agent tool."
+            }
+        }
+    }
+}
