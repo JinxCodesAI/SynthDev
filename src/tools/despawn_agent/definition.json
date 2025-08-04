@@ -1,0 +1,52 @@
+{
+    "name": "despawn_agent",
+    "description": "Despawns a completed or failed agent that is no longer needed, cleaning up system resources. Can only be called by the same agent that spawned the target agent.",
+    "auto_run": true,
+    "version": "1.0.0",
+    "schema": {
+        "type": "function",
+        "function": {
+            "name": "despawn_agent",
+            "description": "Removes a completed or failed agent from the system to free up resources. Only the parent agent that originally spawned the target agent can despawn it. The target agent must be in 'completed' or 'failed' status and cannot have any active children.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "agent_id": {
+                        "type": "string",
+                        "description": "The ID of the agent to despawn. Must be a direct child of the current agent and in 'completed' or 'failed' status."
+                    }
+                },
+                "required": ["agent_id"]
+            },
+            "response_format": {
+                "description": "Returns confirmation of successful despawn with agent details",
+                "properties": {
+                    "success": {
+                        "type": "boolean",
+                        "description": "Whether the despawn operation succeeded"
+                    },
+                    "agent_id": {
+                        "type": "string",
+                        "description": "ID of the despawned agent"
+                    },
+                    "role_name": {
+                        "type": "string",
+                        "description": "Role of the despawned agent"
+                    },
+                    "status": {
+                        "type": "string",
+                        "description": "Final status of the despawned agent"
+                    },
+                    "despawned_at": {
+                        "type": "string",
+                        "description": "ISO timestamp when the agent was despawned"
+                    },
+                    "message": {
+                        "type": "string",
+                        "description": "Human-readable confirmation message"
+                    }
+                }
+            }
+        }
+    }
+}

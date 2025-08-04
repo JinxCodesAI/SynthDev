@@ -44,6 +44,10 @@ src/tools/spawn_agent/
 ├── definition.json         # Tool schema following ADR-001
 └── implementation.js       # Tool implementation extending BaseTool
 
+src/tools/despawn_agent/
+├── definition.json         # Tool schema following ADR-001
+└── implementation.js       # Tool implementation extending BaseTool
+
 src/tools/speak_to_agent/
 ├── definition.json         # Tool schema following ADR-001
 └── implementation.js       # Tool implementation extending BaseTool

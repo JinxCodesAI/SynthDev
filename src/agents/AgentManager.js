@@ -370,6 +370,84 @@ You can use task related tools and speak_to_agent tool to request clarifications
     }
 
     /**
+     * Despawn an agent and clean up its resources
+     * @param {string} supervisorAgentId - ID of the supervisor agent requesting despawn (null for user)
+     * @param {string} agentId - ID of the agent to despawn
+     * @returns {Promise<Object>} Despawn result
+     */
+    async despawnAgent(supervisorAgentId, agentId) {
+        // Get the agent to despawn
+        const agent = this.activeAgents.get(agentId);
+        if (!agent) {
+            throw new Error(`Agent ${agentId} not found`);
+        }
+
+        // Validate that the supervisor is the parent of this agent
+        if (agent.parentId !== supervisorAgentId) {
+            throw new Error(
+                `Permission denied: Agent ${supervisorAgentId || 'user'} is not the parent of agent ${agentId}. ` +
+                    'Only the parent agent can despawn its children.'
+            );
+        }
+
+        // Check agent status - only allow despawning completed or failed agents
+        if (agent.status === 'running' || agent.status === 'inactive') {
+            throw new Error(
+                `Cannot despawn agent ${agentId} with status '${agent.status}'. ` +
+                    "Only 'completed' or 'failed' agents can be despawned."
+            );
+        }
+
+        // Check if agent has any active children
+        const childIds = this.agentHierarchy.get(agentId) || new Set();
+        const activeChildren = [];
+        for (const childId of childIds) {
+            const childAgent = this.activeAgents.get(childId);
+            if (
+                childAgent &&
+                (childAgent.status === 'running' || childAgent.status === 'inactive')
+            ) {
+                activeChildren.push(childId);
+            }
+        }
+
+        if (activeChildren.length > 0) {
+            throw new Error(
+                `Cannot despawn agent ${agentId} because it has active children: ${activeChildren.join(', ')}. ` +
+                    'Despawn or wait for completion of child agents first.'
+            );
+        }
+
+        // Remove agent from active agents
+        this.activeAgents.delete(agentId);
+
+        // Remove agent from parent's hierarchy (including user hierarchy when parentId is null)
+        const parentChildren = this.agentHierarchy.get(agent.parentId);
+        if (parentChildren) {
+            parentChildren.delete(agentId);
+            if (parentChildren.size === 0) {
+                this.agentHierarchy.delete(agent.parentId);
+            }
+        }
+
+        // Remove agent's own hierarchy entry (should be empty due to active children check)
+        this.agentHierarchy.delete(agentId);
+
+        this.logger.info(
+            `Despawned agent ${agentId} (${agent.roleName}) by supervisor ${supervisorAgentId || 'user'}`
+        );
+
+        return {
+            success: true,
+            agent_id: agentId,
+            role_name: agent.roleName,
+            status: agent.status,
+            despawned_at: new Date().toISOString(),
+            message: `Successfully despawned agent ${agentId} (${agent.roleName})`,
+        };
+    }
+
+    /**
      * Reset the agent manager (for testing)
      */
     reset() {
