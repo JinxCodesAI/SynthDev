@@ -441,9 +441,9 @@ df -h
 
 ### Documentation
 
-- **Configuration**: See [Configuration.md](Configuration.md)
-- **Architecture**: See [Architecture.md](Architecture.md)
-- **Tools**: See [Tools.md](Tools.md)
+- **Configuration**: See [configuration.md](configuration.md)
+- **Architecture**: See [../development/architecture.md](../development/architecture.md)
+- **Tools**: See [tools.md](tools.md)
 
 ### Support Channels
 
@@ -471,4 +471,4 @@ tail -n 50 synthdev.log
 
 ---
 
-_For detailed configuration options, see [Configuration.md](Configuration.md). For development guidelines, see the Architecture and Testing guides._
+_For detailed configuration options, see [configuration.md](configuration.md). For development guidelines, see the [development documentation](../development/)._
