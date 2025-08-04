@@ -270,9 +270,19 @@ The `description` field in the function schema is the AI's primary interface doc
 ### Utilities (`category: "utility"`)
 
 - **Purpose**: General-purpose operations
-- **Examples**: get_time, calculate
+- **Examples**: get_time, calculate, spawn_agent, despawn_agent, speak_to_agent
 - **Base Class**: BaseTool
 - **Common Parameters**: Varies by functionality
+
+#### Agent Management Tools
+
+SynthDev includes specialized tools for managing AI agents:
+
+- **spawn_agent**: Creates new AI agent instances with specific roles
+- **despawn_agent**: Removes agents when tasks are complete (with parent validation)
+- **speak_to_agent**: Enables communication with spawned agents
+
+These tools enable multi-agent workflows where specialized agents can be created for specific tasks, communicate with each other, and be properly cleaned up when no longer needed.
 
 ### Search Operations (`category: "search"`)
 
