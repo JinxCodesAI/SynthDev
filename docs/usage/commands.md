@@ -189,5 +189,5 @@ Commands include comprehensive error handling:
 For more information about specific features, see the related documentation:
 
 - [Configuration Guide](configuration.md)
-- [Tools Reference](Tools.md)
-- [Architecture Overview](architecture.md)
+- [Tools Reference](tools.md)
+- [Architecture Overview](../development/architecture.md)
