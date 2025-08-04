@@ -24,11 +24,11 @@ class SpeakToAgentTool extends BaseTool {
             const agentStatus = agentManager.getAgentStatus(agent_id);
             if (!agentStatus) {
                 return this.createErrorResponse(
-                    `Agent with ID ${agent_id} not found use get_agents to list all agents or spawn_agent to create new agent`,
+                    `Agent with ID ${agent_id} not found. Use get_agents to list all agents, spawn_agent to create new agent, or despawn_agent to remove completed agents`,
                     {
                         agent_id,
                         message,
-                        error: `Agent with ID ${agent_id} not found use get_agents to list all agents or spawn_agent to create new agent`,
+                        error: `Agent with ID ${agent_id} not found. Use get_agents to list all agents, spawn_agent to create new agent, or despawn_agent to remove completed agents`,
                     }
                 );
             }

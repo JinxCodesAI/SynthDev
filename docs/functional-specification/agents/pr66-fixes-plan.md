@@ -4,7 +4,7 @@
 
 This document provides a complete, self-contained guide to fix all issues identified in PR #66 review comments. The current agentic system implementation has critical architectural flaws that must be addressed before merging.
 
-**Context**: This PR implements Phase 1 of an agentic collaboration system that allows AI roles to spawn, manage, and communicate with other specialized agents. The system uses a singleton `AgentManager` to orchestrate agent lifecycles and four tools (`spawn_agent`, `speak_to_agent`, `get_agents`, `return_results`) for agent interaction.
+**Context**: This PR implements Phase 1 of an agentic collaboration system that allows AI roles to spawn, manage, and communicate with other specialized agents. The system uses a singleton `AgentManager` to orchestrate agent lifecycles and agent management tools (`spawn_agent`, `despawn_agent`, `speak_to_agent`, `get_agents`, `return_results`) for agent interaction.
 
 ## Review Comments Analysis
 
@@ -640,7 +640,8 @@ return this.createSuccessResponse({
 **Fixed PM systemMessage**:
 
 ```json
-"systemMessage": "You are a Project Manager responsible for coordinating software development projects through agent delegation.\n\nWORKFLOW:\n1. ANALYZE requirements and break them into phases\n2. CREATE tasks using task management tools\n3. SPAWN architect for system design (when architectural decisions needed)\n4. SPAWN developer for implementation (when code needs to be written)\n5. MONITOR progress using get_agents and speak_to_agent\n6. COORDINATE between agents and handle their results\n7. DELIVER final project summary using return_results\n\nAGENT MANAGEMENT:\n- Use spawn_agent for new specialized work\n- Use get_agents to check status before messaging\n- Use speak_to_agent only for inactive/completed agents\n- Process agent results and provide feedback\n- Ensure all agents complete before finalizing project\n\nDELIVERABLES:\n- Create comprehensive project plans\n- Coordinate between specialists\n- Ensure quality and timeline adherence\n- Provide detailed project completion reports"
+"systemMessage": "You are a Project Manager responsible for coordinating software development projects through agent delegation.\n\nWORKFLOW:\n1. ANALYZE requirements and break them into phases\n2. CREATE tasks using task management tools\n3. SPAWN architect for system design (when architectural decisions needed)\n4. SPAWN developer for implementation (when code needs to be written)\n5. MONITOR progress using get_agents and speak_to_agent\n6. COORDINATE between agents and handle their results\n7. DELIVER final project summary using return_results\n\nAGENT MANAGEMENT:\n- Use spawn_agent for new specialized work
+- Use despawn_agent to clean up completed agents\n- Use get_agents to check status before messaging\n- Use speak_to_agent only for inactive/completed agents\n- Process agent results and provide feedback\n- Ensure all agents complete before finalizing project\n\nDELIVERABLES:\n- Create comprehensive project plans\n- Coordinate between specialists\n- Ensure quality and timeline adherence\n- Provide detailed project completion reports"
 ```
 
 #### Step 6.2: Enhanced Architect Role Configuration
@@ -664,7 +665,7 @@ return this.createSuccessResponse({
 ```json
 "systemMessage": "You are a Testing Specialist responsible for creating and executing comprehensive test suites...",
 "includedTools": [
-    "spawn_agent", "speak_to_agent", "get_agents", "return_results",
+    "spawn_agent", "despawn_agent", "speak_to_agent", "get_agents", "return_results",
     "read_files", "write_file", "edit_file", "list_directory",
     "exact_search", "execute_terminal", "execute_script"
 ]
