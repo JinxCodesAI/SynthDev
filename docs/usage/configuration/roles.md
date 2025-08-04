@@ -1,13 +1,32 @@
 # AI Roles Configuration
 
-AI roles define how SynthDev behaves in different contexts. They control system messages, tool access, personality traits, and specialized capabilities. SynthDev supports a flexible multi-file role system for easy organization and customization.
+AI roles define how SynthDev behaves in different contexts. They control system messages, tool access, personality traits, and specialized capabilities. SynthDev supports both **non-agentic** (traditional) and **agentic** (agent-spawning) roles with a flexible multi-file system.
 
-## Role System Overview
+## Role Types
 
-### Role Structure
+### Non-Agentic Roles
+Traditional AI roles that operate in a single conversation context:
+- Execute tools directly in the main conversation
+- Cannot spawn other agents
+- Suitable for direct user interaction
+- Examples: `developer`, `tester`, `reviewer`
+
+### Agentic Roles
+Advanced roles that can spawn and manage other AI agents:
+- Can create specialized worker agents for subtasks
+- Manage agent hierarchies and communication
+- Coordinate complex multi-agent workflows
+- Must have `enabled_agents` property configured
+- Examples: `pm` (project manager), `architect`
+
+**Key Difference**: Agentic roles use the AgentManager system to spawn isolated AgentProcess instances, each with their own conversation history and tool execution context.
+
+## Role System Structure
+
+### File Organization
 ```
 src/config/roles/
-├── core.json                    # Core system roles
+├── core.json                    # Core non-agentic roles
 ├── agentic/                     # Agentic workflow roles
 │   ├── team-roles.agentic.json  # Team coordination roles
 │   └── team-roles.simpleflow.json # Simple workflow roles
@@ -19,12 +38,13 @@ src/config/roles/
     └── grocery-workflow.testing.json # Example workflow
 ```
 
-### Role Loading
+### Role Loading System
 - **Multi-file support**: Organize roles across multiple JSON files
 - **Automatic discovery**: All `.json` files in roles directory are loaded
 - **Group organization**: Use filename patterns like `name.group.json`
 - **Hierarchical structure**: Support for subdirectories
 - **Backward compatibility**: Legacy `roles.json` still supported
+- **Agentic detection**: Roles with `enabled_agents` array are automatically classified as agentic
 
 ## Role Definition
 
@@ -74,10 +94,11 @@ src/config/roles/
 - **`includedTools`**: Tools this role can access - mutually exclusive with excludedTools (array of strings or null, optional)
 - **`parsingTools`**: Special tools for structured output parsing only (array of strings, optional)
 
-#### Advanced Properties
-- **`enabled_agents`**: List of agent types this role can spawn (array of strings, optional)
+#### Agentic Properties (for agentic roles only)
+- **`enabled_agents`**: List of agent role names this role can spawn (array of strings, required for agentic roles)
 - **`can_create_tasks_for`**: Roles this role can create tasks for (array of strings, optional)
-- **`return_results`**: Whether role should return structured results (boolean, default: false)
+- **`return_results`**: Whether role should return structured results when completing tasks (boolean, default: false)
+- **`agent_description`**: Brief description of the agent's purpose for coordination (string, optional)
 
 #### Metadata Properties
 - **`metadata.description`**: Human-readable role description (string, optional)
@@ -90,9 +111,46 @@ Each example in the `examples` array must have:
 - **`role`**: Message sender (string: "user", "assistant", "system")
 - **`content`**: Message text content (string)
 
-## Tool Filtering
+## Available Tools
 
-### Exclusion Patterns
+SynthDev provides a comprehensive set of tools that can be controlled per role. Tools are organized by category:
+
+### File System Tools
+- **`read_files`**: Read contents of one or multiple files
+- **`write_file`**: Write content to a file (creates or overwrites)
+- **`edit_file`**: Edit existing files with find/replace operations
+- **`list_directory`**: List files and directories with filtering options
+
+### Code Analysis Tools
+- **`exact_search`**: Search for exact text patterns across files
+- **`explain_codebase`**: Analyze and explain code structure and functionality
+- **`calculate`**: Perform mathematical calculations and data analysis
+
+### Execution Tools
+- **`execute_script`**: Execute scripts with safety validation
+- **`execute_terminal`**: Execute terminal commands with safety checks
+
+### Agentic Tools (for agentic roles only)
+- **`spawn_agent`**: Create new specialized worker agents
+- **`speak_to_agent`**: Send messages to existing agents
+- **`get_agents`**: List all agents and their status
+- **`despawn_agent`**: Terminate specific agents
+- **`return_results`**: Return structured results to supervisor (worker agents)
+
+### Coordination Tools
+- **`update_knowledgebase`**: Share information in shared knowledge base
+- **`read_knowledgebase`**: Read shared knowledge base content
+- **`get_tasks`**: List current tasks
+- **`list_tasks`**: List tasks with filtering
+- **`edit_tasks`**: Modify task information
+
+### Utility Tools
+- **`get_time`**: Get current date and time
+- **`multicall`**: Execute multiple tool calls in a single operation
+
+### Tool Access Control
+
+#### Exclusion Patterns
 ```json
 {
   "excludedTools": [
@@ -104,11 +162,11 @@ Each example in the `examples` array must have:
 }
 ```
 
-### Inclusion Patterns
+#### Inclusion Patterns
 ```json
 {
   "includedTools": [
-    "read_file",
+    "read_files",
     "write_file",
     "list_*",                    // All list tools
     "/^safe_/"                   // All tools starting with "safe_"
@@ -116,15 +174,20 @@ Each example in the `examples` array must have:
 }
 ```
 
+#### Agentic Tool Restrictions
+- **Agentic tools** (`spawn_agent`, `speak_to_agent`, `get_agents`, `despawn_agent`) are automatically available only to agentic roles
+- **`return_results`** is automatically available only to worker agents (spawned agents)
+- Non-agentic roles cannot access agentic tools even if explicitly included
+
 ## Role Examples
 
-### Development Assistant
+### Non-Agentic Role Example: Development Assistant
 ```json
 {
   "developer": {
     "level": "base",
     "systemMessage": "You are an expert software developer assistant. Help with coding, debugging, and development best practices.",
-    "excludedTools": ["execute_terminal"],
+    "excludedTools": ["execute_terminal", "spawn_agent"],
     "reminder": "Always consider security and performance implications",
     "examples": [
       {
@@ -140,35 +203,13 @@ Each example in the `examples` array must have:
 }
 ```
 
-### Testing Specialist
-```json
-{
-  "tester": {
-    "level": "smart",
-    "systemMessage": "You are a testing specialist focused on quality assurance, test automation, and bug detection.",
-    "includedTools": ["read_file", "write_file", "execute_script"],
-    "reminder": "Focus on comprehensive test coverage and edge cases",
-    "examples": [
-      {
-        "role": "user",
-        "content": "Create unit tests for this module"
-      },
-      {
-        "role": "assistant",
-        "content": "I'll create comprehensive unit tests covering all functions and edge cases."
-      }
-    ]
-  }
-}
-```
-
-### Security Auditor
+### Non-Agentic Role Example: Security Auditor
 ```json
 {
   "security_auditor": {
     "level": "smart",
     "systemMessage": "You are a security expert focused on identifying vulnerabilities and security best practices.",
-    "excludedTools": ["execute_*", "write_file"],
+    "excludedTools": ["execute_*", "write_file", "spawn_agent"],
     "reminder": "Always prioritize security and never execute potentially dangerous code",
     "examples": [
       {
@@ -184,35 +225,76 @@ Each example in the `examples` array must have:
 }
 ```
 
-## Agentic Roles
-
-### Team Coordination
+### Agentic Role Example: Project Manager
 ```json
 {
-  "project_manager": {
-    "level": "smart",
-    "systemMessage": "You are a project manager coordinating development tasks across team members.",
-    "enabled_agents": ["developer", "tester", "reviewer"],
-    "can_create_tasks_for": ["developer", "tester"],
-    "includedTools": ["spawn_agent", "speak_to_agent", "create_task"],
-    "reminder": "Coordinate effectively and ensure clear communication"
-  }
-}
-```
-
-### Workflow Orchestration
-```json
-{
-  "workflow_orchestrator": {
+  "pm": {
     "level": "base",
-    "systemMessage": "You orchestrate complex workflows by coordinating multiple specialized agents.",
-    "enabled_agents": ["*"],
-    "can_create_tasks_for": ["*"],
-    "return_results": true,
-    "reminder": "Break down complex tasks into manageable subtasks"
+    "agent_description": "responsible for coordinating projects, creates tasks and validates their completion",
+    "systemMessage": "You are a Project Manager responsible for coordinating software development projects. You excel at pointing out what is missing and what is not done correctly, managing timelines, and ensuring quality deliverables. Use update_knowledgebase to share what you have learned about the project.",
+    "enabled_agents": ["architect", "developer", "tester"],
+    "can_create_tasks_for": ["architect", "developer"],
+    "includedTools": ["read_files", "list_directory", "exact_search", "multicall", "update_knowledgebase"],
+    "reminder": "Coordinate effectively and ensure clear communication between team members"
   }
 }
 ```
+
+### Agentic Role Example: Architect
+```json
+{
+  "architect": {
+    "level": "smart",
+    "agent_description": "designs system architecture and coordinates implementation",
+    "systemMessage": "You are a Software Architect responsible for designing system architecture, making technical decisions, and coordinating implementation across development teams.",
+    "enabled_agents": ["developer", "tester"],
+    "can_create_tasks_for": ["developer"],
+    "includedTools": ["read_files", "write_file", "list_directory", "explain_codebase", "update_knowledgebase"],
+    "reminder": "Focus on scalable, maintainable architecture and clear technical specifications"
+  }
+}
+```
+
+## Agentic Workflow System
+
+### How Agentic Roles Work
+
+1. **Agent Spawning**: Agentic roles use `spawn_agent` to create specialized worker agents
+2. **Isolated Execution**: Each spawned agent runs in its own AgentProcess with separate conversation history
+3. **Task Delegation**: Supervisor agents delegate specific subtasks to appropriate worker agents
+4. **Result Collection**: Worker agents use `return_results` to pass structured results back to supervisors
+5. **Communication**: Supervisors can send follow-up messages using `speak_to_agent`
+6. **Monitoring**: Use `get_agents` to monitor agent status and progress
+
+### Agent Lifecycle
+
+#### Agent States
+- **`running`**: Agent is actively processing (cannot receive messages)
+- **`inactive`**: Agent is waiting for instructions (can receive messages)
+- **`completed`**: Agent finished successfully with results (can receive follow-up messages)
+- **`failed`**: Agent encountered an error (cannot receive messages)
+
+#### Workflow Example
+```
+1. User interacts with agentic role (e.g., "pm")
+2. PM spawns architect: spawn_agent("architect", "Design user authentication system")
+3. Architect analyzes requirements and spawns developer: spawn_agent("developer", "Implement JWT authentication")
+4. Developer completes work and calls: return_results({status: "success", summary: "...", artifacts: [...]})
+5. Architect reviews results and may spawn tester or return own results
+6. PM coordinates overall project completion
+```
+
+### Permission System
+
+#### Spawn Permissions
+- Roles can only spawn agents listed in their `enabled_agents` array
+- User can spawn any agentic role (roles with `enabled_agents` configured)
+- Permission validation occurs at spawn time
+
+#### Tool Access
+- Agentic tools are automatically available to agentic roles
+- `return_results` is automatically available to spawned worker agents
+- Standard tool filtering still applies via `includedTools`/`excludedTools`
 
 ## Role Groups
 
