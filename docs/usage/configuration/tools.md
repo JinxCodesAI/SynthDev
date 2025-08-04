@@ -1,514 +1,663 @@
-# Tools and Safety Configuration
+# SynthDev Tools Reference
 
-SynthDev's tool system provides AI agents with capabilities to interact with files, execute code, and perform system operations. The configuration system ensures these tools operate safely and efficiently while providing extensive customization options.
+This document provides comprehensive information about SynthDev's available tools, their parameters, and security features for users.
 
-## Tool Configuration Overview
+## Tool System Overview
 
-### Configuration Files
+SynthDev's tool system provides AI agents with controlled access to system functionality through a secure, validated interface. Each tool is implemented as a separate module with standardized interfaces and comprehensive security measures.
 
-- **`src/config/tools/tool-messages.json`**: Tool descriptions, error messages, and validation text
-- **`src/config/tools/safety-patterns.json`**: Security patterns and AI safety checks
-- **`src/config/defaults/application.json`**: Tool defaults and limits
+### Core Features
 
-### Safety Layers
+- **Security First**: Path validation, AI safety assessment, and role-based access control
+- **Standardized Interface**: Consistent parameter validation and response formatting
+- **Extensible Architecture**: Plugin-like system for adding new tools
+- **Comprehensive Validation**: Type checking, required field validation, and size constraints
+- **Automatic Backups**: Safety measures for destructive operations
 
-1. **Pattern matching**: Detect dangerous commands and code
-2. **AI safety checks**: Use AI to evaluate code safety
-3. **Execution limits**: Timeouts, file size limits, and resource constraints
-4. **Permission controls**: Role-based tool access restrictions
+## Available Tools
 
-## Tool Messages Configuration
+### File Operations
 
-### Structure
+#### read_files
 
-**File**: `src/config/tools/tool-messages.json`
+Read file contents with encoding support and size limits. Supports batch reading of multiple files.
 
-```json
-{
-    "common_errors": {
-        "file_not_found": "File not found: {filename}",
-        "permission_denied": "Permission denied: {operation}",
-        "invalid_syntax": "Invalid syntax in {context}: {details}",
-        "timeout_exceeded": "Operation timed out after {timeout}ms",
-        "size_limit_exceeded": "File size exceeds limit of {limit} bytes"
-    },
-    "tool_descriptions": {
-        "read_file": "Read the contents of a file",
-        "write_file": "Write content to a file",
-        "execute_script": "Execute a script with safety validation",
-        "list_directory": "List files and directories"
-    },
-    "validation_messages": {
-        "script_validation": "Validating script for safety...",
-        "file_check": "Checking file permissions...",
-        "size_validation": "Validating file size..."
-    }
-}
-```
+**Parameters:**
 
-### Customizing Messages
+- `file_paths` (required): Array of relative paths to files to read
+- `encoding` (optional): File encoding (default: 'utf8')
 
-```json
-{
-    "common_errors": {
-        "custom_error": "Your custom error message with {parameter}",
-        "database_error": "Database operation failed: {query}"
-    },
-    "tool_descriptions": {
-        "custom_tool": "Description of your custom tool functionality"
-    }
-}
-```
+**Security Features:**
 
-## Safety Patterns Configuration
+- Path validation prevents directory traversal
+- File size limits prevent memory issues
+- Encoding validation ensures proper text handling
+- Batch processing with individual error handling
 
-### Structure
-
-**File**: `src/config/tools/safety-patterns.json`
-
-```json
-{
-    "ai_safety_prompt": "Analyze this script for safety: {script}\n\nCheck for:\n- Destructive operations\n- Network access\n- System modifications\n- Data exfiltration\n\nRespond with SAFE or UNSAFE and explanation.",
-    "dangerous_patterns": [
-        {
-            "pattern": "rm -rf",
-            "reason": "Dangerous file deletion command",
-            "severity": "high"
-        },
-        {
-            "pattern": "format c:",
-            "reason": "System format command",
-            "severity": "critical"
-        },
-        {
-            "pattern": "dd if=",
-            "reason": "Low-level disk operations",
-            "severity": "high"
-        }
-    ],
-    "error_messages": {
-        "unsafe_script": "Script contains potentially dangerous operations: {reasons}",
-        "pattern_match": "Dangerous pattern detected: {pattern}",
-        "ai_safety_failed": "AI safety check failed: {reason}"
-    }
-}
-```
-
-### Pattern Types
-
-#### Command Patterns
-
-```json
-{
-    "dangerous_patterns": [
-        {
-            "pattern": "sudo rm",
-            "reason": "Privileged file deletion",
-            "severity": "critical",
-            "type": "command"
-        },
-        {
-            "pattern": "chmod 777",
-            "reason": "Overly permissive file permissions",
-            "severity": "medium",
-            "type": "command"
-        }
-    ]
-}
-```
-
-#### Code Patterns
-
-```json
-{
-    "dangerous_patterns": [
-        {
-            "pattern": "eval\\(",
-            "reason": "Dynamic code execution",
-            "severity": "high",
-            "type": "code",
-            "language": "javascript"
-        },
-        {
-            "pattern": "exec\\(",
-            "reason": "System command execution",
-            "severity": "high",
-            "type": "code",
-            "language": "python"
-        }
-    ]
-}
-```
-
-#### Network Patterns
-
-```json
-{
-    "dangerous_patterns": [
-        {
-            "pattern": "curl.*\\|.*sh",
-            "reason": "Download and execute script",
-            "severity": "critical",
-            "type": "network"
-        },
-        {
-            "pattern": "wget.*-O.*\\|",
-            "reason": "Download and pipe to command",
-            "severity": "high",
-            "type": "network"
-        }
-    ]
-}
-```
-
-## Tool Defaults Configuration
-
-### Application Settings
-
-**File**: `src/config/defaults/application.json`
-
-```json
-{
-    "tool_settings": {
-        "autoRun": true,
-        "defaultEncoding": "utf8",
-        "modifiesFiles": false,
-        "maxFileSize": 10485760,
-        "defaultTimeout": 10000
-    },
-    "safety": {
-        "enableAISafetyCheck": true,
-        "fallbackToPatternMatching": true,
-        "maxScriptSize": 50000,
-        "scriptTimeout": {
-            "min": 1000,
-            "max": 30000,
-            "default": 10000
-        }
-    }
-}
-```
-
-### Tool-Specific Settings
-
-```json
-{
-    "tool_settings": {
-        "execute_script": {
-            "timeout": 15000,
-            "maxOutputSize": 1048576,
-            "allowedExtensions": [".py", ".js", ".sh"],
-            "workingDirectory": "/tmp/synthdev"
-        },
-        "read_file": {
-            "maxFileSize": 5242880,
-            "allowedExtensions": ["*"],
-            "encoding": "utf8"
-        },
-        "write_file": {
-            "maxFileSize": 10485760,
-            "createDirectories": true,
-            "backupOriginal": false
-        }
-    }
-}
-```
-
-## Safety Configuration
-
-### AI Safety Checks
-
-#### Custom Safety Prompts
-
-```json
-{
-    "ai_safety_prompt": "You are a security expert. Analyze this {language} script:\n\n{script}\n\nEvaluate for:\n1. File system operations\n2. Network requests\n3. System commands\n4. Privilege escalation\n5. Data access patterns\n\nRespond with:\n- SAFE: Brief explanation\n- UNSAFE: Specific risks identified",
-    "safety_timeout": 10000,
-    "safety_model": "smart"
-}
-```
-
-#### Language-Specific Prompts
-
-```json
-{
-    "language_prompts": {
-        "python": "Analyze this Python script for security risks...",
-        "javascript": "Review this JavaScript code for potential vulnerabilities...",
-        "bash": "Examine this shell script for dangerous operations..."
-    }
-}
-```
-
-### Pattern Matching
-
-#### Severity Levels
-
-```json
-{
-    "severity_actions": {
-        "low": "warn",
-        "medium": "confirm",
-        "high": "block",
-        "critical": "block_and_log"
-    }
-}
-```
-
-#### Context-Aware Patterns
-
-```json
-{
-    "contextual_patterns": {
-        "development": {
-            "allowed_patterns": ["npm install", "pip install"],
-            "blocked_patterns": ["rm -rf node_modules"]
-        },
-        "production": {
-            "allowed_patterns": [],
-            "blocked_patterns": ["*"]
-        }
-    }
-}
-```
-
-## Tool Access Control
-
-### Role-Based Restrictions
-
-Configure tool access per role in role definitions:
-
-```json
-{
-    "developer": {
-        "excludedTools": ["execute_terminal"],
-        "includedTools": ["read_file", "write_file", "execute_script"]
-    },
-    "security_auditor": {
-        "excludedTools": ["write_file", "execute_*"],
-        "includedTools": ["read_file", "analyze_*"]
-    }
-}
-```
-
-### Dynamic Tool Control
-
-```json
-{
-    "conditional_access": {
-        "execute_script": {
-            "conditions": {
-                "file_extension": [".py", ".js"],
-                "max_size": 10000,
-                "safe_patterns_only": true
-            }
-        }
-    }
-}
-```
-
-## Advanced Safety Features
-
-### Sandboxing Configuration
-
-```json
-{
-    "sandboxing": {
-        "enabled": true,
-        "container_type": "docker",
-        "resource_limits": {
-            "memory": "512m",
-            "cpu": "0.5",
-            "disk": "100m"
-        },
-        "network_access": false,
-        "file_system_access": "restricted"
-    }
-}
-```
-
-### Audit Logging
-
-```json
-{
-    "audit": {
-        "log_all_tool_calls": true,
-        "log_safety_checks": true,
-        "log_blocked_operations": true,
-        "log_file": "logs/tool-audit.log",
-        "retention_days": 30
-    }
-}
-```
-
-### Rate Limiting
-
-```json
-{
-    "rate_limiting": {
-        "enabled": true,
-        "limits": {
-            "execute_script": {
-                "per_minute": 10,
-                "per_hour": 100
-            },
-            "write_file": {
-                "per_minute": 50,
-                "per_hour": 1000
-            }
-        }
-    }
-}
-```
-
-## Custom Tool Development
-
-### Tool Registration
-
-```json
-{
-    "custom_tools": {
-        "my_custom_tool": {
-            "description": "Custom tool for specific operations",
-            "safety_level": "medium",
-            "required_permissions": ["file_read", "network_access"],
-            "timeout": 5000
-        }
-    }
-}
-```
-
-### Safety Integration
+**Example:**
 
 ```javascript
-// Custom tool with safety checks
-class MyCustomTool {
-    async execute(params) {
-        // Get safety configuration
-        const safetyConfig = getToolConfigManager().getSafetyConfig();
+{
+    "tool_name": "read_files",
+    "parameters": {
+        "file_paths": ["src/app.js", "config.json"],
+        "encoding": "utf8"
+    }
+}
+```
 
-        // Perform safety checks
-        if (safetyConfig.enableAISafetyCheck) {
-            const safetyResult = await this.checkSafety(params);
-            if (!safetyResult.safe) {
-                throw new Error(`Safety check failed: ${safetyResult.reason}`);
+#### write_file
+
+Create or overwrite files with backup and validation. **Requires confirmation** before execution.
+
+**Parameters:**
+
+- `file_path` (required): Relative path where to write the file
+- `content` (required): Content to write to the file
+- `encoding` (optional): File encoding (default: 'utf8')
+- `create_directories` (optional): Auto-create parent directories (default: true)
+- `overwrite` (optional): Allow overwriting existing files (default: true)
+
+**Security Features:**
+
+- Requires user confirmation before execution
+- Path validation and sanitization
+- Content size validation
+- Atomic write operations
+- Auto-directory creation
+
+**Example:**
+
+```javascript
+{
+    "tool_name": "write_file",
+    "parameters": {
+        "file_path": "output.txt",
+        "content": "Hello, World!",
+        "encoding": "utf8",
+        "create_directories": true,
+        "overwrite": true
+    }
+}
+```
+
+#### edit_file
+
+Modify files using boundary-based editing with safety checks.
+
+**Parameters:**
+
+- `file_path` (required): Relative path to the file to edit
+- `operation` (required): 'replace' or 'delete'
+- `boundary_start` (required): Unique string marking start of section to edit
+- `boundary_end` (required): Unique string marking end of section to edit
+- `new_content` (optional): New content to replace between boundaries (required for 'replace')
+
+**Security Features:**
+
+- Backup before modification
+- Boundary validation to prevent accidental edits
+- Content validation
+- Recovery mechanisms for boundary issues
+
+**Example:**
+
+```javascript
+{
+    "tool_name": "edit_file",
+    "parameters": {
+        "file_path": "src/config.js",
+        "operation": "replace",
+        "boundary_start": "// START CONFIG",
+        "boundary_end": "// END CONFIG",
+        "new_content": "const API_URL = 'https://api.example.com';"
+    }
+}
+```
+
+#### list_directory
+
+Directory listing with filtering and depth control.
+
+**Parameters:**
+
+- `directory_path` (required): Relative path to the directory to list
+- `recursive` (optional): Whether to list recursively (default: false)
+- `include_hidden` (optional): Include hidden files (default: false)
+- `max_depth` (optional): Maximum recursion depth (default: 5, max: 10)
+- `exclusion_list` (optional): Array of names to exclude (default includes node_modules, .git, etc.)
+- `include_summaries` (optional): Include AI-generated summaries from codebase index (default: false)
+
+**Security Features:**
+
+- Path validation
+- Depth limits prevent infinite recursion
+- Hidden file filtering
+- Size limits for large directories
+- Default exclusion of sensitive directories
+
+**Example:**
+
+```javascript
+{
+    "tool_name": "list_directory",
+    "parameters": {
+        "directory_path": "src",
+        "recursive": true,
+        "max_depth": 3,
+        "include_hidden": false,
+        "include_summaries": true
+    }
+}
+```
+
+### Search & Analysis
+
+#### exact_search
+
+Fast exact text search across all project files with context.
+
+**Parameters:**
+
+- `search_string` (required): Exact string to search for in files
+
+**Security Features:**
+
+- Path validation
+- Result size limits
+- File type filtering
+- Automatic context (4 lines before/after matches)
+
+**Example:**
+
+```javascript
+{
+    "tool_name": "exact_search",
+    "parameters": {
+        "search_string": "function exportData"
+    }
+}
+```
+
+#### explain_codebase
+
+AI-powered codebase analysis using indexed summaries.
+
+**Parameters:**
+
+- `query` (required): Question or topic to explain about the codebase
+- `focus_area` (optional): Specific area to focus on (e.g., "authentication", "database")
+
+**Features:**
+
+- Uses pre-indexed codebase summaries
+- AI-powered analysis and explanation
+- Context-aware responses
+- Supports complex queries
+
+**Example:**
+
+```javascript
+{
+    "tool_name": "explain_codebase",
+    "parameters": {
+        "query": "How does the authentication system work?",
+        "focus_area": "security"
+    }
+}
+```
+
+### Code Execution
+
+#### execute_terminal
+
+System command execution with safety patterns. **Requires confirmation** before execution.
+
+**Parameters:**
+
+- `command` (required): Terminal command to execute with arguments
+
+**Security Features:**
+
+- Requires user confirmation before execution
+- Command validation against dangerous patterns
+- Execution timeout limits
+- Output size limits
+- Environment isolation
+
+**Example:**
+
+```javascript
+{
+    "tool_name": "execute_terminal",
+    "parameters": {
+        "command": "npm test"
+    }
+}
+```
+
+#### execute_script
+
+JavaScript execution in sandboxed environment with AI safety assessment. **Requires confirmation** before execution.
+
+**Parameters:**
+
+- `script` (required): JavaScript code to execute
+- `timeout` (optional): Execution timeout in milliseconds (default: 10000, range: 1000-30000)
+
+**Security Features:**
+
+- Requires user confirmation before execution
+- AI-powered safety assessment
+- Sandboxed execution environment
+- Pattern-based safety checks as fallback
+- Resource limits and timeouts
+- Access control to system resources
+
+**Example:**
+
+```javascript
+{
+    "tool_name": "execute_script",
+    "parameters": {
+        "script": "console.log('Hello from script!'); return 42;",
+        "timeout": 5000
+    }
+}
+```
+
+### Utilities
+
+#### get_time
+
+Current time and date information with flexible formatting.
+
+**Parameters:**
+
+- `format` (optional): Time format ('iso', 'unix', 'readable', 'custom') (default: 'iso')
+- `timezone` (optional): Timezone for formatting (default: 'local')
+- `custom_format` (optional): Custom date format string when format is 'custom'
+
+**Example:**
+
+```javascript
+{
+    "tool_name": "get_time",
+    "parameters": {
+        "format": "custom",
+        "timezone": "UTC",
+        "custom_format": "YYYY-MM-DD HH:mm:ss"
+    }
+}
+```
+
+#### calculate
+
+Mathematical calculations and expressions with advanced functions.
+
+**Parameters:**
+
+- `expression` (required): Mathematical expression to evaluate
+- `precision` (optional): Decimal precision (default: 6, range: 0-15)
+
+**Security Features:**
+
+- Expression validation
+- Safe evaluation (no code execution)
+- Result validation
+- Precision limits
+
+**Supported Functions:**
+
+- Basic arithmetic: +, -, \*, /, %
+- Trigonometry: sin, cos, tan, asin, acos, atan
+- Logarithms: log, log10, log2
+- Powers: pow, sqrt, cbrt
+- Constants: pi, e
+
+**Example:**
+
+```javascript
+{
+    "tool_name": "calculate",
+    "parameters": {
+        "expression": "sin(pi/2) + sqrt(16)",
+        "precision": 4
+    }
+}
+```
+
+### Agent Management
+
+#### spawn_agent
+
+Creates and starts a new specialized AI agent for delegating sub-tasks.
+
+**Parameters:**
+
+- `role_name` (required): Role of the new agent (must be in current role's enabled_agents)
+- `task_prompt` (required): Detailed task description for the new agent
+
+**Features:**
+
+- Independent conversation history and cost tracking
+- Automatic result handoff via return_results
+- Hierarchical agent relationships
+
+**Example:**
+
+```javascript
+{
+    "tool_name": "spawn_agent",
+    "parameters": {
+        "role_name": "test_writer",
+        "task_prompt": "Write comprehensive unit tests for the user authentication module"
+    }
+}
+```
+
+#### despawn_agent
+
+Removes completed, failed, or inactive agents to free up system resources.
+
+**Parameters:**
+
+- `agent_id` (required): ID of agent to despawn (must be direct child)
+
+**Security Features:**
+
+- Only parent can despawn child agents
+- Target must be completed/failed/inactive
+- Cannot despawn agents with children
+
+**Example:**
+
+```javascript
+{
+    "tool_name": "despawn_agent",
+    "parameters": {
+        "agent_id": "agent-123"
+    }
+}
+```
+
+#### speak_to_agent
+
+Sends follow-up messages to previously spawned agents.
+
+**Parameters:**
+
+- `agent_id` (required): ID of target agent
+- `message` (required): Message to send to the agent
+
+**Usage Notes:**
+
+- Check agent status first with get_agents
+- Only inactive/completed agents can receive messages
+- Don't disturb running agents
+
+**Example:**
+
+```javascript
+{
+    "tool_name": "speak_to_agent",
+    "parameters": {
+        "agent_id": "agent-123",
+        "message": "Please also add integration tests for the API endpoints"
+    }
+}
+```
+
+#### get_agents
+
+Lists all agents in the system with their current status.
+
+**Parameters:**
+
+- `include_completed` (optional): Include completed agents (default: true)
+
+**Response includes:**
+
+- Agent ID, role name, and status
+- Creation time and task summary
+- Parent-child relationships
+- Result availability
+
+**Example:**
+
+```javascript
+{
+    "tool_name": "get_agents",
+    "parameters": {
+        "include_completed": false
+    }
+}
+```
+
+### Task Management
+
+#### list_tasks
+
+Lists all tasks in hierarchical format showing structure and status.
+
+**Parameters:**
+
+- `format` (optional): 'short' or 'detailed' (default: 'short')
+- `status_filter` (optional): Filter by status ('not_started', 'in_progress', 'completed', 'cancelled')
+
+**Features:**
+
+- Hierarchical display with indentation
+- Status and target role information
+- Task count summaries
+
+**Example:**
+
+```javascript
+{
+    "tool_name": "list_tasks",
+    "parameters": {
+        "format": "detailed",
+        "status_filter": "in_progress"
+    }
+}
+```
+
+#### edit_tasks
+
+Creates new tasks or updates existing ones in the task management system.
+
+**Parameters:**
+
+- `task_id` (optional): ID of existing task to update
+- `title` (required): Task title
+- `description` (required): Detailed task description
+- `parent` (optional): Parent task ID for hierarchy
+- `status` (optional): Task status
+- `target_role` (optional): Role that should handle this task
+
+**Features:**
+
+- Validates parent relationships
+- Outputs updated task list
+- Does not spawn agents automatically
+
+**Example:**
+
+```javascript
+{
+    "tool_name": "edit_tasks",
+    "parameters": {
+        "title": "Implement user authentication",
+        "description": "Create login/logout functionality with JWT tokens",
+        "parent": "task-1",
+        "status": "not_started",
+        "target_role": "backend_developer"
+    }
+}
+```
+
+#### get_tasks
+
+Retrieves detailed information about specific tasks by their IDs.
+
+**Parameters:**
+
+- `task_ids` (required): Array of task IDs to retrieve
+- `include_children` (optional): Include child task information (default: false)
+- `include_parent_chain` (optional): Include parent hierarchy (default: false)
+
+**Features:**
+
+- Batch retrieval of multiple tasks
+- Hierarchical relationship data
+- Comprehensive task metadata
+
+**Example:**
+
+```javascript
+{
+    "tool_name": "get_tasks",
+    "parameters": {
+        "task_ids": ["task-1", "task-2"],
+        "include_children": true,
+        "include_parent_chain": true
+    }
+}
+```
+
+### Knowledge Management
+
+#### read_knowledgebase
+
+Reads the current content of the shared knowledgebase for agent coordination.
+
+**Parameters:**
+
+- None required
+
+**Features:**
+
+- Access to shared information between agents
+- Multiline string content
+- Real-time coordination data
+
+**Example:**
+
+```javascript
+{
+    "tool_name": "read_knowledgebase",
+    "parameters": {}
+}
+```
+
+#### update_knowledgebase
+
+Updates the shared knowledgebase with new information for agent coordination.
+
+**Parameters:**
+
+- `operation` (required): 'override', 'append', or 'remove'
+- `content` (required): Content to add, replace, or remove
+- `description` (optional): Description of the update
+
+**Features:**
+
+- Shared state between all agents
+- Multiple update operations
+- Automatic whitespace cleanup
+
+**Example:**
+
+```javascript
+{
+    "tool_name": "update_knowledgebase",
+    "parameters": {
+        "operation": "append",
+        "content": "Database schema updated with new user_preferences table",
+        "description": "Schema change notification"
+    }
+}
+```
+
+### Coordination Tools
+
+#### return_results
+
+Used by worker agents to formally complete tasks and return results to supervisor.
+
+**Parameters:**
+
+- `result` (required): Structured result object with:
+    - `status` (required): 'success', 'failure', or 'partial'
+    - `summary` (required): Detailed work summary
+    - `artifacts` (required): Array of file changes with descriptions
+    - `known_issues` (required): Array of remaining issues
+
+**Features:**
+
+- Formal task completion mechanism
+- Structured result handoff
+- File artifact tracking
+
+**Example:**
+
+```javascript
+{
+    "tool_name": "return_results",
+    "parameters": {
+        "result": {
+            "status": "success",
+            "summary": "Successfully implemented user authentication with JWT tokens",
+            "artifacts": [
+                {
+                    "file_path": "src/auth.js",
+                    "description": "New authentication module",
+                    "change_type": "created"
+                }
+            ],
+            "known_issues": []
+        }
+    }
+}
+```
+
+#### multicall
+
+Executes multiple tool calls in a single operation for efficiency.
+
+**Parameters:**
+
+- `tool_calls` (required): Array of tool call objects with:
+    - `function_name` (required): Name of tool to call
+    - `arguments` (required): JSON string of parameters
+
+**Features:**
+
+- Sequential execution of multiple tools
+- Aggregated results
+- Efficient for read-only operations
+
+**Example:**
+
+```javascript
+{
+    "tool_name": "multicall",
+    "parameters": {
+        "tool_calls": [
+            {
+                "function_name": "list_tasks",
+                "arguments": "{\"format\": \"short\"}"
+            },
+            {
+                "function_name": "get_agents",
+                "arguments": "{\"include_completed\": false}"
             }
-        }
-
-        // Execute tool logic
-        return this.performOperation(params);
+        ]
     }
 }
 ```
 
-## Performance Optimization
+---
 
-### Caching Configuration
-
-```json
-{
-    "caching": {
-        "safety_checks": {
-            "enabled": true,
-            "ttl": 300000,
-            "max_entries": 1000
-        },
-        "file_metadata": {
-            "enabled": true,
-            "ttl": 60000
-        }
-    }
-}
-```
-
-### Parallel Processing
-
-```json
-{
-    "performance": {
-        "parallel_safety_checks": true,
-        "max_concurrent_tools": 5,
-        "tool_queue_size": 100,
-        "timeout_buffer": 1000
-    }
-}
-```
-
-## Monitoring and Metrics
-
-### Tool Usage Metrics
-
-```json
-{
-    "metrics": {
-        "collect_usage_stats": true,
-        "collect_performance_stats": true,
-        "collect_safety_stats": true,
-        "report_interval": 60000
-    }
-}
-```
-
-### Health Checks
-
-```json
-{
-    "health_checks": {
-        "tool_availability": true,
-        "safety_system_status": true,
-        "resource_usage": true,
-        "check_interval": 30000
-    }
-}
-```
-
-## Best Practices
-
-### Security
-
-1. **Enable AI safety checks**: Always use AI-based safety validation
-2. **Pattern matching fallback**: Maintain pattern-based checks as backup
-3. **Principle of least privilege**: Only grant necessary tool access
-4. **Regular updates**: Keep safety patterns current with new threats
-
-### Performance
-
-1. **Appropriate timeouts**: Balance safety with responsiveness
-2. **Resource limits**: Set realistic limits for your environment
-3. **Caching**: Enable caching for repeated operations
-4. **Monitoring**: Track tool performance and usage
-
-### Maintenance
-
-1. **Regular audits**: Review tool usage and safety logs
-2. **Pattern updates**: Keep dangerous patterns current
-3. **Configuration validation**: Test configuration changes thoroughly
-4. **Documentation**: Document custom tools and safety rules
-
-## Troubleshooting
-
-### Common Issues
-
-- **Tools blocked unexpectedly**: Check safety patterns and role permissions
-- **Slow tool execution**: Review timeout settings and AI safety checks
-- **Safety check failures**: Verify AI model availability and prompts
-- **Permission errors**: Check file system permissions and tool access
-
-### Debug Configuration
-
-```json
-{
-    "debug": {
-        "log_safety_decisions": true,
-        "log_pattern_matches": true,
-        "log_tool_execution": true,
-        "verbose_error_messages": true
-    }
-}
-```
-
-## Next Steps
-
-- [AI Roles](./roles.md) - Configure role-based tool access
-- [Snapshots](./snapshots.md) - Configure snapshots for tool-triggered backups
-- [Troubleshooting](./troubleshooting.md) - Common tool configuration issues
+_For information about developing new tools, see the [Tool Development Guide](../development/tools-development.md)._

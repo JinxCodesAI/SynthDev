@@ -1,8 +1,5 @@
 # SynthDev Configuration Guide
 
-> **📁 This documentation has been restructured!**
-> The configuration guide is now organized into focused sections for easier navigation and better organization.
-
 ## 🚀 Quick Start
 
 1. **[Environment Variables](./configuration/environment-variables.md)** - Set up your API keys and basic settings
