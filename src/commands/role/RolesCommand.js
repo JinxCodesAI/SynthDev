@@ -31,34 +31,164 @@ export class RolesCommand extends BaseCommand {
         const logger = getLogger();
 
         const groupFilter = args ? args.trim() : '';
-        let roles;
-        let headerText;
 
         if (groupFilter === 'all') {
-            // Show all roles regardless of group
-            roles = SystemMessages.getAvailableRoles();
-            headerText = '🎭 All Available Roles:';
+            return this._showAllRoles(logger, apiClient);
         } else if (groupFilter === '') {
-            // Show only global roles (default behavior)
-            roles = SystemMessages.getRolesByGroup('global');
-            headerText = '🎭 Available Roles (Global):';
+            return this._showGroupOverview(logger, apiClient);
         } else {
-            // Show roles from specific group
-            roles = SystemMessages.getRolesByGroup(groupFilter);
-            headerText = `🎭 Available Roles (${groupFilter}):`;
+            return this._showSpecificGroup(groupFilter, logger, apiClient);
+        }
+    }
 
-            if (roles.length === 0) {
-                const availableGroups = SystemMessages.getAvailableGroups();
-                logger.error(`No roles found in group '${groupFilter}'`);
-                logger.info(`📖 Available groups: ${availableGroups.join(', ')}`);
-                logger.info('💡 Use "/roles all" to see all roles or "/roles" for global roles\n');
-                return true;
+    /**
+     * Show overview of all role groups
+     * @param {Object} logger - Logger instance
+     * @param {Object} apiClient - API client instance
+     * @returns {boolean} Always returns true
+     */
+    _showGroupOverview(logger, apiClient) {
+        const availableGroups = SystemMessages.getAvailableGroups();
+        const currentRole = apiClient.getCurrentRole();
+
+        logger.user('🎭 Available Role Groups:');
+        logger.user('─'.repeat(50));
+
+        // Sort groups to show global first
+        const sortedGroups = availableGroups.sort((a, b) => {
+            if (a === 'global') {
+                return -1;
             }
+            if (b === 'global') {
+                return 1;
+            }
+            return a.localeCompare(b);
+        });
+
+        sortedGroups.forEach(group => {
+            const roles = SystemMessages.getRolesByGroup(group);
+            const groupIcon = this._getGroupIcon(group);
+
+            logger.info(`${groupIcon} ${group.toUpperCase()} (${roles.length} roles)`);
+
+            // Show first 4 roles, then "..." if more
+            const displayRoles = roles.slice(0, 4);
+            const hasMore = roles.length > 4;
+
+            const rolesList = displayRoles
+                .map(role => {
+                    const isCurrentRole = role === currentRole;
+                    const level = SystemMessages.getLevel(role);
+                    const levelIcon = level === 'smart' ? '🧠' : level === 'fast' ? '⚡' : '🔧';
+                    const currentMarker = isCurrentRole ? ' 👑' : '';
+                    return `${levelIcon} ${role}${currentMarker}`;
+                })
+                .join(', ');
+
+            const moreText = hasMore ? `, ... (+${roles.length - 4} more)` : '';
+            logger.info(`   ${rolesList}${moreText}`);
+            logger.raw();
+        });
+
+        // Show usage information
+        logger.info('💡 Use "/role <name>" to switch roles (e.g., "/role coder")');
+        logger.info(`💡 Use "/roles <group>" for detailed info: ${availableGroups.join(', ')}`);
+        logger.info('💡 Use "/roles all" to see all roles organized by groups');
+        logger.raw();
+
+        return true;
+    }
+
+    /**
+     * Show all roles organized by groups
+     * @param {Object} logger - Logger instance
+     * @param {Object} apiClient - API client instance
+     * @returns {boolean} Always returns true
+     */
+    _showAllRoles(logger, apiClient) {
+        const availableGroups = SystemMessages.getAvailableGroups();
+        const currentRole = apiClient.getCurrentRole();
+
+        logger.user('🎭 All Available Roles (by Groups):');
+        logger.user('─'.repeat(50));
+
+        // Sort groups to show global first
+        const sortedGroups = availableGroups.sort((a, b) => {
+            if (a === 'global') {
+                return -1;
+            }
+            if (b === 'global') {
+                return 1;
+            }
+            return a.localeCompare(b);
+        });
+
+        sortedGroups.forEach((group, index) => {
+            const roles = SystemMessages.getRolesByGroup(group);
+            const groupIcon = this._getGroupIcon(group);
+
+            if (index > 0) {
+                logger.raw();
+            } // Add spacing between groups
+
+            logger.info(`${groupIcon} ${group.toUpperCase()} GROUP:`);
+            logger.info('─'.repeat(30));
+
+            roles.forEach(role => {
+                const isCurrentRole = role === currentRole;
+                const roleIcon = isCurrentRole ? '👑' : '🎭';
+                const roleStatus = isCurrentRole ? ' (current)' : '';
+                const displayName = group !== 'global' ? `${group}.${role}` : role;
+
+                // Get role level and model info
+                const level = SystemMessages.getLevel(role);
+                const levelIcon = level === 'smart' ? '🧠' : level === 'fast' ? '⚡' : '🔧';
+
+                logger.info(`${roleIcon} ${displayName}${roleStatus}`);
+                logger.info(`   ${levelIcon} Model Level: ${level}`);
+
+                // Get system message preview (first line)
+                const systemMessage = SystemMessages.getSystemMessage(role);
+                const preview = systemMessage.split('\n')[0];
+                logger.info(`   ${preview}`);
+                logger.raw();
+            });
+        });
+
+        // Show usage information
+        logger.info(
+            '💡 Use "/role <name>" for global roles or "/role <group>.<name>" for group-specific roles'
+        );
+        logger.info(
+            `💡 Use "/roles <group>" for detailed group info: ${availableGroups.join(', ')}`
+        );
+        logger.raw();
+
+        return true;
+    }
+
+    /**
+     * Show detailed information for a specific group
+     * @param {string} groupFilter - The group to show
+     * @param {Object} logger - Logger instance
+     * @param {Object} apiClient - API client instance
+     * @returns {boolean} Always returns true
+     */
+    _showSpecificGroup(groupFilter, logger, apiClient) {
+        const roles = SystemMessages.getRolesByGroup(groupFilter);
+
+        if (roles.length === 0) {
+            const availableGroups = SystemMessages.getAvailableGroups();
+            logger.error(`No roles found in group '${groupFilter}'`);
+            logger.info(`📖 Available groups: ${availableGroups.join(', ')}`);
+            logger.info('💡 Use "/roles" for group overview or "/roles all" to see all roles');
+            return true;
         }
 
         const currentRole = apiClient.getCurrentRole();
+        const groupIcon = this._getGroupIcon(groupFilter);
 
-        logger.user(headerText);
+        logger.user(`${groupIcon} ${groupFilter.toUpperCase()} Group Roles:`);
         logger.user('─'.repeat(50));
 
         roles.forEach(role => {
@@ -100,23 +230,29 @@ export class RolesCommand extends BaseCommand {
         });
 
         // Show usage information
-        if (groupFilter === '') {
-            const availableGroups = SystemMessages.getAvailableGroups().filter(g => g !== 'global');
-            logger.info('💡 Use "/role <name>" to switch roles (e.g., "/role coder")');
-            if (availableGroups.length > 0) {
-                logger.info(
-                    `💡 Use "/roles <group>" to see roles in specific groups: ${availableGroups.join(', ')}`
-                );
-                logger.info('💡 Use "/roles all" to see all roles');
-            }
-        } else {
-            logger.info(
-                '💡 Use "/role <n>" for global roles or "/role <group>.<n>" for group-specific roles'
-            );
-        }
+        logger.info(
+            '💡 Use "/role <name>" for global roles or "/role <group>.<name>" for group-specific roles'
+        );
+        logger.info('💡 Use "/roles" for group overview or "/roles all" to see all roles');
         logger.raw();
 
         return true;
+    }
+
+    /**
+     * Get icon for a role group
+     * @param {string} group - The group name
+     * @returns {string} Icon for the group
+     */
+    _getGroupIcon(group) {
+        const groupIcons = {
+            global: '🌐',
+            testing: '🧪',
+            agentic: '🤖',
+            internal: '⚙️',
+            specialized: '🎯',
+        };
+        return groupIcons[group] || '📁';
     }
 
     /**
@@ -124,7 +260,7 @@ export class RolesCommand extends BaseCommand {
      * @returns {string} Usage text
      */
     getUsage() {
-        return '/roles';
+        return '/roles [group|all]';
     }
 }
 

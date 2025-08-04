@@ -142,34 +142,38 @@ describe('RolesCommand', () => {
     });
 
     describe('implementation', () => {
-        it('should display global roles by default with current role highlighted', async () => {
+        it('should display group overview by default with current role highlighted', async () => {
             const result = await rolesCommand.implementation('', mockContext);
 
             expect(result).toBe(true);
 
             // Should call required SystemMessages methods
-            expect(mockSystemMessages.getRolesByGroup).toHaveBeenCalledWith('global');
+            expect(mockSystemMessages.getAvailableGroups).toHaveBeenCalled();
             expect(mockContext.apiClient.getCurrentRole).toHaveBeenCalled();
 
-            // Should display header for global roles
-            expect(mockLogger.user).toHaveBeenCalledWith('🎭 Available Roles (Global):');
+            // Should display header for group overview
+            expect(mockLogger.user).toHaveBeenCalledWith('🎭 Available Role Groups:');
             expect(mockLogger.user).toHaveBeenCalledWith('─'.repeat(50));
 
-            // Should display current role with crown icon
-            expect(mockLogger.info).toHaveBeenCalledWith('👑 coder (current)');
-
-            // Should display other roles with regular icon
-            expect(mockLogger.info).toHaveBeenCalledWith('🎭 reviewer');
-            expect(mockLogger.info).toHaveBeenCalledWith('🎭 architect');
+            // Should display groups with role counts and current role highlighted
+            expect(mockLogger.info).toHaveBeenCalledWith('🌐 GLOBAL (3 roles)');
+            expect(mockLogger.info).toHaveBeenCalledWith(
+                '   🔧 coder 👑, 🔧 reviewer, 🧠 architect'
+            );
+            expect(mockLogger.info).toHaveBeenCalledWith('🧪 TESTING (1 roles)');
+            expect(mockLogger.info).toHaveBeenCalledWith('   🔧 dude');
 
             // Should display usage tips
             expect(mockLogger.info).toHaveBeenCalledWith(
                 '💡 Use "/role <name>" to switch roles (e.g., "/role coder")'
             );
+            expect(mockLogger.info).toHaveBeenCalledWith(
+                '💡 Use "/roles <group>" for detailed info: global, testing'
+            );
         });
 
-        it('should display role levels with correct icons', async () => {
-            const result = await rolesCommand.implementation('', mockContext);
+        it('should display role levels with correct icons in specific group view', async () => {
+            const result = await rolesCommand.implementation('global', mockContext);
 
             expect(result).toBe(true);
 
@@ -180,8 +184,8 @@ describe('RolesCommand', () => {
             expect(mockLogger.info).toHaveBeenCalledWith('   🧠 Model Level: smart');
         });
 
-        it('should display system message previews', async () => {
-            const result = await rolesCommand.implementation('', mockContext);
+        it('should display system message previews in specific group view', async () => {
+            const result = await rolesCommand.implementation('global', mockContext);
 
             expect(result).toBe(true);
 
@@ -197,8 +201,8 @@ describe('RolesCommand', () => {
             );
         });
 
-        it('should display reminder messages', async () => {
-            const result = await rolesCommand.implementation('', mockContext);
+        it('should display reminder messages in specific group view', async () => {
+            const result = await rolesCommand.implementation('global', mockContext);
 
             expect(result).toBe(true);
 
@@ -214,8 +218,8 @@ describe('RolesCommand', () => {
             );
         });
 
-        it('should display excluded tools', async () => {
-            const result = await rolesCommand.implementation('', mockContext);
+        it('should display excluded tools in specific group view', async () => {
+            const result = await rolesCommand.implementation('global', mockContext);
 
             expect(result).toBe(true);
 
@@ -226,8 +230,8 @@ describe('RolesCommand', () => {
             );
         });
 
-        it('should handle role with no excluded tools', async () => {
-            const result = await rolesCommand.implementation('', mockContext);
+        it('should handle role with no excluded tools in specific group view', async () => {
+            const result = await rolesCommand.implementation('global', mockContext);
 
             expect(result).toBe(true);
 
@@ -240,7 +244,7 @@ describe('RolesCommand', () => {
             expect(excludesCalls.length).toBe(2);
         });
 
-        it('should handle long reminder messages', async () => {
+        it('should handle long reminder messages in specific group view', async () => {
             const longReminder =
                 'This is a very long reminder message that exceeds 80 characters and should be truncated with ellipsis';
             mockSystemMessages.getReminder.mockImplementation(role => {
@@ -250,7 +254,7 @@ describe('RolesCommand', () => {
                 return 'Short reminder';
             });
 
-            const result = await rolesCommand.implementation('', mockContext);
+            const result = await rolesCommand.implementation('global', mockContext);
 
             expect(result).toBe(true);
 
@@ -272,7 +276,7 @@ describe('RolesCommand', () => {
             expect(truncatedCall).toBeDefined();
         });
 
-        it('should handle role with many excluded tools', async () => {
+        it('should handle role with many excluded tools in specific group view', async () => {
             mockSystemMessages.getExcludedTools.mockReturnValue([
                 'tool1',
                 'tool2',
@@ -281,7 +285,7 @@ describe('RolesCommand', () => {
                 'tool5',
             ]);
 
-            const result = await rolesCommand.implementation('', mockContext);
+            const result = await rolesCommand.implementation('global', mockContext);
 
             expect(result).toBe(true);
 
@@ -312,10 +316,10 @@ describe('RolesCommand', () => {
             expect(mockSystemMessages.getRolesByGroup).toHaveBeenCalledWith('testing');
         });
 
-        it('should handle fast level with lightning icon', async () => {
+        it('should handle fast level with lightning icon in specific group view', async () => {
             mockSystemMessages.getLevel.mockReturnValue('fast');
 
-            const result = await rolesCommand.implementation('', mockContext);
+            const result = await rolesCommand.implementation('global', mockContext);
 
             expect(result).toBe(true);
 
@@ -332,7 +336,7 @@ describe('RolesCommand', () => {
             expect(mockSystemMessages.getRolesByGroup).toHaveBeenCalledWith('testing');
 
             // Should display header for the specific group
-            expect(mockLogger.user).toHaveBeenCalledWith('🎭 Available Roles (testing):');
+            expect(mockLogger.user).toHaveBeenCalledWith('🧪 TESTING Group Roles:');
 
             // Should display roles from testing group
             expect(mockLogger.info).toHaveBeenCalledWith('🎭 testing.dude');
@@ -343,11 +347,11 @@ describe('RolesCommand', () => {
 
             expect(result).toBe(true);
 
-            // Should call getAvailableRoles for all roles
-            expect(mockSystemMessages.getAvailableRoles).toHaveBeenCalled();
+            // Should call getAvailableGroups for organizing by groups
+            expect(mockSystemMessages.getAvailableGroups).toHaveBeenCalled();
 
             // Should display header for all roles
-            expect(mockLogger.user).toHaveBeenCalledWith('🎭 All Available Roles:');
+            expect(mockLogger.user).toHaveBeenCalledWith('🎭 All Available Roles (by Groups):');
         });
 
         it('should handle unknown group gracefully', async () => {
@@ -360,13 +364,16 @@ describe('RolesCommand', () => {
             // Should display error for unknown group
             expect(mockLogger.error).toHaveBeenCalledWith("No roles found in group 'unknown'");
             expect(mockLogger.info).toHaveBeenCalledWith('📖 Available groups: global, testing');
+            expect(mockLogger.info).toHaveBeenCalledWith(
+                '💡 Use "/roles" for group overview or "/roles all" to see all roles'
+            );
         });
     });
 
     describe('getUsage', () => {
         it('should return correct usage string', () => {
             const usage = rolesCommand.getUsage();
-            expect(usage).toBe('/roles');
+            expect(usage).toBe('/roles [group|all]');
         });
     });
 
