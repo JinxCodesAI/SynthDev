@@ -28,13 +28,15 @@ src/config/roles/
 
 ## Role Definition
 
-### Basic Role Structure
+### Complete Role Structure
 ```json
 {
   "role_name": {
     "level": "base",
     "systemMessage": "You are a helpful assistant specialized in...",
     "excludedTools": ["dangerous_tool"],
+    "includedTools": null,
+    "parsingTools": [],
     "reminder": "Remember to follow best practices",
     "examples": [
       {
@@ -42,10 +44,19 @@ src/config/roles/
         "content": "Example user input"
       },
       {
-        "role": "assistant", 
+        "role": "assistant",
         "content": "Example AI response"
       }
-    ]
+    ],
+    "enabled_agents": [],
+    "can_create_tasks_for": [],
+    "return_results": false,
+    "metadata": {
+      "description": "Role description",
+      "version": "1.0",
+      "author": "Author name",
+      "tags": ["category1", "category2"]
+    }
   }
 }
 ```
@@ -53,20 +64,31 @@ src/config/roles/
 ### Role Properties
 
 #### Core Properties
-- **`level`**: Model tier (`base`, `smart`, `fast`)
-- **`systemMessage`**: Primary instructions for the AI
-- **`reminder`**: Additional context during tool execution
-- **`examples`**: Few-shot prompting examples
+- **`level`**: Model tier to use (string: "base", "smart", "fast")
+- **`systemMessage`**: Primary instructions for the AI (string, required)
+- **`reminder`**: Additional context shown during tool execution (string, optional)
+- **`examples`**: Few-shot prompting examples (array of message objects, optional)
 
-#### Tool Control
-- **`excludedTools`**: Tools this role cannot access
-- **`includedTools`**: Tools this role can access (mutually exclusive)
-- **`parsingTools`**: Special tools for structured output
+#### Tool Control Properties
+- **`excludedTools`**: Tools this role cannot access (array of strings, optional)
+- **`includedTools`**: Tools this role can access - mutually exclusive with excludedTools (array of strings or null, optional)
+- **`parsingTools`**: Special tools for structured output parsing only (array of strings, optional)
 
 #### Advanced Properties
-- **`enabled_agents`**: List of agents this role can spawn
-- **`can_create_tasks_for`**: Roles this role can create tasks for
-- **`return_results`**: Whether role should return structured results
+- **`enabled_agents`**: List of agent types this role can spawn (array of strings, optional)
+- **`can_create_tasks_for`**: Roles this role can create tasks for (array of strings, optional)
+- **`return_results`**: Whether role should return structured results (boolean, default: false)
+
+#### Metadata Properties
+- **`metadata.description`**: Human-readable role description (string, optional)
+- **`metadata.version`**: Role configuration version (string, optional)
+- **`metadata.author`**: Role author information (string, optional)
+- **`metadata.tags`**: Role categorization tags (array of strings, optional)
+
+#### Example Message Structure
+Each example in the `examples` array must have:
+- **`role`**: Message sender (string: "user", "assistant", "system")
+- **`content`**: Message text content (string)
 
 ## Tool Filtering
 

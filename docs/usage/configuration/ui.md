@@ -19,9 +19,10 @@ SynthDev's user interface is highly customizable, allowing you to personalize th
 
 ## Console Messages Configuration
 
-### Structure
+### Console Messages Structure
 **File**: `src/config/ui/console-messages.json`
 
+#### Startup Section
 ```json
 {
   "startup": {
@@ -29,29 +30,94 @@ SynthDev's user interface is highly customizable, allowing you to personalize th
     "subtitle": "Ready to help with your development tasks",
     "version": "Version {version}",
     "loading": "Loading configuration...",
-    "ready": "✅ Ready! Type your request or 'help' for commands"
-  },
+    "ready": "✅ Ready! Type your request or 'help' for commands",
+    "banner": [
+      "  ____             _   _     ____             ",
+      " / ___| _   _ _ __ | |_| |__ |  _ \\  _____   __",
+      " \\___ \\| | | | '_ \\| __| '_ \\| | | |/ _ \\ \\ / /",
+      "  ___) | |_| | | | | |_| | | | |_| |  __/\\ V / ",
+      " |____/ \\__, |_| |_|\\__|_| |_|____/ \\___| \\_/  ",
+      "        |___/                                 "
+    ]
+  }
+}
+```
+
+- **`title`**: Main application title (string)
+- **`subtitle`**: Subtitle or tagline (string)
+- **`version`**: Version display template with {version} placeholder (string)
+- **`loading`**: Loading message during startup (string)
+- **`ready`**: Ready message when startup complete (string)
+- **`banner`**: ASCII art banner lines (array of strings, optional)
+
+#### Prompts Section
+```json
+{
   "prompts": {
     "user_input": "💭 You: ",
     "confirmation": "Proceed? (y/n): ",
     "role_selection": "Select role [{roles}]: ",
-    "continue": "Press Enter to continue..."
-  },
+    "model_selection": "Select model [{models}]: ",
+    "continue": "Press Enter to continue...",
+    "save_confirmation": "Save changes? [Y/n]: ",
+    "exit_confirmation": "Are you sure you want to exit? (y/n): "
+  }
+}
+```
+
+- **`user_input`**: Main user input prompt (string)
+- **`confirmation`**: Generic confirmation prompt (string)
+- **`role_selection`**: Role selection prompt with {roles} placeholder (string)
+- **`model_selection`**: Model selection prompt with {models} placeholder (string)
+- **`continue`**: Continue/pause prompt (string)
+- **`save_confirmation`**: Save confirmation prompt (string)
+- **`exit_confirmation`**: Exit confirmation prompt (string)
+
+#### Status Section
+```json
+{
   "status": {
     "thinking": "🧠 AI thinking...",
     "processing": "🔄 Processing...",
     "executing": "⚡ Executing tool: {tool}",
+    "waiting": "⏳ Waiting for response...",
     "completed": "✅ Completed",
+    "cancelled": "🚫 Operation cancelled",
+    "timeout": "⏰ Operation timed out",
     "error": "❌ Error: {message}"
-  },
+  }
+}
+```
+
+- **`thinking`**: AI processing status (string)
+- **`processing`**: General processing status (string)
+- **`executing`**: Tool execution status with {tool} placeholder (string)
+- **`waiting`**: Waiting for response status (string)
+- **`completed`**: Success completion status (string)
+- **`cancelled`**: Cancellation status (string)
+- **`timeout`**: Timeout status (string)
+- **`error`**: Error status with {message} placeholder (string)
+
+#### Feedback Section
+```json
+{
   "feedback": {
     "success": "✅ {message}",
     "warning": "⚠️  {message}",
     "info": "ℹ️  {message}",
-    "error": "❌ {message}"
+    "error": "❌ {message}",
+    "debug": "🐛 {message}",
+    "tip": "💡 {message}"
   }
 }
 ```
+
+- **`success`**: Success message template with {message} placeholder (string)
+- **`warning`**: Warning message template with {message} placeholder (string)
+- **`info`**: Information message template with {message} placeholder (string)
+- **`error`**: Error message template with {message} placeholder (string)
+- **`debug`**: Debug message template with {message} placeholder (string)
+- **`tip`**: Tip message template with {message} placeholder (string)
 
 ### Customizing Messages
 

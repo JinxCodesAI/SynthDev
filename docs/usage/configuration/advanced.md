@@ -49,6 +49,113 @@ loader.reloadConfig('roles/my-roles.json');
 loader.clearCache(); // Clear all cached configs
 ```
 
+## Application Defaults Configuration
+
+**File**: `src/config/defaults/application.json`
+
+This file contains default values for all application settings. These are overridden by environment variables.
+
+### Models Section
+```json
+{
+  "models": {
+    "base": {
+      "model": "gpt-4.1-mini",
+      "baseUrl": "https://api.openai.com/v1"
+    },
+    "smart": {
+      "model": null,
+      "baseUrl": null
+    },
+    "fast": {
+      "model": null,
+      "baseUrl": null
+    }
+  }
+}
+```
+
+- **`base.model`**: Default base model name (string)
+- **`base.baseUrl`**: Default base model API URL (string)
+- **`smart.model`**: Default smart model name (string, null = not configured)
+- **`smart.baseUrl`**: Default smart model API URL (string, null = not configured)
+- **`fast.model`**: Default fast model name (string, null = not configured)
+- **`fast.baseUrl`**: Default fast model API URL (string, null = not configured)
+
+### Global Settings Section
+```json
+{
+  "global_settings": {
+    "maxToolCalls": 50,
+    "enablePromptEnhancement": false,
+    "verbosityLevel": 2
+  }
+}
+```
+
+- **`maxToolCalls`**: Maximum tool calls per conversation (number, 1-200)
+- **`enablePromptEnhancement`**: Enable AI prompt enhancement (boolean)
+- **`verbosityLevel`**: Output verbosity level (number, 0-5)
+
+### UI Settings Section
+```json
+{
+  "ui_settings": {
+    "defaultRole": "dude",
+    "showStartupBanner": true,
+    "enableColors": true,
+    "promptPrefix": "💭 You: "
+  }
+}
+```
+
+- **`defaultRole`**: Default AI role to use (string)
+- **`showStartupBanner`**: Show startup banner (boolean)
+- **`enableColors`**: Enable colored output (boolean)
+- **`promptPrefix`**: User input prompt prefix (string)
+
+### Tool Settings Section
+```json
+{
+  "tool_settings": {
+    "autoRun": true,
+    "defaultEncoding": "utf8",
+    "modifiesFiles": false,
+    "maxFileSize": 10485760,
+    "defaultTimeout": 10000
+  }
+}
+```
+
+- **`autoRun`**: Auto-execute tools without confirmation (boolean)
+- **`defaultEncoding`**: Default file encoding (string: "utf8", "ascii", "base64")
+- **`modifiesFiles`**: Default file modification flag (boolean)
+- **`maxFileSize`**: Maximum file size in bytes (number)
+- **`defaultTimeout`**: Default tool timeout in milliseconds (number)
+
+### Safety Section
+```json
+{
+  "safety": {
+    "enableAISafetyCheck": true,
+    "fallbackToPatternMatching": true,
+    "maxScriptSize": 50000,
+    "scriptTimeout": {
+      "min": 1000,
+      "max": 30000,
+      "default": 10000
+    }
+  }
+}
+```
+
+- **`enableAISafetyCheck`**: Enable AI-based safety validation (boolean)
+- **`fallbackToPatternMatching`**: Use pattern matching if AI safety fails (boolean)
+- **`maxScriptSize`**: Maximum script size in bytes (number)
+- **`scriptTimeout.min`**: Minimum script timeout in milliseconds (number)
+- **`scriptTimeout.max`**: Maximum script timeout in milliseconds (number)
+- **`scriptTimeout.default`**: Default script timeout in milliseconds (number)
+
 ## Configuration Managers
 
 ### ToolConfigManager

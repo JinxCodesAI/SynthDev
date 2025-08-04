@@ -17,9 +17,10 @@ SynthDev's tool system provides AI agents with capabilities to interact with fil
 
 ## Tool Messages Configuration
 
-### Structure
+### Tool Messages Structure
 **File**: `src/config/tools/tool-messages.json`
 
+#### Common Errors Section
 ```json
 {
   "common_errors": {
@@ -27,67 +28,136 @@ SynthDev's tool system provides AI agents with capabilities to interact with fil
     "permission_denied": "Permission denied: {operation}",
     "invalid_syntax": "Invalid syntax in {context}: {details}",
     "timeout_exceeded": "Operation timed out after {timeout}ms",
-    "size_limit_exceeded": "File size exceeds limit of {limit} bytes"
-  },
+    "size_limit_exceeded": "File size exceeds limit of {limit} bytes",
+    "encoding_error": "Encoding error: {details}",
+    "network_error": "Network error: {details}",
+    "validation_failed": "Validation failed: {reason}"
+  }
+}
+```
+
+Error message templates with parameter substitution using `{parameter}` syntax.
+
+#### Tool Descriptions Section
+```json
+{
   "tool_descriptions": {
     "read_file": "Read the contents of a file",
     "write_file": "Write content to a file",
     "execute_script": "Execute a script with safety validation",
-    "list_directory": "List files and directories"
-  },
+    "list_directory": "List files and directories",
+    "create_directory": "Create a new directory",
+    "delete_file": "Delete a file",
+    "move_file": "Move or rename a file",
+    "copy_file": "Copy a file to another location"
+  }
+}
+```
+
+Human-readable descriptions for each tool, used in help text and error messages.
+
+#### Validation Messages Section
+```json
+{
   "validation_messages": {
     "script_validation": "Validating script for safety...",
     "file_check": "Checking file permissions...",
-    "size_validation": "Validating file size..."
+    "size_validation": "Validating file size...",
+    "encoding_check": "Checking file encoding...",
+    "path_validation": "Validating file path...",
+    "content_scan": "Scanning content for safety..."
   }
 }
 ```
 
-### Customizing Messages
+Status messages shown during tool validation processes.
+
+#### Success Messages Section
 ```json
 {
-  "common_errors": {
-    "custom_error": "Your custom error message with {parameter}",
-    "database_error": "Database operation failed: {query}"
-  },
-  "tool_descriptions": {
-    "custom_tool": "Description of your custom tool functionality"
+  "success_messages": {
+    "file_created": "File created successfully: {filename}",
+    "file_updated": "File updated successfully: {filename}",
+    "file_deleted": "File deleted successfully: {filename}",
+    "directory_created": "Directory created successfully: {dirname}",
+    "script_executed": "Script executed successfully",
+    "operation_completed": "Operation completed successfully"
   }
 }
 ```
+
+Success confirmation messages with parameter substitution.
 
 ## Safety Patterns Configuration
 
-### Structure
+### Safety Patterns Structure
 **File**: `src/config/tools/safety-patterns.json`
 
+#### AI Safety Prompt Section
 ```json
 {
-  "ai_safety_prompt": "Analyze this script for safety: {script}\n\nCheck for:\n- Destructive operations\n- Network access\n- System modifications\n- Data exfiltration\n\nRespond with SAFE or UNSAFE and explanation.",
+  "ai_safety_prompt": "Analyze this {language} script for safety:\n\n{script}\n\nCheck for:\n- Destructive file operations\n- Network access attempts\n- System modifications\n- Privilege escalation\n- Data exfiltration\n\nRespond with SAFE or UNSAFE and brief explanation.",
+  "safety_timeout": 10000,
+  "max_script_length": 50000,
+  "fallback_on_timeout": true
+}
+```
+
+- **`ai_safety_prompt`**: Template for AI safety analysis (string with {script} and {language} placeholders)
+- **`safety_timeout`**: Timeout for AI safety check in ms (number)
+- **`max_script_length`**: Maximum script length for AI analysis (number)
+- **`fallback_on_timeout`**: Use pattern matching if AI times out (boolean)
+
+#### Dangerous Patterns Section
+```json
+{
   "dangerous_patterns": [
     {
       "pattern": "rm -rf",
       "reason": "Dangerous file deletion command",
-      "severity": "high"
+      "severity": "critical",
+      "category": "file_operations",
+      "regex": false
     },
     {
       "pattern": "format c:",
       "reason": "System format command",
-      "severity": "critical"
+      "severity": "critical",
+      "category": "system_operations",
+      "regex": false
     },
     {
-      "pattern": "dd if=",
-      "reason": "Low-level disk operations",
-      "severity": "high"
+      "pattern": "\\beval\\s*\\(",
+      "reason": "Dynamic code execution",
+      "severity": "high",
+      "category": "code_execution",
+      "regex": true
     }
-  ],
+  ]
+}
+```
+
+Pattern object properties:
+- **`pattern`**: Pattern to match (string)
+- **`reason`**: Human-readable explanation (string)
+- **`severity`**: Risk level (string: "low", "medium", "high", "critical")
+- **`category`**: Pattern category (string: "file_operations", "system_operations", "network", "code_execution")
+- **`regex`**: Whether pattern is a regular expression (boolean)
+
+#### Error Messages Section
+```json
+{
   "error_messages": {
     "unsafe_script": "Script contains potentially dangerous operations: {reasons}",
-    "pattern_match": "Dangerous pattern detected: {pattern}",
-    "ai_safety_failed": "AI safety check failed: {reason}"
+    "pattern_match": "Dangerous pattern detected: {pattern} - {reason}",
+    "ai_safety_failed": "AI safety check failed: {reason}",
+    "timeout_exceeded": "Safety check timed out after {timeout}ms",
+    "script_too_large": "Script exceeds maximum size of {max_size} characters"
   }
 }
 ```
+
+Error message templates for safety violations and system errors.
 
 ### Pattern Types
 

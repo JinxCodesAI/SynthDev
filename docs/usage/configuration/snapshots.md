@@ -22,27 +22,64 @@ SynthDev includes an advanced snapshot system that captures project states for b
 ### Core Configuration
 **File**: `src/config/snapshots/snapshot-defaults.json`
 
+#### Storage Section
 ```json
 {
-  "fileFiltering": {
-    "customExclusions": [],
-    "maxFileSize": 10485760,
-    "binaryFileHandling": "exclude",
-    "followSymlinks": false,
-    "caseSensitive": false
-  },
   "storage": {
     "type": "memory",
     "maxSnapshots": 50,
     "maxMemoryMB": 100,
     "persistToDisk": false
-  },
+  }
+}
+```
+
+- **`type`**: Storage backend type (string: "memory")
+- **`maxSnapshots`**: Maximum number of snapshots to keep (number)
+- **`maxMemoryMB`**: Maximum memory usage in MB (number)
+- **`persistToDisk`**: Save snapshots to disk (boolean, not implemented)
+
+#### File Filtering Section
+```json
+{
+  "fileFiltering": {
+    "defaultExclusions": ["node_modules/**", ".git/**", "dist/**"],
+    "customExclusions": [],
+    "maxFileSize": 10485760,
+    "binaryFileHandling": "exclude",
+    "followSymlinks": false,
+    "caseSensitive": false
+  }
+}
+```
+
+- **`defaultExclusions`**: Built-in exclusion patterns (array of strings)
+- **`customExclusions`**: User-defined exclusion patterns (array of strings)
+- **`maxFileSize`**: Maximum file size to include in bytes (number)
+- **`binaryFileHandling`**: How to handle binary files (string: "exclude", "include", "warn")
+- **`followSymlinks`**: Follow symbolic links (boolean)
+- **`caseSensitive`**: Case-sensitive pattern matching (boolean)
+
+#### Backup Section
+```json
+{
   "backup": {
     "preservePermissions": true,
     "validateChecksums": true,
     "maxConcurrentFiles": 10,
     "encoding": "utf8"
-  },
+  }
+}
+```
+
+- **`preservePermissions`**: Preserve file permissions (boolean)
+- **`validateChecksums`**: Validate file integrity with checksums (boolean)
+- **`maxConcurrentFiles`**: Maximum concurrent file operations (number)
+- **`encoding`**: Default file encoding (string)
+
+#### Behavior Section
+```json
+{
   "behavior": {
     "autoCleanup": true,
     "cleanupThreshold": 40,
@@ -52,35 +89,102 @@ SynthDev includes an advanced snapshot system that captures project states for b
 }
 ```
 
+- **`autoCleanup`**: Automatically clean old snapshots (boolean)
+- **`cleanupThreshold`**: Snapshot count to trigger cleanup (number)
+- **`confirmRestore`**: Require confirmation before restore (boolean)
+- **`showPreview`**: Show file changes preview (boolean)
+
 ### Automatic Snapshots
 **File**: `src/config/snapshots/auto-snapshot-defaults.json`
 
+#### Auto Snapshot Section
 ```json
 {
   "autoSnapshot": {
     "enabled": false,
-    "createOnToolExecution": false
-  },
+    "createOnToolExecution": false,
+    "createInitialSnapshot": false,
+    "verifyFileChanges": false,
+    "warnOnUnexpectedChanges": false
+  }
+}
+```
+
+- **`enabled`**: Enable automatic snapshot system (boolean)
+- **`createOnToolExecution`**: Create snapshots when tools execute (boolean)
+- **`createInitialSnapshot`**: Create snapshot on startup (boolean)
+- **`verifyFileChanges`**: Verify actual file changes occurred (boolean)
+- **`warnOnUnexpectedChanges`**: Warn about unexpected file changes (boolean)
+
+#### Tool Declarations Section
+```json
+{
   "toolDeclarations": {
     "defaultModifiesFiles": false,
-    "write_file": { "modifiesFiles": true },
-    "edit_file": { "modifiesFiles": true },
-    "execute_terminal": { "modifiesFiles": "conditional" },
-    "execute_script": { "modifiesFiles": "conditional" }
-  },
+    "warnOnMissingDeclaration": true,
+    "cacheDeclarations": true,
+    "toolDefinitions": {
+      "write_file": {
+        "modifiesFiles": true,
+        "fileTargets": ["file_path"]
+      },
+      "edit_file": {
+        "modifiesFiles": true,
+        "fileTargets": ["file_path"]
+      },
+      "execute_terminal": {
+        "modifiesFiles": "conditional",
+        "fileTargets": []
+      }
+    }
+  }
+}
+```
+
+- **`defaultModifiesFiles`**: Default file modification flag for tools (boolean)
+- **`warnOnMissingDeclaration`**: Warn if tool lacks declaration (boolean)
+- **`cacheDeclarations`**: Cache tool declarations (boolean)
+- **`toolDefinitions`**: Per-tool configuration (object)
+  - **`modifiesFiles`**: Whether tool modifies files (boolean or "conditional")
+  - **`fileTargets`**: Parameter names containing file paths (array of strings)
+
+#### Trigger Rules Section
+```json
+{
   "triggerRules": {
     "maxSnapshotsPerSession": 20,
     "cooldownPeriod": 5000,
-    "enableSessionLimits": true
-  },
-  "initialSnapshot": {
-    "enabled": true,
-    "createOnStartup": true,
-    "skipIfSnapshotsExist": true,
+    "requireActualChanges": false,
     "timeout": 30000
   }
 }
 ```
+
+- **`maxSnapshotsPerSession`**: Maximum snapshots per session (number)
+- **`cooldownPeriod`**: Minimum time between snapshots in ms (number)
+- **`requireActualChanges`**: Only snapshot if files actually changed (boolean)
+- **`timeout`**: Snapshot operation timeout in ms (number)
+
+#### Initial Snapshot Section
+```json
+{
+  "initialSnapshot": {
+    "enabled": true,
+    "createOnStartup": true,
+    "skipIfSnapshotsExist": true,
+    "timeout": 30000,
+    "description": "Initial project state",
+    "stateFile": ".synthdev-initial-snapshot"
+  }
+}
+```
+
+- **`enabled`**: Enable initial snapshot creation (boolean)
+- **`createOnStartup`**: Create snapshot when application starts (boolean)
+- **`skipIfSnapshotsExist`**: Skip if snapshots already exist (boolean)
+- **`timeout`**: Initial snapshot timeout in ms (number)
+- **`description`**: Description for initial snapshot (string)
+- **`stateFile`**: File to track initial snapshot state (string)
 
 ### File Filtering
 **File**: `src/config/snapshots/file-filters.json`

@@ -84,25 +84,34 @@ SYNTHDEV_BASE_URL=https://openrouter.ai/api/v1
 
 Available models: Use provider/model format (e.g., `google/gemini-2.5-flash`, `anthropic/claude-sonnet-4`)
 
-## Custom Provider Parameters
+## Provider Configuration File
 
 **File**: `src/config/defaults/providers.json`
 
-To modify default parameters for providers, edit the `defaultParameters` section:
+This file defines all available AI providers and their models. Each provider entry contains:
 
+### Provider Structure
 ```json
 {
   "providers": [
     {
-      "name": "OpenAI",
+      "name": "ProviderName",
+      "baseUrl": "https://api.provider.com/v1",
       "models": [
         {
-          "name": "gpt-4.1-mini",
+          "name": "model-name",
+          "contextSize": 100000,
+          "maxResponseSize": 4000,
+          "inputPricePerMillionTokens": 1.0,
+          "outputPricePerMillionTokens": 2.0,
+          "cachedPricePerMillionTokens": 0.5,
+          "reasoning": false,
           "defaultParameters": {
             "temperature": 0.7,
             "top_p": 0.9,
             "frequency_penalty": 0,
-            "presence_penalty": 0
+            "presence_penalty": 0,
+            "top_k": 40
           }
         }
       ]
@@ -111,29 +120,48 @@ To modify default parameters for providers, edit the `defaultParameters` section
 }
 ```
 
+### Provider Parameters
+
+#### Provider Level
+- **`name`**: Provider identifier (string)
+- **`baseUrl`**: Default API endpoint URL (string)
+- **`models`**: Array of model configurations
+
+#### Model Level
+- **`name`**: Model identifier used in environment variables (string)
+- **`contextSize`**: Maximum context window in tokens (number)
+- **`maxResponseSize`**: Maximum response length in tokens (number)
+- **`inputPricePerMillionTokens`**: Cost per million input tokens (number)
+- **`outputPricePerMillionTokens`**: Cost per million output tokens (number)
+- **`cachedPricePerMillionTokens`**: Cost per million cached tokens (number, optional)
+- **`reasoning`**: Whether model supports reasoning mode (boolean, optional)
+
+#### Default Parameters
+- **`temperature`**: Randomness in responses (0.0-2.0, default: 0.7)
+- **`top_p`**: Nucleus sampling parameter (0.0-1.0, default: 0.9)
+- **`frequency_penalty`**: Penalty for frequent tokens (-2.0-2.0, default: 0)
+- **`presence_penalty`**: Penalty for new topics (-2.0-2.0, default: 0)
+- **`top_k`**: Top-k sampling parameter (number, Google models only)
+
 ## Adding Custom Providers
 
-**File**: `src/config/defaults/providers.json`
-
-Add new providers to the `providers` array:
+To add a new provider, append to the `providers` array:
 
 ```json
 {
-  "providers": [
+  "name": "CustomProvider",
+  "baseUrl": "https://api.customprovider.com/v1",
+  "models": [
     {
-      "name": "YourProvider",
-      "models": [
-        {
-          "name": "your-model",
-          "contextSize": 100000,
-          "maxResponseSize": 4000,
-          "defaultParameters": {
-            "temperature": 0.7,
-            "top_p": 0.9
-          }
-        }
-      ],
-      "baseUrl": "https://api.yourprovider.com/v1"
+      "name": "custom-model-v1",
+      "contextSize": 50000,
+      "maxResponseSize": 2000,
+      "inputPricePerMillionTokens": 0.5,
+      "outputPricePerMillionTokens": 1.0,
+      "defaultParameters": {
+        "temperature": 0.8,
+        "top_p": 0.95
+      }
     }
   ]
 }
@@ -141,7 +169,7 @@ Add new providers to the `providers` array:
 
 ## Local/Custom Endpoints
 
-For local models or custom API endpoints:
+For local models or custom API endpoints, use environment variables:
 
 ```env
 SYNTHDEV_API_KEY=your-local-key
