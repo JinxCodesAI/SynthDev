@@ -581,7 +581,7 @@ export default async function spawn_agent(params) {
                 "properties": {
                     "agent_id": {
                         "type": "string",
-                        "description": "The unique ID of the target agent, obtained from spawn_agent or get_agents tools."
+                        "description": "The unique ID of the target agent, obtained from spawn_agent, get_agents tools, or before using despawn_agent."
                     },
                     "message": {
                         "type": "string",

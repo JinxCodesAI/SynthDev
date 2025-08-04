@@ -351,6 +351,7 @@ DO NOT MAKE SAME CALLS REPEATEDLY IF THERE IS NO NEW INFORMATION, if you are not
         if (Array.isArray(roleConfig.enabled_agents)) {
             const agenticTools = [
                 'spawn_agent',
+                'despawn_agent',
                 'speak_to_agent',
                 'get_agents',
                 'return_results',

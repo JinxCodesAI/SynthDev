@@ -65,7 +65,12 @@ vi.mock('../../../src/config/validation/configurationLoader.js', () => ({
                     // Role with agentic tools already included manually
                     test_agentic_manual: {
                         enabled_agents: ['developer'],
-                        includedTools: ['read_files', 'spawn_agent', 'speak_to_agent'],
+                        includedTools: [
+                            'read_files',
+                            'spawn_agent',
+                            'despawn_agent',
+                            'speak_to_agent',
+                        ],
                     },
                     // Role for system message testing
                     test_system_message: {
