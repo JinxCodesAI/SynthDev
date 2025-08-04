@@ -8,10 +8,11 @@ This directory contains the core components for the Agentic Collaboration System
 
 Singleton class that orchestrates all agent processes. Responsibilities:
 
-- Managing agent lifecycle (creation, tracking, termination)
+- Managing agent lifecycle (creation, tracking, cleanup, termination)
 - Enforcing permissions based on `enabled_agents` configuration
 - Routing messages between agents
 - Monitoring agent processes for failures
+- Resource cleanup through agent despawning
 
 ### AgentProcess.js
 
@@ -35,6 +36,22 @@ Represents a single, isolated agent instance. Features:
 - **inactive** agents: Can receive messages to continue work
 - **completed** agents: Can receive messages for corrections or follow-up tasks
 - **failed** agents: Cannot receive messages (will throw error)
+
+## Agent Lifecycle Management
+
+### Spawning Agents
+
+Use `spawn_agent` tool to create new worker agents for specific tasks.
+
+### Despawning Agents
+
+Use `despawn_agent` tool to clean up completed, failed, or inactive agents:
+
+- Only the parent agent can despawn its children
+- Only `completed`, `failed`, or `inactive` agents can be despawned
+- Agents with any children cannot be despawned (children must be despawned first)
+- If an agent has children, speak to that agent and ask them to despawn their children first
+- Frees up system resources and removes agent from tracking
 
 ## Usage
 

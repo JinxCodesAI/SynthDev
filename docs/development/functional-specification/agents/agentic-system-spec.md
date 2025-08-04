@@ -29,6 +29,7 @@ The system is designed to be robust, preventing common failure modes like contex
     - Notifying supervisor agents of child agent status changes.
 - **Agent-Management Tools**: A new suite of tools available only to Agentic Roles:
     - `spawn_agent(role, task_prompt)`: Creates a new worker agent.
+    - `despawn_agent(agent_id)`: Removes a completed or failed agent to free up resources.
     - `speak_to_agent(agent_id, message)`: Sends a message to a specific worker agent.
     - `get_agents()`: Lists all agents spawned by the current supervisor.
     - `return_results(result_object)`: The formal mechanism for a worker agent to signal task completion.
@@ -139,6 +140,9 @@ src/
 │   └── AgentProcess.js         # Represents a single spawned agent instance
 ├── tools/
 │   ├── spawn_agent/
+│   │   ├── definition.json
+│   │   └── implementation.js
+│   ├── despawn_agent/
 │   │   ├── definition.json
 │   │   └── implementation.js
 │   ├── speak_to_agent/

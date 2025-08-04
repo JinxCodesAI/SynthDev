@@ -54,7 +54,7 @@ vi.mock('../../../src/config/validation/configurationLoader.js', () => ({
                     test_agentic_excluded: {
                         enabled_agents: ['developer'],
                         includedTools: ['read_files'],
-                        excludedTools: ['spawn_agent'],
+                        excludedTools: ['spawn_agent', 'despawn_agent'],
                     },
                     // Role with task tools explicitly excluded
                     test_task_excluded: {
@@ -65,7 +65,12 @@ vi.mock('../../../src/config/validation/configurationLoader.js', () => ({
                     // Role with agentic tools already included manually
                     test_agentic_manual: {
                         enabled_agents: ['developer'],
-                        includedTools: ['read_files', 'spawn_agent', 'speak_to_agent'],
+                        includedTools: [
+                            'read_files',
+                            'spawn_agent',
+                            'despawn_agent',
+                            'speak_to_agent',
+                        ],
                     },
                     // Role for system message testing
                     test_system_message: {
@@ -117,6 +122,7 @@ describe('SystemMessages - Automatic Tool Inclusion', () => {
         it('should add agentic tools when enabled_agents is empty array', () => {
             const tools = SystemMessages.getIncludedTools('test_agentic_empty');
             expect(tools).toContain('spawn_agent');
+            expect(tools).toContain('despawn_agent');
             expect(tools).toContain('speak_to_agent');
             expect(tools).toContain('get_agents');
             expect(tools).toContain('return_results');
@@ -128,6 +134,7 @@ describe('SystemMessages - Automatic Tool Inclusion', () => {
         it('should add agentic tools when enabled_agents is non-empty array', () => {
             const tools = SystemMessages.getIncludedTools('test_agentic_nonempty');
             expect(tools).toContain('spawn_agent');
+            expect(tools).toContain('despawn_agent');
             expect(tools).toContain('speak_to_agent');
             expect(tools).toContain('get_agents');
             expect(tools).toContain('return_results');
@@ -139,6 +146,7 @@ describe('SystemMessages - Automatic Tool Inclusion', () => {
         it('should not add agentic tools when enabled_agents is not an array', () => {
             const tools = SystemMessages.getIncludedTools('test_not_array');
             expect(tools).not.toContain('spawn_agent');
+            expect(tools).not.toContain('despawn_agent');
             expect(tools).not.toContain('speak_to_agent');
             expect(tools).not.toContain('get_agents');
             expect(tools).not.toContain('return_results');
@@ -150,6 +158,7 @@ describe('SystemMessages - Automatic Tool Inclusion', () => {
         it('should not add agentic tools when enabled_agents is not present', () => {
             const tools = SystemMessages.getIncludedTools('test_none');
             expect(tools).not.toContain('spawn_agent');
+            expect(tools).not.toContain('despawn_agent');
             expect(tools).not.toContain('speak_to_agent');
             expect(tools).not.toContain('get_agents');
             expect(tools).toContain('read_files'); // original tool
@@ -158,6 +167,7 @@ describe('SystemMessages - Automatic Tool Inclusion', () => {
         it('should not add excluded agentic tools', () => {
             const tools = SystemMessages.getIncludedTools('test_agentic_excluded');
             expect(tools).not.toContain('spawn_agent'); // explicitly excluded
+            expect(tools).not.toContain('despawn_agent'); // explicitly excluded
             expect(tools).toContain('speak_to_agent'); // not excluded
             expect(tools).toContain('get_agents'); // not excluded
             expect(tools).toContain('read_files'); // original tool
@@ -214,6 +224,7 @@ describe('SystemMessages - Automatic Tool Inclusion', () => {
 
             // Agentic tools
             expect(tools).toContain('spawn_agent');
+            expect(tools).toContain('despawn_agent');
             expect(tools).toContain('speak_to_agent');
             expect(tools).toContain('get_agents');
 
@@ -259,6 +270,7 @@ describe('SystemMessages - Automatic Tool Inclusion', () => {
                 'Use get_agents to understand what agents are already available'
             );
             expect(systemMessage).toContain('use spawn_agent to initialize new agent');
+            expect(systemMessage).toContain('despawn_agent');
         });
 
         it('should append task creation info when can_create_tasks_for is present', () => {
