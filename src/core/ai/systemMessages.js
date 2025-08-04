@@ -163,6 +163,7 @@ IMPORTANT: Act autonomusly and do not ask user for clarification from the user, 
 
 Use get_agents to understand what agents are already available.
 If agent you need is not available, use spawn_agent to initialize new agent that you need to do something for you. For existing agents use speak_to_agent to communicate with them.
+When agents complete their tasks, use despawn_agent to clean up and free resources.
 
 Allways create tasks for other agents BEFORE spawning agents to do the work. When mentioning task mention task id in your message. Agent will be able to pickup the task by calling get_tasks.
 If possible call update_knowledgebase before spawning agents to share information with them.
