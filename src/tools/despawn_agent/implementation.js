@@ -20,25 +20,40 @@ class DespawnAgentTool extends BaseTool {
             // Get AgentManager from context
             const agentManager = this.context.agentManager;
             if (!agentManager) {
-                throw new Error('AgentManager not available in context');
+                return this.createErrorResponse('AgentManager not available in context', {
+                    agent_id,
+                });
             }
 
             // Despawn the agent through AgentManager
             const result = await agentManager.despawnAgent(currentAgentId, agent_id);
 
-            return this.createSuccessResponse({
-                success: result.success,
-                agent_id: result.agent_id,
-                role_name: result.role_name,
-                status: result.status,
-                despawned_at: result.despawned_at,
-                message: result.message,
-            });
+            // Check if the operation was successful
+            if (result.success) {
+                return this.createSuccessResponse({
+                    success: result.success,
+                    agent_id: result.agent_id,
+                    role_name: result.role_name,
+                    status: result.status,
+                    despawned_at: result.despawned_at,
+                    message: result.message,
+                });
+            } else {
+                // Return the error from AgentManager without exposing stack traces
+                return this.createErrorResponse(result.error, {
+                    agent_id: result.agent_id,
+                    status: result.status,
+                    children: result.children,
+                });
+            }
         } catch (error) {
-            return this.createErrorResponse(`Failed to despawn agent: ${error.message}`, {
-                agent_id,
-                error: error.stack,
-            });
+            // Handle unexpected errors without exposing stack traces
+            return this.createErrorResponse(
+                `Unexpected error while despawning agent: ${error.message}`,
+                {
+                    agent_id,
+                }
+            );
         }
     }
 }

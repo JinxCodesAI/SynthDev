@@ -83,8 +83,10 @@ describe('AgentManager.despawnAgent', () => {
 
         it('should handle user despawning root agent', async () => {
             mockAgent1.status = 'completed';
-            // Make sure agent-1 has no active children by completing agent-3
-            mockAgent3.status = 'completed';
+            // Remove all children of agent-1 so it can be despawned
+            agentManager.activeAgents.delete('agent-2');
+            agentManager.activeAgents.delete('agent-3');
+            agentManager.agentHierarchy.delete('agent-1'); // Remove children hierarchy
 
             const result = await agentManager.despawnAgent(null, 'agent-1');
 
@@ -114,40 +116,75 @@ describe('AgentManager.despawnAgent', () => {
     });
 
     describe('validation errors', () => {
-        it('should throw error for non-existent agent', async () => {
-            await expect(agentManager.despawnAgent('agent-1', 'non-existent')).rejects.toThrow(
-                'Agent non-existent not found'
-            );
+        it('should return error for non-existent agent', async () => {
+            const result = await agentManager.despawnAgent('agent-1', 'non-existent');
+
+            expect(result.success).toBe(false);
+            expect(result.error).toContain('Agent non-existent not found');
+            expect(result.agent_id).toBe('non-existent');
         });
 
-        it('should throw error for wrong parent', async () => {
-            await expect(
-                agentManager.despawnAgent('agent-2', 'agent-3') // agent-2 is not parent of agent-3
-            ).rejects.toThrow(
+        it('should return error for wrong parent', async () => {
+            const result = await agentManager.despawnAgent('agent-2', 'agent-3'); // agent-2 is not parent of agent-3
+
+            expect(result.success).toBe(false);
+            expect(result.error).toContain(
                 'Permission denied: Agent agent-2 is not the parent of agent agent-3'
             );
+            expect(result.agent_id).toBe('agent-3');
         });
 
-        it('should throw error for user trying to despawn non-child agent', async () => {
-            await expect(
-                agentManager.despawnAgent(null, 'agent-2') // User is not parent of agent-2
-            ).rejects.toThrow('Permission denied: Agent user is not the parent of agent agent-2');
+        it('should return error for user trying to despawn non-child agent', async () => {
+            const result = await agentManager.despawnAgent(null, 'agent-2'); // User is not parent of agent-2
+
+            expect(result.success).toBe(false);
+            expect(result.error).toContain(
+                'Permission denied: Agent user is not the parent of agent agent-2'
+            );
+            expect(result.agent_id).toBe('agent-2');
         });
     });
 
     describe('status validation', () => {
-        it('should throw error for running agent', async () => {
+        it('should return error for running agent', async () => {
             mockAgent2.status = 'running';
 
-            await expect(agentManager.despawnAgent('agent-1', 'agent-2')).rejects.toThrow(
-                "Cannot despawn agent agent-2 with status 'running'"
-            );
+            const result = await agentManager.despawnAgent('agent-1', 'agent-2');
+
+            expect(result.success).toBe(false);
+            expect(result.error).toContain("Cannot despawn agent agent-2 with status 'running'");
+            expect(result.agent_id).toBe('agent-2');
+            expect(result.status).toBe('running');
         });
     });
 
-    describe('active children validation', () => {
-        it('should throw error when agent has running children', async () => {
+    describe('children validation', () => {
+        it('should return error when agent has any children (regardless of status)', async () => {
             // Add a child to agent-2
+            const mockAgent4 = {
+                agentId: 'agent-4',
+                roleName: 'developer',
+                status: 'completed', // Even completed children prevent despawn
+                parentId: 'agent-2',
+            };
+            agentManager.activeAgents.set('agent-4', mockAgent4);
+            agentManager.agentHierarchy.set('agent-2', new Set(['agent-4']));
+
+            const result = await agentManager.despawnAgent('agent-1', 'agent-2');
+
+            expect(result.success).toBe(false);
+            expect(result.error).toContain(
+                'Cannot despawn agent agent-2 because it still has children: agent-4'
+            );
+            expect(result.error).toContain(
+                'speak to agent agent-2 and ask them to despawn their children first'
+            );
+            expect(result.agent_id).toBe('agent-2');
+            expect(result.children).toEqual(['agent-4']);
+        });
+
+        it('should return error when agent has running children', async () => {
+            // Add a running child to agent-2
             const mockAgent4 = {
                 agentId: 'agent-4',
                 roleName: 'developer',
@@ -157,29 +194,17 @@ describe('AgentManager.despawnAgent', () => {
             agentManager.activeAgents.set('agent-4', mockAgent4);
             agentManager.agentHierarchy.set('agent-2', new Set(['agent-4']));
 
-            await expect(agentManager.despawnAgent('agent-1', 'agent-2')).rejects.toThrow(
-                'Cannot despawn agent agent-2 because it has active children: agent-4'
-            );
-        });
-
-        it('should allow despawn when agent has only inactive children', async () => {
-            // Add an inactive child to agent-2
-            const mockAgent4 = {
-                agentId: 'agent-4',
-                roleName: 'developer',
-                status: 'inactive',
-                parentId: 'agent-2',
-            };
-            agentManager.activeAgents.set('agent-4', mockAgent4);
-            agentManager.agentHierarchy.set('agent-2', new Set(['agent-4']));
-
             const result = await agentManager.despawnAgent('agent-1', 'agent-2');
 
-            expect(result.success).toBe(true);
+            expect(result.success).toBe(false);
+            expect(result.error).toContain(
+                'Cannot despawn agent agent-2 because it still has children: agent-4'
+            );
+            expect(result.children).toEqual(['agent-4']);
         });
 
-        it('should allow despawn when all children are completed, failed, or inactive', async () => {
-            // Add completed, failed, and inactive children to agent-2
+        it('should return error when agent has multiple children', async () => {
+            // Add multiple children to agent-2 (any children prevent despawn)
             const mockAgent4 = {
                 agentId: 'agent-4',
                 roleName: 'developer',
@@ -192,43 +217,25 @@ describe('AgentManager.despawnAgent', () => {
                 status: 'failed',
                 parentId: 'agent-2',
             };
-            const mockAgent6 = {
-                agentId: 'agent-6',
-                roleName: 'reviewer',
-                status: 'inactive',
-                parentId: 'agent-2',
-            };
-            agentManager.activeAgents.set('agent-4', mockAgent4);
-            agentManager.activeAgents.set('agent-5', mockAgent5);
-            agentManager.activeAgents.set('agent-6', mockAgent6);
-            agentManager.agentHierarchy.set('agent-2', new Set(['agent-4', 'agent-5', 'agent-6']));
-
-            const result = await agentManager.despawnAgent('agent-1', 'agent-2');
-
-            expect(result.success).toBe(true);
-        });
-
-        it('should handle multiple active children in error message', async () => {
-            // Add multiple running children to agent-2 (only running children are considered active)
-            const mockAgent4 = {
-                agentId: 'agent-4',
-                roleName: 'developer',
-                status: 'running',
-                parentId: 'agent-2',
-            };
-            const mockAgent5 = {
-                agentId: 'agent-5',
-                roleName: 'tester',
-                status: 'running',
-                parentId: 'agent-2',
-            };
             agentManager.activeAgents.set('agent-4', mockAgent4);
             agentManager.activeAgents.set('agent-5', mockAgent5);
             agentManager.agentHierarchy.set('agent-2', new Set(['agent-4', 'agent-5']));
 
-            await expect(agentManager.despawnAgent('agent-1', 'agent-2')).rejects.toThrow(
-                'Cannot despawn agent agent-2 because it has active children: agent-4, agent-5'
+            const result = await agentManager.despawnAgent('agent-1', 'agent-2');
+
+            expect(result.success).toBe(false);
+            expect(result.error).toContain(
+                'Cannot despawn agent agent-2 because it still has children: agent-4, agent-5'
             );
+            expect(result.children).toEqual(['agent-4', 'agent-5']);
+        });
+
+        it('should allow despawn when agent has no children', async () => {
+            // Agent-2 has no children, so it should be despawnable
+            const result = await agentManager.despawnAgent('agent-1', 'agent-2');
+
+            expect(result.success).toBe(true);
+            expect(result.agent_id).toBe('agent-2');
         });
     });
 

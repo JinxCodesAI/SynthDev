@@ -1,19 +1,19 @@
 {
     "name": "despawn_agent",
-    "description": "Despawns a completed, failed, or inactive agent that is no longer needed, cleaning up system resources. Can only be called by the same agent that spawned the target agent.",
+    "description": "Despawns a completed, failed, or inactive agent that is no longer needed, cleaning up system resources. Can only be called by the same agent that spawned the target agent. The target agent must have no children.",
     "auto_run": true,
     "version": "1.0.0",
     "schema": {
         "type": "function",
         "function": {
             "name": "despawn_agent",
-            "description": "Removes a completed, failed, or inactive agent from the system to free up resources. Only the parent agent that originally spawned the target agent can despawn it. The target agent must be in 'completed', 'failed', or 'inactive' status and cannot have any active children.",
+            "description": "Removes a completed, failed, or inactive agent from the system to free up resources. Only the parent agent that originally spawned the target agent can despawn it. The target agent must be in 'completed', 'failed', or 'inactive' status and cannot have any children (children must be despawned first).",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "agent_id": {
                         "type": "string",
-                        "description": "The ID of the agent to despawn. Must be a direct child of the current agent and in 'completed', 'failed', or 'inactive' status."
+                        "description": "The ID of the agent to despawn. Must be a direct child of the current agent, in 'completed', 'failed', or 'inactive' status, and have no children of its own."
                     }
                 },
                 "required": ["agent_id"]

@@ -49,7 +49,8 @@ Use `despawn_agent` tool to clean up completed, failed, or inactive agents:
 
 - Only the parent agent can despawn its children
 - Only `completed`, `failed`, or `inactive` agents can be despawned
-- Agents with running children cannot be despawned
+- Agents with any children cannot be despawned (children must be despawned first)
+- If an agent has children, speak to that agent and ask them to despawn their children first
 - Frees up system resources and removes agent from tracking
 
 ## Usage

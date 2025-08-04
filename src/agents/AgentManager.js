@@ -379,40 +379,49 @@ You can use task related tools and speak_to_agent tool to request clarifications
         // Get the agent to despawn
         const agent = this.activeAgents.get(agentId);
         if (!agent) {
-            throw new Error(`Agent ${agentId} not found`);
+            return {
+                success: false,
+                error: `Agent ${agentId} not found`,
+                agent_id: agentId,
+            };
         }
 
         // Validate that the supervisor is the parent of this agent
         if (agent.parentId !== supervisorAgentId) {
-            throw new Error(
-                `Permission denied: Agent ${supervisorAgentId || 'user'} is not the parent of agent ${agentId}. ` +
-                    'Only the parent agent can despawn its children.'
-            );
+            return {
+                success: false,
+                error: `Permission denied: Agent ${supervisorAgentId || 'user'} is not the parent of agent ${agentId}. Only the parent agent can despawn its children.`,
+                agent_id: agentId,
+            };
         }
 
         // Check agent status - only allow despawning completed, failed, or inactive agents
         if (agent.status === 'running') {
-            throw new Error(
-                `Cannot despawn agent ${agentId} with status '${agent.status}'. ` +
-                    "Only 'completed', 'failed', or 'inactive' agents can be despawned."
-            );
+            return {
+                success: false,
+                error: `Cannot despawn agent ${agentId} with status '${agent.status}'. Only 'completed', 'failed', or 'inactive' agents can be despawned.`,
+                agent_id: agentId,
+                status: agent.status,
+            };
         }
 
-        // Check if agent has any active children (only running agents are considered active)
+        // Check if agent has any children that haven't been despawned yet
         const childIds = this.agentHierarchy.get(agentId) || new Set();
-        const activeChildren = [];
+        const remainingChildren = [];
         for (const childId of childIds) {
             const childAgent = this.activeAgents.get(childId);
-            if (childAgent && childAgent.status === 'running') {
-                activeChildren.push(childId);
+            if (childAgent) {
+                remainingChildren.push(childId);
             }
         }
 
-        if (activeChildren.length > 0) {
-            throw new Error(
-                `Cannot despawn agent ${agentId} because it has active children: ${activeChildren.join(', ')}. ` +
-                    'Despawn or wait for completion of child agents first.'
-            );
+        if (remainingChildren.length > 0) {
+            return {
+                success: false,
+                error: `Cannot despawn agent ${agentId} because it still has children: ${remainingChildren.join(', ')}. Please speak to agent ${agentId} and ask them to despawn their children first, or despawn the children directly.`,
+                agent_id: agentId,
+                children: remainingChildren,
+            };
         }
 
         // Remove agent from active agents
